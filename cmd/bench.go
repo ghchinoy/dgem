@@ -1,17 +1,24 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
+	"github.com/ghchinoy/dgem/pkg/template"
 	"github.com/spf13/cobra"
 )
 
 var (
+	benchDataset           string
+	benchMode              string
+	benchOutput            string
+	benchLimit             int
 	benchIncludeGenerative bool
 )
 
@@ -19,207 +26,361 @@ var benchCmd = &cobra.Command{
 	Use:   "bench",
 	Short: "Run the discrete diffusion slot readout vs autoregression benchmark",
 	Long: `bench runs an empirical benchmark comparing single-pass discrete diffusion
-slot readout decisions against traditional autoregressive text generation on Apple Silicon Metal.`,
+slot readout decisions against traditional autoregressive text generation on Apple Silicon Metal or remote hosts.`,
 	RunE: runBench,
 }
 
 func init() {
-	benchCmd.Flags().BoolVar(&benchIncludeGenerative, "with-generative", true, "Include generative comparison on first test cases")
+	benchCmd.Flags().StringVarP(&benchDataset, "dataset", "d", "", "Path to evaluation dataset in JSONL format")
+	benchCmd.Flags().StringVarP(&benchMode, "mode", "M", "slot", "Benchmark mode: 'slot' (slot readout only), 'generative', or 'both'")
+	benchCmd.Flags().StringVarP(&benchOutput, "output", "o", "", "Export structured JSON benchmark metrics to file")
+	benchCmd.Flags().IntVarP(&benchLimit, "limit", "n", 0, "Limit number of cases to evaluate (0 = all)")
+	benchCmd.Flags().BoolVar(&benchIncludeGenerative, "with-generative", false, "Deprecated: use --mode both instead")
+
 	RootCmd.AddCommand(benchCmd)
 }
 
-type benchCase struct {
-	Name    string
-	Ticket  string
-	Urgent  bool
-	Team    string
+// EvalCase represents a single labeled benchmark item.
+type EvalCase struct {
+	ID        string                 `json:"id"`
+	Domain    string                 `json:"domain"`
+	Template  string                 `json:"template"`
+	Variables map[string]interface{} `json:"variables"`
+	Expected  map[string]string      `json:"expected"`
+	Tier      string                 `json:"tier"`
 }
 
-var benchCases = []benchCase{
+// CaseResult holds measured telemetry for one evaluation item.
+type CaseResult struct {
+	ID             string                 `json:"id"`
+	Domain         string                 `json:"domain"`
+	Tier           string                 `json:"tier"`
+	SlotAccurate   bool                   `json:"slot_accurate"`
+	SlotDenoiseMs  float64                `json:"slot_denoise_ms"`
+	SlotPrefillMs  float64                `json:"slot_prefill_ms"`
+	SlotWallTimeMs float64                `json:"slot_wall_time_ms"`
+	SlotSamples    int                    `json:"slot_samples"`
+	SlotExtended   bool                   `json:"slot_extended"`
+	SlotAnswers    map[string]interface{} `json:"slot_answers,omitempty"`
+
+	GenWallTimeMs float64 `json:"gen_wall_time_ms,omitempty"`
+	GenTokens     int     `json:"gen_tokens,omitempty"`
+	GenValidJSON  bool    `json:"gen_valid_json,omitempty"`
+	GenResponse   string  `json:"gen_response,omitempty"`
+}
+
+// BenchmarkReport summarizes the aggregated benchmark run.
+type BenchmarkReport struct {
+	Timestamp      string       `json:"timestamp"`
+	TargetURL      string       `json:"target_url"`
+	TargetModel    string       `json:"target_model"`
+	TotalCases     int          `json:"total_cases"`
+	Mode           string       `json:"mode"`
+	SlotAvgDenoise float64      `json:"slot_avg_denoise_ms"`
+	SlotAvgWall    float64      `json:"slot_avg_wall_ms"`
+	SlotAccuracy   float64      `json:"slot_accuracy_pct"`
+	SlotMultiReads int          `json:"slot_multi_reads_triggered"`
+	GenAvgWall     float64      `json:"gen_avg_wall_ms,omitempty"`
+	GenAvgTokens   float64      `json:"gen_avg_tokens,omitempty"`
+	GenSyntaxRate  float64      `json:"gen_syntax_rate_pct,omitempty"`
+	Cases          []CaseResult `json:"cases"`
+}
+
+var fallbackCases = []EvalCase{
 	{
-		Name:   "Production Outage",
-		Ticket: "EMERGENCY: Production API cluster returning 500 across all US-East nodes. Customer traffic is failing.",
-		Urgent: true,
-		Team:   "engineering",
+		ID:       "sup-01",
+		Domain:   "support",
+		Template: "templates/support_triage.json.tmpl",
+		Variables: map[string]interface{}{
+			"ticket": "EMERGENCY: Production API cluster returning 500 across all US-East nodes. Customer traffic is failing.",
+		},
+		Expected: map[string]string{"team": "engineering", "urgent": "yes"},
+		Tier:     "unambiguous",
 	},
 	{
-		Name:   "Billing Overcharge",
-		Ticket: "I was billed twice for my annual renewal this morning ($1200 instead of $600). Please reverse the second charge.",
-		Urgent: true,
-		Team:   "billing",
+		ID:       "sup-02",
+		Domain:   "support",
+		Template: "templates/support_triage.json.tmpl",
+		Variables: map[string]interface{}{
+			"ticket": "I was billed twice for my annual renewal this morning ($1200 instead of $600). Please reverse the second charge.",
+		},
+		Expected: map[string]string{"team": "billing", "urgent": "yes"},
+		Tier:     "unambiguous",
 	},
 	{
-		Name:   "Routine Account Question",
-		Ticket: "Hi there, where in the dashboard can I invite my colleague as a viewer? No rush at all, thanks!",
-		Urgent: false,
-		Team:   "support",
+		ID:       "sup-03",
+		Domain:   "support",
+		Template: "templates/support_triage.json.tmpl",
+		Variables: map[string]interface{}{
+			"ticket": "Hi there, where in the dashboard can I invite my colleague as a viewer? No rush at all, thanks!",
+		},
+		Expected: map[string]string{"team": "support", "urgent": "no"},
+		Tier:     "unambiguous",
 	},
 	{
-		Name:   "Angry Cancellation Threat",
-		Ticket: "YOUR APP IS A PIECE OF GARBAGE! Deleted my database migration and corrupted files. Cancel my subscription immediately!",
-		Urgent: true,
-		Team:   "billing",
+		ID:       "sup-04",
+		Domain:   "support",
+		Template: "templates/support_triage.json.tmpl",
+		Variables: map[string]interface{}{
+			"ticket": "YOUR APP IS A PIECE OF GARBAGE! Deleted my database migration and corrupted files. Cancel my subscription immediately!",
+		},
+		Expected: map[string]string{"team": "billing", "urgent": "yes"},
+		Tier:     "ambiguous",
 	},
 	{
-		Name:   "Borderline Feature Request",
-		Ticket: "Would be nice to have dark mode or maybe some CSS customization when exporting PDFs. Not a bug, just wondering.",
-		Urgent: false,
-		Team:   "support",
+		ID:       "sup-05",
+		Domain:   "support",
+		Template: "templates/support_triage.json.tmpl",
+		Variables: map[string]interface{}{
+			"ticket": "Would be nice to have dark mode or maybe some CSS customization when exporting PDFs. Not a bug, just wondering.",
+		},
+		Expected: map[string]string{"team": "support", "urgent": "no"},
+		Tier:     "ambiguous",
 	},
 }
 
-const benchSchema = `{
-  "instructions": "Classify incoming customer operations tickets.",
-  "questions": [
-    {
-      "id": "urgent",
-      "type": "boolean",
-      "instructions": "Does this issue require immediate same-day escalation?"
-    },
-    {
-      "id": "team",
-      "type": "choice",
-      "instructions": "Which department owns resolution of this ticket?",
-      "options": [
-        {"name": "billing", "description": "charges, invoices, refunds, subscriptions"},
-        {"name": "support", "description": "general questions, account help, password resets"},
-        {"name": "engineering", "description": "system bugs, outages, API errors, 500s"}
-      ]
-    },
-    {
-      "id": "sentiment",
-      "type": "score",
-      "instructions": "Customer anger / distress level",
-      "levels": ["calm", "frustrated", "furious"]
-    }
-  ],
-  "samples": "auto"
-}`
+func loadDataset(path string) ([]EvalCase, error) {
+	if path == "" {
+		return fallbackCases, nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open dataset file: %w", err)
+	}
+	defer file.Close()
+
+	var cases []EvalCase
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		var ec EvalCase
+		if err := json.Unmarshal([]byte(line), &ec); err != nil {
+			return nil, fmt.Errorf("invalid JSONL line %q: %w", line, err)
+		}
+		cases = append(cases, ec)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading dataset: %w", err)
+	}
+	return cases, nil
+}
 
 func runBench(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	c := GetClient()
+	engine := template.NewEngine()
+
+	mode := strings.ToLower(benchMode)
+	if benchIncludeGenerative {
+		mode = "both"
+	}
+	if mode != "slot" && mode != "generative" && mode != "both" {
+		return fmt.Errorf("invalid mode %q (must be 'slot', 'generative', or 'both')", benchMode)
+	}
+
+	cases, err := loadDataset(benchDataset)
+	if err != nil {
+		return err
+	}
+	if benchLimit > 0 && benchLimit < len(cases) {
+		cases = cases[:benchLimit]
+	}
 
 	fmt.Println("================================================================================")
-	fmt.Println("  DIFFUSIONGEMMA: DISCRETE DIFFUSION SLOT READOUT VS AUTOREGRESSIVE")
+	fmt.Println("  DIFFUSIONGEMMA: DISCRETE DIFFUSION BENCHMARK EVALUATION")
 	fmt.Println("================================================================================")
-	fmt.Printf("Target Server: %s\n\n", c.BaseURL)
+	fmt.Printf("Target Server: %s\n", c.BaseURL)
+	fmt.Printf("Model:         %s\n", c.Model)
+	fmt.Printf("Mode:          %s\n", mode)
+	fmt.Printf("Test Cases:    %d items\n\n", len(cases))
 
-	fmt.Println("Warming up server & prefilling schema KV cache...")
+	// Warmup
+	fmt.Println("Warming up server & prefilling template KV cache...")
 	warmupState := `{"ticket": "Health check prefill"}`
-	_, _, err := c.Decide(ctx, benchSchema, warmupState)
+	_, _, err = c.Decide(ctx, `{"questions":[{"id":"q","type":"boolean"}],"samples":"auto"}`, warmupState)
 	if err != nil {
 		return fmt.Errorf("failed to connect to server at %s: %w", c.BaseURL, err)
 	}
-	fmt.Println("Warmup complete. Schema prefix is resident in KV cache.\n")
+	fmt.Println("Warmup complete. Server is healthy.\n")
 
-	type structResult struct {
-		Name     string
-		Team     string
-		Urgent   string
-		Conf     float64
-		Samples  int
-		Denoise  float64
-		WallTime time.Duration
-		Extended bool
-	}
+	var results []CaseResult
+	var correctCount int
 
-	var results []structResult
+	fmt.Println(strings.Repeat("-", 90))
+	fmt.Printf("%-8s | %-12s | %-12s | %-6s | %-7s | %-8s | %-8s | %s\n",
+		"ID", "Domain", "Tier", "Match", "Samples", "Denoise", "Wall", "Status")
+	fmt.Println(strings.Repeat("-", 90))
 
-	fmt.Println(strings.Repeat("-", 80))
-	fmt.Printf("%-28s | %-12s | %-8s | %-6s | %-7s | %-8s | %s\n",
-		"Test Case", "Team", "Urgent", "Conf", "Samples", "Denoise", "Total")
-	fmt.Println(strings.Repeat("-", 80))
-
-	for _, tc := range benchCases {
-		stateBytes, _ := json.Marshal(map[string]string{"ticket": tc.Ticket})
-		resp, stats, err := c.Decide(ctx, benchSchema, string(stateBytes))
-		if err != nil {
-			return fmt.Errorf("bench case %q failed: %w", tc.Name, err)
+	for _, tc := range cases {
+		cr := CaseResult{
+			ID:     tc.ID,
+			Domain: tc.Domain,
+			Tier:   tc.Tier,
 		}
 
-		team := resp.Answers["team"].Choice
-		urgent := resp.Answers["urgent"].DisplayValue()
-		conf := resp.Answers["team"].Confidence
-		samples := stats.SamplesN
-		denoise := stats.DenoiseMs
-		wall := stats.WallTime
-
-		results = append(results, structResult{
-			Name:     tc.Name,
-			Team:     team,
-			Urgent:   urgent,
-			Conf:     conf,
-			Samples:  samples,
-			Denoise:  denoise,
-			WallTime: wall,
-			Extended: stats.Extended,
-		})
-
-		fmt.Printf("%-28s | %-12s | %-8s | %5.1f%% | %7d | %6.0fms | %5.2fs\n",
-			tc.Name, team, urgent, conf*100, samples, denoise, wall.Seconds())
-	}
-
-	if benchIncludeGenerative {
-		fmt.Println("\n" + strings.Repeat("=", 80))
-		fmt.Println("  TESTING STANDARD GENERATIVE CHAT ON FIRST 2 CASES FOR COMPARISON")
-		fmt.Println(strings.Repeat("=", 80))
-
-		for _, tc := range benchCases[:2] {
-			fmt.Printf("\n--- Generative Test: %s ---\n", tc.Name)
-			prompt := fmt.Sprintf("Classify this ticket. Output ONLY valid JSON with keys: 'urgent' (boolean), 'team' ('billing', 'support', or 'engineering'), 'sentiment' ('calm', 'frustrated', or 'furious').\n\nTicket: %s", tc.Ticket)
-
-			model := c.Model
-			if !strings.Contains(model, ":think=false") {
-				model = model + ":think=false"
+		// 1. Run Slot Readout if requested
+		if mode == "slot" || mode == "both" {
+			rendered, err := engine.RenderFile(tc.Template, tc.Variables)
+			if err != nil {
+				return fmt.Errorf("case %s template render failed: %w", tc.ID, err)
+			}
+			schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, tc.Variables)
+			if err != nil {
+				return fmt.Errorf("case %s payload parse failed: %w", tc.ID, err)
 			}
 
-			req := client.ChatCompletionRequest{
-				Model: model,
+			resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
+			if err != nil {
+				return fmt.Errorf("case %s decide query failed: %w", tc.ID, err)
+			}
+
+			cr.SlotDenoiseMs = stats.DenoiseMs
+			cr.SlotPrefillMs = stats.PrefillMs
+			cr.SlotWallTimeMs = float64(stats.WallTime.Milliseconds())
+			cr.SlotSamples = stats.SamplesN
+			cr.SlotExtended = stats.Extended
+			cr.SlotAnswers = make(map[string]interface{})
+
+			// Check accuracy against expected
+			matchAll := true
+			for expKey, expVal := range tc.Expected {
+				ans, ok := resp.Answers[expKey]
+				if !ok {
+					matchAll = false
+					break
+				}
+				actual := strings.ToLower(ans.DisplayValue())
+				expected := strings.ToLower(expVal)
+				if actual != expected {
+					matchAll = false
+				}
+				cr.SlotAnswers[expKey] = actual
+			}
+			cr.SlotAccurate = matchAll
+			if matchAll {
+				correctCount++
+			}
+		}
+
+		// 2. Run Generative if requested
+		if mode == "generative" || mode == "both" {
+			varParts := make([]string, 0, len(tc.Variables))
+			for k, v := range tc.Variables {
+				varParts = append(varParts, fmt.Sprintf("%s: %v", k, v))
+			}
+			prompt := fmt.Sprintf("Classify this data. Output strictly valid JSON object matching fields for this case.\n\nData: %s",
+				strings.Join(varParts, "\n"))
+
+			genModel := c.Model
+			if !strings.Contains(genModel, ":think=false") {
+				genModel = genModel + ":think=false"
+			}
+
+			chatResp, genStats, err := c.Complete(ctx, client.ChatCompletionRequest{
+				Model: genModel,
 				Messages: []client.ChatMessage{
 					{Role: "user", Content: prompt},
 				},
 				MaxTokens: 64,
+			})
+			if err == nil {
+				cr.GenWallTimeMs = float64(genStats.WallTime.Milliseconds())
+				cr.GenTokens = genStats.OutputTokens
+				if len(chatResp.Choices) > 0 {
+					cr.GenResponse = strings.TrimSpace(chatResp.Choices[0].Message.Content)
+					var testJSON map[string]interface{}
+					if json.Unmarshal([]byte(cr.GenResponse), &testJSON) == nil {
+						cr.GenValidJSON = true
+					}
+				}
 			}
-
-			chatResp, stats, err := c.Complete(ctx, req)
-			if err != nil {
-				fmt.Printf("Generative test failed: %v\n", err)
-				continue
-			}
-
-			content := ""
-			if len(chatResp.Choices) > 0 {
-				content = strings.TrimSpace(chatResp.Choices[0].Message.Content)
-			}
-			fmt.Printf("Response: %s\n", content)
-			fmt.Printf("Tokens: %d | Wall Time: %v\n", stats.OutputTokens, stats.WallTime.Round(time.Millisecond))
 		}
+
+		results = append(results, cr)
+
+		matchStr := "PASS"
+		if !cr.SlotAccurate {
+			matchStr = "FAIL"
+		}
+		fmt.Printf("%-8s | %-12s | %-12s | %-6s | %7d | %6.0fms | %6.0fms | %s\n",
+			cr.ID, cr.Domain, cr.Tier, matchStr, cr.SlotSamples, cr.SlotDenoiseMs, cr.SlotWallTimeMs, "OK")
+	}
+
+	// Calculate aggregates
+	var sumDenoise, sumSlotWall, sumGenWall float64
+	var sumGenTokens int
+	var multiReads, genValidCount int
+
+	for _, r := range results {
+		sumDenoise += r.SlotDenoiseMs
+		sumSlotWall += r.SlotWallTimeMs
+		if r.SlotExtended {
+			multiReads++
+		}
+		if mode == "generative" || mode == "both" {
+			sumGenWall += r.GenWallTimeMs
+			sumGenTokens += r.GenTokens
+			if r.GenValidJSON {
+				genValidCount++
+			}
+		}
+	}
+
+	n := float64(len(results))
+	report := BenchmarkReport{
+		Timestamp:      time.Now().UTC().Format(time.RFC3339),
+		TargetURL:      c.BaseURL,
+		TargetModel:    c.Model,
+		TotalCases:     len(results),
+		Mode:           mode,
+		SlotAvgDenoise: sumDenoise / n,
+		SlotAvgWall:    sumSlotWall / n,
+		SlotAccuracy:   float64(correctCount) / n * 100,
+		SlotMultiReads: multiReads,
+		Cases:          results,
+	}
+
+	if mode == "generative" || mode == "both" {
+		report.GenAvgWall = sumGenWall / n
+		report.GenAvgTokens = float64(sumGenTokens) / n
+		report.GenSyntaxRate = float64(genValidCount) / n * 100
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("  SUMMARY & ADVANTAGES OF DISCRETE DIFFUSION SLOT READOUT")
+	fmt.Println("  AGGREGATED BENCHMARK FINDINGS")
 	fmt.Println(strings.Repeat("=", 80))
-
-	var totalDenoise float64
-	var totalWall float64
-	var extendedCount int
-	for _, r := range results {
-		totalDenoise += r.Denoise
-		totalWall += r.WallTime.Seconds()
-		if r.Extended {
-			extendedCount++
+	if mode == "slot" || mode == "both" {
+		fmt.Printf("• Slot Readout Accuracy:        %.1f%% (%d of %d matched expected)\n", report.SlotAccuracy, correctCount, len(results))
+		fmt.Printf("• Average Model GPU Denoise:    %.1f ms (pure forward compute)\n", report.SlotAvgDenoise)
+		fmt.Printf("• Average End-to-End Wall Time: %.1f ms\n", report.SlotAvgWall)
+		fmt.Printf("• Adaptive Multi-Reads:         %d of %d triggered multi-sampling (ambiguity flag)\n", multiReads, len(results))
+	}
+	if mode == "generative" || mode == "both" {
+		fmt.Printf("• Generative Average Wall Time: %.1f ms\n", report.GenAvgWall)
+		fmt.Printf("• Generative Completion Tokens: %.1f tokens/req\n", report.GenAvgTokens)
+		fmt.Printf("• Generative Syntax Validity:   %.1f%% valid JSON\n", report.GenSyntaxRate)
+		if report.SlotAvgWall > 0 {
+			speedup := report.GenAvgWall / report.SlotAvgWall
+			fmt.Printf("• Slot Readout Speedup:         %.1fx faster end-to-end\n", speedup)
 		}
 	}
-
-	avgDenoise := totalDenoise / float64(len(results))
-	avgWall := totalWall / float64(len(results))
-
-	fmt.Printf("• Average Structured Denoise Time: %.1f ms per ticket (pure GPU forward)\n", avgDenoise)
-	fmt.Printf("• Average Total Request Time:      %.2f s (including prefill & transmission)\n", avgWall)
-	fmt.Printf("• Adaptive Multi-Read Triggered:   %d of %d tickets required multi-sampling\n", extendedCount, len(results))
-	fmt.Println("• Zero JSON parsing errors: Output language is mathematically bounded to the schema.")
 	fmt.Println(strings.Repeat("=", 80))
+
+	// Export structured report if requested
+	if benchOutput != "" {
+		reportBytes, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal benchmark report: %w", err)
+		}
+		if err := os.WriteFile(benchOutput, reportBytes, 0644); err != nil {
+			return fmt.Errorf("failed to write report to %s: %w", benchOutput, err)
+		}
+		fmt.Printf("\nStructured benchmark report written to: %s\n", benchOutput)
+	}
 
 	return nil
 }

@@ -37,11 +37,11 @@ spec:
           containerPort: 8080
         resources:
           limits:
-            cpu: "20"
-            memory: "80Gi"
+            cpu: "8"
+            memory: "32Gi"
             nvidia.com/gpu: "1"
         nodeSelector:
-          run.googleapis.com/accelerator: nvidia-rtx-pro-6000
+          run.googleapis.com/accelerator: nvidia-l4
         startupProbe:
           tcpSocket:
             port: 8080

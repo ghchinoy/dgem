@@ -41,6 +41,12 @@ export default defineConfig({
             { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
           ],
         },
+        {
+          label: 'Benchmarks & Evaluation',
+          items: [
+            { label: 'Evaluation Report (Metal vs. Cloud)', slug: 'benchmarks' },
+          ],
+        },
       ],
     }),
   ],

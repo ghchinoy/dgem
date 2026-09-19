@@ -142,6 +142,7 @@ make docs-build  # Build the Catppuccin Latte Starlight documentation site
 * **[User Guide](docs/user-guide.md)**: Full CLI reference, template authoring, interpreting `--stats`, and CI/CD integration.
 * **[Architecture: Discrete Diffusion vs. Autoregression](docs/architecture.md)**: Mechanical breakdown of 256-token canvas denoising, bidirectional slot readout, and terminology history.
 * **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Vertex AI, hosted vLLM clusters, and understanding discrete slot readout mechanics.
+* **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Empirical metrics comparing slot readout against generative autoregression on Apple Silicon Metal and Cloud Run L4.
 
 ---
 

@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
 REGION="${GCP_REGION:-us-central1}"
 SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-diffusiongemma-vllm}"
-GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-rtx-pro-6000}"
+GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}"
 IMAGE_TAG="gcr.io/${PROJECT_ID}/vllm-diffgemma:pr57250"
 MODEL_ID="nvidia/diffusiongemma-26B-A4B-it-NVFP4"
 
@@ -58,8 +58,8 @@ gcloud beta run deploy "$SERVICE_NAME" \
   --image "$IMAGE_TAG" \
   --execution-environment gen2 \
   --no-allow-unauthenticated \
-  --cpu 20 \
-  --memory 80Gi \
+  --cpu 8 \
+  --memory 32Gi \
   --gpu 1 \
   --gpu-type "$GPU_TYPE" \
   --no-gpu-zonal-redundancy \
