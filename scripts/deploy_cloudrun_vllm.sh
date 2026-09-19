@@ -17,7 +17,7 @@ PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true
 REGION="${GCP_REGION:-us-central1}"
 SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-diffusiongemma-vllm}"
 GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}"
-IMAGE_TAG="gcr.io/${PROJECT_ID}/vllm-diffgemma:pr57250-v3"
+IMAGE_TAG="gcr.io/${PROJECT_ID}/vllm-diffgemma:pr57250-v5"
 MODEL_ID="nvidia/diffusiongemma-26B-A4B-it-NVFP4"
 
 if [[ -z "$PROJECT_ID" ]]; then
