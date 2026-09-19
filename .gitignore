@@ -36,6 +36,8 @@ target/
 
 # Local configuration overrides
 .dgem.local.yaml
+.env
+.env.*
 
 # macOS system files
 .DS_Store
