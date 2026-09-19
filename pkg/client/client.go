@@ -16,6 +16,7 @@ type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	Model      string
+	AuthToken  string
 }
 
 // NewClient creates a new DiffGemma client.
@@ -36,6 +37,12 @@ func NewClient(baseURL, defaultModel string, timeout time.Duration) *Client {
 	}
 }
 
+// WithAuthToken sets the Authorization Bearer / IAM token.
+func (c *Client) WithAuthToken(token string) *Client {
+	c.AuthToken = strings.TrimSpace(token)
+	return c
+}
+
 // Complete executes an OpenAI-compatible chat completion.
 func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*ChatCompletionResponse, *RequestStats, error) {
 	if req.Model == "" {
@@ -53,6 +60,14 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 		return nil, nil, fmt.Errorf("failed to create http request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	if c.AuthToken != "" {
+		token := c.AuthToken
+		if !strings.HasPrefix(strings.ToLower(token), "bearer ") {
+			token = "Bearer " + token
+		}
+		httpReq.Header.Set("Authorization", token)
+	}
 
 	start := time.Now()
 	resp, err := c.HTTPClient.Do(httpReq)

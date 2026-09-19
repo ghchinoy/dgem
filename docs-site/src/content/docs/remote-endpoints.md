@@ -1,6 +1,6 @@
 ---
 title: Remote Endpoints & Cloud Deployment
-description: Guide for pointing dgem to hosted instances of DiffusionGemma on Google Cloud Vertex AI, remote GPU clusters, and custom containers.
+description: Guide for pointing dgem to hosted instances of DiffusionGemma on Google Cloud Run with GPU, Vertex AI, and remote clusters.
 ---
 
 This guide explains how to point `dgem` to hosted instances of **DiffusionGemma** (such as Google Cloud Vertex AI, remote GPU clusters, or private enterprise endpoints), details the mechanics of **discrete diffusion slot readout**, and compares cloud serving architectures.
@@ -92,7 +92,83 @@ Seeded Canvas:
 
 ---
 
-## 3. Targeting Google Cloud Vertex AI
+## 3. Deploying DiffusionGemma on Google Cloud Run with GPU
+
+While Google Cloud Vertex AI Model Garden hosts DiffusionGemma, its standard prebuilt containers do not yet expose the intermediate discrete diffusion slot-readout hooks.
+
+**Google Cloud Run with GPUs** provides the ideal serverless platform on Google Cloud: you retain full control over the container image, benefit from zero-to-N autoscaling, and have access to enterprise NVIDIA GPUs (`nvidia-rtx-pro-6000` with 48 GB VRAM, or `nvidia-l4` with 24 GB VRAM).
+
+### Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Google Cloud Run (Gen2)                         │
+│                                                                        │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │  Container: vllm-openai (Overlay with PR #57250)               │   │
+│   │  Entrypoint: vllm serve nvidia/diffusiongemma-26B-A4B-it-NVFP4  │   │
+│   │              --diffusion-config '{"canvas_length": 32}'        │   │
+│   └───────────────────────────────┬────────────────────────────────┘   │
+│                                   │                                    │
+│   ┌───────────────────────────────┴────────────────────────────────┐   │
+│   │  Hardware: 1x NVIDIA RTX Pro 6000 (48GB VRAM)                  │   │
+│   │  Storage: Optional GCS FUSE volume mount for <15s cold starts  │   │
+│   └────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │ HTTPS (IAM OIDC Token)
+                                    │
+                       Local CLI: dgem (on your Mac)
+```
+
+### Staging & Deploying Option A (vLLM with PR #57250)
+
+Because Matt Mastracci's PR #57250 changes are purely in Python (`vllm/model_executor/models/diffusion_gemma.py`, `vllm/v1/core/sched/diffusion_scheduler.py`), we can build directly on top of the official `vllm/vllm-openai:latest` base image without compiling CUDA C++ from source:
+
+1. **Dockerfile**: Available at `deploy/cloudrun/Dockerfile.vllm`.
+2. **Deploy with One Command**:
+   ```bash
+   # Deploy using the automated script:
+   ./scripts/deploy_cloudrun_vllm.sh
+   # Or via Makefile:
+   make cloudrun-deploy
+   ```
+
+### Connecting to Cloud Run with `dgem`
+
+Cloud Run services require IAM authentication by default. `dgem` supports two frictionless connection methods:
+
+#### Method 1: Automatic GCP Authentication (`--gcp-auth`)
+`dgem` can automatically invoke `gcloud auth print-identity-token` to obtain and refresh your IAM token:
+
+```bash
+./bin/dgem decide \
+  -u "https://diffusiongemma-vllm-xyz.a.run.app/v1" \
+  --gcp-auth \
+  -t templates/support_triage.json.tmpl \
+  -v 'ticket=Outage: production database connection refused' \
+  --stats
+```
+
+#### Method 2: Explicit Bearer Token (`--token` or `DGEM_TOKEN`)
+```bash
+export DGEM_URL="https://diffusiongemma-vllm-xyz.a.run.app/v1"
+export DGEM_TOKEN="$(gcloud auth print-identity-token)"
+
+./bin/dgem decide -t templates/support_triage.json.tmpl -v 'ticket=Outage' --stats
+```
+
+#### Method 3: Cloud Run Developer Proxy
+```bash
+# In terminal 1:
+gcloud run services proxy diffusiongemma-vllm --region us-central1 --port 8080
+
+# In terminal 2 (queries localhost:8080 directly without auth headers):
+./bin/dgem decide -t templates/support_triage.json.tmpl -v 'ticket=Outage' --stats
+```
+
+---
+
+## 4. Targeting Google Cloud Vertex AI
 
 Google Cloud hosts DiffusionGemma in [Vertex AI Model Garden](https://console.cloud.google.com/vertex-ai/publishers/google/model-garden/diffusiongemma).
 
@@ -132,11 +208,11 @@ To use `dgem` with Vertex AI:
    ```
 2. **Generative vs. Structured on Stock Vertex**:
    * **`dgem ask`** works immediately with any standard Vertex AI endpoint.
-   * **`dgem decide`** requires the serving engine in the container to support canvas pre-seeding (see Section 4).
+   * **`dgem decide`** requires the serving engine in the container to support canvas pre-seeding (see Section 5).
 
 ---
 
-## 4. Cloud Deployment Targets for Discrete Slot Readout
+## 5. Cloud Deployment Targets for Discrete Slot Readout
 
 To achieve sub-second single-pass slot readout on cloud infrastructure, the serving container must support canvas seeding. Three primary architectures enable this:
 
@@ -158,7 +234,7 @@ Deploy a lightweight FastAPI container using Hugging Face `transformers` (`Diffu
 
 ---
 
-## 5. Latency & Quality: Slot Readout vs. Generative JSON
+## 6. Latency & Quality: Slot Readout vs. Generative JSON
 
 A comparison of single-pass slot readout (Option B) vs. generative JSON prompting (Option D):
 
@@ -169,3 +245,53 @@ A comparison of single-pass slot readout (Option B) vs. generative JSON promptin
 | **Token / Cloud Cost** | **Zero completion tokens** | 32–80 completion tokens per ticket | **~79% cheaper GPU cost** |
 | **Syntactic Reliability** | **100% Schema-Guaranteed** | Vulnerable to syntax drift | Mathematically bounded |
 | **Uncertainty Calibration** | Calibrated entropy & empirical `stderr` | Uncalibrated (hallucinatory) | Native error bars |
+
+---
+
+## 7. Custom Logits Processors in Rust and Go
+
+### Rust (Inside the Model Engine)
+`diffgemma` implements slot scoring directly in Rust (`src/structured.rs`):
+
+```rust
+pub struct Slot {
+    pub pos: usize,          // Canvas position of the candidate token
+    pub label_ids: Vec<u32>, // Allowed token IDs (e.g. "yes", "no")
+}
+
+pub fn score_slot(logits: &[f32], slot: &Slot, vocab_size: usize) -> Vec<f32> {
+    // 1. Slice logits at the candidate slot position
+    let row = &logits[slot.pos * vocab_size .. (slot.pos + 1) * vocab_size];
+    
+    // 2. Isolate candidate token logits
+    let candidate_logits: Vec<f32> = slot.label_ids.iter().map(|&id| row[id as usize]).collect();
+    
+    // 3. Normalize via softmax over allowed tokens only
+    softmax(&candidate_logits)
+}
+```
+
+### Go (Proxy / Interposer Layer)
+In Go, an interposer or proxy can inspect raw logprobs returned by remote servers, re-normalize probabilities over allowed choices, and compute Shannon entropy:
+
+```go
+type LogitsFilter struct {
+    AllowedLabels map[string]struct{}
+}
+
+func (f *LogitsFilter) FilterAndNormalize(rawLogprobs map[string]float64) map[string]float64 {
+    // Filter only allowed labels and re-normalize softmax sum to 1.0
+    filtered := make(map[string]float64)
+    var sum float64
+    for label, prob := range rawLogprobs {
+        if _, ok := f.AllowedLabels[label]; ok {
+            filtered[label] = prob
+            sum += prob
+        }
+    }
+    for k := range filtered {
+        filtered[k] /= sum
+    }
+    return filtered
+}
+```

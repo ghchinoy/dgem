@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop bench install docs-build docs-dev
+.PHONY: help build run test fmt clean setup download serve stop bench install docs-build docs-dev cloudrun-deploy
 
 .DEFAULT_GOAL := help
 
@@ -53,6 +53,9 @@ docs-build: ## Build the Astro Starlight documentation site
 
 docs-dev: ## Launch local development server for the documentation site
 	pnpm run --dir docs-site dev
+
+cloudrun-deploy: ## Deploy vLLM with DiffusionGemma structured reads to Cloud Run with GPU
+	./scripts/deploy_cloudrun_vllm.sh
 
 install: ## Install dgem binary to GOBIN
 	go install -ldflags="$(LDFLAGS)" .

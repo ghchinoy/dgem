@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -17,6 +18,8 @@ var (
 	modelName string
 	timeout   time.Duration
 	showStats bool
+	authToken string
+	gcpAuth   bool
 )
 
 // RootCmd is the base command for dgem.
@@ -44,11 +47,15 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&modelName, "model", "m", "diffgemma-26b-a4b-it-q4", "Model ID to target")
 	RootCmd.PersistentFlags().DurationVar(&timeout, "timeout", 120*time.Second, "Client timeout")
 	RootCmd.PersistentFlags().BoolVarP(&showStats, "stats", "s", false, "Display execution timing, token breakdown, and inference telemetry")
+	RootCmd.PersistentFlags().StringVarP(&authToken, "token", "k", "", "Authorization Bearer token / API key")
+	RootCmd.PersistentFlags().BoolVar(&gcpAuth, "gcp-auth", false, "Automatically obtain GCP IAM identity token via gcloud auth print-identity-token")
 
 	viper.BindPFlag("url", RootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("model", RootCmd.PersistentFlags().Lookup("model"))
 	viper.BindPFlag("timeout", RootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("stats", RootCmd.PersistentFlags().Lookup("stats"))
+	viper.BindPFlag("token", RootCmd.PersistentFlags().Lookup("token"))
+	viper.BindPFlag("gcp_auth", RootCmd.PersistentFlags().Lookup("gcp-auth"))
 }
 
 func initConfig() {
@@ -74,7 +81,21 @@ func GetClient() *client.Client {
 	baseURL := viper.GetString("url")
 	model := viper.GetString("model")
 	to := viper.GetDuration("timeout")
-	return client.NewClient(baseURL, model, to)
+	token := viper.GetString("token")
+
+	if token == "" && viper.GetBool("gcp_auth") {
+		// Attempt to fetch identity token using gcloud CLI
+		out, err := exec.Command("gcloud", "auth", "print-identity-token").Output()
+		if err == nil {
+			token = strings.TrimSpace(string(out))
+		}
+	}
+
+	c := client.NewClient(baseURL, model, to)
+	if token != "" {
+		c.WithAuthToken(token)
+	}
+	return c
 }
 
 // PrintStats prints formatted telemetry from the request and response.

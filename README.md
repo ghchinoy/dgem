@@ -108,7 +108,9 @@ make setup       # Install diffgemma engine via cargo
 make download    # Download 4-bit model pack (~18.84 GiB)
 make serve       # Launch background diffgemma server (port 8080)
 make stop        # Stop background diffgemma server
-make bench       # Run the Python Jev vs autoregression benchmark
+make bench       # Run the Jev vs autoregression benchmark
+make cloudrun-deploy # Deploy vLLM with PR #57250 to Google Cloud Run (RTX Pro 6000 GPU)
+make docs-build  # Build the Catppuccin Latte Starlight documentation site
 ```
 
 ### Inspecting Templates
