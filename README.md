@@ -21,7 +21,7 @@ make build
 
 ## Usage
 
-### 1. Instant Structured Decisions (Jev-Style)
+### 1. Discrete Diffusion Slot Readout (Single-Pass Decisions)
 
 Evaluate customer tickets, code changes, or security alerts in a single ~880 ms forward pass without conversational text overhead:
 
@@ -90,16 +90,18 @@ Execute standard chat completions with optional thinking mode:
 
 ---
 
-## Architecture: Structured Decisions vs. Autoregressive Generation
+## Architecture: Discrete Diffusion Slot Readout vs. Autoregression
 
 DiffusionGemma operates on a **256-token canvas** with bidirectional attention. Instead of sequentially generating JSON token-by-token across hundreds of forward passes, `dgem` seeds the template structure and evaluates logits directly at token slots:
 
-| Metric | Jev-Style Structured Decision | Autoregressive Generative JSON | Advantage |
+| Metric | Discrete Diffusion Slot Readout | Autoregressive Generative JSON | Advantage |
 | :--- | :--- | :--- | :--- |
 | **Model Forward Pass** | **~885 ms** (1 step) | ~11,200 ms (32 tokens) | **~12.6× faster model compute** |
 | **End-to-End Latency** | **~1.97 s** | ~11.5 – 12.6 s | **~6× faster wall time** |
 | **Output Reliability** | **100% Schema-Guaranteed** | Vulnerable to syntax drift | Mathematically bounded |
 | **Uncertainty Quantification** | Calibrated entropy & empirical `stderr` | Uncalibrated generation | Native confidence metrics |
+
+> **Terminology & Context**: In community benchmarks (such as `open-jev` and vLLM PR #57250), this single-forward evaluation pattern was popularized under the moniker "Jev-style" following TypeSafe AI's commercial evaluations. The underlying technique is **discrete diffusion slot readout**—pre-seeding a bidirectional diffusion canvas with fixed syntax and evaluating intermediate logits at candidate slot coordinates.
 
 ### Question Types
 * **`boolean`** (formerly known as "noul"): Binary proposition (`yes` / `no`).
@@ -138,6 +140,7 @@ make docs-build  # Build the Catppuccin Latte Starlight documentation site
 
 * **[Setup & Metal Engine Guide](docs/setup.md)**: Hardware requirements, memory budgeting (`--ctx 32768`), Metal shader pipeline compilation, and serving.
 * **[User Guide](docs/user-guide.md)**: Full CLI reference, template authoring, interpreting `--stats`, and CI/CD integration.
+* **[Architecture: Discrete Diffusion vs. Autoregression](docs/architecture.md)**: Mechanical breakdown of 256-token canvas denoising, bidirectional slot readout, and terminology history.
 * **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Vertex AI, hosted vLLM clusters, and understanding discrete slot readout mechanics.
 
 ---

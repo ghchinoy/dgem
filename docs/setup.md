@@ -124,9 +124,9 @@ Expected response:
 
 ---
 
-## 6. Jev-Style Structured Decision Reading
+## 6. Discrete Diffusion Slot Readout (Single-Pass Decisions)
 
-A request containing a JSON question schema in the `system` role automatically triggers the structured-decision pathway. The user message provides the target state or text.
+A request containing a JSON question schema in the `system` role automatically triggers the discrete diffusion slot-readout pathway (informally termed "Jev-style" in early 2026 community benchmarks). The user message provides the target state or text.
 
 ### Supported Question Types
 

@@ -1,7 +1,7 @@
 # dgem User Guide
 
 `dgem` is the command-line companion and automation tool for **DiffusionGemma** on Apple Silicon. It connects to a local or remote `diffgemma` server and enables:
-1. **Jev-Style Structured Decisions**: Bounded, schema-governed classification and evaluation executed in a single forward pass (~880 ms) without generative text overhead.
+1. **Discrete Diffusion Slot Readout (Single-Pass Decisions)**: Bounded, schema-governed classification and evaluation executed in a single forward pass (~880 ms) without generative text overhead (popularized in benchmarks as "Jev-style").
 2. **Generative Prompt Execution**: Natural-language chat and reasoning with thinking mode control.
 3. **Template Management**: Authoring and rendering dynamic Go template definitions with variable substitution.
 4. **Execution Telemetry (`--stats`)**: Detailed inspection of Metal GPU prefill, denoise times, KV cache reuse %, entropy, and error bars.

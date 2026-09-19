@@ -8,7 +8,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'DiffusionGemma',
-      description: 'Single-Pass Discrete Block Diffusion & Jev Decisions on Apple Silicon',
+      description: 'Single-Pass Discrete Block Diffusion & Slot Readout on Apple Silicon',
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/ghchinoy/diffusiongemma' },
       ],

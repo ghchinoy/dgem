@@ -17,9 +17,9 @@ var (
 
 var benchCmd = &cobra.Command{
 	Use:   "bench",
-	Short: "Run the Jev-style structured reads vs autoregression benchmark",
-	Long: `bench runs an empirical benchmark comparing single-pass structured decisions
-against traditional autoregressive text generation on Apple Silicon Metal.`,
+	Short: "Run the discrete diffusion slot readout vs autoregression benchmark",
+	Long: `bench runs an empirical benchmark comparing single-pass discrete diffusion
+slot readout decisions against traditional autoregressive text generation on Apple Silicon Metal.`,
 	RunE: runBench,
 }
 
@@ -101,7 +101,7 @@ func runBench(cmd *cobra.Command, args []string) error {
 	c := GetClient()
 
 	fmt.Println("================================================================================")
-	fmt.Println("  DIFFUSIONGEMMA: JEV STRUCTURED READS VS AUTOREGRESSIVE CLASSIFICATION")
+	fmt.Println("  DIFFUSIONGEMMA: DISCRETE DIFFUSION SLOT READOUT VS AUTOREGRESSIVE")
 	fmt.Println("================================================================================")
 	fmt.Printf("Target Server: %s\n\n", c.BaseURL)
 
@@ -198,7 +198,7 @@ func runBench(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("  SUMMARY & ARCHITECTURAL ADVANTAGES OF JEV-STYLE READS")
+	fmt.Println("  SUMMARY & ADVANTAGES OF DISCRETE DIFFUSION SLOT READOUT")
 	fmt.Println(strings.Repeat("=", 80))
 
 	var totalDenoise float64

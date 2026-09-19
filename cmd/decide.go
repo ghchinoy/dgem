@@ -25,9 +25,10 @@ var (
 
 var decideCmd = &cobra.Command{
 	Use:   "decide",
-	Short: "Execute a Jev-style structured decision using single-forward slot reading",
+	Short: "Execute a discrete diffusion slot readout decision using single-forward evaluation",
 	Long: `decide evaluates propositions, categorical choices, and ordered scales
-in a single forward pass without autoregressive text generation overhead.
+via discrete diffusion slot readout in a single forward pass without autoregressive
+text generation overhead (popularized by TypeSafe AI's Jev evaluations and vLLM PR #57250).
 You can specify a template definition file (-t), key-value pairs (-v key=val),
 or raw schema/state payloads.`,
 	RunE: runDecide,

@@ -27,9 +27,9 @@ var RootCmd = &cobra.Command{
 	Use:   "dgem",
 	Short: "dgem is a CLI assistant and evaluation tool for DiffusionGemma",
 	Long: `dgem interacts with local or remote DiffusionGemma inference engines.
-It provides high-performance Jev-style structured decisions (slot-evaluated
-in a single forward pass without conversational text overhead), generative prompt
-execution, Go template rendering, and comprehensive request/response telemetry.`,
+It provides high-performance discrete diffusion slot readout decisions (slot-evaluated
+in a single forward pass without conversational text overhead, also known as Jev-style),
+generative prompt execution, Go template rendering, and comprehensive request/response telemetry.`,
 }
 
 // Execute runs the root command.

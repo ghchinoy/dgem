@@ -1,6 +1,7 @@
----
-title: Discrete Diffusion vs. Autoregression
-description: Theoretical and mechanical breakdown of DiffusionGemma's discrete block diffusion canvas compared to sequential autoregression.
+# Discrete Diffusion vs. Autoregression
+
+Theoretical and mechanical breakdown of DiffusionGemma's discrete block diffusion canvas compared to sequential autoregression.
+
 ---
 
 ## 1. The Bottleneck of Autoregressive LLMs
