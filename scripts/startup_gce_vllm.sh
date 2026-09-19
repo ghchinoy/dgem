@@ -61,6 +61,7 @@ Environment="HF_TOKEN=$HF_TOKEN"
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=$VLLM_BIN serve nvidia/diffusiongemma-26B-A4B-it-NVFP4 \
   --diffusion-config '{"canvas_length":32}' \
+  --max-model-len 32768 \
   --max-logprobs 32 \
   --enable-prefix-caching \
   --attention-backend TRITON_ATTN \
