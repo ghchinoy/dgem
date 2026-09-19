@@ -63,6 +63,8 @@ ExecStart=$VLLM_BIN serve nvidia/diffusiongemma-26B-A4B-it-NVFP4 \
   --diffusion-config '{"canvas_length":32}' \
   --max-logprobs 32 \
   --enable-prefix-caching \
+  --attention-backend TRITON_ATTN \
+  --enforce-eager \
   --port 8080 \
   --host 0.0.0.0
 Restart=on-failure
