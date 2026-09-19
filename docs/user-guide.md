@@ -43,6 +43,8 @@ Any flag can be configured using the `DGEM_` prefix:
 export DGEM_URL="http://127.0.0.1:8080/v1"
 export DGEM_MODEL="diffgemma-26b-a4b-it-q4"
 export DGEM_STATS="true"
+export DGEM_TOKEN="Bearer <your-token>"
+export DGEM_GCP_AUTH="true"
 ```
 
 ### Global CLI Flags
@@ -50,9 +52,11 @@ export DGEM_STATS="true"
 * `--model`, `-m`: Model identifier (default: `diffgemma-26b-a4b-it-q4`).
 * `--timeout`: HTTP timeout duration (default: `120s`).
 * `--stats`, `-s`: Print comprehensive timing, token reuse, and entropy stats.
+* `-k`, `--token`: Authorization Bearer token or API key for secured endpoints.
+* `--gcp-auth`: Automatically obtain and inject a Google Cloud IAM identity token via `gcloud auth print-identity-token`.
 * `--config`: Path to custom config file.
 
-> **Remote & Cloud Endpoints**: To connect `dgem` to remote hosts such as Google Cloud Vertex AI, hosted vLLM clusters, or private enterprise endpoints, see the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md).
+> **Remote & Cloud Endpoints**: To connect `dgem` to remote hosts such as Google Cloud Run with GPU, Vertex AI, or private clusters, see the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md).
 
 ---
 
@@ -85,6 +89,16 @@ QUESTION         | TYPE       | VALUE / CHOICE       | CONFIDENCE | STDERR     |
 sentiment        | score      | calm                 | 100.0%     | ±0.0000    | 1.00      
 team             | choice     | support              | 100.0%     | ±0.0000    | 1.00      
 urgent           | boolean    | no                   | 100.0%     | ±0.0000    | 1.00      
+```
+
+#### Example: Querying a Hosted Cloud Run Endpoint with IAM Auth
+```bash
+./bin/dgem decide \
+  -u "https://diffusiongemma-vllm-xyz.a.run.app/v1" \
+  --gcp-auth \
+  -t templates/support_triage.json.tmpl \
+  -v 'ticket=Emergency: production database cluster down!' \
+  --stats
 ```
 
 #### Example: Raw JSON Output

@@ -120,6 +120,8 @@ Expected response:
 }
 ```
 
+> **Cloud Deployment**: If you want to host DiffusionGemma on Google Cloud Run with an NVIDIA RTX Pro 6000 or L4 GPU instead of running locally, see the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md) or run `make cloudrun-deploy`.
+
 ---
 
 ## 6. Jev-Style Structured Decision Reading
@@ -206,4 +208,7 @@ make build
 # Run the comparative benchmark
 ./bin/dgem bench
 # Or: make bench
+
+# Deploy to Google Cloud Run with GPU
+make cloudrun-deploy
 ```

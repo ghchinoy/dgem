@@ -75,6 +75,19 @@ Execute standard chat completions with optional thinking mode:
 ./bin/dgem ask "Explain the core mechanics of discrete block diffusion in two sentences."
 ```
 
+### 3. Querying Hosted Google Cloud Run Endpoints
+
+`dgem` seamlessly routes to remote Cloud Run GPU endpoints using automatic IAM authentication:
+
+```bash
+./bin/dgem decide \
+  -u "https://diffusiongemma-vllm-xyz.a.run.app/v1" \
+  --gcp-auth \
+  -t templates/support_triage.json.tmpl \
+  -v 'ticket=Outage: production database cluster unreachable' \
+  --stats
+```
+
 ---
 
 ## Architecture: Structured Decisions vs. Autoregressive Generation
