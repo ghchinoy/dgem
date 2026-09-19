@@ -16,6 +16,7 @@ var (
 	askVars      []string
 	askMaxTokens int
 	askThink     bool
+	askImages    []string
 )
 
 var askCmd = &cobra.Command{
@@ -32,6 +33,7 @@ func init() {
 	askCmd.Flags().StringArrayVarP(&askVars, "var", "v", nil, "Template variables in key=value format")
 	askCmd.Flags().IntVar(&askMaxTokens, "max-tokens", 256, "Maximum tokens to generate")
 	askCmd.Flags().BoolVar(&askThink, "think", false, "Enable thinking mode (<|think|>)")
+	askCmd.Flags().StringArrayVarP(&askImages, "image", "I", nil, "Attach local image file path or remote image URL (can be specified multiple times)")
 
 	RootCmd.AddCommand(askCmd)
 }
@@ -71,10 +73,15 @@ func runAsk(cmd *cobra.Command, args []string) error {
 		targetModel = targetModel + ":think"
 	}
 
+	userContent, err := client.BuildMultimodalContent(promptText, askImages)
+	if err != nil {
+		return fmt.Errorf("failed to process multimodal content: %w", err)
+	}
+
 	req := client.ChatCompletionRequest{
 		Model: targetModel,
 		Messages: []client.ChatMessage{
-			{Role: "user", Content: promptText},
+			{Role: "user", Content: userContent},
 		},
 		MaxTokens: askMaxTokens,
 	}

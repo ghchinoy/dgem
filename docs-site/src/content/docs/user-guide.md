@@ -62,6 +62,7 @@ dgem decide [flags]
 * `-v`, `--var stringArray`: Template variables in `key=value` format (can be specified multiple times).
 * `-d`, `--data string`: Path to a JSON file containing variables.
 * `-f`, `--format string`: Output format: `table` (default) or `json`.
+* `-I`, `--image stringArray`: Attach local image file path or remote image URL (can be specified multiple times for frame sequences).
 * `--schema string`: Path to a raw JSON schema file (skips template engine).
 * `--state string`: Raw JSON state string or file path.
 
@@ -86,6 +87,22 @@ urgent           | boolean    | no                   | 100.0%     | ±0.0000    
   --gcp-auth \
   -t templates/support_triage.json.tmpl \
   -v 'ticket=Emergency: production database cluster down!' \
+  --stats
+```
+
+#### Example: Multimodal Visual Inspection (`--image` / `-I`)
+```bash
+# Attach local image file (auto-encoded to base64 data URI)
+./bin/dgem decide -t templates/multimodal/ui_design_review.json.tmpl \
+  -I fixtures/ui_component.svg \
+  -v 'component=CheckoutCard' \
+  --stats
+
+# Attach remote image URL or sequential video frames
+./bin/dgem decide -t templates/multimodal/workplace_hazard_video.json.tmpl \
+  -I "https://example.com/dock_frame_01.jpg" \
+  -I "https://example.com/dock_frame_02.jpg" \
+  -v 'zone=Dock-Door-12' \
   --stats
 ```
 
@@ -139,6 +156,7 @@ dgem ask [PROMPT] [flags]
 #### Flags
 * `-t`, `--template string`: Path to a text prompt template file (`.txt.tmpl`).
 * `-v`, `--var stringArray`: Template variables in `key=value` format.
+* `-I`, `--image stringArray`: Attach local image file path or remote image URL.
 * `--max-tokens int`: Maximum tokens to generate (default: `256`).
 * `--think`: Enable thinking mode (`<|think|>`) to output internal deliberative reasoning.
 

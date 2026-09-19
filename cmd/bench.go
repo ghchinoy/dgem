@@ -291,7 +291,7 @@ func runBench(cmd *cobra.Command, args []string) error {
 				cr.GenWallTimeMs = float64(genStats.WallTime.Milliseconds())
 				cr.GenTokens = genStats.OutputTokens
 				if len(chatResp.Choices) > 0 {
-					cr.GenResponse = strings.TrimSpace(chatResp.Choices[0].Message.Content)
+					cr.GenResponse = strings.TrimSpace(chatResp.Choices[0].Message.RawContent())
 					var testJSON map[string]interface{}
 					if json.Unmarshal([]byte(cr.GenResponse), &testJSON) == nil {
 						cr.GenValidJSON = true

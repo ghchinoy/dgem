@@ -175,7 +175,53 @@ Use discrete slot readout to grade model outputs against structured evaluation r
 
 ---
 
-## 6. Architecture Decision Matrix
+## 6. Multimodal Visual, Video & Audio Assessment Patterns
+
+DiffusionGemma natively incorporates a ~550M parameter **SigLIP vision tower**, allowing visual inputs (single images, documents, and sequential video frames) to be prefilled directly into the KV cache.
+
+When combined with discrete diffusion slot readout, multimodal queries bypass the slow process of describing pictures in text and instead perform **instantaneous visual judgment**:
+
+```
+[Input Image / Frame Sequence] ──► SigLIP Vision Tower ──► Visual Tokens in KV Cache
+                                                                   │
+                                                                   ▼
+[Pre-Seeded Canvas: "defect: @ | severity: @"] ◄── 1 Denoise Step (~400-800 ms)
+                                                                   │
+                                                                   ▼
+                                                 Output: [solder_bridge, critical]
+```
+
+### Multimodal Best Practices
+1. **Modality Order**: Always place image parts **before** text prompts in the input array.
+2. **Visual Token Budgets**: DiffusionGemma supports variable resolution by setting token budgets (**70, 140, 280, 560, or 1120 tokens**). Use lower budgets (70–140) for rapid video frame triage, and higher budgets (560–1120) for small defect inspection or dense document OCR.
+3. **Sequential Video Frames**: Sample video frames at 1 fps (up to 60 frames) and supply them as a sequence of image parts.
+
+### Production Multimodal Templates (`templates/multimodal/`)
+* **Industrial AOI**: `templates/multimodal/pcb_defect_triage.json.tmpl` (solder bridge, tombstoning, missing component).
+* **Fintech & KYC**: `templates/multimodal/kyc_document_audit.json.tmpl` (legibility, document type, tampering detection).
+* **OSHA & Workplace Safety**: `templates/multimodal/workplace_hazard_video.json.tmpl` (PPE compliance, forklift pedestrian proximity, slip hazards).
+* **Frontend Design Systems**: `templates/multimodal/ui_design_review.json.tmpl` (WCAG contrast compliance, visual hierarchy, information density).
+* **Contact Center QA**: `templates/multimodal/call_quality_audio.json.tmpl` (acoustic tags, disclosure compliance, agent empathy, customer sentiment).
+
+### Running Multimodal Queries with `dgem`
+```bash
+# Attach local image file (auto-encoded to base64 data URI):
+./bin/dgem decide -t templates/multimodal/ui_design_review.json.tmpl \
+  -I fixtures/ui_component.svg \
+  -v 'component=CheckoutCard' \
+  --stats
+
+# Attach multiple video frames:
+./bin/dgem decide -t templates/multimodal/workplace_hazard_video.json.tmpl \
+  -I fixtures/pcb_board.svg \
+  -I fixtures/id_card.svg \
+  -v 'zone=Dock-12' \
+  --stats
+```
+
+---
+
+## 7. Architecture Decision Matrix
 
 Use this matrix to determine whether **Discrete Diffusion Slot Readout** or **Generative Autoregression** is the right tool:
 

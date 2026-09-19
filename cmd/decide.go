@@ -21,6 +21,7 @@ var (
 	decideFormat   string
 	decideSchema   string
 	decideState    string
+	decideImages   []string
 )
 
 var decideCmd = &cobra.Command{
@@ -41,6 +42,7 @@ func init() {
 	decideCmd.Flags().StringVarP(&decideFormat, "format", "f", "table", "Output format: 'table' or 'json'")
 	decideCmd.Flags().StringVar(&decideSchema, "schema", "", "Raw JSON schema file path (skips template engine)")
 	decideCmd.Flags().StringVar(&decideState, "state", "", "Raw JSON state string or file path")
+	decideCmd.Flags().StringArrayVarP(&decideImages, "image", "I", nil, "Attach local image file path or remote image URL (can be specified multiple times)")
 
 	RootCmd.AddCommand(decideCmd)
 }
@@ -129,7 +131,7 @@ func runDecide(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify either --template (-t) or --schema")
 	}
 
-	resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
+	resp, stats, err := c.Decide(ctx, schemaContent, stateContent, decideImages...)
 	if err != nil {
 		return fmt.Errorf("decision query failed: %w", err)
 	}

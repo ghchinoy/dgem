@@ -1,7 +1,13 @@
 package client
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -15,8 +21,20 @@ type ChatCompletionRequest struct {
 
 // ChatMessage represents a single chat turn.
 type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    string      `json:"role"`
+	Content interface{} `json:"content"`
+}
+
+// ContentPart represents an element in a multimodal content array.
+type ContentPart struct {
+	Type     string        `json:"type"`
+	Text     string        `json:"text,omitempty"`
+	ImageURL *ImageURLPart `json:"image_url,omitempty"`
+}
+
+// ImageURLPart holds an image URL or base64 data URI.
+type ImageURLPart struct {
+	URL string `json:"url"`
 }
 
 // ChatCompletionResponse is the standard OpenAI-compatible response.
@@ -160,4 +178,83 @@ func ParseStructuredContent(content string) (*StructuredDecisionResponse, error)
 		return nil, err
 	}
 	return &structured, nil
+}
+
+// RawContent returns the content as a string regardless of whether it was deserialized as string or map.
+func (m ChatMessage) RawContent() string {
+	if s, ok := m.Content.(string); ok {
+		return s
+	}
+	b, _ := json.Marshal(m.Content)
+	return string(b)
+}
+
+// BuildMultimodalContent formats user message content with optional image parts.
+// If images are provided, it encodes local files to base64 data URIs and places
+// image parts BEFORE the text content, conforming to DiffusionGemma best practices.
+func BuildMultimodalContent(textContent string, imageInputs []string) (interface{}, error) {
+	if len(imageInputs) == 0 {
+		return textContent, nil
+	}
+
+	var parts []ContentPart
+
+	for _, img := range imageInputs {
+		img = strings.TrimSpace(img)
+		if img == "" {
+			continue
+		}
+
+		var imageURI string
+		if strings.HasPrefix(img, "http://") || strings.HasPrefix(img, "https://") || strings.HasPrefix(img, "data:") {
+			imageURI = img
+		} else {
+			// Read local file
+			fileData, err := os.ReadFile(img)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read local image file %s: %w", img, err)
+			}
+
+			mimeType := detectImageMime(img, fileData)
+			encoded := base64.StdEncoding.EncodeToString(fileData)
+			imageURI = fmt.Sprintf("data:%s;base64,%s", mimeType, encoded)
+		}
+
+		parts = append(parts, ContentPart{
+			Type:     "image_url",
+			ImageURL: &ImageURLPart{URL: imageURI},
+		})
+	}
+
+	// Place text content after images
+	if textContent != "" {
+		parts = append(parts, ContentPart{
+			Type: "text",
+			Text: textContent,
+		})
+	}
+
+	return parts, nil
+}
+
+func detectImageMime(path string, data []byte) string {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".webp":
+		return "image/webp"
+	case ".gif":
+		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	default:
+		contentType := http.DetectContentType(data)
+		if strings.HasPrefix(contentType, "image/") {
+			return contentType
+		}
+		return "image/jpeg"
+	}
 }

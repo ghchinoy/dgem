@@ -88,6 +88,17 @@ Execute standard chat completions with optional thinking mode:
   --stats
 ```
 
+### 4. Multimodal Visual Assessment (`--image` / `-I`)
+
+Attach local image paths (automatically base64 encoded) or remote URLs:
+
+```bash
+./bin/dgem decide -t templates/multimodal/ui_design_review.json.tmpl \
+  -I fixtures/ui_component.svg \
+  -v 'component=CheckoutCard' \
+  --stats
+```
+
 ---
 
 ## Architecture: Discrete Diffusion Slot Readout vs. Autoregression

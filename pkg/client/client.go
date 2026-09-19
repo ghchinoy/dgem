@@ -102,7 +102,7 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 
 	// If the response contains structured diagnostics, extract timing telemetry
 	if len(chatResp.Choices) > 0 {
-		content := chatResp.Choices[0].Message.Content
+		content := chatResp.Choices[0].Message.RawContent()
 		if structured, err := ParseStructuredContent(content); err == nil && structured.Diagnostics.Steps > 0 {
 			stats.Diagnostics = &structured.Diagnostics
 			stats.PrefillMs = structured.Diagnostics.Timing.PrefillMs
@@ -117,12 +117,17 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 	return &chatResp, stats, nil
 }
 
-// Decide executes a Jev-style structured decision query.
-func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent string) (*StructuredDecisionResponse, *RequestStats, error) {
+// Decide executes a discrete diffusion slot readout decision query with optional multimodal images.
+func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent string, images ...string) (*StructuredDecisionResponse, *RequestStats, error) {
+	userPayload, err := BuildMultimodalContent(userStateContent, images)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to process multimodal content: %w", err)
+	}
+
 	req := ChatCompletionRequest{
 		Messages: []ChatMessage{
 			{Role: "system", Content: schemaContent},
-			{Role: "user", Content: userStateContent},
+			{Role: "user", Content: userPayload},
 		},
 	}
 
@@ -135,9 +140,10 @@ func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent str
 		return nil, stats, fmt.Errorf("no response choices returned by model")
 	}
 
-	structured, err := ParseStructuredContent(chatResp.Choices[0].Message.Content)
+	rawText := chatResp.Choices[0].Message.RawContent()
+	structured, err := ParseStructuredContent(rawText)
 	if err != nil {
-		return nil, stats, fmt.Errorf("failed to parse structured decision output: %w (raw content: %s)", err, chatResp.Choices[0].Message.Content)
+		return nil, stats, fmt.Errorf("failed to parse structured decision output: %w (raw content: %s)", err, rawText)
 	}
 
 	return structured, stats, nil

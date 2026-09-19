@@ -1,6 +1,9 @@
 package client
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -75,5 +78,51 @@ func TestParseStructuredContent(t *testing.T) {
 
 	if parsed.Diagnostics.Timing.DenoiseMs != 850.5 {
 		t.Errorf("expected DenoiseMs 850.5, got %f", parsed.Diagnostics.Timing.DenoiseMs)
+	}
+}
+
+func TestBuildMultimodalContent(t *testing.T) {
+	// Case 1: No images -> returns pure text string
+	textOnly, err := BuildMultimodalContent("plain text", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s, ok := textOnly.(string); !ok || s != "plain text" {
+		t.Errorf("expected plain text string, got %v", textOnly)
+	}
+
+	// Case 2: Remote URL -> places image first, text second
+	urlOutput, err := BuildMultimodalContent("query text", []string{"https://example.com/test.jpg"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	parts, ok := urlOutput.([]ContentPart)
+	if !ok || len(parts) != 2 {
+		t.Fatalf("expected 2 content parts, got %v", urlOutput)
+	}
+	if parts[0].Type != "image_url" || parts[0].ImageURL.URL != "https://example.com/test.jpg" {
+		t.Errorf("expected first part to be image_url, got %+v", parts[0])
+	}
+	if parts[1].Type != "text" || parts[1].Text != "query text" {
+		t.Errorf("expected second part to be text, got %+v", parts[1])
+	}
+
+	// Case 3: Local file -> reads and encodes as base64 data URI
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "sample.png")
+	if err := os.WriteFile(tempFile, []byte("fake-png-content"), 0644); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	localOutput, err := BuildMultimodalContent("inspect image", []string{tempFile})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	localParts, ok := localOutput.([]ContentPart)
+	if !ok || len(localParts) != 2 {
+		t.Fatalf("expected 2 parts, got %v", localOutput)
+	}
+	if !strings.HasPrefix(localParts[0].ImageURL.URL, "data:image/png;base64,") {
+		t.Errorf("expected data:image/png;base64 prefix, got %q", localParts[0].ImageURL.URL)
 	}
 }
