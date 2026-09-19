@@ -1,0 +1,42 @@
+# Binaries and build artifacts
+bin/
+dgem
+*.test
+*.out
+coverage.out
+
+# Model weights and download artifacts (~19+ GiB)
+model/
+*.dgq.bin
+*.dgq.bin.*
+*.part*
+*.stage
+*.tmp
+
+# Server logs and runtime state
+server.log
+*.log
+diffgemma.pid
+
+# Scratch and exploratory scripts
+scratch/
+
+# Python cache (for benchmark scripts)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Rust/Cargo artifacts (if building diffgemma locally)
+target/
+
+# Local configuration overrides
+.dgem.local.yaml
+
+# macOS system files
+.DS_Store
+._*
+
+# Serena / IDE metadata
+.serena/
+.vscode/
+.idea/
