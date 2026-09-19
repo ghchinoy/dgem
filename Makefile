@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop bench bench-ecotone install docs-build docs-dev cloudrun-deploy
+.PHONY: help build run test fmt clean setup download serve stop bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown
 
 .DEFAULT_GOAL := help
 
@@ -59,6 +59,12 @@ docs-dev: ## Launch local development server for the documentation site
 
 cloudrun-deploy: ## Deploy vLLM with DiffusionGemma structured reads to Cloud Run with GPU
 	./scripts/deploy_cloudrun_vllm.sh
+
+gce-deploy: ## Deploy vLLM with DiffusionGemma structured reads to GCE with L4 GPU
+	./scripts/deploy_gce_vllm.sh
+
+gce-teardown: ## Delete GCE GPU benchmark instance and firewall to eliminate idle cost
+	./scripts/teardown_gce_vllm.sh
 
 install: ## Install dgem binary to GOBIN
 	go install -ldflags="$(LDFLAGS)" .
