@@ -1,0 +1,58 @@
+---
+title: DiffusionGemma on Apple Silicon
+description: High-performance discrete block diffusion and Jev-style structured decisions on Apple Silicon Metal.
+template: splash
+hero:
+  tagline: Single-pass structured decisions (~880 ms) and discrete text diffusion running locally on Apple Silicon Metal.
+  image:
+    file: ../../assets/hero.svg
+  actions:
+    - text: Setup Guide
+      link: /diffusiongemma/setup/
+      icon: right-arrow
+      variant: primary
+    - text: CLI User Guide
+      link: /diffusiongemma/user-guide/
+      icon: document
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/ghchinoy/diffusiongemma
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why DiffusionGemma?
+
+<CardGrid stagger>
+  <Card title="⚡️ Sub-Second Structured Decisions" icon="rocket">
+    Evaluate classification, triage, and ranking schemas in a single forward pass (~880 ms) without generating sequential text tokens.
+  </Card>
+  <Card title="🍏 Native Metal Acceleration" icon="apple">
+    Runs on Apple Silicon using a low-dependency pure Rust + Metal kernel engine (`diffgemma`), utilizing unified memory efficiently.
+  </Card>
+  <Card title="📊 Calibrated Uncertainty" icon="random">
+    Provides empirical standard error (`stderr`), entropy in nats, and consensus agreement across multi-seed noise draws.
+  </Card>
+  <Card title="🛠️ Go CLI & Automation ('dgem')" icon="laptop">
+    Feature-complete Go assistant tool (`dgem`) with Go template definition files, Viper configuration, and `--stats` telemetry.
+  </Card>
+</CardGrid>
+
+---
+
+## Quickstart
+
+```bash
+# 1. Build the dgem CLI
+make build
+
+# 2. Start the local Metal server (port 8080)
+make serve
+
+# 3. Execute a structured triage decision in ~880 ms
+./bin/dgem decide -t templates/support_triage.json.tmpl \
+  -v 'ticket=Emergency: database returned 500 across all cluster nodes!' \
+  --stats
+```

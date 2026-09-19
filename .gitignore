@@ -26,6 +26,11 @@ __pycache__/
 *.py[cod]
 .venv/
 
+# Documentation site artifacts
+docs-site/node_modules/
+docs-site/dist/
+docs-site/.astro/
+
 # Rust/Cargo artifacts (if building diffgemma locally)
 target/
 

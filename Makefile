@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop bench install
+.PHONY: help build run test fmt clean setup download serve stop bench install docs-build docs-dev
 
 .DEFAULT_GOAL := help
 
@@ -47,6 +47,12 @@ stop: ## Stop the background diffgemma server
 
 bench: build ## Run the local Jev vs autoregressive benchmark suite
 	./bin/dgem bench
+
+docs-build: ## Build the Astro Starlight documentation site
+	pnpm run --dir docs-site build
+
+docs-dev: ## Launch local development server for the documentation site
+	pnpm run --dir docs-site dev
 
 install: ## Install dgem binary to GOBIN
 	go install -ldflags="$(LDFLAGS)" .
