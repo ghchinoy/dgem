@@ -33,11 +33,10 @@ echo "==========================================================================
 
 echo ""
 echo "==> Step 1: Submitting Cloud Build for vLLM overlay container..."
-gcloud builds submit \
+gcloud builds submit deploy/cloudrun \
   --project "$PROJECT_ID" \
   --tag "$IMAGE_TAG" \
-  -f deploy/cloudrun/Dockerfile.vllm \
-  deploy/cloudrun
+  --machine-type=e2-highcpu-8
 
 echo ""
 echo "==> Step 2: Deploying container to Cloud Run with GPU..."
