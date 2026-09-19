@@ -36,6 +36,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Use Cases & Patterns',
+          items: [
+            { label: 'Real-World Applications', slug: 'applications' },
+          ],
+        },
+        {
           label: 'Deployment & Cloud',
           items: [
             { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
