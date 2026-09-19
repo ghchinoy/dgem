@@ -17,7 +17,7 @@ PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true
 REGION="${GCP_REGION:-us-central1}"
 SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-diffusiongemma-vllm}"
 GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}"
-IMAGE_TAG="gcr.io/${PROJECT_ID}/vllm-diffgemma:pr57250-v2"
+IMAGE_TAG="gcr.io/${PROJECT_ID}/vllm-diffgemma:pr57250-v3"
 MODEL_ID="nvidia/diffusiongemma-26B-A4B-it-NVFP4"
 
 if [[ -z "$PROJECT_ID" ]]; then
@@ -50,7 +50,8 @@ else
   gcloud builds submit deploy/cloudrun \
     --project "$PROJECT_ID" \
     --tag "$IMAGE_TAG" \
-    --machine-type=e2-highcpu-8
+    --machine-type=e2-highcpu-8 \
+    --suppress-logs
 fi
 
 echo ""
