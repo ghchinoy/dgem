@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop bench install docs-build docs-dev cloudrun-deploy
+.PHONY: help build run test fmt clean setup download serve stop bench bench-ecotone install docs-build docs-dev cloudrun-deploy
 
 .DEFAULT_GOAL := help
 
@@ -47,6 +47,9 @@ stop: ## Stop the background diffgemma server
 
 bench: build ## Run the local Jev vs autoregressive benchmark suite
 	./bin/dgem bench
+
+bench-ecotone: build ## Run Ecotone (Sparrowhawk WFST) vs DiffusionGemma semiotics benchmark
+	./bin/dgem bench-ecotone
 
 docs-build: ## Build the Astro Starlight documentation site
 	pnpm run --dir docs-site build

@@ -15,6 +15,7 @@
    - [`dgem decide`](#dgem-decide)
    - [`dgem ask`](#dgem-ask)
    - [`dgem bench`](#dgem-bench)
+   - [`dgem bench-ecotone`](#dgem-bench-ecotone)
    - [`dgem template`](#dgem-template)
 3. [Understanding the Question Types](#3-understanding-the-question-types)
 4. [Interpreting `--stats` Telemetry](#4-interpreting---stats-telemetry)
@@ -221,6 +222,26 @@ Borderline Feature Request   | support      | no       | 100.0% |       1 |    8
 • Adaptive Multi-Read Triggered:   2 of 5 tickets required multi-sampling
 • Zero JSON parsing errors: Output language is mathematically bounded to the schema.
 ================================================================================
+```
+
+---
+
+### `dgem bench-ecotone`
+Runs the head-to-head text normalization semiotics evaluation comparing DiffusionGemma slot readout against Ecotone (Sparrowhawk WFST).
+
+```bash
+dgem bench-ecotone [flags]
+```
+
+#### Flags
+* `-c`, `--corpus string`: Path to semiotic evaluation corpus (default: `benchmarks/ecotone/tn_semiotics.jsonl`).
+* `--ecotone-addr string`: Address or socket of running Ecotone sidecar (default: `unix:///tmp/ecotone.sock`).
+* `-o`, `--output string`: Path to export JSON results report.
+* `-n`, `--limit int`: Number of test items to evaluate (0 = all).
+
+#### Example
+```bash
+./bin/dgem bench-ecotone -c benchmarks/ecotone/tn_semiotics.jsonl -n 10
 ```
 
 ---

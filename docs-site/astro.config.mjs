@@ -51,6 +51,7 @@ export default defineConfig({
           label: 'Benchmarks & Evaluation',
           items: [
             { label: 'Evaluation Report (Metal vs. Cloud)', slug: 'benchmarks' },
+            { label: 'Ecotone (WFST) vs. DiffusionGemma', slug: 'ecotone-comparison' },
           ],
         },
       ],

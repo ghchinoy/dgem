@@ -135,6 +135,7 @@ make download    # Download 4-bit model pack (~18.84 GiB)
 make serve       # Launch background diffgemma server (port 8080)
 make stop        # Stop background diffgemma server
 make bench       # Run the Jev vs autoregression benchmark
+make bench-ecotone # Run Ecotone (Sparrowhawk WFST) vs DiffusionGemma benchmark
 make cloudrun-deploy # Deploy vLLM with PR #57250 to Google Cloud Run (RTX Pro 6000 GPU)
 make docs-build  # Build the Catppuccin Latte Starlight documentation site
 ```
@@ -155,6 +156,7 @@ make docs-build  # Build the Catppuccin Latte Starlight documentation site
 * **[Real-World Applications & Production Patterns](docs/applications.md)**: Production architectures for agentic dispatch, DevSecOps git hooks, SIEM alert triage, and high-scale evaluations.
 * **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Vertex AI, hosted vLLM clusters, and understanding discrete slot readout mechanics.
 * **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Empirical metrics comparing slot readout against generative autoregression on Apple Silicon Metal and Cloud Run L4.
+* **[Ecotone (WFST) vs. DiffusionGemma](docs/ecotone-comparison.md)**: Latency vs. grammar authoring flexibility comparison and the Cascaded Normalizer architecture.
 
 ---
 

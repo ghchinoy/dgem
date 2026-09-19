@@ -190,6 +190,26 @@ dgem bench [flags]
 
 ---
 
+### `dgem bench-ecotone`
+Runs the head-to-head text normalization semiotics evaluation comparing DiffusionGemma slot readout against Ecotone (Sparrowhawk WFST).
+
+```bash
+dgem bench-ecotone [flags]
+```
+
+#### Flags
+* `-c`, `--corpus string`: Path to semiotic evaluation corpus (default: `benchmarks/ecotone/tn_semiotics.jsonl`).
+* `--ecotone-addr string`: Address or socket of running Ecotone sidecar (default: `unix:///tmp/ecotone.sock`).
+* `-o`, `--output string`: Path to export JSON results report.
+* `-n`, `--limit int`: Number of test items to evaluate (0 = all).
+
+#### Example
+```bash
+./bin/dgem bench-ecotone -c benchmarks/ecotone/tn_semiotics.jsonl -n 10
+```
+
+---
+
 ### `dgem template`
 Manages and inspects Go template definition files.
 

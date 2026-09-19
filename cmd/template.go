@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -60,7 +61,18 @@ var templateRenderCmd = &cobra.Command{
 		for _, kv := range renderVars {
 			parts := strings.SplitN(kv, "=", 2)
 			if len(parts) == 2 {
-				vars[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+				key := strings.TrimSpace(parts[0])
+				val := strings.TrimSpace(parts[1])
+				if (strings.HasPrefix(val, "[") && strings.HasSuffix(val, "]")) || (strings.HasPrefix(val, "{") && strings.HasSuffix(val, "}")) {
+					var parsedJSON interface{}
+					if err := json.Unmarshal([]byte(val), &parsedJSON); err == nil {
+						vars[key] = parsedJSON
+					} else {
+						vars[key] = val
+					}
+				} else {
+					vars[key] = val
+				}
 			}
 		}
 

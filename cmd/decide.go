@@ -70,11 +70,18 @@ func parseVariables() (map[string]interface{}, error) {
 		key := strings.TrimSpace(parts[0])
 		val := strings.TrimSpace(parts[1])
 
-		// Auto-parse booleans or numbers if applicable
+		// Auto-parse booleans, numbers, or JSON arrays/objects if applicable
 		if val == "true" {
 			vars[key] = true
 		} else if val == "false" {
 			vars[key] = false
+		} else if (strings.HasPrefix(val, "[") && strings.HasSuffix(val, "]")) || (strings.HasPrefix(val, "{") && strings.HasSuffix(val, "}")) {
+			var parsedJSON interface{}
+			if err := json.Unmarshal([]byte(val), &parsedJSON); err == nil {
+				vars[key] = parsedJSON
+			} else {
+				vars[key] = val
+			}
 		} else {
 			vars[key] = val
 		}
