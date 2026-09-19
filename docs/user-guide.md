@@ -52,6 +52,8 @@ export DGEM_STATS="true"
 * `--stats`, `-s`: Print comprehensive timing, token reuse, and entropy stats.
 * `--config`: Path to custom config file.
 
+> **Remote & Cloud Endpoints**: To connect `dgem` to remote hosts such as Google Cloud Vertex AI, hosted vLLM clusters, or private enterprise endpoints, see the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md).
+
 ---
 
 ## 2. Command Reference

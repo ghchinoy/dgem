@@ -35,6 +35,12 @@ export default defineConfig({
             { label: 'Template Catalog', slug: 'templates' },
           ],
         },
+        {
+          label: 'Deployment & Cloud',
+          items: [
+            { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
+          ],
+        },
       ],
     }),
   ],

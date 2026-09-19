@@ -8,8 +8,8 @@ High-performance CLI assistant and automation harness for Google DeepMind's Diff
 
 ```bash
 # Clone the repository
-git clone https://github.com/ghchinoy/diffusiongemma.git
-cd diffusiongemma
+git clone https://github.com/ghchinoy/dgem.git
+cd dgem
 
 # Build the dgem binary into bin/
 make build
@@ -123,6 +123,7 @@ make bench       # Run the Python Jev vs autoregression benchmark
 
 * **[Setup & Metal Engine Guide](docs/setup.md)**: Hardware requirements, memory budgeting (`--ctx 32768`), Metal shader pipeline compilation, and serving.
 * **[User Guide](docs/user-guide.md)**: Full CLI reference, template authoring, interpreting `--stats`, and CI/CD integration.
+* **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Vertex AI, hosted vLLM clusters, and understanding discrete slot readout mechanics.
 
 ---
 
