@@ -14,10 +14,11 @@ while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
   sleep 5
 done
 
-# Install vLLM and huggingface_hub
-echo "==> Installing latest vLLM..."
+# Install vLLM nightly matching PR #57250 base commit
+echo "==> Installing matching vLLM nightly wheel..."
 pip install -U pip
-pip install -U vllm huggingface_hub
+pip install https://wheels.vllm.ai/36fa72d2d0d2f86c7c83e1e99c9012b7bd26463b/vllm-0.29.1rc1.dev410%2Bg36fa72d2d-cp38-abi3-manylinux_2_28_x86_64.whl huggingface_hub
+pip uninstall -y torchaudio
 
 # Clone PR #57250 branch
 echo "==> Cloning mmastrac/vllm structured-reads-main..."
