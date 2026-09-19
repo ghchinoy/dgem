@@ -130,6 +130,9 @@ Because Matt Mastracci's PR #57250 changes are purely in Python (`vllm/model_exe
    make cloudrun-deploy
    ```
 
+> [!NOTE]
+> For details on C++ CUDA ABI compatibility, why pure Python overlays on prebuilt images encounter PyTorch dispatcher mismatches, and blueprints for full native CUDA compilations on Cloud Run vs. GCE, see **[Cloud Run Lessons Learned & Native CUDA Build Guide](cloudrun-lessons-learned.md)**.
+
 ### Connecting to Cloud Run with `dgem`
 
 Cloud Run services require IAM authentication by default. `dgem` supports two frictionless connection methods:

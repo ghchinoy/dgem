@@ -156,6 +156,7 @@ make docs-build  # Build the Catppuccin Latte Starlight documentation site
 * **[Real-World Applications & Production Patterns](docs/applications.md)**: Production architectures for agentic dispatch, DevSecOps git hooks, SIEM alert triage, and high-scale evaluations.
 * **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Vertex AI, hosted vLLM clusters, and understanding discrete slot readout mechanics.
 * **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Empirical metrics comparing slot readout against generative autoregression on Apple Silicon Metal and Cloud Run L4.
+* **[Cloud Run Lessons Learned & Native CUDA Build Guide](docs/cloudrun-lessons-learned.md)**: C++ ABI compatibility findings, Hugging Face Hub egress rate limiting, and blueprint for custom CUDA C++ builds.
 * **[Ecotone (WFST) vs. DiffusionGemma](docs/ecotone-comparison.md)**: Latency vs. grammar authoring flexibility comparison and the Cascaded Normalizer architecture.
 
 ---
