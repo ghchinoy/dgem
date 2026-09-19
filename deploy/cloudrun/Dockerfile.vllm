@@ -4,7 +4,10 @@ FROM vllm/vllm-openai:latest
 LABEL maintainer="ghchinoy"
 LABEL description="vLLM with DiffusionGemma discrete block diffusion structured reads overlay"
 
-# Install git and overlay Matt Mastracci's PR #57250 branch
+# Copy local patch script
+COPY patch_vllm.py /tmp/patch_vllm.py
+
+# Install git, overlay Matt Mastracci's PR #57250 branch, apply patches, and verify
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
     git clone --depth 1 -b structured-reads-main https://github.com/mmastrac/vllm.git /tmp/vllm-pr && \
     VLLM_PATH=$(python3 -c "import vllm, os; print(os.path.dirname(vllm.__file__))") && \
@@ -22,38 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
     done && \
     mkdir -p /opt/diffusion_reads && \
     cp -r /tmp/vllm-pr/examples/features/diffusion_reads/* /opt/diffusion_reads/ && \
-    rm -rf /tmp/vllm-pr /var/lib/apt/lists/* && \
-    python3 -c "\
-import os, vllm\n\
-vp = os.path.dirname(vllm.__file__)\n\
-vf = os.path.join(vp, 'config', 'vllm.py')\n\
-with open(vf, 'r') as f:\n\
-    c = f.read()\n\
-hook = '''\n\
-        if (\n\
-            self.diffusion_config is not None\n\
-            and self.scheduler_config.async_scheduling\n\
-            and self.scheduler_config.scheduler_cls is None\n\
-        ):\n\
-            self.scheduler_config.scheduler_cls = (\n\
-                \"vllm.v1.core.sched.diffusion_scheduler.DiffusionAsyncScheduler\"\n\
-            )\n\
-'''\n\
-if 'DiffusionAsyncScheduler' not in c:\n\
-    c = c.replace('current_platform.check_and_update_config(self)', 'current_platform.check_and_update_config(self)' + hook)\n\
-    with open(vf, 'w') as f:\n\
-        f.write(c)\n\
-cf = os.path.join(vp, '_custom_ops.py')\n\
-with open(cf, 'r') as f:\n\
-    c = f.read()\n\
-old_repack = 'return torch.ops._C.gptq_marlin_repack(\n        b_q_weight, size_k, size_n, num_bits, is_a_8bit\n    )'\n\
-new_repack = 'perm = torch.empty(0, dtype=torch.int, device=b_q_weight.device)\n    return torch.ops._C.gptq_marlin_repack(\n        b_q_weight, perm, size_k, size_n, num_bits, is_a_8bit\n    )'\n\
-c = c.replace(old_repack, new_repack)\n\
-with open(cf, 'w') as f:\n\
-    f.write(c)\n\
-print('vLLM patches applied successfully!')\n\
-" && \
-    python3 -c "import vllm; print('vllm successfully verified, version:', vllm.__version__)"
+    python3 /tmp/patch_vllm.py && \
+    rm -rf /tmp/vllm-pr /tmp/patch_vllm.py /var/lib/apt/lists/* && \
+    python3 -c "import vllm; print('vLLM verification successful, version:', vllm.__version__)"
 
 # Environment settings for Cloud Run
 ENV PORT=8080
