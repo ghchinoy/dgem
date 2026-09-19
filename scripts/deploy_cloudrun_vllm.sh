@@ -32,11 +32,15 @@ echo "Model:        $MODEL_ID"
 echo "================================================================================"
 
 echo ""
-echo "==> Step 1: Submitting Cloud Build for vLLM overlay container..."
-gcloud builds submit deploy/cloudrun \
-  --project "$PROJECT_ID" \
-  --tag "$IMAGE_TAG" \
-  --machine-type=e2-highcpu-8
+if gcloud container images describe "$IMAGE_TAG" --project "$PROJECT_ID" >/dev/null 2>&1; then
+  echo "==> Step 1: Container image $IMAGE_TAG already exists, skipping build."
+else
+  echo "==> Step 1: Submitting Cloud Build for vLLM overlay container..."
+  gcloud builds submit deploy/cloudrun \
+    --project "$PROJECT_ID" \
+    --tag "$IMAGE_TAG" \
+    --machine-type=e2-highcpu-8
+fi
 
 echo ""
 echo "==> Step 2: Deploying container to Cloud Run with GPU..."
