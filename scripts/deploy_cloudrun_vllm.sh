@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load .env if present
+if [[ -f .env ]]; then
+  set -a
+  source .env
+  set +a
+elif [[ -f "../.env" ]]; then
+  set -a
+  source "../.env"
+  set +a
+fi
+
 # Configuration
 PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
 REGION="${GCP_REGION:-us-central1}"
@@ -55,24 +66,32 @@ CONTAINER_ARGS=(
   "--host=0.0.0.0"
 )
 
-gcloud beta run deploy "$SERVICE_NAME" \
-  --project "$PROJECT_ID" \
-  --region "$REGION" \
-  --image "$IMAGE_TAG" \
-  --execution-environment gen2 \
-  --no-allow-unauthenticated \
-  --cpu 8 \
-  --memory 32Gi \
-  --gpu 1 \
-  --gpu-type "$GPU_TYPE" \
-  --no-gpu-zonal-redundancy \
-  --no-cpu-throttling \
-  --max-instances 2 \
-  --concurrency 32 \
-  --timeout 300 \
-  --startup-probe tcpSocket.port=8080,initialDelaySeconds=240,failureThreshold=1,timeoutSeconds=240,periodSeconds=240 \
-  --command "vllm" \
-  --args="$(IFS=','; echo "${CONTAINER_ARGS[*]}")"
+DEPLOY_FLAGS=(
+  "--project" "$PROJECT_ID"
+  "--region" "$REGION"
+  "--image" "$IMAGE_TAG"
+  "--execution-environment" "gen2"
+  "--no-allow-unauthenticated"
+  "--cpu" "8"
+  "--memory" "32Gi"
+  "--gpu" "1"
+  "--gpu-type" "$GPU_TYPE"
+  "--no-gpu-zonal-redundancy"
+  "--no-cpu-throttling"
+  "--max-instances" "2"
+  "--concurrency" "32"
+  "--timeout" "300"
+  "--startup-probe" "tcpSocket.port=8080,initialDelaySeconds=10,periodSeconds=10,failureThreshold=60,timeoutSeconds=4"
+  "--command" "vllm"
+  "--args=$(IFS=','; echo "${CONTAINER_ARGS[*]}")"
+)
+
+if [[ -n "${HF_TOKEN:-}" ]]; then
+  echo "Injecting HF_TOKEN from environment for authenticated Hugging Face Hub access..."
+  DEPLOY_FLAGS+=("--set-env-vars" "HF_TOKEN=${HF_TOKEN}")
+fi
+
+gcloud beta run deploy "$SERVICE_NAME" "${DEPLOY_FLAGS[@]}"
 
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format="value(status.url)")
 
