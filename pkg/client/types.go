@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,10 +14,12 @@ import (
 
 // ChatCompletionRequest is the OpenAI-compatible payload format.
 type ChatCompletionRequest struct {
-	Model     string        `json:"model,omitempty"`
-	Messages  []ChatMessage `json:"messages"`
-	MaxTokens int           `json:"max_tokens,omitempty"`
-	Stream    bool          `json:"stream,omitempty"`
+	Model       string        `json:"model,omitempty"`
+	Messages    []ChatMessage `json:"messages"`
+	MaxTokens   int           `json:"max_tokens,omitempty"`
+	Stream      bool          `json:"stream,omitempty"`
+	Logprobs    bool          `json:"logprobs,omitempty"`
+	TopLogprobs int           `json:"top_logprobs,omitempty"`
 }
 
 // ChatMessage represents a single chat turn.
@@ -47,11 +50,30 @@ type ChatCompletionResponse struct {
 	Usage   Usage        `json:"usage"`
 }
 
-// ChatChoice contains the assistant message.
+// ChatChoice contains the assistant message and optional token logprobs.
 type ChatChoice struct {
-	Index        int         `json:"index"`
-	Message      ChatMessage `json:"message"`
-	FinishReason string      `json:"finish_reason"`
+	Index        int             `json:"index"`
+	Message      ChatMessage     `json:"message"`
+	FinishReason string          `json:"finish_reason"`
+	Logprobs     *ChoiceLogprobs `json:"logprobs,omitempty"`
+}
+
+// ChoiceLogprobs holds OpenAI/vLLM token-level log-probabilities.
+type ChoiceLogprobs struct {
+	Content []TokenLogprob `json:"content"`
+}
+
+// TokenLogprob represents the log-probability and top-k alternatives for a single output token.
+type TokenLogprob struct {
+	Token       string           `json:"token"`
+	Logprob     float64          `json:"logprob"`
+	TopLogprobs []TopLogprobItem `json:"top_logprobs,omitempty"`
+}
+
+// TopLogprobItem represents a single candidate token and its logprob at a given position.
+type TopLogprobItem struct {
+	Token   string  `json:"token"`
+	Logprob float64 `json:"logprob"`
 }
 
 // Usage reports token statistics.
@@ -72,6 +94,8 @@ type QuestionAnswer struct {
 	Type          string             `json:"type"`
 	Label         string             `json:"label"`
 	Confidence    float64            `json:"confidence"`
+	Logprob       float64            `json:"logprob,omitempty"`
+	Entropy       float64            `json:"entropy,omitempty"`
 	Stderr        float64            `json:"stderr"`
 	Agreement     float64            `json:"agreement"`
 	Probabilities map[string]float64 `json:"probabilities"`
@@ -172,8 +196,13 @@ type RequestStats struct {
 }
 
 // ParseStructuredContent attempts to unmarshal the raw assistant text as a StructuredDecisionResponse.
-// If the content is wrapped in thinking blocks or markdown code fences, it extracts and normalizes the JSON.
 func ParseStructuredContent(content string) (*StructuredDecisionResponse, error) {
+	return ParseStructuredContentWithLogprobs(content, nil)
+}
+
+// ParseStructuredContentWithLogprobs unmarshals the assistant text and enriches slot confidence,
+// top-k candidate probabilities, and Shannon entropy using OpenAI/vLLM token logprobs when present.
+func ParseStructuredContentWithLogprobs(content string, logprobs *ChoiceLogprobs) (*StructuredDecisionResponse, error) {
 	var structured StructuredDecisionResponse
 	if err := json.Unmarshal([]byte(content), &structured); err == nil && len(structured.Answers) > 0 {
 		return &structured, nil
@@ -184,22 +213,96 @@ func ParseStructuredContent(content string) (*StructuredDecisionResponse, error)
 		return &structured, nil
 	}
 
-	// Fallback: Check if response is a direct JSON key-value map (e.g. from generative completions)
+	// Fallback: Check if response is a direct JSON key-value map (e.g. from vLLM completions)
 	var rawMap map[string]interface{}
 	if err := json.Unmarshal([]byte(cleaned), &rawMap); err == nil && len(rawMap) > 0 {
 		structured.Answers = make(map[string]QuestionAnswer)
+		if structured.Diagnostics.Questions == nil {
+			structured.Diagnostics.Questions = make(map[string]QuestionDiagnostic)
+		}
 		for k, v := range rawMap {
 			label := fmt.Sprintf("%v", v)
+			conf, lp, ent, probs := extractSlotLogprobTelemetry(label, logprobs)
 			structured.Answers[k] = QuestionAnswer{
-				Type:       "auto",
-				Label:      label,
-				Confidence: 1.0,
+				Type:          "auto",
+				Label:         label,
+				Confidence:    conf,
+				Logprob:       lp,
+				Entropy:       ent,
+				Probabilities: probs,
+			}
+			structured.Diagnostics.Questions[k] = QuestionDiagnostic{
+				ArgmaxIsLabel: true,
+				ArgmaxToken:   label,
+				Entropy:       ent,
+				LabelMass:     conf,
 			}
 		}
 		return &structured, nil
 	}
 
 	return nil, fmt.Errorf("failed to parse structured decision output from: %s", content)
+}
+
+// extractSlotLogprobTelemetry locates the token(s) corresponding to the slot value in ChoiceLogprobs
+// and computes calibrated probability exp(logprob), Shannon entropy H = -sum(p * ln(p)), and top-k probabilities.
+func extractSlotLogprobTelemetry(label string, lp *ChoiceLogprobs) (confidence float64, logprob float64, entropy float64, probs map[string]float64) {
+	confidence = 1.0
+	if lp == nil || len(lp.Content) == 0 {
+		return confidence, 0, 0, nil
+	}
+
+	normLabel := strings.ToLower(strings.TrimSpace(label))
+	var matched *TokenLogprob
+
+	// Search backwards (after "thought" preamble and JSON key) for the token matching the start of label
+	for i := len(lp.Content) - 1; i >= 0; i-- {
+		tokClean := strings.ToLower(strings.Trim(lp.Content[i].Token, " \t\n\r\"',:{}[]"))
+		if tokClean == "" {
+			continue
+		}
+		if tokClean == normLabel || strings.HasPrefix(normLabel, tokClean) || strings.HasSuffix(normLabel, tokClean) {
+			matched = &lp.Content[i]
+			break
+		}
+	}
+	if matched == nil {
+		// Fallback to the highest-entropy content token inside the JSON body
+		for i := len(lp.Content) - 1; i >= 0; i-- {
+			tokClean := strings.Trim(lp.Content[i].Token, " \t\n\r\"',:{}[]")
+			if len(tokClean) > 0 {
+				matched = &lp.Content[i]
+				break
+			}
+		}
+	}
+	if matched == nil {
+		return 1.0, 0, 0, nil
+	}
+
+	logprob = matched.Logprob
+	confidence = math.Exp(logprob)
+	if confidence > 1.0 {
+		confidence = 1.0
+	}
+
+	if len(matched.TopLogprobs) > 0 {
+		probs = make(map[string]float64, len(matched.TopLogprobs))
+		var h float64
+		for _, item := range matched.TopLogprobs {
+			p := math.Exp(item.Logprob)
+			tKey := strings.TrimSpace(item.Token)
+			if tKey != "" {
+				probs[tKey] = p
+			}
+			if p > 0 {
+				h -= p * math.Log(p)
+			}
+		}
+		entropy = h
+	}
+
+	return confidence, logprob, entropy, probs
 }
 
 func cleanJSON(content string) string {

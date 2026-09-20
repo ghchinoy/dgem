@@ -126,3 +126,41 @@ func TestBuildMultimodalContent(t *testing.T) {
 		t.Errorf("expected data:image/png;base64 prefix, got %q", localParts[0].ImageURL.URL)
 	}
 }
+
+func TestParseStructuredContentWithLogprobs(t *testing.T) {
+	raw := "thought\n{\"intent\": \"card_arrival\"}"
+	lp := &ChoiceLogprobs{
+		Content: []TokenLogprob{
+			{Token: "thought", Logprob: -0.001},
+			{Token: "{\"intent\":", Logprob: -0.002},
+			{
+				Token:   "card_arrival",
+				Logprob: -0.08338, // exp(-0.08338) ≈ 0.920
+				TopLogprobs: []TopLogprobItem{
+					{Token: "card_arrival", Logprob: -0.08338},
+					{Token: "card_delivery_estimate", Logprob: -2.5257},
+				},
+			},
+			{Token: "\"}", Logprob: -0.0001},
+		},
+	}
+
+	parsed, err := ParseStructuredContentWithLogprobs(raw, lp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	ans := parsed.Answers["intent"]
+	if ans.DisplayValue() != "card_arrival" {
+		t.Errorf("expected 'card_arrival', got %q", ans.DisplayValue())
+	}
+	if ans.Confidence < 0.91 || ans.Confidence > 0.93 {
+		t.Errorf("expected calibrated confidence ~0.920 from exp(logprob), got %f", ans.Confidence)
+	}
+	if ans.Entropy <= 0 {
+		t.Errorf("expected positive Shannon entropy from top_logprobs, got %f", ans.Entropy)
+	}
+	if len(ans.Probabilities) != 2 {
+		t.Errorf("expected 2 top candidate probabilities, got %d", len(ans.Probabilities))
+	}
+}
+

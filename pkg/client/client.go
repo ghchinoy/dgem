@@ -129,6 +129,8 @@ func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent str
 			{Role: "system", Content: schemaContent},
 			{Role: "user", Content: userPayload},
 		},
+		Logprobs:    true,
+		TopLogprobs: 5,
 	}
 
 	chatResp, stats, err := c.Complete(ctx, req)
@@ -141,7 +143,7 @@ func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent str
 	}
 
 	rawText := chatResp.Choices[0].Message.RawContent()
-	structured, err := ParseStructuredContent(rawText)
+	structured, err := ParseStructuredContentWithLogprobs(rawText, chatResp.Choices[0].Logprobs)
 	if err != nil {
 		return nil, stats, fmt.Errorf("failed to parse structured decision output: %w (raw content: %s)", err, rawText)
 	}
