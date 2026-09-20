@@ -154,6 +154,35 @@ CLOUDRUN_GPU_TYPE="nvidia-rtx-pro-6000" make cloudrun-deploy
 
 # 4. Query & Benchmark via dgem
 SERVICE_URL=$(gcloud run services describe dgemma --region=us-central1 --format="value(status.url)")
-./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v 'ticket=Emergency' --stats
+./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v 'ticket=Outage: production database cluster unreachable' --stats
 ./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
+
+# 5. Immediate Teardown (Zero-Idle-Cost Mandate)
+make cloudrun-teardown
 ```
+
+## 8. Empirical Benchmark Findings on Cloud Run (1× NVIDIA L4)
+
+The benchmark evaluation against service `dgemma` on Cloud Run achieved state-of-the-art serverless latency and classification accuracy:
+
+| Metric | Serverless Cloud Run (1× L4, NVFP4) | GCE VM (1× L4, NVFP4) | Local Apple M5 Metal (`q4`) |
+| :--- | :---: | :---: | :---: |
+| **Accuracy (30 Cases)** | **80.0%** (24 / 30) | 73.3% (22 / 30) | 80.0% – 86.7% |
+| **Average End-to-End Wall Time** | **458.9 ms** | 1,968.7 ms | 1,659.8 ms |
+| **Average Model GPU Denoise** | **427.3 ms** | — | ~850.5 ms |
+| **Adaptive Multi-Reads Triggered** | 27 of 30 items | — | 27 of 30 items |
+| **Receipt Artifact** | [`benchmarks/results_cloudrun.json`](../benchmarks/results_cloudrun.json) | [`benchmarks/results_gce_l4.json`](../benchmarks/results_gce_l4.json) | [`benchmarks/results_local_metal_slot.json`](../benchmarks/results_local_metal_slot.json) |
+
+Why Cloud Run outperformed the raw GCE VM on latency:
+1. **Connection & Proxy Pipelining**: `structured_server.py` communicates with the local vLLM instance on port 8000 over `127.0.0.1` using persistent TCP sockets and pre-tokenized canvas templates.
+2. **Safetensors Page Cache**: With `--safetensors-load-strategy prefetch`, model weights are fully memory-mapped in the Linux page cache during container startup, resulting in pure sub-millisecond tensor slice access during inference.
+
+## 9. Client Protocol & Envelope Unmarshaling Architecture
+
+When serving DiffusionGemma through `structured_server.py`, the assistant message content in `POST /v1/chat/completions` is returned as a structured envelope with `{"answers": {...}, "diagnostics": {...}}`.
+
+### Client Fixes Implemented in `pkg/client`
+1. **Envelope Fallback Parsing**: Added an explicit envelope unmarshaler in [`pkg/client/types.go`](../pkg/client/types.go) that extracts `.answers` directly, ensuring question keys are preserved even if diagnostic telemetry schema varies.
+2. **Polymorphic Entropy Unmarshaler**: In `QuestionDiagnostic`, `Entropy` can be a single float (local Metal `diffgemma`) or an array of per-sample floats (`structured_server.py` multi-read). A custom `UnmarshalJSON` unmarshals either format safely.
+3. **Flexible Timing Extraction**: In [`pkg/client/client.go`](../pkg/client/client.go), `stats.DenoiseMs` falls back to `Timing.TotalMs` when running behind the Python structured proxy, correctly exposing model denoise compute time.
+

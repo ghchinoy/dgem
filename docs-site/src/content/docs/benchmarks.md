@@ -5,26 +5,28 @@ description: Empirical benchmark comparison of DiffusionGemma discrete slot read
 
 This report presents empirical benchmark metrics comparing **Discrete Diffusion Slot Readout** against traditional **Prompt-Mediated Generative Autoregression**, evaluated across:
 1. **Local Apple Silicon Metal (M5, 32 GB)** — 4-bit native Metal kernels (`diffgemma-26b-a4b-it-q4`)
-2. **Google Compute Engine (`g2-standard-8`, 1× NVIDIA L4 24 GB)** — 4-bit ModelOpt Marlin (`nvidia/diffusiongemma-26B-A4B-it-NVFP4`)
-3. **Google Compute Engine (`a2-highgpu-2g`, 2× NVIDIA A100-40GB, `TP=2`)** — **16-bit Unquantized `bfloat16`** (`google/diffusiongemma-26B-A4B-it`)
+2. **Serverless Google Cloud Run (1× NVIDIA L4 24 GB)** — 4-bit ModelOpt Marlin (`nvidia/diffusiongemma-26B-A4B-it-NVFP4`) in self-contained container with GCS FUSE
+3. **Google Compute Engine (`g2-standard-8`, 1× NVIDIA L4 24 GB)** — 4-bit ModelOpt Marlin (`nvidia/diffusiongemma-26B-A4B-it-NVFP4`)
+4. **Google Compute Engine (`a2-highgpu-2g`, 2× NVIDIA A100-40GB, `TP=2`)** — **16-bit Unquantized `bfloat16`** (`google/diffusiongemma-26B-A4B-it`)
 
 > [!NOTE]
-> For details on why Google Compute Engine (GCE) was used instead of serverless Google Cloud Run for evaluating experimental vLLM branches (including C++ CUDA extension ABI compatibility and Hugging Face Hub egress NAT limits), see **[Cloud Run Lessons Learned & Native CUDA Build Guide](cloudrun-lessons-learned.md)**.
+> For details on building and deploying the self-contained container image, GCS FUSE weight streaming, and C++ CUDA extension ABI compatibility on Cloud Run, see **[Cloud Run Lessons Learned & Native CUDA Build Guide](cloudrun-lessons-learned.md)**.
 
 ---
 
 ## 1. Executive Summary
 
-| Evaluation Metric | Target 1: Local Apple M5 Metal (`q4`) | Target 2: Cloud GCE 1× L4 (`NVFP4` 4-bit) | Target 3: Cloud GCE 2× A100 (`bfloat16` 16-bit Unquant) | Target 4: Generative Autoregression Baseline |
-| :--- | :--- | :--- | :--- | :--- |
-| **Model Evaluated** | `diffgemma-26b-a4b-it-q4` | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | `google/diffusiongemma-26B-A4B-it` | `diffgemma-26b-a4b-it-q4` (`think=false`) |
-| **Weight Memory Footprint** | ~18.84 GiB (Unified RAM) | ~18.15 GiB VRAM | **50.14 GiB VRAM** (25.07 GiB / GPU) | ~18.84 GiB |
-| **End-to-End Wall Latency** | **~1.83 s** (1 read) / **4.14 s** (multi-avg) | **1,968.7 ms** (min: **776 ms**) | **2,733.8 ms** (min: **1,002 ms**) | **17,486.6 ms** (~17.5 s) |
-| **Speedup vs. Generative** | **4.2× – 9.7× faster** | **~8.9× faster** | **~6.4× faster** | Baseline (1.0×) |
-| **Speedup vs. Local Metal** | Baseline (1.0×) | **~2.1× faster** | **~1.5× faster** | — |
-| **Syntactic Reliability** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **0% raw pass** (wrapped in markdown) |
-| **Classification Accuracy** | **80.0%** (24 / 30 cases) | **73.3%** (22 / 30 cases) | **80.0%** (24 / 30 cases) | ~75 – 80% |
-| **Receipt Artifact** | [`results_local_metal_slot.json`](../benchmarks/results_local_metal_slot.json) | [`results_gce_l4.json`](../benchmarks/results_gce_l4.json) | [`results_gce_a100_bf16.json`](../benchmarks/results_gce_a100_bf16.json) | [`results_local_metal_generative.json`](../benchmarks/results_local_metal_generative.json) |
+| Evaluation Metric | Target 1: Local Apple M5 Metal (`q4`) | Target 2: Serverless Cloud Run 1× L4 (`NVFP4`) | Target 3: Cloud GCE 1× L4 (`NVFP4`) | Target 4: Cloud GCE 2× A100 (`bf16` Unquant) | Target 5: Generative Autoregression Baseline |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Model Evaluated** | `diffgemma-26b-a4b-it-q4` | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | `google/diffusiongemma-26B-A4B-it` | `diffgemma-26b-a4b-it-q4` (`think=false`) |
+| **Weight Memory Footprint** | ~18.84 GiB (Unified RAM) | ~18.15 GiB VRAM | ~18.15 GiB VRAM | **50.14 GiB VRAM** (25.07 GiB / GPU) | ~18.84 GiB |
+| **End-to-End Wall Latency** | **~1.83 s** (1 read) / **4.14 s** (multi-avg) | **458.9 ms** (min: **199 ms**, max: **517 ms**) | **1,968.7 ms** (min: **776 ms**) | **2,733.8 ms** (min: **1,002 ms**) | **17,486.6 ms** (~17.5 s) |
+| **Avg GPU Denoise Compute** | ~850.5 ms | **427.3 ms** | — | — | — |
+| **Speedup vs. Generative** | **4.2× – 9.7× faster** | **~38.1× faster** | **~8.9× faster** | **~6.4× faster** | Baseline (1.0×) |
+| **Speedup vs. Local Metal** | Baseline (1.0×) | **~3.6× – 9.0× faster** | **~2.1× faster** | **~1.5× faster** | — |
+| **Syntactic Reliability** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **0% raw pass** (wrapped in markdown) |
+| **Classification Accuracy** | **80.0%** (24 / 30 cases) | **80.0%** (24 / 30 cases) | **73.3%** (22 / 30 cases) | **80.0%** (24 / 30 cases) | ~75 – 80% |
+| **Receipt Artifact** | [`results_local_metal_slot.json`](../benchmarks/results_local_metal_slot.json) | [`results_cloudrun.json`](../benchmarks/results_cloudrun.json) | [`results_gce_l4.json`](../benchmarks/results_gce_l4.json) | [`results_gce_a100_bf16.json`](../benchmarks/results_gce_a100_bf16.json) | [`results_local_metal_generative.json`](../benchmarks/results_local_metal_generative.json) |
 
 ---
 
@@ -209,6 +211,26 @@ To stress-test DiffusionGemma beyond 2–4 option schemas—where fine-tuned BER
 ```bash
 make serve
 ./bin/dgem bench -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_local_metal_slot.json
+```
+
+### Serverless Google Cloud Run (1× NVIDIA L4, 24 GB)
+```bash
+export GCP_PROJECT="your-gcp-project-id"
+export GCP_REGION="us-central1"
+
+# Build self-contained image and pre-stage weights:
+make cloudrun-build
+make cloudrun-stage
+
+# Deploy service dgemma to Cloud Run:
+make cloudrun-deploy
+
+# Run benchmark suite against Cloud Run:
+SERVICE_URL=$(gcloud run services describe dgemma --region=$GCP_REGION --format="value(status.url)")
+./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
+
+# Immediate teardown for zero idle cost:
+make cloudrun-teardown
 ```
 
 ### Google Compute Engine (4-bit on 1× L4 or 16-bit on 2× A100)

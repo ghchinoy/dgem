@@ -12,7 +12,7 @@ DiffusionGemma operates on a **256-token canvas** with bidirectional attention. 
 
 | Evaluation Dimension | Discrete Diffusion Slot Readout (`dgem`) | Autoregressive LLM (Gemma 4 / Gemini) | Compiled Rulebook (`ecotone` C++ WFST) |
 | :--- | :--- | :--- | :--- |
-| **Inference Latency** | **425 – 960 ms** (1-slot) / **1,968 ms** (3-slot L4) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
+| **Inference Latency** | **425 – 960 ms** (1-slot Metal) / **458.9 ms** (Cloud Run L4) / **1,968 ms** (GCE L4) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
 | **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 5 slots take same time) | **$O(T_{\text{output}})$ linear penalty** (token-by-token bottleneck) | $O(N_{\text{chars}})$ graph traversal |
 | **Output Reliability** | **100% Schema-Guaranteed** (0% parse errors) | Vulnerable to syntax drift & markdown wrappers | Deterministic pattern replacement |
 | **Semiotic Polysemy** | **90.0% – 93.3%** (resolves *"123 St. Mark St."* and *"Ocean Dr."*) | ~90% (at 15× higher latency) | **36.7%** (collapses to default arc or drops `St.`) |
@@ -30,13 +30,13 @@ DiffusionGemma operates on a **256-token canvas** with bidirectional attention. 
                   │           dgem CLI            │
                   └───────────────┬───────────────┘
                                   │
-                 ┌────────────────┴────────────────┐
-                 ▼                                 ▼
-   Local Apple Silicon (Metal)           Google Cloud GPU (GCE / vLLM)
-   • diffgemma serve (port 8080)         • NVIDIA L4 (24GB, 4-bit NVFP4)
-   • 4-bit Q4 Unified Memory             • NVIDIA A100 (40GB, 8-bit FP8 / 16-bit bf16)
-   • 32k KV Context                      • Nightly vLLM + Triton Attention
-   • Zero cloud cost                     • High-throughput continuous batching
+         ┌────────────────────────┼────────────────────────┐
+         ▼                        ▼                        ▼
+Local Apple Silicon (Metal)  Cloud Run Serverless GPU   Cloud GPU on GCE VM
+• diffgemma serve (:8080)    • 1× NVIDIA L4 (24GB)      • 1× L4 (NVFP4) / 2× A100 (bf16)
+• 4-bit Q4 Unified Memory    • Self-contained container • vLLM PR #57250 nightly wheel
+• 32k KV Context             • GCS FUSE weight mount    • 32k context + Triton Attn
+• Zero cloud cost            • 459ms avg wall latency   • Direct raw completions
 ```
 
 ### Option A: Local Apple Silicon (Metal)
@@ -71,6 +71,30 @@ PRECISION=16 make gce-deploy
 
 # Mandatory immediate teardown to eliminate idle costs:
 make gce-teardown
+```
+
+### Option C: Serverless Cloud GPU on Google Cloud Run (1× NVIDIA L4)
+Builds and deploys a self-contained container image to Google Artifact Registry and runs on Cloud Run with GCS FUSE weight streaming:
+```bash
+export GCP_PROJECT="your-gcp-project"
+export GCP_REGION="us-central1"
+
+# 1. Build self-contained image in Artifact Registry via Cloud Build:
+make cloudrun-build
+
+# 2. Pre-stage 17.57 GB NVFP4 weights to GCS:
+make cloudrun-stage
+
+# 3. Deploy dgemma service on Cloud Run (1× NVIDIA L4, 24GB):
+make cloudrun-deploy
+
+# 4. Run discrete decisions or 30-case benchmark:
+SERVICE_URL=$(gcloud run services describe dgemma --region=$GCP_REGION --format="value(status.url)")
+./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v 'ticket=Emergency outage'
+./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
+
+# 5. Mandatory immediate teardown to eliminate idle costs:
+make cloudrun-teardown
 ```
 
 ---

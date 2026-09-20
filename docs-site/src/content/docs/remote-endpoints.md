@@ -214,22 +214,27 @@ To use `dgem` with Vertex AI:
 
 ## 5. Cloud Deployment Targets for Discrete Slot Readout
 
-To achieve sub-second single-pass slot readout on cloud infrastructure, the serving container must support canvas seeding. Three primary architectures enable this:
+To achieve sub-second single-pass slot readout on cloud infrastructure, the serving container must support canvas seeding. Four primary architectures enable this:
 
-### Target A: Containerized `diffgemma` (GCE / GKE / Cloud Run with GPU)
-Run `diffgemma serve` inside an NVIDIA GPU container:
-* Uses the exact HTTP schema API that `dgem` talks to natively.
-* Supports both standard generative chat and sub-second structured decisions out of the box.
+### Target A: Serverless Google Cloud Run (1× NVIDIA L4, 24 GB)
+Deploy our self-contained container image (`deploy/cloudrun/Dockerfile`) with GCS FUSE volume mounting:
+* **Hardware**: 1× NVIDIA L4 GPU, 8 vCPUs, 32 GB RAM.
+* **Weights**: 17.57 GB NVFP4 safetensors shards streamed from regional GCS bucket via Cloud Storage FUSE (`--safetensors-load-strategy prefetch`).
+* **Performance**: **458.9 ms** average wall latency (**427.3 ms** model denoise compute).
+* **IAM Authentication**: Protected by Google Cloud IAM; query directly with `./bin/dgem decide --gcp-auth -u https://...`.
+* **Zero Idle Cost**: Spin up via `make cloudrun-deploy`, execute evaluations, and immediately destroy via `make cloudrun-teardown`.
 
-### Target B: vLLM with PR #57250
-Matt Mastracci’s PR #57250 (`[Core] structured generation mode for DiffusionGemma model`) adds discrete reading parameters to vLLM's `vllm_xargs`:
-* `diffusion_seed_canvas`: Array of fixed tokens replacing random noise after prefill.
-* `diffusion_read_only: true`: Emits the argmax canvas on the converging step without committing full text generation.
-* `diffusion_max_steps: 1`: Limits the run to 1 forward pass.
+### Target B: Google Compute Engine (NVIDIA L4 / A100 VM with vLLM PR #57250)
+Provisions automated, production-grade GCE instances (`g2-standard-8` or `a2-highgpu-2g`) with the nightly vLLM wheel (`wheels.vllm.ai`, commit `133b71e0be`) and Triton attention:
+* Supports continuous batching and high concurrent throughput.
+* Deploy via `make gce-deploy` (options for 4-bit, 8-bit, or 16-bit precision) and tear down via `make gce-teardown`.
 
-Deploying a vLLM container built from this branch enables high-throughput batching of structured decisions on NVIDIA H100/A100 GPUs.
+### Target C: Containerized `diffgemma` (GCE / GKE / Metal)
+Run `diffgemma serve` inside an Apple Silicon or NVIDIA container:
+* Uses the native Rust discrete slot engine.
+* Native `StructuredDecisionResponse` with restricted-softmax probabilities and Shannon entropy telemetry.
 
-### Target C: Python Microservice (`open-jev` style on Modal / GKE)
+### Target D: Python Microservice (`open-jev` style on Modal / GKE)
 Deploy a lightweight FastAPI container using Hugging Face `transformers` (`DiffusionGemmaForBlockDiffusion`) with a custom `LogitsProcessor` that locks template positions and reads slot logits in 1 step.
 
 ---
