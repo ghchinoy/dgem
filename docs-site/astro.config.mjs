@@ -14,7 +14,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'DiffusionGemma',
-      description: 'Discrete Diffusion Slot Readouts, Multi-Environment Orchestration & Benchmarks across Apple Silicon, GCE, and Cloud Run',
+      description: 'DiffusionGemma as a Zero-Shot Decision Model & Declarative Policy-as-Template Engine across Apple Silicon, GCE, and Cloud Run',
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/ghchinoy/dgem' },
       ],
@@ -42,7 +42,14 @@ export default defineConfig({
           items: [
             { label: 'The Journey to Decision Models', slug: 'decision-models-primer' },
             { label: 'Discrete Diffusion vs. Autoregression', slug: 'architecture' },
-            { label: 'Template Catalog', slug: 'templates' },
+            { label: 'Template Catalog (Policy-as-Code)', slug: 'templates' },
+          ],
+        },
+        {
+          label: 'Experiments & Research Log',
+          items: [
+            { label: 'Experiment Ledger (EXP-01 – EXP-08)', slug: 'experiments' },
+            { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
           ],
         },
         {

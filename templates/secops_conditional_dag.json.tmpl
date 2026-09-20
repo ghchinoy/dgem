@@ -1,0 +1,60 @@
+{
+  "input": "Evaluate the following cloud security telemetry event and execute the SecOps incident response policy:\n\nEvent Payload: {{ .alert_payload }}",
+  "questions": [
+    {
+      "name": "active_breach",
+      "type": "choice",
+      "question": "Does this security telemetry indicate an active or attempted unauthorized compromise requiring containment?",
+      "options": {
+        "yes": "Yes, active or attempted unauthorized compromise, privilege escalation, or data exfiltration",
+        "no": "No, routine authorized administrative activity, benign health check, or false-positive alert"
+      }
+    },
+    {
+      "name": "threat_vector",
+      "type": "choice",
+      "question": "What is the primary threat vector or operational classification of this telemetry event?",
+      "options": {
+        "iam_compromise": "Unauthorized IAM role assumption, credential stuffing, or token hijacking",
+        "data_exfiltration": "Unauthorized database snapshot sharing, S3 public ACL mutation, or bulk egress",
+        "workload_injection": "Remote code execution, container escape, or reverse shell spawn",
+        "benign_operation": "Authorized CI/CD deployment, scheduled backup, or routine engineering action"
+      }
+    },
+    {
+      "name": "confidence_score",
+      "type": "score",
+      "question": "Rate the fidelity and urgency of the threat indicators (1 = benign/informational, 5 = critical verified compromise).",
+      "items": [1, 2, 3, 4, 5]
+    },
+    {
+      "name": "containment_action",
+      "type": "choice",
+      "question": "Which immediate automated containment playbook must be executed to isolate the active compromise?",
+      "depends_on": ["active_breach"],
+      "ask_if": {
+        "active_breach": ["yes"]
+      },
+      "options": {
+        "revoke_iam_and_snapshots": "Immediately revoke active IAM session tokens, rotate keys, and block public RDS/S3 snapshot sharing",
+        "quarantine_pod_egress": "Apply zero-egress Cilium network policy to isolate the compromised Kubernetes pod",
+        "block_edge_asn": "Drop ingress traffic from the offending IP/ASN at the Cloud Armor WAF edge",
+        "freeze_db_replica": "Place the targeted database cluster into read-only maintenance mode"
+      }
+    },
+    {
+      "name": "blast_radius",
+      "type": "choice",
+      "question": "What is the estimated blast radius of the compromise if left uncontained?",
+      "depends_on": ["active_breach"],
+      "ask_if": {
+        "active_breach": ["yes"]
+      },
+      "options": {
+        "single_service": "Isolated to a single ephemeral container or non-privileged microservice",
+        "production_data_plane": "Direct exposure of production customer databases or persistent storage volumes",
+        "account_wide_root": "Full cloud account or organization-wide IAM control plane takeover"
+      }
+    }
+  ]
+}

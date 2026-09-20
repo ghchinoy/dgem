@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,17 +18,22 @@ import (
 	"github.com/ghchinoy/dgem/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/genai"
 )
 
 var (
-	calDataset  string
-	calCategory string
-	calTier     string
-	calOutput   string
-	calLimit    int
-	calWorkers  int
-	calSamples  string
-	calJSON     bool
+	calDataset          string
+	calCategory         string
+	calTier             string
+	calOutput           string
+	calLimit            int
+	calWorkers          int
+	calSamples          string
+	calJSON             bool
+	calVertexModel      string
+	calVertexProject    string
+	calCascadeFrom      string
+	calCascadeThreshold float64
 )
 
 // Semantic color palette following A2A CLI guidelines
@@ -44,8 +50,8 @@ var benchCalibrationCmd = &cobra.Command{
 	Use:     "bench-calibration",
 	GroupID: "eval",
 	Short:   "Run the public dataset calibration, guardrail, and human-entropy benchmark suite",
-	Long: `bench-calibration evaluates DiffusionGemma's discrete slot readout across public
-calibration benchmarks adapted from mizan-templates:
+	Long: `bench-calibration evaluates DiffusionGemma's discrete slot readout (and optional Vertex AI
+Gemini models or Entropy-Gated Cascades) across public calibration benchmarks adapted from mizan-templates:
   • AgentDrift (multi-step tool-call trajectory hijack detection & localization)
   • deepset/prompt-injections (adversarial & multilingual English/German jailbreak gates)
   • LLM-AggreFact & MS MARCO (RAG claim support verification & passage relevance)
@@ -64,11 +70,16 @@ exp(logprob) and Shannon entropy H in nats across low-entropy vs. high-entropy/a
     --gcp-auth -w 8 \
     -o benchmarks/results_calibration_cloudrun.json
 
-  # 3. Filter specifically for ChaosNLI & ANLI entropy calibration items
-  dgem bench-calibration --category nli-soft
+  # 3. Run directly against Vertex AI Gemini (gemini-3.8-flash or gemini-3.5-flash-lite)
+  dgem bench-calibration --vertex-model gemini-3.8-flash -w 8 \
+    -o benchmarks/results_calibration_gemini38.json
 
-  # 4. Emit machine-readable JSON report to stdout
-  dgem bench-calibration --json`,
+  # 4. Run an Entropy-Gated Cascade (DiffusionGemma Pass-1 -> Vertex AI gemini-3.8-flash when H >= 0.35)
+  dgem bench-calibration \
+    --cascade-from benchmarks/results_calibration_cloudrun.json \
+    --vertex-model gemini-3.8-flash \
+    --cascade-threshold 0.35 \
+    -o benchmarks/results_calibration_cascade.json`,
 	RunE: runBenchCalibration,
 }
 
@@ -81,6 +92,10 @@ func init() {
 	benchCalibrationCmd.Flags().IntVarP(&calWorkers, "workers", "w", 1, "Number of concurrent evaluation workers for Cloud Run / GCE vLLM batching")
 	benchCalibrationCmd.Flags().StringVar(&calSamples, "samples", "auto", "DiffusionGemma samples policy ('1', '2', '4', or 'auto')")
 	benchCalibrationCmd.Flags().BoolVar(&calJSON, "json", false, "Output structured JSON report directly to stdout")
+	benchCalibrationCmd.Flags().StringVar(&calVertexModel, "vertex-model", "", "Evaluate using Google Cloud Vertex AI Gemini model (e.g. 'gemini-3.8-flash' or 'gemini-3.5-flash-lite')")
+	benchCalibrationCmd.Flags().StringVar(&calVertexProject, "vertex-project", "", "Google Cloud Project ID for Vertex AI (defaults to $GCP_PROJECT or gcloud config)")
+	benchCalibrationCmd.Flags().StringVar(&calCascadeFrom, "cascade-from", "", "Path to DiffusionGemma JSON receipt (or 'live') to run Entropy-Gated Cascade into --vertex-model")
+	benchCalibrationCmd.Flags().Float64Var(&calCascadeThreshold, "cascade-threshold", 0.35, "Shannon entropy threshold H (nats) to escalate from DiffusionGemma Pass-1 to --vertex-model")
 
 	RootCmd.AddCommand(benchCalibrationCmd)
 }
@@ -108,6 +123,12 @@ type CalibrationCaseResult struct {
 	Entropy          float64            `json:"entropy_nats"`
 	Stderr           float64            `json:"stderr,omitempty"`
 	WallTimeMs       float64            `json:"wall_time_ms"`
+	Escalated        bool               `json:"escalated,omitempty"`
+	Pass1Actual      string             `json:"pass1_actual,omitempty"`
+	Pass1Accurate    bool               `json:"pass1_accurate,omitempty"`
+	Pass1Entropy     float64            `json:"pass1_entropy_nats,omitempty"`
+	Pass1LatencyMs   float64            `json:"pass1_latency_ms,omitempty"`
+	Pass2LatencyMs   float64            `json:"pass2_latency_ms,omitempty"`
 	TopProbabilities map[string]float64 `json:"top_probabilities,omitempty"`
 	Error            string             `json:"error,omitempty"`
 }
@@ -123,6 +144,24 @@ type CalibrationGroupSummary struct {
 	AvgLatencyMs  float64 `json:"avg_latency_ms"`
 }
 
+// CascadeSummary holds metrics when running an Entropy-Gated Cascade (DiffusionGemma -> Vertex AI Gemini).
+type CascadeSummary struct {
+	Pass1Model         string  `json:"pass1_model"`
+	Pass2Model         string  `json:"pass2_model"`
+	EntropyThreshold   float64 `json:"entropy_threshold_nats"`
+	TotalCases         int     `json:"total_cases"`
+	EscalatedCases     int     `json:"escalated_cases"`
+	EscalationRatePct  float64 `json:"escalation_rate_pct"`
+	Pass1Correct       int     `json:"pass1_correct"`
+	Pass1AccuracyPct   float64 `json:"pass1_accuracy_pct"`
+	CascadeCorrect     int     `json:"cascade_correct"`
+	CascadeAccuracyPct float64 `json:"cascade_accuracy_pct"`
+	AccuracyGainPct    float64 `json:"accuracy_gain_pct"`
+	Pass1AvgLatencyMs  float64 `json:"pass1_avg_latency_ms"`
+	Pass2AvgLatencyMs  float64 `json:"pass2_avg_latency_ms"`
+	CascadeAvgLatMs    float64 `json:"cascade_avg_latency_ms"`
+}
+
 // CalibrationReport represents the full exported JSON report.
 type CalibrationReport struct {
 	Timestamp          string                    `json:"timestamp"`
@@ -136,6 +175,7 @@ type CalibrationReport struct {
 	AvgEntropyNats     float64                   `json:"avg_entropy_nats"`
 	AvgWallTimeMs      float64                   `json:"avg_wall_time_ms"`
 	TotalElapsedSec    float64                   `json:"total_elapsed_sec"`
+	Cascade            *CascadeSummary           `json:"cascade,omitempty"`
 	Categories         []CalibrationGroupSummary `json:"categories"`
 	Tiers              []CalibrationGroupSummary `json:"tiers"`
 	Cases              []CalibrationCaseResult   `json:"cases"`
@@ -153,13 +193,58 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 	c := GetClient()
 	ctx := context.Background()
 
+	var genaiClient *genai.Client
+	var gcpProj string
+	if calVertexModel != "" {
+		gcpProj = resolveGCPProject(calVertexProject)
+		if gcpProj == "" {
+			return fmt.Errorf("no Google Cloud Project ID detected for --vertex-model %q\n  Hint: Pass '--vertex-project <id>' or set GCP_PROJECT=<id>", calVertexModel)
+		}
+		genaiClient, err = genai.NewClient(ctx, &genai.ClientConfig{
+			Project:  gcpProj,
+			Location: "global",
+			Backend:  genai.BackendVertexAI,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to initialize Vertex AI client (project=%s, location=global): %w", gcpProj, err)
+		}
+	}
+
+	// Load Pass-1 receipt if running Entropy-Gated Cascade from saved receipt
+	pass1Map := make(map[string]CalibrationCaseResult)
+	var pass1ModelName string
+	if calCascadeFrom != "" && calCascadeFrom != "live" {
+		raw, err := os.ReadFile(calCascadeFrom)
+		if err != nil {
+			return fmt.Errorf("failed to read --cascade-from receipt %q: %w", calCascadeFrom, err)
+		}
+		var prevReport CalibrationReport
+		if err := json.Unmarshal(raw, &prevReport); err != nil {
+			return fmt.Errorf("failed to parse --cascade-from receipt %q: %w", calCascadeFrom, err)
+		}
+		pass1ModelName = prevReport.TargetModel
+		for _, r := range prevReport.Cases {
+			pass1Map[r.ID] = r
+		}
+	}
+
+	targetEndpointDisplay := viper.GetString("url")
+	targetModelDisplay := viper.GetString("model")
+	if calVertexModel != "" && calCascadeFrom == "" {
+		targetEndpointDisplay = fmt.Sprintf("vertexai://%s/locations/global", gcpProj)
+		targetModelDisplay = calVertexModel
+	} else if calCascadeFrom != "" && calVertexModel != "" {
+		targetEndpointDisplay = fmt.Sprintf("cascade(%s -> vertexai://%s/global)", calCascadeFrom, gcpProj)
+		targetModelDisplay = fmt.Sprintf("DiffusionGemma [H<%.2f] -> %s [H>=%.2f]", calCascadeThreshold, calVertexModel, calCascadeThreshold)
+	}
+
 	if !calJSON {
 		fmt.Println()
 		fmt.Println(styleAccent.Render("=========================================================================================="))
 		fmt.Println(styleAccent.Render("  DiffusionGemma Public Dataset Calibration & Guardrail Suite (dgem bench-calibration)"))
 		fmt.Println(styleAccent.Render("=========================================================================================="))
-		fmt.Printf("  Target Endpoint: %s\n", styleID.Render(viper.GetString("url")))
-		fmt.Printf("  Target Model:    %s\n", styleID.Render(viper.GetString("model")))
+		fmt.Printf("  Target Endpoint: %s\n", styleID.Render(targetEndpointDisplay))
+		fmt.Printf("  Target Model:    %s\n", styleID.Render(targetModelDisplay))
 		fmt.Printf("  Dataset:         %s (%d cases, workers=%d, samples=%s)\n", calDataset, len(cases), calWorkers, calSamples)
 		fmt.Println(styleMuted.Render("------------------------------------------------------------------------------------------"))
 	}
@@ -185,7 +270,37 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 			defer wg.Done()
 			for idx := range jobs {
 				tc := cases[idx]
-				res := evaluateCalibrationCase(ctx, c, tc, calSamples)
+				var res CalibrationCaseResult
+
+				if calCascadeFrom != "" && calVertexModel != "" {
+					// Entropy-Gated Cascade: Pass-1 DiffusionGemma -> Pass-2 Vertex AI Gemini when H >= threshold
+					p1, ok := pass1Map[tc.ID]
+					if !ok {
+						p1 = evaluateCalibrationCase(ctx, c, tc, calSamples)
+					}
+					if p1.Error == "" && p1.Entropy < calCascadeThreshold {
+						res = p1
+						res.Escalated = false
+						res.Pass1Actual = p1.Actual
+						res.Pass1Accurate = p1.Accurate
+						res.Pass1Entropy = p1.Entropy
+						res.Pass1LatencyMs = p1.WallTimeMs
+					} else {
+						p2 := evaluateCalibrationCaseVertex(ctx, genaiClient, calVertexModel, tc)
+						res = p2
+						res.Escalated = true
+						res.Pass1Actual = p1.Actual
+						res.Pass1Accurate = p1.Accurate
+						res.Pass1Entropy = p1.Entropy
+						res.Pass1LatencyMs = p1.WallTimeMs
+						res.Pass2LatencyMs = p2.WallTimeMs
+						res.WallTimeMs = p1.WallTimeMs + p2.WallTimeMs
+					}
+				} else if calVertexModel != "" {
+					res = evaluateCalibrationCaseVertex(ctx, genaiClient, calVertexModel, tc)
+				} else {
+					res = evaluateCalibrationCase(ctx, c, tc, calSamples)
+				}
 				results[idx] = res
 
 				if !calJSON {
@@ -197,7 +312,11 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 					if res.Error != "" {
 						statusBadge = styleWarn.Render("ERR ")
 					}
-					fmt.Printf("  [%02d/%02d] %-10s %-18s %-13s %s  exp=%-15s act=%-15s conf=%.3f H=%.4f (%.0fms)\n",
+					escTag := ""
+					if res.Escalated {
+						escTag = styleWarn.Render(" [ESC->Gemini]")
+					}
+					fmt.Printf("  [%02d/%02d] %-10s %-18s %-13s %s  exp=%-15s act=%-15s conf=%.3f H=%.4f (%.0fms)%s\n",
 						idx+1, len(cases),
 						styleID.Render(tc.ID),
 						tc.Category,
@@ -208,6 +327,7 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 						res.Confidence,
 						res.Entropy,
 						res.WallTimeMs,
+						escTag,
 					)
 					printMu.Unlock()
 				}
@@ -239,6 +359,12 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 	}
 
 	report := buildCalibrationReport(results, totalElapsed)
+	report.TargetURL = targetEndpointDisplay
+	report.TargetModel = targetModelDisplay
+
+	if calCascadeFrom != "" && calVertexModel != "" {
+		report.Cascade = buildCascadeSummary(results, pass1ModelName, calVertexModel, calCascadeThreshold)
+	}
 
 	if calOutput != "" {
 		data, err := json.MarshalIndent(report, "", "  ")
@@ -784,7 +910,213 @@ func printCalibrationSummary(report CalibrationReport, outputPath string) {
 		report.AvgConfidence, report.AvgEntropyNats, report.AvgWallTimeMs, report.TotalElapsedSec)
 	fmt.Println(styleAccent.Render("=========================================================================================="))
 
+	if report.Cascade != nil {
+		cs := report.Cascade
+		fmt.Println()
+		fmt.Println(styleAccent.Render("=========================================================================================="))
+		fmt.Println(styleAccent.Render("  Table 3: Entropy-Gated Cascade Scorecard (DiffusionGemma Pass-1 -> Vertex AI Gemini)"))
+		fmt.Println(styleAccent.Render("=========================================================================================="))
+		fmt.Printf("  • Pass-1 Fast Engine:      %s (threshold H >= %.2f nats)\n", styleID.Render(cs.Pass1Model), cs.EntropyThreshold)
+		fmt.Printf("  • Pass-2 Escalation Model: %s (Vertex AI Global)\n", styleID.Render(cs.Pass2Model))
+		fmt.Printf("  • Escalation Rate:         %d / %d cases (%.1f%% of traffic escalated to Gemini)\n", cs.EscalatedCases, cs.TotalCases, cs.EscalationRatePct)
+		fmt.Printf("  • Pass-1 Standalone Acc:   %d / %d (%.1f%%) @ %.0f ms avg latency\n", cs.Pass1Correct, cs.TotalCases, cs.Pass1AccuracyPct, cs.Pass1AvgLatencyMs)
+		fmt.Printf("  • Combined Cascade Acc:    %s (%d / %d) [%+.1f%% gain] @ %.0f ms effective latency\n",
+			stylePass.Render(fmt.Sprintf("%.1f%%", cs.CascadeAccuracyPct)),
+			cs.CascadeCorrect, cs.TotalCases, cs.AccuracyGainPct, cs.CascadeAvgLatMs)
+		fmt.Println(styleAccent.Render("=========================================================================================="))
+	}
+
 	if outputPath != "" {
 		fmt.Printf("\n  Saved structured JSON receipt to: %s\n\n", styleID.Render(outputPath))
 	}
+}
+
+func resolveGCPProject(override string) string {
+	if override != "" {
+		return override
+	}
+	for _, env := range []string{"GCP_PROJECT", "GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"} {
+		if v := strings.TrimSpace(os.Getenv(env)); v != "" {
+			return v
+		}
+	}
+	out, err := exec.Command("gcloud", "config", "get-value", "project").Output()
+	if err == nil {
+		return strings.TrimSpace(string(out))
+	}
+	return ""
+}
+
+func buildCascadeSummary(results []CalibrationCaseResult, pass1Model, pass2Model string, threshold float64) *CascadeSummary {
+	if pass1Model == "" {
+		pass1Model = "DiffusionGemma-26B-NVFP4"
+	}
+	cs := &CascadeSummary{
+		Pass1Model:       pass1Model,
+		Pass2Model:       pass2Model,
+		EntropyThreshold: threshold,
+		TotalCases:       len(results),
+	}
+	var sumP1Lat, sumP2Lat, sumCascLat float64
+	for _, r := range results {
+		if r.Pass1Accurate {
+			cs.Pass1Correct++
+		}
+		if r.Accurate {
+			cs.CascadeCorrect++
+		}
+		sumP1Lat += r.Pass1LatencyMs
+		sumCascLat += r.WallTimeMs
+		if r.Escalated {
+			cs.EscalatedCases++
+			sumP2Lat += r.Pass2LatencyMs
+		}
+	}
+	if len(results) > 0 {
+		n := float64(len(results))
+		cs.EscalationRatePct = float64(cs.EscalatedCases) / n * 100.0
+		cs.Pass1AccuracyPct = float64(cs.Pass1Correct) / n * 100.0
+		cs.CascadeAccuracyPct = float64(cs.CascadeCorrect) / n * 100.0
+		cs.AccuracyGainPct = cs.CascadeAccuracyPct - cs.Pass1AccuracyPct
+		cs.Pass1AvgLatencyMs = sumP1Lat / n
+		cs.CascadeAvgLatMs = sumCascLat / n
+		if cs.EscalatedCases > 0 {
+			cs.Pass2AvgLatencyMs = sumP2Lat / float64(cs.EscalatedCases)
+		}
+	}
+	return cs
+}
+
+func evaluateCalibrationCaseVertex(ctx context.Context, genaiClient *genai.Client, model string, tc CalibrationCase) CalibrationCaseResult {
+	res := CalibrationCaseResult{
+		ID:       tc.ID,
+		Metric:   tc.Metric,
+		Category: tc.Category,
+		Tier:     tc.Tier,
+		Expected: tc.Expected,
+	}
+
+	schemaRaw, stateRaw, _, evalMode, err := buildCalibrationPayload(tc, "1")
+	if err != nil {
+		res.Error = err.Error()
+		return res
+	}
+
+	var schemaMap map[string]interface{}
+	_ = json.Unmarshal([]byte(schemaRaw), &schemaMap)
+	sysInstr, _ := schemaMap["instructions"].(string)
+
+	var genaiSchema *genai.Schema
+	switch evalMode {
+	case "bool":
+		genaiSchema = &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"passed":      {Type: genai.TypeBoolean, Description: "True if the proposition holds; false otherwise."},
+				"confidence":  {Type: genai.TypeNumber, Description: "Expected confidence or human agreement rate between 0.0 and 1.0."},
+				"explanation": {Type: genai.TypeString, Description: "Brief 1-sentence justification."},
+			},
+			Required: []string{"passed", "confidence", "explanation"},
+		}
+	case "choice":
+		var enumVals []string
+		if qs, ok := schemaMap["questions"].([]interface{}); ok && len(qs) > 0 {
+			if q0, ok := qs[0].(map[string]interface{}); ok {
+				if opts, ok := q0["options"].([]interface{}); ok {
+					for _, o := range opts {
+						if om, ok := o.(map[string]interface{}); ok {
+							if name, ok := om["name"].(string); ok {
+								enumVals = append(enumVals, name)
+							}
+						}
+					}
+				}
+			}
+		}
+		genaiSchema = &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"selection":   {Type: genai.TypeString, Enum: enumVals, Description: "Selected category from the allowed options."},
+				"confidence":  {Type: genai.TypeNumber, Description: "Confidence in the selected label between 0.0 and 1.0."},
+				"explanation": {Type: genai.TypeString, Description: "Brief 1-sentence justification."},
+			},
+			Required: []string{"selection", "confidence", "explanation"},
+		}
+	default:
+		genaiSchema = &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"score":       {Type: genai.TypeNumber, Description: "Numeric rating or fraction matching the scale in the instructions."},
+				"confidence":  {Type: genai.TypeNumber, Description: "Confidence in the rating between 0.0 and 1.0."},
+				"explanation": {Type: genai.TypeString, Description: "Brief 1-sentence justification."},
+			},
+			Required: []string{"score", "confidence", "explanation"},
+		}
+	}
+
+	prompt := fmt.Sprintf("Instructions:\n%s\n\nInput Data:\n%s", sysInstr, stateRaw)
+	temp := float32(0.0)
+	cfg := &genai.GenerateContentConfig{
+		Temperature:      &temp,
+		ResponseMIMEType: "application/json",
+		ResponseSchema:   genaiSchema,
+	}
+
+	t0 := time.Now()
+	resp, err := genaiClient.Models.GenerateContent(ctx, model, genai.Text(prompt), cfg)
+	res.WallTimeMs = float64(time.Since(t0).Milliseconds())
+	if err != nil {
+		res.Error = err.Error()
+		return res
+	}
+
+	rawText := strings.TrimSpace(resp.Text())
+	var parsed map[string]interface{}
+	if err := json.Unmarshal([]byte(rawText), &parsed); err != nil {
+		res.Error = fmt.Sprintf("invalid JSON from Vertex AI: %v", err)
+		return res
+	}
+
+	conf := 0.90
+	if cVal, ok := parsed["confidence"].(float64); ok && cVal > 0 {
+		conf = cVal
+	}
+	if conf > 0.9999 {
+		conf = 0.9999
+	} else if conf < 0.0001 {
+		conf = 0.0001
+	}
+	res.Confidence = conf
+	// Compute binary Shannon entropy H from verbalized confidence
+	res.Entropy = -(conf*math.Log(conf) + (1.0-conf)*math.Log(1.0-conf))
+
+	switch evalMode {
+	case "bool":
+		passed, _ := parsed["passed"].(bool)
+		if passed {
+			res.Actual = "true"
+		} else {
+			res.Actual = "false"
+		}
+		res.Accurate = strings.EqualFold(res.Actual, tc.Expected)
+	case "choice":
+		sel, _ := parsed["selection"].(string)
+		res.Actual = strings.TrimSpace(sel)
+		res.Accurate = strings.EqualFold(res.Actual, tc.Expected)
+	case "score_int":
+		sc, _ := parsed["score"].(float64)
+		res.Actual = fmt.Sprintf("%.0f", sc)
+		expVal, errExp := strconv.ParseFloat(tc.Expected, 64)
+		if errExp == nil {
+			res.Accurate = math.Abs(expVal-sc) <= 1.0
+		}
+	case "score_float":
+		sc, _ := parsed["score"].(float64)
+		res.Actual = fmt.Sprintf("%.2f", sc)
+		expVal, errExp := strconv.ParseFloat(tc.Expected, 64)
+		if errExp == nil {
+			res.Accurate = math.Abs(expVal-sc) <= 0.25
+		}
+	}
+	return res
 }
