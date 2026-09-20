@@ -155,7 +155,7 @@ make docs-build  # Build the Catppuccin Latte Starlight documentation site
 * **[Architecture: Discrete Diffusion vs. Autoregression](docs/architecture.md)**: Mechanical breakdown of 256-token canvas denoising, bidirectional slot readout, and terminology history.
 * **[Real-World Applications & Production Patterns](docs/applications.md)**: Production architectures for agentic dispatch, DevSecOps git hooks, SIEM alert triage, and high-scale evaluations.
 * **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Vertex AI, hosted vLLM clusters, and understanding discrete slot readout mechanics.
-* **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Empirical metrics comparing slot readout against generative autoregression on Apple Silicon Metal and Cloud Run L4.
+* **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Empirical metrics comparing slot readout against generative autoregression on Apple Silicon Metal and GCE NVIDIA L4 / A100 GPUs.
 * **[Cloud Run Lessons Learned & Native CUDA Build Guide](docs/cloudrun-lessons-learned.md)**: C++ ABI compatibility findings, Hugging Face Hub egress rate limiting, and blueprint for custom CUDA C++ builds.
 * **[Ecotone (WFST) vs. DiffusionGemma](docs/ecotone-comparison.md)**: Latency vs. grammar authoring flexibility comparison and the Cascaded Normalizer architecture.
 
@@ -163,14 +163,15 @@ make docs-build  # Build the Catppuccin Latte Starlight documentation site
 
 ## Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change. Please ensure unit tests pass:
+Issues, bug reports, and feature discussions are welcome! However, **we are not accepting pull requests (PRs) at this time**. If you encounter a bug or have feedback on benchmark methodologies or templates, please open an [Issue](https://github.com/ghchinoy/dgem/issues).
 
-```bash
-go test ./pkg/...
-```
-
----
 
 ## License
 
 This project is licensed under the [Apache-2.0 License](LICENSE).
+
+## Disclaimer
+
+> [!CAUTION]
+> This is **not** an officially supported Google product.
+> This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
