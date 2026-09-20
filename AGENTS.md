@@ -73,6 +73,13 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
 - `dgem bench-ecotone`: 49-case Text Normalization comparison against the C++ `ecotone` Sparrowhawk/NeMo WFST sidecar (`unix:///tmp/ecotone.sock`) across `tn_semiotics.jsonl` (30 polysemy traps) and `tn_challenge_en.jsonl` (19 deterministic NSWs).
 - `dgem bench-intents`: High-cardinality intent & Out-of-Scope (`oos`) evaluation for `PolyAI/banking77` and `DeepPavlov/clinc150`. Pass `--dataset banking77 --full --workers 16` (3,080 test items) or `--dataset clinc150 --full --workers 16` (5,500 test items) to run full upstream splits.
 - `dgem bench-calibration`: 50-case public dataset calibration, guardrail (`AgentDrift`, `deepset/prompt-injections`, `LLM-AggreFact`, `MS MARCO`), and `ChaosNLI` human-disagreement Shannon entropy $H$ correlation suite (`benchmarks/calibration_suite.jsonl`, `templates/calibration/`, receipt in `benchmarks/results_calibration_cloudrun.json`).
+  - Supports **Entropy-Gated Escalation Cascades (`EXP-05`)**: pass `--cascade-from benchmarks/results_calibration_cloudrun.json --escalate-entropy 0.35` to early-exit low-entropy items ($H < 0.35\text{ nats}$) at Stage 1 (`dgemma`, `712 ms`) and escalate only high-entropy items ($H \ge 0.35\text{ nats}$, `28%` of traffic) to Vertex AI (`gemini-3.8-flash`), achieving `94.0%` overall accuracy (`benchmarks/results_calibration_cascade.json`).
+
+## 4. Decision Model Taxonomy, Experiment Ledger & Docs Symmetry
+- **Core Framing**: Always position **DiffusionGemma (`dgemma`)** as a **Zero-Shot Decision Model** (joint multi-slot readout in $O(1)$ forward passes with calibrated epistemic Shannon entropy $H$) and **`dgem` `.json.tmpl` files** as **Executable Decision Policies (`Policy-as-Template` / `Policy-as-Code`)**, including conditional policy DAGs (`depends_on` & `ask_if` in `templates/secops_conditional_dag.json.tmpl`).
+- **Experiment Ledger (`docs/experiments/`)**: Whenever a new benchmark harness, dataset, or cascade experiment is added, register it with an `EXP-XX` identifier in `docs/experiments/README.md` (linking the `.json.tmpl` policy templates, `benchmarks/*.jsonl` dataset, CLI command, and `benchmarks/results_*.json` receipt).
+- **Mirroring Mandate (`docs/` $\leftrightarrow$ `docs-site/`)**: Keep markdown files in `docs/` (including `docs/experiments/`, `docs/decision-models-primer.md`, `docs/templates.md`, and `docs/benchmarks-report.md`) synchronized with `docs-site/src/content/docs/`, update `docs-site/astro.config.mjs` when adding new pages, and verify static site compilation via `rtk npm run build` in `docs-site/`.
+
 
 
 
