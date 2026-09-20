@@ -76,28 +76,33 @@ Evaluated using `diffgemma-26b-a4b-it-q4:think=false` with a strict JSON system 
 
 ---
 
-## 5. Cloud Run GPU Deployment (`nvidia-l4`)
+## 5. Cloud GPU Findings (GCE `g2-standard-8`, 1× NVIDIA L4)
 
-Google Cloud Run deployment files are staged and configured:
-* **Service Spec**: `deploy/cloudrun/service.yaml` (configured for 1× NVIDIA L4 GPU, 8 vCPUs, 32 GiB RAM).
-* **Container**: `deploy/cloudrun/Dockerfile.vllm` (vLLM with PR #57250 overlay).
-* **Deployment Command**:
-  ```bash
-  export GCP_PROJECT="your-project-id"
-  make cloudrun-deploy
-  ```
+Evaluated live on Google Compute Engine running `nvidia/diffusiongemma-26B-A4B-it-NVFP4` with 32k KV cache and Triton attention:
 
-### Running the Benchmark Against Cloud Run
-Once deployed, execute the identical benchmark suite using automatic IAM authentication:
-
-```bash
-./bin/dgem bench \
-  -u "https://diffusiongemma-vllm-xyz.a.run.app/v1" \
-  --gcp-auth \
-  -d benchmarks/eval_dataset.jsonl \
-  -M slot \
-  -o benchmarks/results_cloudrun_l4.json
 ```
+================================================================================
+  DIFFUSIONGEMMA: DISCRETE DIFFUSION BENCHMARK EVALUATION
+================================================================================
+Target Server: http://35.193.147.242:8080/v1
+Model:         nvidia/diffusiongemma-26B-A4B-it-NVFP4
+Mode:          slot
+Test Cases:    30 items
+
+• Slot Readout Accuracy:        73.3% (22 of 30 matched expected)
+• Average End-to-End Wall Time: 1,968.7 ms (~1.97s per decision)
+• Sub-Second Evals:             3 cases concluded under 900 ms (min: 776 ms)
+• Speedup vs Generative:        ~8.9× faster wall time
+```
+
+### Key Comparative Takeaways:
+1. **Latency vs. Local Apple M5 Metal**:
+   * **Local Apple M5 Metal**: ~4,143 ms average wall time across 30 multi-sample cases (~1,830 ms for single reads).
+   * **Cloud NVIDIA L4 GPU**: **1,968.7 ms** average wall time overall (**~2.1× faster overall latency**).
+2. **Speedup vs. Generative Baseline**:
+   * Traditional autoregressive generation took **~17.5s** per request.
+   * L4 GPU evaluated structured decisions in **~1.97s**—an **~8.9× throughput acceleration**.
+3. **Receipt**: Structured benchmark metrics are preserved in `benchmarks/results_gce_l4.json`.
 
 ---
 
