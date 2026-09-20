@@ -26,11 +26,11 @@ if [[ "$PRECISION" == "16" || "$PRECISION" == "unquant" || "$PRECISION" == "bflo
   DEFAULT_DTYPE="bfloat16"
   DEFAULT_INSTANCE="diffgemma-bench-a100-2x"
 elif [[ "$PRECISION" == "8" || "$PRECISION" == "fp8" || "$PRECISION" == "quant8" ]]; then
-  DEFAULT_MODEL="neuralmagic/diffusiongemma-26B-A4B-it-FP8"
+  DEFAULT_MODEL="RedHatAI/diffusiongemma-26B-A4B-it-FP8-dynamic"
   DEFAULT_MACHINE="a2-highgpu-1g"
   DEFAULT_TP="1"
   DEFAULT_DTYPE="auto"
-  DEFAULT_INSTANCE="diffgemma-bench-a100"
+  DEFAULT_INSTANCE="diffgemma-bench-fp8"
 else
   DEFAULT_MODEL="nvidia/diffusiongemma-26B-A4B-it-NVFP4"
   DEFAULT_MACHINE="g2-standard-8"
@@ -90,7 +90,9 @@ else
     "--metadata=hf-token=${HF_TOKEN:-},model-id=${MODEL_ID},tensor-parallel-size=${TP_SIZE},dtype=${DTYPE},install-nvidia-driver=True"
   )
 
-  if [[ "$MACHINE_TYPE" =~ ^g2- ]]; then
+  if [[ "$MACHINE_TYPE" == "g2-standard-16" ]]; then
+    CREATE_FLAGS+=("--accelerator=type=nvidia-l4,count=2")
+  elif [[ "$MACHINE_TYPE" =~ ^g2- ]]; then
     CREATE_FLAGS+=("--accelerator=type=nvidia-l4,count=1")
   fi
 
