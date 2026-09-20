@@ -20,7 +20,43 @@ Across **49 head-to-head test cases** spanning **Corpus A** (`benchmarks/ecotone
 
 ---
 
-## 2. Experimental Design & Benchmark Corpora
+## 2. Defining "Semiotic Polysemy" in Text Normalization
+
+In speech synthesis (TTS) and speech recognition (ASR) literature (Sproat et al., 2001; Taylor, 2009), written text is not a pure phonetic transcript—it is a mixture of natural words and **semiotic tokens** (Non-Standard Words, or NSWs) representing structured domains such as `DATE`, `CARDINAL`, `ORDINAL`, `MEASURE`, `MONEY`, `TIME`, and `ADDRESS`.
+
+> **Definition — Semiotic Polysemy:**  
+> **Semiotic polysemy** occurs when an identical written surface token (orthographic glyph sequence) belongs to **multiple distinct semiotic classes**—or maps to **multiple mutually exclusive spoken verbalizations**—depending entirely on the surrounding syntactic, semantic, or pragmatic context of the utterance.
+
+Unlike *allographic variation* (where multiple spoken forms are acceptable synonyms, such as *"three fourths"* vs. *"three quarters"*), semiotic polysemy is **truth-conditional**: choosing the wrong verbalization changes the meaning or corrupts the grammar of the spoken sentence.
+
+### The Three Canonical Forms of Semiotic Polysemy
+
+1. **Cross-Class Semiotic Collision**:
+   The exact same symbol sequence maps to different semiotic classes depending on its grammatical role in the clause:
+   - **`1984`**: `DATE` (*"nineteen eighty-four"* in *"In 1984..."*) vs. `CARDINAL` (*"one thousand nine hundred eighty-four"* in *"1984 citizens..."*) vs. `TELEPHONE/ID` (*"one nine eight four"* in *"Room 1984"*).
+   - **`VIII`**: `ORDINAL_REGNAL` (*"the Eighth"* after a monarch's name: *"King Henry VIII"*) vs. `CARDINAL` (*"Eight"* after a document heading: *"Chapter VIII"*).
+   - **`3/4`**: `FRACTION` (*"three fourths"* in *"3/4 of the trials"*) vs. `DATE` (*"March fourth"* in *"on 3/4/2026"*).
+   - **`108-104`**: `SCORE_RANGE` (*"one hundred eight to one hundred four"* in *"defeated the Celtics 108-104"*) vs. `MATH_EXPRESSION` (*"one hundred eight minus one hundred four"*).
+
+2. **Intra-Class Abbreviation Homography**:
+   A single abbreviated surface token expands to completely different lexical words depending on whether it functions as a prefix honorific/saint or a suffix thoroughfare/unit:
+   - **`St.`**: *"Saint"* (toponymic prefix in *"St. Mark"*) vs. *"Street"* (thoroughfare suffix in *"Mark St."*) vs. *"stone"* (`st.` as a British weight measure in *"weighs 20 st."*).
+   - **`Dr.`**: *"Doctor"* (honorific title before a person in *"Dr. Smith"*) vs. *"Drive"* (thoroughfare suffix after a road name in *"Ocean Dr."*).
+
+3. **Morphosyntactic Heteronymy (G2P Polysemy)**:
+   Identical standard orthographic words whose phonemic pronunciation shifts based on part-of-speech (noun/adjective vs. verb tense):
+   - **`lead`**: `/lɛd/` (*"led"*, noun modifier in *"heavy lead pipes"*) vs. `/liːd/` (*"leed"*, transitive verb in *"will lead the review"*).
+
+### Why Finite-State Transducers Fail on Semiotic Polysemy
+Weighted Finite State Transducers ($\text{ShortestPath}(T \circ \text{Input} \circ V)$) are regular-language machines (`Chomsky Type-3`) that assign static arc weights using a **1–3 token local sliding window**. Because a WFST cannot construct a sentence-wide dependency parse tree, it faces an inescapable dilemma whenever it encounters a polysemic token:
+- **Failure Mode 1 — Default-Weight Collapse**: One expansion is assigned a slightly lower tropical semiring weight than the other and wins globally, causing *"Ocean Dr."* to be misverbalized as ***"Ocean doctor"*** (`tn-06`) and *"1984 citizens"* to be misverbalized as ***"nineteen eighty-four citizens"*** (`tn-04`).
+- **Failure Mode 2 — Verbatim Abstention**: To prevent embarrassing errors on tied arc weights, the grammar author disables expansion when context is ambiguous, causing both `St.` tokens in *"123 St. Mark St."* to be left unexpanded as raw **`"St."`** (`tn-01`, `tn-02`).
+
+By contrast, **DiffusionGemma** applies **full bidirectional cross-attention** across the entire sentence before denoising the target slot, resolving both `St.` #1 (*"Saint"*) and `St.` #2 (*"Street"*) in a single forward pass.
+
+---
+
+## 3. Experimental Design & Benchmark Corpora
 
 To evaluate both engines without bias, the benchmark (`./bin/dgem bench-ecotone`) runs against two complementary datasets:
 
@@ -40,7 +76,7 @@ Adapted directly from Ecotone's failure-hunting suite (`../ecotone/docs/reports/
 
 ---
 
-## 3. Verbatim Empirical Findings: Where Each Engine Wins
+## 4. Verbatim Empirical Findings: Where Each Engine Wins
 
 The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semiotics.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_ecotone_gce_l4_semiotics.json) and [`benchmarks/results_ecotone_gce_l4_challenge.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_ecotone_gce_l4_challenge.json)) expose the exact mechanics of both architectures:
 
@@ -73,7 +109,7 @@ The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semioti
 
 ---
 
-## 4. The Production Synthesis: The "Cascaded Normalizer"
+## 5. The Production Synthesis: The "Cascaded Normalizer"
 
 Rather than replacing Ecotone with a neural model or accepting WFST polysemy errors, the optimal production architecture is a **Cascaded Normalizer**:
 
@@ -108,7 +144,7 @@ Raw Text Input (e.g. "Dr. Smith drove 5 miles down Ocean Dr. on 3/5/2026 for $5.
 
 ---
 
-## 5. Reproducing the Head-to-Head Benchmark
+## 6. Reproducing the Head-to-Head Benchmark
 
 `dgem` includes a native Go gRPC client (`pkg/ecotone`) that connects directly to the local `ecotone` Unix Domain Socket (`unix:///tmp/ecotone.sock`) alongside local Metal or remote vLLM endpoints:
 
