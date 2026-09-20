@@ -48,10 +48,12 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
 - **Cloud GPU vLLM (`/v1/chat/completions`)**:
   - Requires installing the nightly prebuilt wheel (`wheels.vllm.ai`) matching the base commit of vLLM PR #57250 (`133b71e0be`) to avoid C++ CUDA extension ABI symbol mismatches (`gptq_marlin_repack`, `moe_wna16_marlin_gemm`).
   - Must launch with `--attention-backend TRITON_ATTN --enforce-eager --max-model-len 32768` because FlashAttention-2 rejects DiffusionGemma's mixed causal-prompt / bidirectional-canvas attention masks.
+  - Requires patching `self._enable_mm_lora = False` in `Gemma4ForConditionalGeneration.__init__` (`vllm/model_executor/models/gemma4_mm.py`) so `DiffusionGemmaForConditionalGeneration` does not raise `AttributeError` during model load (automated in `scripts/startup_gce_vllm.sh` and `deploy/cloudrun/patch_vllm.py`).
   - `pkg/client` requests `logprobs: true, top_logprobs: 5` on every `Decide` call and uses `ParseStructuredContentWithLogprobs` to compute calibrated slot probability $\exp(\text{logprob})$, Shannon entropy $H = -\sum p_k \ln p_k$, and top-$k$ candidate probabilities.
 - **Serverless Cloud Run GPU (`structured_server.py`)**:
   - Acts as a local reverse proxy in front of vLLM on port 8000, serving `POST /v1/chat/completions` on port 8080.
   - Returns structured envelope JSON `{"answers": {...}, "diagnostics": {...}}`. `pkg/client` supports envelope fallback parsing, handling polymorphic slice-based `entropy` and dictionary-based sampling policies.
+  - **26-Option `[A-Z]` Slot Limit**: `structured_server.py` maps single-token `choice` slots to uppercase English letters `A`–`Z`, enforcing a maximum of **26 alternatives per `choice` question** (`HTTP 400: at most 26 alternatives`). High-cardinality taxonomies (>26 labels) must use a 26-option slice or two-stage hierarchical routing.
 
 ## 2. Cloud GPU Provisioning & Zero-Idle-Cost Mandate
 - **Serverless Cloud Run (1× NVIDIA L4, 24GB)**:
@@ -59,8 +61,9 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
   - Weights: Pre-staged in GCS: `gs://dgem-weights-$PROJECT/dgemma/` (`make cloudrun-stage`).
   - Service Name: Strictly **`dgemma`** (never `"djev"` or `"djev-dgemma"`).
   - Deploy: `make cloudrun-deploy` (mounts GCS bucket via Cloud Storage FUSE with `--safetensors-load-strategy prefetch`).
+  - **Cold-Start Readiness Pattern**: On scale-from-zero (`--min-instances=0`), `structured_server.py` on port 8080 passes `/health` probes immediately while vLLM's `EngineCore` on port 8000 takes ~6–8 minutes to stream the 17.53 GiB checkpoint over GCS FUSE (`ConnectionRefusedError(111)`). Always poll with a single `-w 1` `dgem decide` readiness probe before launching concurrent `-w 4` benchmark workers to avoid `HTTP 429` / `HTTP 500` errors.
   - Query: `./bin/dgem decide -u "${URL}/v1" --gcp-auth ...`
-  - **Mandatory Immediate Teardown**: Always run `make cloudrun-teardown` (`gcloud run services delete dgemma --region=us-central1 --quiet`) immediately after capturing test receipts.
+  - **Mandatory Immediate Teardown**: Always chain `&& make cloudrun-teardown` (`gcloud run services delete dgemma --region=us-central1 --quiet`) immediately after capturing test receipts.
 - **4-bit (`NVFP4`) on GCE VM 1× NVIDIA L4 (`g2-standard-8`)**: Use project `ghchinoy-genai-sa` (`PRECISION=4 make gce-deploy`).
 - **16-bit (`bfloat16`) on GCE VM 2× NVIDIA A100-40GB (`a2-highgpu-2g`, `TP=2`)**: Use project `genai-blackbelt-fishfooding` (`GCP_PROJECT=genai-blackbelt-fishfooding GCP_ZONE=us-central1-b PRECISION=16 make gce-deploy`).
 - **Mandatory Immediate Teardown**: Always run `make gce-teardown` (`./scripts/teardown_gce_vllm.sh`) immediately after capturing benchmark receipts so zero cloud GPU resources remain active. Never commit `.env` (contains `HF_TOKEN`).
@@ -69,5 +72,7 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
 - `dgem bench`: 30-case multi-domain decision suite (`benchmarks/eval_dataset.jsonl` across `support`, `code_review`, `security`). Receipts stored in `benchmarks/results_local_metal_slot.json`, `benchmarks/results_gce_l4.json`, and `benchmarks/results_cloudrun.json`.
 - `dgem bench-ecotone`: 49-case Text Normalization comparison against the C++ `ecotone` Sparrowhawk/NeMo WFST sidecar (`unix:///tmp/ecotone.sock`) across `tn_semiotics.jsonl` (30 polysemy traps) and `tn_challenge_en.jsonl` (19 deterministic NSWs).
 - `dgem bench-intents`: High-cardinality intent & Out-of-Scope (`oos`) evaluation for `PolyAI/banking77` and `DeepPavlov/clinc150`. Pass `--dataset banking77 --full --workers 16` (3,080 test items) or `--dataset clinc150 --full --workers 16` (5,500 test items) to run full upstream splits.
+- `dgem bench-calibration`: 50-case public dataset calibration, guardrail (`AgentDrift`, `deepset/prompt-injections`, `LLM-AggreFact`, `MS MARCO`), and `ChaosNLI` human-disagreement Shannon entropy $H$ correlation suite (`benchmarks/calibration_suite.jsonl`, `templates/calibration/`, receipt in `benchmarks/results_calibration_cloudrun.json`).
+
 
 
