@@ -225,6 +225,24 @@ Stratifying the 50 benchmark items by their human annotator disagreement tier (`
 
 * **Why This Matters for Production Guardrails**: On `ChaosNLI`, when 100 human annotators agree (`low-entropy`), DiffusionGemma achieves **100% accuracy** with near-zero entropy (`H = 0.0744 nats`). When the human crowd itself splits evenly across `entailment`, `neutral`, and `contradiction` (`high-entropy`), DiffusionGemma's internal Shannon entropy spikes **8.0× higher (`H = 0.5932 nats`)**—providing an uncalibrated autoregressive LLM's missing signal: **a mathematically grounded abstention / escalation gate**.
 
+### 8.3 Head-to-Head: DiffusionGemma 26B vs. `gemini-3.8-flash`, `gemini-3.5-flash-lite`, and `gemini-2.5-flash`
+
+Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/results_calibration_gemini38.json`](../benchmarks/results_calibration_gemini38.json)) and cross-referencing the 46-case `mizan eval compare-engines` sweep across `gemini-2.5-flash`, `gemini-3.5-flash-lite`, and `gemini-3.8-flash`, we compared single-pass discrete diffusion readout on a Cloud Run L4 GPU (`NVFP4`) against Vertex AI autoregressive models:
+
+| Engine / Architecture | 46-Case `mizan` YAML Acc | 50-Case `dgem` Schema Acc | Avg Latency / Req | Speedup vs. `3.8-flash` | Architectural Strength |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **`gemini-2.5-flash`** (Vertex AI Autoregressive) | 80.4% (37 / 46) | — | 2,423 ms | 1.41× | Baseline previous-generation Flash model |
+| **`gemini-3.5-flash-lite`** (Vertex AI Autoregressive) | 82.6% (38 / 46) | — | 905 ms | 3.77× | Fast general-purpose autoregressive lite model |
+| **`DiffusionGemma 26B`** (Cloud Run 1× L4 `NVFP4`, `s=1`) | **89.1% (41 / 46)** | **88.0% (44 / 50)** | **712 ms** ⭐ | **4.79× faster** ⭐ | **100% AgentDrift (`693 ms`), 100% Guardrail (`669 ms`), 100% Intent (`765 ms`)**, calibrated Shannon entropy $H$ |
+| **`gemini-3.8-flash`** (Vertex AI Autoregressive) | 87.0% (40 / 46) | **98.0% (49 / 50)** 🏆 | 3,412 ms | 1.00× (Baseline) | **100% ANLI (`3/3`), 100% ChaosNLI (`6/6`), 100% Toxicity (`6/6`)** via multi-hop reasoning |
+| **Entropy-Gated Cascade** (`dgemma` $\xrightarrow{H \ge 0.35}$ `3.8-flash`) | **93.5% (43 / 46)** | **94.0% (47 / 50)** ⭐ | **1,824 ms** | **1.87× faster** (`72%` local) | **100% on `ambiguous` (`9/9`), `high-entropy` (`3/3`), and `toxicity` (`6/6`)** while escalating only 28% of traffic |
+
+### 8.4 Entropy-Gated Cascade (`EXP-05`: `DiffusionGemma` $\xrightarrow{H \ge 0.35\text{ nats}}$ `gemini-3.8-flash`)
+
+As detailed in [`docs/experiments/exp-05-roadmap-cascades-and-dags.md`](experiments/exp-05-roadmap-cascades-and-dags.md), DiffusionGemma's restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ acts as a **zero-overhead router** ([`benchmarks/results_calibration_cascade.json`](../benchmarks/results_calibration_cascade.json)):
+- **Pass 1 (`H < 0.35 nats` — 72.0% of traffic handled by DiffusionGemma at `712 ms`)**: All 36 low-entropy items exit immediately at Stage 1 without calling Vertex AI, achieving **100.0%** across `easy` (`17/17`), `localization` (`3/3`), `out-of-scope` (`2/2`), and `low-entropy` (`3/3`).
+- **Pass 2 (`H >= 0.35 nats` — 28.0% escalated to `gemini-3.8-flash`)**: Only the 14 high-entropy queries escalate to `gemini-3.8-flash`, resolving **all 3 `ChaosNLI` `high-entropy` splits (`3/3 = 100%`)**, **`tox-03` harsh journalistic criticism (`6/6 = 100%` toxicity)**, and **`anli-03` (`9/9 = 100%` across the `ambiguous` tier)**—lifting overall accuracy to **94.0% (47 / 50)** at **1,824 ms** effective latency (**1.87× faster** than standalone `gemini-3.8-flash`).
+
 ---
 
 ## 9. When to Use DiffusionGemma vs. Autoregressive LLMs vs. Custom Models (BERT / WFST)
@@ -238,7 +256,7 @@ Stratifying the 50 benchmark items by their human annotator disagreement tier (`
 | **Agent Trajectory Hijack & Guardrails** (`AgentDrift`, `prompt-injections`) | Requires custom sequence-pair classifiers | **100.0% accuracy (`7/7` AgentDrift, `4/4` Prompt Injection) in ~680 ms** ⭐ | High latency for inline per-step tool-call gating |
 | **Zero-Shot High-Cardinality Routing & OOS** (`CLINC150` / `Banking77`) | **0% zero-shot** (requires 10k+ training rows & retraining per label change) | **96.7% (`CLINC150`), 100% OOS rejection, 86.7% (`Banking77`)** ⭐ *(Best for evolving schemas)* | Suffers from left-to-right shared-prefix bias on `card_payment_*` |
 | **Multi-Field Triage & Extraction** (`support`, `security`, `code_review`) | Requires separate classifier heads per field; 512–8k token limit | **80.0% – 86.7% (`100%` on `code_review` with `s=4`)**, 100% valid JSON, 256k context ⭐ | `0%` raw JSON without markdown stripping; `4.2×–8.9×` slower |
-| **Multi-Hop Symbolic / Control-Flow Reasoning** (`complex` / `ANLI-R3`) | **0%** | **0% – 28.6%** (fixed-step denoising lacks long serial scratchpad) | **80%+** ⭐ *(Best choice: Gemini Thinking)* |
+| **Multi-Hop Symbolic / Control-Flow Reasoning** (`complex` / `ANLI-R3`) | **0%** | **0% – 28.6%** (fixed-step denoising lacks long serial scratchpad) | **80%+** ⭐ *(Best choice: Gemini Thinking / Entropy Cascade)* |
 
 ---
 
@@ -251,7 +269,7 @@ make serve
 ./bin/dgem bench-calibration -o benchmarks/results_calibration_metal.json
 ```
 
-### Serverless Google Cloud Run (1× NVIDIA L4, 24 GB)
+### Serverless Google Cloud Run (1× NVIDIA L4, 24 GB) & Entropy-Gated Cascade
 ```bash
 export GCP_PROJECT="your-gcp-project-id"
 export GCP_REGION="us-central1"
@@ -270,6 +288,11 @@ SERVICE_URL=$(gcloud run services describe dgemma --region=$GCP_REGION --format=
 
 # Immediate teardown for zero idle cost:
 make cloudrun-teardown
+
+# Run Vertex AI gemini-3.8-flash standalone & Entropy-Gated Cascade (H >= 0.35):
+./bin/dgem bench-calibration --vertex-model gemini-3.8-flash -w 6 -o benchmarks/results_calibration_gemini38.json
+./bin/dgem bench-calibration --cascade-from benchmarks/results_calibration_cloudrun.json \
+  --vertex-model gemini-3.8-flash --cascade-threshold 0.35 -w 4 -o benchmarks/results_calibration_cascade.json
 ```
 
 ### Google Compute Engine (4-bit on 1× L4 or 16-bit on 2× A100)
