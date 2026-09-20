@@ -17,7 +17,7 @@ done
 # Install vLLM nightly matching PR #57250 base commit
 echo "==> Installing matching vLLM nightly wheel..."
 pip install -U pip
-pip install https://wheels.vllm.ai/36fa72d2d0d2f86c7c83e1e99c9012b7bd26463b/vllm-0.29.1rc1.dev410%2Bg36fa72d2d-cp38-abi3-manylinux_2_28_x86_64.whl huggingface_hub
+pip install https://wheels.vllm.ai/36fa72d2d0d2f86c7c83e1e99c9012b7bd26463b/vllm-0.29.1rc1.dev410%2Bg36fa72d2d-cp38-abi3-manylinux_2_28_x86_64.whl huggingface_hub compressed-tensors
 pip uninstall -y torchaudio
 
 # Clone PR #57250 branch
@@ -43,6 +43,9 @@ done
 
 mkdir -p /opt/diffusion_reads
 cp -r /tmp/vllm-pr/examples/features/diffusion_reads/* /opt/diffusion_reads/
+
+# Patch upstream vLLM multimodal runner bug where DiffusionGemma lacks _enable_mm_lora
+sed -i 's/if self._enable_mm_lora:/if getattr(self, "_enable_mm_lora", False):/g' "$VLLM_PATH/model_executor/models/gemma4_mm.py" 2>/dev/null || true
 
 # Find vllm executable path
 VLLM_BIN=$(which vllm || echo "/usr/local/bin/vllm")
