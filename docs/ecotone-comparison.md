@@ -26,9 +26,9 @@ To evaluate both engines without bias, the benchmark (`./bin/dgem bench-ecotone`
 
 ### Corpus A: Context-Dependent Semiotic Polysemy (`benchmarks/ecotone/tn_semiotics.jsonl` — 30 Cases)
 Targets **5 classic semiotic traps** where a 1–3 token finite-state sliding window lacks syntactic depth:
-1. **In-Sentence Abbreviation Polysemy (`tn-01`–`tn-02`, `tn-05`–`tn-08`, `tn-11`–`tn-12`)**:Identical surface abbreviations appearing twice in the same sentence with distinct spoken realizations (`123 St. Mark St.` $\rightarrow$ *Saint* vs. *Street*; `Dr. Smith ... Ocean Dr.` $\rightarrow$ *Doctor* vs. *Drive*; `20 st. and 6 ft.` $\rightarrow$ *stone* vs. *feet*).
+1. **In-Sentence Abbreviation Polysemy (`tn-01`–`tn-02`, `tn-05`–`tn-08`, `tn-11`–`tn-12`)**:Identical surface abbreviations appearing twice in the same sentence with distinct spoken realizations (`123 St. Mark St.` -> *Saint* vs. *Street*; `Dr. Smith ... Ocean Dr.` -> *Doctor* vs. *Drive*; `20 st. and 6 ft.` -> *stone* vs. *feet*).
 2. **Syntactic Role Collisions (`tn-03`–`tn-04`, `tn-09`–`tn-10`, `tn-13`–`tn-14`)**: Identical numeric/Roman strings functioning as temporal adverbials vs. cardinal quantities (`In 1984, 1984 citizens...`; `On 3/4 of the trials, the event occurred on 3/4/2026`; `King Henry VIII` vs. `Chapter VIII`).
-3. **Heteronym Phonemic Disambiguation (`tn-25`–`tn-26`)**: Homographs requiring G2P phonemic selection (`heavy lead pipes` $\rightarrow$ *led* vs. `lead the review` $\rightarrow$ *leed*).
+3. **Heteronym Phonemic Disambiguation (`tn-25`–`tn-26`)**: Homographs requiring G2P phonemic selection (`heavy lead pipes` -> *led* vs. `lead the review` -> *leed*).
 4. **Technical, Code & Math Expressions (`tn-15`–`tn-16`, `tn-27`–`tn-30`)**: Software versions (`v2.4.1`), asymptotic complexity (`O(N log N)`), sports scores (`108-104`), and inequalities (`x > 10`, `y <= 20`).
 
 ### Corpus B: Deterministic NSW & WFST Boundary Challenge (`benchmarks/ecotone/tn_challenge_en.jsonl` — 19 Cases)
@@ -64,7 +64,7 @@ The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semioti
 ### Key Analytical Insights
 1. **Why Ecotone Leaves `St.` Unexpanded (`tn-01`/`tn-02`) and Flips `Ocean Dr.` (`tn-06`)**:
    - In NVIDIA NeMo's English WFST (`data/nemo_en/`), `St.` before a capitalized word has competing transducer weights between *Saint* and *Street*, so the grammar conservatively leaves `123 St. Mark St.` unexpanded as raw `"St."`. Conversely, `Dr.` has a lower arc weight for `"doctor"` than `"drive"`, causing *"Ocean Dr."* to be misverbalized as ***"Ocean doctor"*** in `1.75 ms`.
-   - DiffusionGemma attends bidirectionally across the entire sentence (`"123 St. Mark St., Apt. 4B"` and `"drove 5 miles down Ocean Dr. to the clinic"`), resolving `St.` #1 $\rightarrow$ **Saint** (`926 ms`), `St.` #2 $\rightarrow$ **Street** (`1,026 ms`), `Dr.` #1 $\rightarrow$ **Doctor** (`688 ms`), and `Dr.` #2 $\rightarrow$ **Drive** (`932 ms`).
+   - DiffusionGemma attends bidirectionally across the entire sentence (`"123 St. Mark St., Apt. 4B"` and `"drove 5 miles down Ocean Dr. to the clinic"`), resolving `St.` #1 -> **Saint** (`926 ms`), `St.` #2 -> **Street** (`1,026 ms`), `Dr.` #1 -> **Doctor** (`688 ms`), and `Dr.` #2 -> **Drive** (`932 ms`).
 2. **Why Ecotone Wins on Deterministic Patterns (`tn-10`, `ch-01`–`ch-17`)**:
    - On `tn-10` (*"On 3/4 of the trials, the event occurred on 3/4/2026."*), Ecotone's `M/D/Y` date transducer deterministically matched the `/2026` suffix and expanded `3/4/2026` to ***"march fourth twenty twenty six"*** in **`2.51 ms`**, whereas 4-bit `NVFP4` (`samples=1`) anchored on the earlier `3/4` fraction.
    - On standard dates (`3/5/2026` in `1.54 ms`, `9/1/2025` in `1.35 ms`), currencies (`$5.99` in `7.55 ms`), and fractions, Ecotone is **500× to 700× faster** than a neural GPU forward pass while running on a single CPU core.
@@ -103,8 +103,8 @@ Raw Text Input (e.g. "Dr. Smith drove 5 miles down Ocean Dr. on 3/5/2026 for $5.
 - **Fast Path (95% of utterances)**: Processed entirely by `ecotone` C++ WFST over UDS in **1.54 ms p50** (`8.42 ms` mean).
 - **Ambiguity Escalation (5% of utterances)**: Triggered only when `ecotone` encounters a polysemic abbreviation (`St.`, `Dr.`, `st.`), a verbatim fallback (`VIII`, `O(N log N)`, `<=`), or a bare 7+ digit integer (`2500000`), escalating that single slot to `dgem decide` (`960.1 ms` mean on L4 GPU).
 - **Effective Blended Latency**:
-  $$\text{Blended Mean Latency} = (0.95 \times 1.54\text{ ms}) + (0.05 \times 960.1\text{ ms}) = \mathbf{49.47\text{ ms}}$$
-  (More than **10× faster** than Google Cloud TTS's ~500 ms server-side normalizer penalty, while lifting semiotic accuracy from **36.7% $\rightarrow$ 93.3%**!)
+  Blended Mean Latency = (0.95 x 1.54 ms) + (0.05 x 960.1 ms) = 49.47 ms
+  (More than **10× faster** than Google Cloud TTS's ~500 ms server-side normalizer penalty, while lifting semiotic accuracy from **36.7% -> 93.3%**!)
 
 ---
 
