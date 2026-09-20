@@ -8,7 +8,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'DiffusionGemma',
-      description: 'Single-Pass Discrete Block Diffusion & Slot Readout on Apple Silicon',
+      description: 'Discrete Diffusion Slot Readouts, Multi-Environment Orchestration & Benchmarks across Apple Silicon, GCE, and Cloud Run',
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/ghchinoy/dgem' },
       ],
@@ -45,6 +45,7 @@ export default defineConfig({
           label: 'Deployment & Cloud',
           items: [
             { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
+            { label: 'Cloud Run Architecture & Lessons', slug: 'cloudrun-lessons-learned' },
           ],
         },
         {

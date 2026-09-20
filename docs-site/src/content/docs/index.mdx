@@ -1,58 +1,122 @@
 ---
-title: DiffusionGemma on Apple Silicon
-description: High-performance discrete block diffusion and single-pass slot readout decisions on Apple Silicon Metal.
+title: DiffusionGemma with dgem
+description: Fast single-pass discrete diffusion slot readouts, multi-environment CLI orchestration, and empirical benchmark harnesses across Apple Silicon Metal, Google Compute Engine (L4 / A100), and Cloud Run.
 template: splash
 hero:
-  tagline: Single-pass structured decisions (~880 ms) and discrete text diffusion running locally on Apple Silicon Metal.
+  tagline: Fast single-pass discrete diffusion slot readouts, CLI orchestration, and empirical benchmark harnesses across Apple Silicon Metal, Google Compute Engine, and Cloud Run.
   image:
     file: ../../assets/hero.svg
   actions:
-    - text: Setup Guide
-      link: /dgem/setup/
-      icon: right-arrow
-      variant: primary
     - text: CLI User Guide
       link: /dgem/user-guide/
+      icon: rocket
+      variant: primary
+    - text: Benchmark Report
+      link: /dgem/benchmarks/
       icon: document
       variant: secondary
+    - text: Cloud Deployment
+      link: /dgem/remote-endpoints/
+      icon: laptop
+      variant: minimal
     - text: View on GitHub
       link: https://github.com/ghchinoy/dgem
       icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Why DiffusionGemma?
 
 <CardGrid stagger>
-  <Card title="⚡️ Sub-Second Structured Decisions" icon="rocket">
-    Evaluate classification, triage, and ranking schemas in a single forward pass (~880 ms) without generating sequential text tokens.
+  <Card title="⚡️ Sub-Second Slot Decisions" icon="rocket">
+    Evaluate classification, routing, and multi-rubric evaluation schemas in a single forward pass without sequential autoregressive token generation.
   </Card>
-  <Card title="🍏 Native Metal Acceleration" icon="apple">
-    Runs on Apple Silicon using a low-dependency pure Rust + Metal kernel engine (`diffgemma`), utilizing unified memory efficiently.
+  <Card title="🍏 Local Apple Silicon Metal" icon="apple">
+    Runs locally on macOS Apple Silicon using a low-dependency pure Rust + Metal kernel engine (`diffgemma`), utilizing unified memory with zero cloud egress or API costs.
   </Card>
-  <Card title="📊 Calibrated Uncertainty" icon="random">
-    Provides empirical standard error (`stderr`), entropy in nats, and consensus agreement across multi-seed noise draws.
+  <Card title="☁️ Cloud GPU Serving (GCE & Cloud Run)" icon="seti:terraform">
+    Automated vLLM deployment on NVIDIA L4 (4-bit `NVFP4`) and 2× A100 (16-bit `bfloat16`, `TP=2`) with Triton attention and strict zero-idle-cost teardown.
   </Card>
-  <Card title="🛠️ Go CLI & Automation ('dgem')" icon="laptop">
-    Feature-complete Go assistant tool (`dgem`) with Go template definition files, Viper configuration, and `--stats` telemetry.
+  <Card title="📊 Dual-Mode Uncertainty Telemetry" icon="random">
+    Extracts calibrated slot confidence `exp(min_logprob)`, Shannon entropy `H`, and empirical standard error (`±σ`) across both Metal noise draws and vLLM token logprobs.
+  </Card>
+  <Card title="🎯 Built-in Benchmark Harnesses" icon="list-format">
+    First-class CLI evaluators for 30-case decision suites (`dgem bench`), semiotic text normalization vs. WFSTs (`dgem bench-ecotone`), and high-cardinality intent NLU (`dgem bench-intents`).
+  </Card>
+  <Card title="⚖️ Cross-Engine Autorater Parity" icon="approve-check">
+    Evaluated side-by-side with Google Cloud Vertex AI (Gemini 3.5 Flash Lite), achieving 84.4% verdict agreement and matching or beating cloud LLM response times on operational triage.
   </Card>
 </CardGrid>
 
 ---
 
-## Quickstart
+## Multi-Environment Serving Matrix
 
-```bash
-# 1. Build the dgem CLI
-make build
+`dgem` acts as a unified client and benchmark driver across three primary serving environments:
 
-# 2. Start the local Metal server (port 8080)
-make serve
+| Environment | Engine & Backend | Model & Precision | Typical Latency | Primary Use Case |
+| :--- | :--- | :--- | :--- | :--- |
+| **Apple Silicon (M-series)** | Native Rust Metal (`diffgemma`) | `diffgemma-26b-a4b-it-q4`<br />4-bit quantized (~18.8 GB) | ~1,800 ms (1 read)<br />~4,100 ms (multi-sample) | Local development, edge gating, $0 cloud cost |
+| **Google Compute Engine (GCE L4)** | vLLM + Triton Attention (`TRITON_ATTN`) | `nvidia/diffusiongemma-26B-A4B-it-NVFP4`<br />4-bit NVFP4 (18.1 GB VRAM) | **~1,100 ms avg**<br />(pure compute: ~750 ms) | High-throughput batch triage, CI/CD evals |
+| **Google Compute Engine (GCE 2× A100)** | vLLM Tensor Parallel (`TP=2`) | `google/diffusiongemma-26B-A4B-it`<br />**16-bit Unquantized** (`bfloat16`, 50.1 GB) | **~2,700 ms avg** | Reference baseline evaluations, zero quantization loss |
+| **Google Cloud Run** | Containerized vLLM on L4 GPU | `nvidia/diffusiongemma-26B-A4B-it-NVFP4`<br />4-bit NVFP4 | ~1,200 ms (warm) | Serverless endpoints with scale-to-zero economics |
 
-# 3. Execute a structured triage decision in ~880 ms
-./bin/dgem decide -t templates/support_triage.json.tmpl \
-  -v 'ticket=Emergency: database returned 500 across all cluster nodes!' \
-  --stats
-```
+---
+
+## Quickstart Workflows
+
+<Tabs>
+  <TabItem label="Local Apple Silicon">
+    Run sub-second discrete diffusion decisions locally on macOS using Apple Silicon Metal:
+
+    ```bash
+    # 1. Build the dgem CLI and set up the diffgemma engine
+    make build
+    make setup
+
+    # 2. Download the 4-bit model and launch the local Metal server (port 8080)
+    make download
+    make serve
+
+    # 3. Execute a single-pass structured triage decision with full telemetry
+    ./bin/dgem decide -t templates/support_triage.json.tmpl \
+      -v 'ticket=Emergency: database connection timeout on primary cluster nodes' \
+      --stats
+    ```
+  </TabItem>
+
+  <TabItem label="Cloud GPU (GCE vLLM)">
+    Provision an automated GCE GPU instance, run evaluations, and tear down immediately:
+
+    ```bash
+    # 1. Provision 1x NVIDIA L4 running vLLM with DiffusionGemma NVFP4 (takes ~4 mins)
+    PRECISION=4 make gce-deploy
+
+    # 2. Run the decision benchmark suite against the live GCE endpoint
+    ./bin/dgem bench \
+      -u "http://<EXTERNAL_IP>:8080/v1" \
+      -m "nvidia/diffusiongemma-26B-A4B-it-NVFP4" \
+      -d benchmarks/eval_dataset.jsonl -M slot
+
+    # 3. Mandatory teardown: eliminate idle cost immediately
+    make gce-teardown
+    ```
+  </TabItem>
+
+  <TabItem label="High-Cardinality & WFST Benchmarks">
+    Evaluate complex NLU datasets and finite-state transducer text normalization:
+
+    ```bash
+    # 1. High-cardinality intent evaluation with entropy-gated tie-breaking (Banking77)
+    ./bin/dgem bench-intents --dataset banking77 --workers 16
+
+    # 2. 150-intent multi-domain + Out-of-Scope (OOS) evaluation (CLINC150)
+    ./bin/dgem bench-intents --dataset clinc150 --workers 16
+
+    # 3. Semiotic polysemy & NSW text normalization vs. C++ Ecotone WFSTs
+    ./bin/dgem bench-ecotone --ecotone-addr unix:///tmp/ecotone.sock
+    ```
+  </TabItem>
+</Tabs>

@@ -42,9 +42,9 @@ COPY patches/link_cuda_headers.sh /tmp/link_cuda_headers.sh
 RUN bash /tmp/link_cuda_headers.sh && rm /tmp/link_cuda_headers.sh
 
 # 2. Structured reads overlay from Stage 1
+COPY --from=fork /fork /tmp/fork
 COPY patches/overlay_vllm.py /tmp/overlay_vllm.py
-RUN --mount=type=bind,from=fork,source=/fork,target=/fork \
-    python3 /tmp/overlay_vllm.py /fork "${VLLM_BASE}" && rm /tmp/overlay_vllm.py
+RUN python3 /tmp/overlay_vllm.py /tmp/fork "${VLLM_BASE}" && rm -rf /tmp/overlay_vllm.py /tmp/fork
 
 # 3. Raise Dynamo recompile limit for multi-width canvas reads
 COPY patches/raise_recompile_limit.py /tmp/raise_recompile_limit.py

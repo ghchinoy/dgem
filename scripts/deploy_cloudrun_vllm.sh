@@ -97,7 +97,7 @@ DEPLOY_FLAGS=(
   "--port" "8080"
   "--add-volume=name=weights,type=cloud-storage,bucket=${BUCKET},readonly=false,mount-options=enable-buffered-read=true"
   "--add-volume-mount=volume=weights,mount-path=/mnt/gcs"
-  "--startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=5,periodSeconds=2,timeoutSeconds=2,failureThreshold=120"
+  "--startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,periodSeconds=5,timeoutSeconds=4,failureThreshold=120"
   "--set-env-vars=${ENV_VARS}"
 )
 

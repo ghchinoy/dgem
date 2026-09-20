@@ -2,7 +2,6 @@
 
 This document records the empirical findings, architectural trade-offs, and operational lessons learned while attempting to deploy Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), along with a concrete blueprint for building custom CUDA C++ extensions in the future.
 
----
 
 ## 1. Executive Summary
 
@@ -14,7 +13,6 @@ However, deploying **unmerged experimental branches of high-performance ML engin
 2. **Shared Egress NAT & Hugging Face Hub (HTTP 429)**: Unauthenticated model weight ingestion from Cloud Run shares public GCP egress IP pools that Hugging Face aggressively rate-limits.
 3. **Startup Probe Deadlines vs. Cold Starts**: Downloading multi-gigabyte models on container cold start risks exceeding serverless health check timeouts.
 
----
 
 ## 2. Deep Dive: The C++ CUDA Extension ABI Mismatch
 
@@ -51,7 +49,6 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
 ### Takeaway
 **You cannot reliably overlay Python files from an experimental git branch on top of a precompiled vLLM Docker image.** In high-velocity ML frameworks, internal C++ kernel schemas change frequently. Experimental branches must be compiled in tandem with their matching C++ extensions.
 
----
 
 ## 3. Lesson: Hugging Face Hub Rate Limiting on Cloud Run
 
@@ -65,7 +62,6 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
   1. Always supply a Hugging Face User Access Token via `HF_TOKEN` in the environment.
   2. For production, never download weights over the public internet on container boot: pre-stage model weights in a **Google Cloud Storage (GCS) bucket** and mount it via Cloud Run volume mounts (GCS FUSE). This drops cold-start latency from minutes to under 15 seconds.
 
----
 
 ## 4. Lesson: Cloud Run Startup Probe Configuration
 
@@ -80,9 +76,7 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
   ```
   This begins probing after 10 seconds and polls every 10 seconds. The moment the server binds to port 8080, the instance is marked healthy immediately. With 60 retries, it provides a 10-minute readiness window for weight downloads and memory profiling.
 
----
 
----
 
 ## 5. The Proven Production Pattern: Learning from `taeold/djev-run` & `mmastrac/djev-spark`
 
@@ -138,7 +132,6 @@ dgem (100% Self-Contained in this Repository)
    - `CUDA_MODULE_LOADING=LAZY`: Defers CUDA kernel module initialization until first call.
    - `DISABLE_MM=1`: Skips multimodal image pipeline initialization when running pure text slot readouts.
 
----
 
 ## 6. GPU Selection on Cloud Run: NVIDIA L4 vs. RTX Pro 6000
 
@@ -152,7 +145,6 @@ dgem (100% Self-Contained in this Repository)
 | **Canvas & Model Length** | `--canvas 32 --max-model-len 32768` | `--canvas 128 --max-model-len 4096` |
 | **Regional Quota** | Standard regional Cloud Run GPU quota (`us-central1`, `europe-west4`, etc.) | Requires `--no-gpu-zonal-redundancy` flag |
 
----
 
 ## 7. How to Build Your Own Patched Image and Deploy (100% Self-Contained)
 

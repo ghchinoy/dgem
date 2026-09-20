@@ -59,6 +59,7 @@ exec vllm serve "$MODEL" \
   --port 8000 \
   --served-model-name dgemma \
   --trust-remote-code \
+  --safetensors-load-strategy prefetch \
   --max-num-seqs "${MAX_SEQS:-32}" \
   --max-model-len "${MAX_MODEL_LEN:-4096}" \
   --attention-backend "${ATTN:-TRITON_ATTN}" \
