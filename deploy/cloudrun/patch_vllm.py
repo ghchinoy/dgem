@@ -31,11 +31,12 @@ s = s.replace(
     "                warmup_kernels(self.model_runner, self.execute_model, self.sample_tokens)"
 )
 
-# 3. Synchronize with background /dev/shm copy if active
+# 3. Synchronize with background /dev/shm copy ONLY if model path starts with /dev/shm
 s = s.replace(
     "self.model_runner.load_model(load_dummy_weights=load_dummy_weights)",
     "import os, time\n"
-    "            while os.path.exists('/dev/shm/dgemma') and not os.path.exists('/dev/shm/dgemma/.ready'): time.sleep(0.05)\n"
+    "            if os.environ.get('MODEL', '').startswith('/dev/shm'):\n"
+    "                while not os.path.exists('/dev/shm/dgemma/.ready'): time.sleep(0.05)\n"
     "            self.model_runner.load_model(load_dummy_weights=load_dummy_weights)"
 )
 

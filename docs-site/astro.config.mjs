@@ -31,6 +31,7 @@ export default defineConfig({
         {
           label: 'Core Architecture',
           items: [
+            { label: 'The Journey to Decision Models', slug: 'decision-models-primer' },
             { label: 'Discrete Diffusion vs. Autoregression', slug: 'architecture' },
             { label: 'Template Catalog', slug: 'templates' },
           ],

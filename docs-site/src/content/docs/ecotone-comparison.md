@@ -57,6 +57,21 @@ Weighted Finite State Transducers ($\text{ShortestPath}(T \circ \text{Input} \ci
 
 By contrast, **DiffusionGemma** applies **full bidirectional cross-attention** across the entire sentence before denoising the target slot, resolving both `St.` #1 (*"Saint"*) and `St.` #2 (*"Street"*) in a single forward pass.
 
+### Sidebar: Why Not a Classical Statistical Classifier (e.g., Naive Bayes or N-Grams)?
+
+Engineers steeped in classical machine learning often ask: *If WFSTs struggle with polysemic context, why not simply augment the FST with a fast classical statistical model like Naive Bayes, Logistic Regression, or an N-gram language model rather than a 26-billion-parameter diffusion model?*
+
+Historically, production speech synthesis teams attempted exactly this approach during the 1990s and 2000s, and encountered three fundamental mathematical roadblocks:
+
+1. **The Zeroth-Order Bag-of-Words Trap (Naive Bayes)**:
+   Naive Bayes assumes conditional feature independence: $P(w_1, w_2, \dots \mid C) = \prod P(w_i \mid C)$. In *"123 St. Mark St."*, both occurrences of `St.` share the **exact same unordered bag of words**. A Naive Bayes classifier cannot differentiate the first `St.` from the second because it has no representation of positional syntax. It must assign identical probabilities to both, guaranteeing at least one error.
+2. **The Context Horizon Dilemma (N-Grams)**:
+   Bigram and trigram Markov models ($k=2,3$) capture local adjacency (`P(Street | Mark, St.)`), but semiotic disambiguation frequently hinges on syntactic cues located far outside a 3-token horizon. In *"In 1984, the author published a novel..."* vs. *"In 1984, 1984 citizens protested against the ordinance..."*, the decisive disambiguation signal for the second `1984` is the subject-predicate relationship with *"citizens protested"*, which lies well beyond an n-gram window.
+3. **Severe Probability Overconfidence**:
+   Because classical naive models multiply dozens of non-independent lexical probabilities, their output scores degenerate into uncalibrated extremes ($0.99999$ or $0.00001$). They cannot provide the reliable Shannon entropy or standard error metrics required to safely trigger an escalation gate in high-reliability speech or triage pipelines.
+
+Discrete block diffusion bridges this gap: it brings full bidirectional self-attention to parse sentence-wide syntactic dependency structures, but evaluates the discrete slot in a single forward pass (~800 ms) without paying the multi-second serial generation penalty of conversational autoregressive LLMs.
+
 ---
 
 ## 3. Experimental Design & Benchmark Corpora
