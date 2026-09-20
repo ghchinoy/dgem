@@ -143,8 +143,10 @@ type Diagnostics struct {
 	Questions map[string]QuestionDiagnostic `json:"questions"`
 }
 
-// TimingStats details execution breakdown on Metal.
+// TimingStats details execution breakdown across local Metal and vLLM remote endpoints.
 type TimingStats struct {
+	TotalMs      float64 `json:"total_ms"`
+	Reads        int     `json:"reads"`
 	DenoiseMs    float64 `json:"denoise_ms"`
 	PrefillMs    float64 `json:"prefill_ms"`
 	PromptTokens int     `json:"prompt_tokens"`
@@ -160,6 +162,31 @@ type SampleStats struct {
 	Policy SamplePolicy `json:"policy"`
 }
 
+func (ss *SampleStats) UnmarshalJSON(data []byte) error {
+	type Alias SampleStats
+	aux := struct {
+		RawN json.RawMessage `json:"n"`
+		*Alias
+	}{
+		Alias: (*Alias)(ss),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if len(aux.RawN) > 0 {
+		var n int
+		if err := json.Unmarshal(aux.RawN, &n); err == nil {
+			ss.N = n
+		} else {
+			var nl []int
+			if err := json.Unmarshal(aux.RawN, &nl); err == nil && len(nl) > 0 {
+				ss.N = nl[0]
+			}
+		}
+	}
+	return nil
+}
+
 // SamplePolicy reveals whether the auto-sampling threshold was triggered.
 type SamplePolicy struct {
 	Extended            bool    `json:"extended"`
@@ -170,12 +197,66 @@ type SamplePolicy struct {
 	Threshold           float64 `json:"threshold"`
 }
 
+func (sp *SamplePolicy) UnmarshalJSON(data []byte) error {
+	type Alias SamplePolicy
+	aux := struct {
+		RawEnt json.RawMessage `json:"first_read_entropy"`
+		*Alias
+	}{
+		Alias: (*Alias)(sp),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if len(aux.RawEnt) > 0 && sp.FirstReadMaxEntropy == 0 {
+		var f float64
+		if err := json.Unmarshal(aux.RawEnt, &f); err == nil {
+			sp.FirstReadMaxEntropy = f
+		} else {
+			var entMap map[string]float64
+			if err := json.Unmarshal(aux.RawEnt, &entMap); err == nil {
+				for _, v := range entMap {
+					if v > sp.FirstReadMaxEntropy {
+						sp.FirstReadMaxEntropy = v
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // QuestionDiagnostic holds raw token entropy and probability mass.
 type QuestionDiagnostic struct {
 	ArgmaxIsLabel bool    `json:"argmax_is_label"`
 	ArgmaxToken   string  `json:"argmax_token"`
 	Entropy       float64 `json:"entropy"`
 	LabelMass     float64 `json:"label_mass"`
+}
+
+func (qd *QuestionDiagnostic) UnmarshalJSON(data []byte) error {
+	type Alias QuestionDiagnostic
+	aux := struct {
+		RawEntropy json.RawMessage `json:"entropy"`
+		*Alias
+	}{
+		Alias: (*Alias)(qd),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if len(aux.RawEntropy) > 0 {
+		var f float64
+		if err := json.Unmarshal(aux.RawEntropy, &f); err == nil {
+			qd.Entropy = f
+		} else {
+			var fl []float64
+			if err := json.Unmarshal(aux.RawEntropy, &fl); err == nil && len(fl) > 0 {
+				qd.Entropy = fl[0]
+			}
+		}
+	}
+	return nil
 }
 
 // RequestStats summarizes the full lifecycle of a query for CLI display.
@@ -213,9 +294,36 @@ func ParseStructuredContentWithLogprobs(content string, logprobs *ChoiceLogprobs
 		return &structured, nil
 	}
 
+	// Envelope fallback: Handles responses with {"answers": {...}, "diagnostics": {...}}
+	var rawEnvelope struct {
+		Answers     map[string]QuestionAnswer `json:"answers"`
+		Diagnostics json.RawMessage           `json:"diagnostics"`
+	}
+	if err := json.Unmarshal([]byte(cleaned), &rawEnvelope); err == nil && len(rawEnvelope.Answers) > 0 {
+		structured.Answers = rawEnvelope.Answers
+		if len(rawEnvelope.Diagnostics) > 0 {
+			_ = json.Unmarshal(rawEnvelope.Diagnostics, &structured.Diagnostics)
+		}
+		return &structured, nil
+	}
+
 	// Fallback: Check if response is a direct JSON key-value map (e.g. from vLLM completions)
 	var rawMap map[string]interface{}
 	if err := json.Unmarshal([]byte(cleaned), &rawMap); err == nil && len(rawMap) > 0 {
+		// If rawMap has an nested "answers" key that is a map, extract answers directly
+		if rawAnswers, ok := rawMap["answers"].(map[string]interface{}); ok && len(rawAnswers) > 0 {
+			ansBytes, _ := json.Marshal(rawAnswers)
+			var ansMap map[string]QuestionAnswer
+			if err := json.Unmarshal(ansBytes, &ansMap); err == nil && len(ansMap) > 0 {
+				structured.Answers = ansMap
+				if rawDiag, ok := rawMap["diagnostics"]; ok {
+					diagBytes, _ := json.Marshal(rawDiag)
+					_ = json.Unmarshal(diagBytes, &structured.Diagnostics)
+				}
+				return &structured, nil
+			}
+		}
+
 		structured.Answers = make(map[string]QuestionAnswer)
 		if structured.Diagnostics.Questions == nil {
 			structured.Diagnostics.Questions = make(map[string]QuestionDiagnostic)

@@ -103,10 +103,14 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 	// If the response contains structured diagnostics, extract timing telemetry
 	if len(chatResp.Choices) > 0 {
 		content := chatResp.Choices[0].Message.RawContent()
-		if structured, err := ParseStructuredContent(content); err == nil && structured.Diagnostics.Steps > 0 {
+		if structured, err := ParseStructuredContent(content); err == nil && (structured.Diagnostics.Steps > 0 || structured.Diagnostics.Timing.TotalMs > 0 || len(structured.Answers) > 0) {
 			stats.Diagnostics = &structured.Diagnostics
 			stats.PrefillMs = structured.Diagnostics.Timing.PrefillMs
-			stats.DenoiseMs = structured.Diagnostics.Timing.DenoiseMs
+			if structured.Diagnostics.Timing.DenoiseMs > 0 {
+				stats.DenoiseMs = structured.Diagnostics.Timing.DenoiseMs
+			} else {
+				stats.DenoiseMs = structured.Diagnostics.Timing.TotalMs
+			}
 			stats.ReusedTokens = structured.Diagnostics.Timing.ReusedTokens
 			stats.DenoiseSteps = structured.Diagnostics.Timing.StepsRun
 			stats.SamplesN = structured.Diagnostics.Samples.N

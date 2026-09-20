@@ -1,0 +1,463 @@
+{
+  "timestamp": "2026-09-20T20:01:17Z",
+  "target_url": "https://dgemma-64774088793.us-central1.run.app/v1",
+  "target_model": "diffgemma-26b-a4b-it-q4",
+  "total_cases": 30,
+  "mode": "slot",
+  "slot_avg_denoise_ms": 427.2946357727051,
+  "slot_avg_wall_ms": 458.96666666666664,
+  "slot_accuracy_pct": 80,
+  "slot_multi_reads_triggered": 27,
+  "cases": [
+    {
+      "id": "sup-01",
+      "domain": "support",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 450.7157802581787,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 517,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "engineering",
+        "urgent": "yes"
+      }
+    },
+    {
+      "id": "sup-02",
+      "domain": "support",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 450.66118240356445,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 488,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "billing",
+        "urgent": "yes"
+      }
+    },
+    {
+      "id": "sup-03",
+      "domain": "support",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 172.26457595825195,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 199,
+      "slot_samples": 1,
+      "slot_extended": false,
+      "slot_answers": {
+        "team": "support",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "sup-04",
+      "domain": "support",
+      "tier": "ambiguous",
+      "slot_accurate": false,
+      "slot_denoise_ms": 450.57129859924316,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 479,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "engineering",
+        "urgent": "yes"
+      }
+    },
+    {
+      "id": "sup-05",
+      "domain": "support",
+      "tier": "negation",
+      "slot_accurate": true,
+      "slot_denoise_ms": 451.188325881958,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 481,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "support",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "sup-06",
+      "domain": "support",
+      "tier": "unambiguous",
+      "slot_accurate": false,
+      "slot_denoise_ms": 447.68619537353516,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 474,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "engineering",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "sup-07",
+      "domain": "support",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 449.70178604125977,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 515,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "billing",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "sup-08",
+      "domain": "support",
+      "tier": "negation",
+      "slot_accurate": true,
+      "slot_denoise_ms": 448.8229751586914,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 478,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "support",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "sup-09",
+      "domain": "support",
+      "tier": "ambiguous",
+      "slot_accurate": false,
+      "slot_denoise_ms": 449.48387145996094,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 477,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "engineering",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "sup-10",
+      "domain": "support",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 449.8634338378906,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 480,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "team": "support",
+        "urgent": "no"
+      }
+    },
+    {
+      "id": "code-01",
+      "domain": "code_review",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 456.54940605163574,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 491,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "security"
+      }
+    },
+    {
+      "id": "code-02",
+      "domain": "code_review",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 172.5027561187744,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 204,
+      "slot_samples": 1,
+      "slot_extended": false,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "bugfix"
+      }
+    },
+    {
+      "id": "code-03",
+      "domain": "code_review",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 465.0599956512451,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 493,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "refactor"
+      }
+    },
+    {
+      "id": "code-04",
+      "domain": "code_review",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 470.4399108886719,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 497,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "feature"
+      }
+    },
+    {
+      "id": "code-05",
+      "domain": "code_review",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 473.4206199645996,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 502,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "no",
+        "category": "security"
+      }
+    },
+    {
+      "id": "code-06",
+      "domain": "code_review",
+      "tier": "ambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 448.95482063293457,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 478,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "refactor"
+      }
+    },
+    {
+      "id": "code-07",
+      "domain": "code_review",
+      "tier": "negation",
+      "slot_accurate": true,
+      "slot_denoise_ms": 171.44489288330078,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 199,
+      "slot_samples": 1,
+      "slot_extended": false,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "refactor"
+      }
+    },
+    {
+      "id": "code-08",
+      "domain": "code_review",
+      "tier": "complex",
+      "slot_accurate": false,
+      "slot_denoise_ms": 468.84679794311523,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 496,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "no",
+        "category": "refactor"
+      }
+    },
+    {
+      "id": "code-09",
+      "domain": "code_review",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 447.62182235717773,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 475,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "no",
+        "category": "security"
+      }
+    },
+    {
+      "id": "code-10",
+      "domain": "code_review",
+      "tier": "negation",
+      "slot_accurate": true,
+      "slot_denoise_ms": 449.89991188049316,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 479,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "approved": "yes",
+        "category": "feature"
+      }
+    },
+    {
+      "id": "sec-01",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 452.944278717041,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 481,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "revoke_key",
+        "data_compromise": "yes"
+      }
+    },
+    {
+      "id": "sec-02",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 454.56767082214355,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 483,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "isolate_host",
+        "data_compromise": "yes"
+      }
+    },
+    {
+      "id": "sec-03",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 455.98888397216797,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 485,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "monitor",
+        "data_compromise": "no"
+      }
+    },
+    {
+      "id": "sec-04",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": false,
+      "slot_denoise_ms": 469.1128730773926,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 497,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "isolate_host",
+        "data_compromise": "yes"
+      }
+    },
+    {
+      "id": "sec-05",
+      "domain": "security",
+      "tier": "negation",
+      "slot_accurate": true,
+      "slot_denoise_ms": 452.5933265686035,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 480,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "monitor",
+        "data_compromise": "no"
+      }
+    },
+    {
+      "id": "sec-06",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 452.0704746246338,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 479,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "isolate_host",
+        "data_compromise": "yes"
+      }
+    },
+    {
+      "id": "sec-07",
+      "domain": "security",
+      "tier": "ambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 453.4611701965332,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 480,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "revoke_key",
+        "data_compromise": "no"
+      }
+    },
+    {
+      "id": "sec-08",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 466.754674911499,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 498,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "monitor",
+        "data_compromise": "no"
+      }
+    },
+    {
+      "id": "sec-09",
+      "domain": "security",
+      "tier": "ambiguous",
+      "slot_accurate": false,
+      "slot_denoise_ms": 460.97588539123535,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 491,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "revoke_key",
+        "data_compromise": "yes"
+      }
+    },
+    {
+      "id": "sec-10",
+      "domain": "security",
+      "tier": "unambiguous",
+      "slot_accurate": true,
+      "slot_denoise_ms": 454.6694755554199,
+      "slot_prefill_ms": 0,
+      "slot_wall_time_ms": 493,
+      "slot_samples": 4,
+      "slot_extended": true,
+      "slot_answers": {
+        "action": "monitor",
+        "data_compromise": "no"
+      }
+    }
+  ]
+}

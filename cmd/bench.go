@@ -205,7 +205,7 @@ func runBench(cmd *cobra.Command, args []string) error {
 	if _, _, err := c.Decide(ctx, warmupSchema, warmupState); err != nil {
 		fmt.Printf("Warmup notice: %v (continuing to benchmark)\n", err)
 	} else {
-		fmt.Println("Warmup complete. Server is healthy.\n")
+		fmt.Println("Warmup complete. Server is healthy.")
 	}
 
 	var results []CaseResult
