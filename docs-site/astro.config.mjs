@@ -4,13 +4,13 @@ import catppuccin from '@catppuccin/starlight';
 
 export default defineConfig({
   site: 'https://ghchinoy.github.io',
-  base: '/diffusiongemma',
+  base: '/dgem',
   integrations: [
     starlight({
       title: 'DiffusionGemma',
       description: 'Single-Pass Discrete Block Diffusion & Slot Readout on Apple Silicon',
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/ghchinoy/diffusiongemma' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/ghchinoy/dgem' },
       ],
       plugins: [
         catppuccin({
