@@ -96,3 +96,25 @@ systemctl daemon-reload
 systemctl enable --now vllm.service
 
 echo "==> vLLM service started successfully."
+
+BENCH_GCS_BUCKET=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/bench-gcs-bucket" -H "Metadata-Flavor: Google" 2>/dev/null || true)
+if [[ -n "$BENCH_GCS_BUCKET" ]]; then
+  echo "==> Waiting for http://127.0.0.1:8080/health to run automated benchmark..."
+  for i in {1..120}; do
+    if curl -s -f "http://127.0.0.1:8080/health" >/dev/null 2>&1; then
+      echo "==> vLLM is healthy on localhost:8080!"
+      break
+    fi
+    sleep 5
+  done
+
+  if curl -s -f "http://127.0.0.1:8080/health" >/dev/null 2>&1; then
+    echo "==> Downloading benchmark bundle from $BENCH_GCS_BUCKET and running evaluation..."
+    mkdir -p /opt/dgem-bench
+    cd /opt/dgem-bench
+    gcloud storage cp "${BENCH_GCS_BUCKET}/dgem-bench-bundle.tar.gz" . || gsutil cp "${BENCH_GCS_BUCKET}/dgem-bench-bundle.tar.gz" .
+    tar -xzf dgem-bench-bundle.tar.gz
+    chmod +x bin/dgem-linux
+    ./bin/dgem-linux bench -u "http://127.0.0.1:8080/v1" -m "$MODEL_ID" -d benchmarks/eval_dataset.jsonl -M slot -o results_gce.json
+  fi
+fi

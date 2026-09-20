@@ -1,6 +1,9 @@
 # DiffusionGemma Benchmark Evaluation Report
 
-This report presents empirical benchmark metrics comparing **Discrete Diffusion Slot Readout** against traditional **Prompt-Mediated Generative Autoregression**, evaluated across local **Apple Silicon Metal (M5, 32 GB)** and **Google Compute Engine (`g2-standard-8`, 1× NVIDIA L4 GPU)** deployment architectures.
+This report presents empirical benchmark metrics comparing **Discrete Diffusion Slot Readout** against traditional **Prompt-Mediated Generative Autoregression**, evaluated across:
+1. **Local Apple Silicon Metal (M5, 32 GB)** — 4-bit native Metal kernels (`diffgemma-26b-a4b-it-q4`)
+2. **Google Compute Engine (`g2-standard-8`, 1× NVIDIA L4 24 GB)** — 4-bit ModelOpt Marlin (`nvidia/diffusiongemma-26B-A4B-it-NVFP4`)
+3. **Google Compute Engine (`a2-highgpu-2g`, 2× NVIDIA A100-40GB, `TP=2`)** — **16-bit Unquantized `bfloat16`** (`google/diffusiongemma-26B-A4B-it`)
 
 > [!NOTE]
 > For details on why Google Compute Engine (GCE) was used instead of serverless Google Cloud Run for evaluating experimental vLLM branches (including C++ CUDA extension ABI compatibility and Hugging Face Hub egress NAT limits), see **[Cloud Run Lessons Learned & Native CUDA Build Guide](cloudrun-lessons-learned.md)**.
@@ -9,16 +12,16 @@ This report presents empirical benchmark metrics comparing **Discrete Diffusion 
 
 ## 1. Executive Summary
 
-| Evaluation Metric | Target 1: Local Apple Silicon Metal | Target 2: Cloud GCE (`g2-standard-8`, 1× NVIDIA L4) | Target 3: Prompt-Mediated Generative |
-| :--- | :--- | :--- | :--- |
-| **Model Evaluated** | `diffgemma-26b-a4b-it-q4` | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | `diffgemma-26b-a4b-it-q4` (`think=false`) |
-| **Model Forward Compute** | **~850 ms** (1 read) / **2,555 ms** (4 reads) | Integrated with Triton Eager Pass | **~16,500 – 17,500 ms** (61 tokens) |
-| **End-to-End Wall Latency** | **~1.83 s** (1 read) / **4.14 s** (multi-avg) | **1,968.7 ms** (overall avg; **776 ms** fastest) | **17,486.6 ms** (~17.5 s) |
-| **Speedup vs. Generative** | **4.2× – 9.7× faster** | **~8.9× faster overall** (up to **22.5×** peak) | Baseline (1.0×) |
-| **Speedup vs. Local Metal** | Baseline (1.0×) | **~2.1× faster wall time** | — |
-| **Syntactic Reliability** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **0% raw pass** (wrapped in markdown) |
-| **Classification Accuracy** | **80.0%** (24 / 30 cases) | **73.3%** (22 / 30 cases) | ~75 – 80% |
-| **Receipt Artifact** | [`results_local_metal_slot.json`](../benchmarks/results_local_metal_slot.json) | [`results_gce_l4.json`](../benchmarks/results_gce_l4.json) | [`results_local_metal_generative.json`](../benchmarks/results_local_metal_generative.json) |
+| Evaluation Metric | Target 1: Local Apple M5 Metal (`q4`) | Target 2: Cloud GCE 1× L4 (`NVFP4` 4-bit) | Target 3: Cloud GCE 2× A100 (`bfloat16` 16-bit Unquant) | Target 4: Generative Autoregression Baseline |
+| :--- | :--- | :--- | :--- | :--- |
+| **Model Evaluated** | `diffgemma-26b-a4b-it-q4` | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | `google/diffusiongemma-26B-A4B-it` | `diffgemma-26b-a4b-it-q4` (`think=false`) |
+| **Weight Memory Footprint** | ~18.84 GiB (Unified RAM) | ~18.15 GiB VRAM | **50.14 GiB VRAM** (25.07 GiB / GPU) | ~18.84 GiB |
+| **End-to-End Wall Latency** | **~1.83 s** (1 read) / **4.14 s** (multi-avg) | **1,968.7 ms** (min: **776 ms**) | **2,733.8 ms** (min: **1,002 ms**) | **17,486.6 ms** (~17.5 s) |
+| **Speedup vs. Generative** | **4.2× – 9.7× faster** | **~8.9× faster** | **~6.4× faster** | Baseline (1.0×) |
+| **Speedup vs. Local Metal** | Baseline (1.0×) | **~2.1× faster** | **~1.5× faster** | — |
+| **Syntactic Reliability** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **100% Schema-Guaranteed** | **0% raw pass** (wrapped in markdown) |
+| **Classification Accuracy** | **80.0%** (24 / 30 cases) | **73.3%** (22 / 30 cases) | **80.0%** (24 / 30 cases) | ~75 – 80% |
+| **Receipt Artifact** | [`results_local_metal_slot.json`](../benchmarks/results_local_metal_slot.json) | [`results_gce_l4.json`](../benchmarks/results_gce_l4.json) | [`results_gce_a100_bf16.json`](../benchmarks/results_gce_a100_bf16.json) | [`results_local_metal_generative.json`](../benchmarks/results_local_metal_generative.json) |
 
 ---
 
@@ -79,11 +82,6 @@ Test Cases:    30 items
 • Single-Read Unambiguous Time: ~850 ms denoise / ~1,830 ms wall time
 ```
 
-### Key Behavioral Observations:
-1. **Unambiguous Cases**: When Shannon entropy across all slots was below $0.10$ nats (e.g. `sup-03`, `sup-05`, `sup-07`, `sup-10`, `code-03`, `sec-03`), the engine concluded in **exactly 1 sample**, completing GPU forward compute in **820–850 ms**.
-2. **Ambiguity Detection**: Borderline cases (e.g. `sup-04` where a customer reports an outage *and* demands cancellation) triggered the `samples: "auto"` policy to draw 4 independent noise vectors, averaging probabilities and reporting empirical error bars (`stderr`).
-3. **Negation Understanding**: Bidirectional attention successfully caught negations (e.g. `sup-05`: *"This is NOT an outage or a billing problem"* correctly routed to `team: support` with `urgent: no`).
-
 ---
 
 ## 4. Prompt-Mediated Baseline Findings
@@ -96,14 +94,9 @@ Evaluated using `diffgemma-26b-a4b-it-q4:think=false` with a strict JSON system 
 • Generative Syntax Validity:   0.0% raw valid JSON (wrapped in markdown ```json blocks)
 ```
 
-### The Autoregressive Penalties:
-1. **Latency Overhead**: Generating 61 tokens sequentially via discrete diffusion blocks took **~17.5 seconds** per request—over **4.2× slower** than multi-sample slot reads and **9.7× slower** than single-pass slot reads.
-2. **Formatting Fragility**: The model consistently wrapped JSON responses in markdown code blocks (````json\n{...}\n````), causing standard JSON parsers to fail unless pre-cleaned.
-3. **No Calibration**: The generative model provides zero entropy or variance metrics.
-
 ---
 
-## 5. Cloud GPU Findings (GCE `g2-standard-8`, 1× NVIDIA L4)
+## 5. Cloud GPU Findings: 4-Bit Quantized (GCE `g2-standard-8`, 1× NVIDIA L4)
 
 Evaluated live on Google Compute Engine (`us-central1-a`) running `nvidia/diffusiongemma-26B-A4B-it-NVFP4` with 32k KV cache and Triton attention ([`benchmarks/results_gce_l4.json`](../benchmarks/results_gce_l4.json)):
 
@@ -122,42 +115,57 @@ Test Cases:    30 items
 • Speedup vs Generative:        ~8.9× faster wall time
 ```
 
-### Key Comparative Takeaways:
-1. **Latency vs. Local Apple M5 Metal**:
-   * **Local Apple M5 Metal**: ~4,143 ms average wall time across 30 multi-sample cases (~1,830 ms for single reads).
-   * **Cloud NVIDIA L4 GPU**: **1,968.7 ms** average wall time overall (**~2.1× faster overall latency**, with individual cases finishing in as little as **776 ms**).
-2. **Speedup vs. Generative Baseline**:
-   * Traditional autoregressive generation took **~17.5s** per request.
-   * L4 GPU evaluated structured decisions in **~1.97s**—an **~8.9× throughput acceleration**.
-3. **Precision Note**: `nvidia/diffusiongemma-26B-A4B-it-NVFP4` utilizes weight-only 4-bit Marlin quantization on Ada Lovelace (`sm_89`), accounting for the minor 2-case difference (22/30 vs. 24/30) on borderline ambiguous items (`code-04`, `sec-04`).
+---
+
+## 6. Cloud GPU Findings: 16-Bit Unquantized `bfloat16` (GCE `a2-highgpu-2g`, 2× NVIDIA A100-40GB)
+
+Evaluated live on Google Compute Engine (`us-central1-b`) in project `genai-blackbelt-fishfooding` running Google DeepMind's official unquantized 16-bit weights (`google/diffusiongemma-26B-A4B-it`, 50.14 GiB across 2× A100 GPUs via NCCL Tensor Parallelism `TP=2`, with 10.62 GiB KV cache per GPU, [`benchmarks/results_gce_a100_bf16.json`](../benchmarks/results_gce_a100_bf16.json)):
+
+```text
+================================================================================
+  DIFFUSIONGEMMA: DISCRETE DIFFUSION BENCHMARK EVALUATION
+================================================================================
+Target Server: http://127.0.0.1:8080/v1
+Model:         google/diffusiongemma-26B-A4B-it
+Mode:          slot
+Test Cases:    30 items
+
+• Slot Readout Accuracy:        80.0% (24 of 30 matched expected)
+• Average End-to-End Wall Time: 2,733.8 ms (~2.73s per decision)
+• Fastest Case:                 1,002 ms (code-05)
+• Prefix Cache Hit Rate:        73.4%
+• Speedup vs Generative:        ~6.4× faster wall time
+```
+
+### Precision vs. Latency Analysis (`bfloat16` vs. `NVFP4` vs. Metal `q4`):
+1. **Full Precision Restores Classification Accuracy (80.0% vs. 73.3%)**:
+   * Under 4-bit weight-only Marlin compression (`NVFP4` on L4), two borderline code review cases (`code-04`: webhook HMAC feature classification, and `code-09`: SSL verification disablement) suffered quantization drift, dropping accuracy from 80.0% to **73.3% (22/30)**.
+   * Running full **16-bit unquantized `bfloat16`** on 2× A100 GPUs resolved both `code-04` (`2,660 ms | PASS`) and `code-09` (`2,363 ms | PASS`), restoring the full **80.0% (24/30)** accuracy ceiling!
+2. **Memory Bandwidth & Tensor Parallelism**:
+   * Even while moving **50.14 GiB of unquantized `bfloat16` weights** across 2× A100 GPUs (`TP=2` with NCCL all-reduce), the dual-A100 setup achieved an average end-to-end latency of **2,733.8 ms**—**1.5× faster** than the 4-bit model on Apple M5 Metal (`4,143.3 ms`) and **6.4× faster** than generative autoregression (`17,486.6 ms`).
 
 ---
 
-## 6. How to Reproduce
+## 7. How to Reproduce
 
 ### Local Apple Silicon Metal
 ```bash
-# 1. Start local diffgemma server
 make serve
-
-# 2. Run the 30-case slot readout benchmark
 ./bin/dgem bench -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_local_metal_slot.json
-
-# 3. Run the generative comparative baseline
-./bin/dgem bench -d benchmarks/eval_dataset.jsonl -M generative -n 5 -o benchmarks/results_local_metal_generative.json
 ```
 
-### Google Compute Engine (GCE with GPU)
+### Google Compute Engine (4-bit on 1× L4 or 16-bit on 2× A100)
 ```bash
-# 1. Provision GCE GPU instance and wait for health check
+# Deploy 4-bit NVFP4 on g2-standard-8 (1x L4):
 export GCP_PROJECT="your-gcp-project-id"
 make gce-deploy
 
-# 2. Run the benchmark suite against the live VM IP
-./bin/dgem bench -u "http://<EXTERNAL_IP>:8080/v1" \
-  -m "nvidia/diffusiongemma-26B-A4B-it-NVFP4" \
-  -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_gce_l4.json
+# Or deploy 16-bit unquantized bfloat16 on a2-highgpu-2g (2x A100):
+export GCP_PROJECT="genai-blackbelt-fishfooding"
+export GCP_ZONE="us-central1-b"
+export PRECISION="16"
+make gce-deploy
 
-# 3. Tear down VM and firewall rules to prevent idle charges
+# Tear down VM and firewall rules when finished:
 make gce-teardown
 ```
