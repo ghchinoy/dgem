@@ -83,7 +83,7 @@ else
     "--maintenance-policy=TERMINATE"
     "--image-family=$IMAGE_FAMILY"
     "--image-project=$IMAGE_PROJECT"
-    "--boot-disk-size=150GB"
+    "--boot-disk-size=250GB"
     "--boot-disk-type=pd-ssd"
     "--tags=diffgemma-server"
     "--metadata-from-file=startup-script=scripts/startup_gce_vllm.sh"
@@ -110,7 +110,7 @@ echo "==> Step 2: Waiting for vLLM DiffusionGemma to initialize on the VM..."
 echo "(Startup script is installing vLLM and caching model weights. This takes ~3-5 minutes)"
 
 START_TIME=$(date +%s)
-TIMEOUT_SECS=600
+TIMEOUT_SECS=900
 
 while true; do
   CURRENT_TIME=$(date +%s)
