@@ -1,6 +1,11 @@
+---
+title: Cloud Run Lessons Learned & Self-Contained Deployment Guide
+description: Architectural comparison of experimental vLLM deployments on Google Cloud Run, comparing taeold/djev-run against dgem and providing a 100% self-contained Artifact Registry build pipeline.
+---
+
 # Lessons Learned: Deploying Experimental vLLM on Google Cloud Run with GPU
 
-This document records the empirical findings, architectural trade-offs, and operational lessons learned while attempting to deploy Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), along with a concrete blueprint for building custom CUDA C++ extensions in the future.
+This document records the empirical findings, architectural trade-offs, and operational lessons learned while deploying Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), comparing against Taehoon Lee's [**`taeold/djev-run`**](https://github.com/taeold/djev-run) and providing a 100% self-contained, reproducible container build and deployment pipeline.
 
 ---
 
@@ -48,9 +53,6 @@ Even after patching `_custom_ops.py` to supply an empty permutation tensor for w
 ```
 Position 13 had been refactored in the C++ extension to accept a Tensor, while the branch's Python caller passed an integer (`64`).
 
-### Takeaway
-**You cannot reliably overlay Python files from an experimental git branch on top of a precompiled vLLM Docker image.** In high-velocity ML frameworks, internal C++ kernel schemas change frequently. Experimental branches must be compiled in tandem with their matching C++ extensions.
-
 ---
 
 ## 3. Lesson: Hugging Face Hub Rate Limiting on Cloud Run
@@ -63,7 +65,7 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
 * **Root Cause**: Cloud Run instances route egress through Google Cloud shared NAT IP ranges. Because many users run anonymous queries from GCP, Hugging Face Hub enforces severe IP-based rate limiting on unauthenticated requests.
 * **Solution**:
   1. Always supply a Hugging Face User Access Token via `HF_TOKEN` in the environment.
-  2. For production, never download weights over the public internet on container boot: pre-stage model weights in a **Google Cloud Storage (GCS) bucket** and mount it via Cloud Run volume mounts (GCS FUSE). This drops cold-start latency from minutes to under 15 seconds.
+  2. For production, never download weights over the public internet on container boot: pre-stage model weights in a **Google Cloud Storage (GCS) bucket** and mount it via Cloud Run volume mounts (GCS FUSE). This drops cold-start latency from minutes to under 20 seconds.
 
 ---
 
@@ -76,11 +78,9 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
   This configuration forces Cloud Run to wait 4 full minutes before performing the first probe. If the container finishes in 60 seconds, it still sits idle. Worse, with `failureThreshold=1`, a single failed ping immediately terminates the container.
 * **Best-Practice Pattern**:
   ```bash
-  --startup-probe tcpSocket.port=8080,initialDelaySeconds=10,periodSeconds=10,failureThreshold=60,timeoutSeconds=4
+  --startup-probe httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=5,periodSeconds=2,timeoutSeconds=2,failureThreshold=120
   ```
-  This begins probing after 10 seconds and polls every 10 seconds. The moment the server binds to port 8080, the instance is marked healthy immediately. With 60 retries, it provides a 10-minute readiness window for weight downloads and memory profiling.
-
----
+  This begins probing after 5 seconds and polls every 2 seconds. The moment the server binds to port 8080, the instance is marked healthy immediately. With 120 retries, it provides a 4-minute readiness window for weight downloads and memory profiling.
 
 ---
 
@@ -117,27 +117,6 @@ dgem (100% Self-Contained in this Repository)
       • scripts/deploy_cloudrun_vllm.sh (adaptive sizing for L4 and RTX Pro 6000)
 ```
 
-### The Three Breakthrough Fixes
-
-1. **The Eager-Mode Worker Bypass (`patch_vllm.py`)**:
-   In standard vLLM startup, `v1/worker/gpu_worker.py` executes `self.model_runner.profile_run()` and `kernel_warmup()`, which trigger full CUDA graph capture and compilation. Under eager mode with DiffusionGemma's custom block diffusion canvas, this graph capture crashes.
-   `patch_vllm.py` cleanly skips `profile_run()` and `kernel_warmup()` when `model_config.enforce_eager` is set, allowing the worker to boot in seconds with zero CUDA kernel compilation failures.
-
-2. **GCS FUSE Volume Mounting (`enable-buffered-read=true`)**:
-   Instead of downloading 16 GB weights over the public internet on container boot (which triggers Hugging Face HTTP 429 rate limits), Cloud Run mounts a regional Google Cloud Storage bucket via Cloud Run Volume Mounts:
-   ```bash
-   --add-volume=name=weights,type=cloud-storage,bucket=$BUCKET,readonly=false,mount-options=enable-buffered-read=true \
-   --add-volume-mount=volume=weights,mount-path=/mnt/gcs
-   ```
-   Over Google's internal datacenter network, weights stream at **>1.05 GiB/s**, dropping model loading latency from 8+ minutes to under 20 seconds.
-
-3. **Optimized Serverless GPU Environment Flags**:
-   - `TORCH_COMPILE_DISABLE=1`: Disables torch.compile overhead.
-   - `ENFORCE_EAGER=1`: Bypasses CUDA graph capture for mixed causal/bidirectional attention masks.
-   - `VLLM_WORKER_MULTIPROC_METHOD=fork`: Forks the vLLM worker process from the API server without re-importing the entire Python environment from scratch.
-   - `CUDA_MODULE_LOADING=LAZY`: Defers CUDA kernel module initialization until first call.
-   - `DISABLE_MM=1`: Skips multimodal image pipeline initialization when running pure text slot readouts.
-
 ---
 
 ## 6. GPU Selection on Cloud Run: NVIDIA L4 vs. RTX Pro 6000
@@ -156,44 +135,25 @@ dgem (100% Self-Contained in this Repository)
 
 ## 7. How to Build Your Own Patched Image and Deploy (100% Self-Contained)
 
-This repository includes a completely self-contained build and deployment pipeline so you never have to rely on third-party container registries:
+This repository includes a completely self-contained build and deployment pipeline:
 
-### Step 1: Build Container in Your Own Google Artifact Registry
 ```bash
+# 1. Build Container in Your Own Google Artifact Registry
 export GCP_PROJECT="your-gcp-project"
 export GCP_REGION="us-central1"
-
-# Builds deploy/cloudrun/Dockerfile via Cloud Build and pushes to Artifact Registry:
 make cloudrun-build
-```
 
-### Step 2: Pre-Stage Weights in Your Regional GCS Bucket
-```bash
-# Downloads weights and uploads to gs://$BUCKET/dgemma/:
+# 2. Pre-Stage Weights in Your Regional GCS Bucket
 make cloudrun-stage
-```
 
-### Step 3: Deploy to Cloud Run with GPU
-```bash
-# Deploy on cost-effective NVIDIA L4:
+# 3. Deploy to Cloud Run on NVIDIA L4:
 make cloudrun-deploy
 
 # Or deploy on high-performance RTX Pro 6000:
 CLOUDRUN_GPU_TYPE="nvidia-rtx-pro-6000" make cloudrun-deploy
-```
 
-### Step 4: Query & Benchmark via `dgem`
-```bash
-# Obtain service URL:
+# 4. Query & Benchmark via dgem
 SERVICE_URL=$(gcloud run services describe djev-dgemma --region=us-central1 --format="value(status.url)")
-
-# Run discrete decision with automatic IAM authentication:
-./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth \
-  -t templates/support_triage.json.tmpl \
-  -v 'ticket=Outage: production database cluster unreachable' --stats
-
-# Run the 30-case benchmark suite:
-./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth \
-  -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
+./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v 'ticket=Emergency' --stats
+./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
 ```
-

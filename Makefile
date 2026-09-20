@@ -57,7 +57,13 @@ docs-build: ## Build the Astro Starlight documentation site
 docs-dev: ## Launch local development server for the documentation site
 	pnpm run --dir docs-site dev
 
-cloudrun-deploy: ## Deploy vLLM with DiffusionGemma structured reads to Cloud Run with GPU
+cloudrun-build: ## Build and push the self-contained Cloud Run container image to Artifact Registry
+	./scripts/build_cloudrun_image.sh
+
+cloudrun-stage: ## Pre-stage model weights in GCS for Cloud Run GCS FUSE volume mounting
+	./scripts/stage_model_gcs.sh
+
+cloudrun-deploy: ## Deploy DiffusionGemma to Google Cloud Run with GPU (L4 or RTX Pro 6000)
 	./scripts/deploy_cloudrun_vllm.sh
 
 gce-deploy: ## Deploy vLLM with DiffusionGemma structured reads to GCE with L4 GPU

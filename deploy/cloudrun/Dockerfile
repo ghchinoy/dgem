@@ -1,35 +1,67 @@
-# Dockerfile for DiffusionGemma with Structured Reads (vLLM PR #57250) on Google Cloud Run
-FROM vllm/vllm-openai:latest
+# syntax=docker/dockerfile:1
+# DiffusionGemma Cloud Run Serverless GPU Container
+# Fully self-contained, reproducible multi-stage build.
+#
+# Lineage:
+# 1. Base image: vLLM official nightly image pinned to commit dee37d89115
+# 2. Structured reads fork: mmastrac/vllm pinned to commit 6591b093b
+# 3. Cloud Run serverless runtime optimizations: eager-mode worker bypass,
+#    GCS FUSE buffered streaming, and TypeSafe AI / Jev structured server proxy.
 
-LABEL maintainer="ghchinoy"
-LABEL description="vLLM with DiffusionGemma discrete block diffusion structured reads overlay"
+ARG BASE=vllm/vllm-openai:nightly-dee37d89115db4c94a820a79a78a7828e141c910
 
-# Copy local patch script
-COPY patch_vllm.py /tmp/patch_vllm.py
+# --- Stage 1: The structured reads fork at pinned commit ----------------------
+FROM alpine/git:latest AS fork
+ARG VLLM_FORK=https://github.com/mmastrac/vllm.git
+ARG VLLM_UPSTREAM=https://github.com/vllm-project/vllm.git
+ARG VLLM_REF=6591b093b29536dd070c6af3628b734025c53e23
+ARG VLLM_BASE=dee37d89115db4c94a820a79a78a7828e141c910
 
-# Install git, overlay Matt Mastracci's PR #57250 branch, apply custom ops patch, and verify
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
-    git clone --depth 1 -b structured-reads-main https://github.com/mmastrac/vllm.git /tmp/vllm-pr && \
-    VLLM_PATH=$(python3 -c "import vllm, os; print(os.path.dirname(vllm.__file__))") && \
-    echo "Overlaying PR #57250 files into $VLLM_PATH..." && \
-    cp -r /tmp/vllm-pr/vllm/* "$VLLM_PATH/" && \
-    mkdir -p /opt/diffusion_reads && \
-    cp -r /tmp/vllm-pr/examples/features/diffusion_reads/* /opt/diffusion_reads/ && \
-    python3 /tmp/patch_vllm.py && \
-    rm -rf /tmp/vllm-pr /tmp/patch_vllm.py /var/lib/apt/lists/* && \
-    python3 -c "import vllm; print('vLLM verification successful, version:', vllm.__version__)"
+RUN git clone --filter=blob:none --quiet "${VLLM_FORK}" /fork \
+    && cd /fork \
+    && git checkout --quiet "${VLLM_REF}" \
+    && git fetch --filter=blob:none --quiet "${VLLM_UPSTREAM}" "${VLLM_BASE}" \
+    && mb=$(git merge-base "${VLLM_BASE}" HEAD) \
+    && git diff --name-only "$mb" HEAD -- vllm > /fork/changed.txt \
+    && git diff --name-only --diff-filter=A "$mb" HEAD -- vllm > /fork/added.txt \
+    && cat /fork/changed.txt \
+    && if ! git diff --quiet "$mb" "${VLLM_BASE}" -- $(cat /fork/changed.txt); then \
+         echo "upstream changed overlaid files between branch base and ${VLLM_BASE}; rebase required" >&2; \
+         exit 1; fi
 
-# Environment settings for Cloud Run
-ENV PORT=8080
-ENV HOST=0.0.0.0
+# --- Stage 2: Production Cloud Run Runtime Image ------------------------------
+FROM ${BASE}
+ARG VLLM_BASE=dee37d89115db4c94a820a79a78a7828e141c910
+
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-EXPOSE 8080
+ENV PORT=8080
 
-# Default serving configuration using 4-bit NVFP4 weights optimized for RTX Pro 6000 / L4
-ENTRYPOINT ["vllm", "serve"]
-CMD ["nvidia/diffusiongemma-26B-A4B-it-NVFP4", \
-     "--diffusion-config", "{\"canvas_length\": 32}", \
-     "--max-logprobs", "32", \
-     "--enable-prefix-caching", \
-     "--port", "8080", \
-     "--host", "0.0.0.0"]
+# 1. Symlink CUDA headers where FlashInfer/CUTLASS JIT requires them
+COPY patches/link_cuda_headers.sh /tmp/link_cuda_headers.sh
+RUN bash /tmp/link_cuda_headers.sh && rm /tmp/link_cuda_headers.sh
+
+# 2. Structured reads overlay from Stage 1
+COPY patches/overlay_vllm.py /tmp/overlay_vllm.py
+RUN --mount=type=bind,from=fork,source=/fork,target=/fork \
+    python3 /tmp/overlay_vllm.py /fork "${VLLM_BASE}" && rm /tmp/overlay_vllm.py
+
+# 3. Raise Dynamo recompile limit for multi-width canvas reads
+COPY patches/raise_recompile_limit.py /tmp/raise_recompile_limit.py
+RUN python3 /tmp/raise_recompile_limit.py && rm /tmp/raise_recompile_limit.py
+
+# 4. Patch vLLM gpu_worker for eager mode on Cloud Run
+COPY patch_vllm.py /tmp/patch_vllm.py
+RUN python3 /tmp/patch_vllm.py && rm /tmp/patch_vllm.py
+
+# 5. Install compressed-tensors for dynamic FP8 / INT8 quantization support
+RUN pip install --no-cache-dir compressed-tensors
+
+# 6. Bundle structured_server proxy and entrypoint
+COPY server/structured_server.py /opt/dgemma/structured_server.py
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh /opt/dgemma/structured_server.py \
+    && python3 -m py_compile /opt/dgemma/structured_server.py
+
+EXPOSE 8080 8000
+ENTRYPOINT ["/entrypoint.sh"]

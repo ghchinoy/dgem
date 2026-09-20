@@ -1,25 +1,43 @@
-import os
-import sys
-import vllm
+import pathlib
 
-vllm_dir = os.path.dirname(vllm.__file__)
-custom_ops_path = os.path.join(vllm_dir, "_custom_ops.py")
+p = pathlib.Path("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py")
+if not p.exists():
+    # Check alternate site-packages path
+    import importlib.util
+    p = pathlib.Path(importlib.util.find_spec("vllm").origin).parent / "v1" / "worker" / "gpu_worker.py"
 
-if not os.path.exists(custom_ops_path):
-    print(f"Error: {custom_ops_path} does not exist!")
-    sys.exit(1)
+s = p.read_text()
 
-with open(custom_ops_path, "r") as f:
-    code = f.read()
+# 1. Skip profile_run in eager mode
+s = s.replace(
+    "        if kv_cache_memory_bytes := self.cache_config.kv_cache_memory_bytes:\n"
+    "            # still need a profile run which compiles the model for\n"
+    "            # max_num_batched_tokens\n"
+    "            self.model_runner.profile_run()",
+    "        if kv_cache_memory_bytes := self.cache_config.kv_cache_memory_bytes:\n"
+    "            if not self.model_config.enforce_eager:\n"
+    "                self.model_runner.profile_run()"
+)
 
-target = "    return torch.ops._C.gptq_marlin_repack(\n        b_q_weight, size_k, size_n, num_bits, is_a_8bit\n    )"
-replacement = "    perm = torch.empty(0, dtype=torch.int, device=b_q_weight.device)\n    return torch.ops._C.gptq_marlin_repack(\n        b_q_weight, perm, size_k, size_n, num_bits, is_a_8bit\n    )"
+# 2. Skip kernel_warmup in eager mode
+s = s.replace(
+    "        kernel_warmup(self)\n\n"
+    "        if self.use_v2_model_runner:\n"
+    "            # A workspace resize after capture frees what the graphs point at.\n"
+    "            warmup_kernels(self.model_runner, self.execute_model, self.sample_tokens)",
+    "        if not self.model_config.enforce_eager:\n"
+    "            kernel_warmup(self)\n"
+    "            if self.use_v2_model_runner:\n"
+    "                warmup_kernels(self.model_runner, self.execute_model, self.sample_tokens)"
+)
 
-if target in code:
-    code = code.replace(target, replacement)
-    with open(custom_ops_path, "w") as f:
-        f.write(code)
-    print("Successfully patched _custom_ops.py for gptq_marlin_repack!")
-else:
-    print("Error: Target code snippet not found in _custom_ops.py!")
-    sys.exit(1)
+# 3. Synchronize with background /dev/shm copy if active
+s = s.replace(
+    "self.model_runner.load_model(load_dummy_weights=load_dummy_weights)",
+    "import os, time\n"
+    "            while os.path.exists('/dev/shm/dgemma') and not os.path.exists('/dev/shm/dgemma/.ready'): time.sleep(0.05)\n"
+    "            self.model_runner.load_model(load_dummy_weights=load_dummy_weights)"
+)
+
+p.write_text(s)
+print("[patch_vllm] Successfully patched gpu_worker.py for eager Cloud Run execution")
