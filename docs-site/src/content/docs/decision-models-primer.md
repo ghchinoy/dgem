@@ -31,7 +31,7 @@ Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Se
 * **Core Algorithms**: Regular Grammars, Hidden Markov Models (HMMs), Weighted Finite-State Transducers (WFSTs like OpenFst, Google Sparrowhawk, NVIDIA NeMo).
 * **Mechanism**: Model sequential transitions using regular languages (Chomsky Type-3) and shortest-path algorithms over tropical semirings:
   $$\text{ShortestPath}(T \circ \text{Input} \circ V)$$
-* **Strength**: Extremely fast ($1–8$ ms in C++), deterministic, zero hallucinations, and mathematically verifiable.
+* **Strength**: Extremely fast (1–8 ms in C++), deterministic, zero hallucinations, and mathematically verifiable.
 * **Fatal Flaw**: **Local context horizon (1–3 token sliding window)**. WFSTs cannot build full-sentence dependency parse trees. As language complexity increases, grammar rulebooks explode into combinatorial conflicts (e.g., tuning a title rule for *"Dr. Smith"* causes street thoroughfares like *"Ocean Dr."* to expand to *"Ocean doctor"*).
 
 ### Era 3: Autoregressive Generative AI (2018–Present)
@@ -53,7 +53,7 @@ When deploying mission-critical systems (such as high-volume customer triage, au
 | Decision Architecture Dilemma | Classical Statistical ML (Naive Bayes / SVM) | Symbolic Automata (WFSTs) | Autoregressive LLMs (GPT / Gemini) | Discrete Diffusion Decision Models (`dgem`) |
 | :--- | :--- | :--- | :--- | :--- |
 | **1. The Context Horizon Dilemma** | **Zero context** (Bag-of-Words). Fails on negation. | **Local window (1–3 tokens)**. Fails on semiotic polysemy. | **Full sequence (unidirectional)**. Deep reasoning. | **Full sequence (bidirectional)**. Deep syntax + slot cross-attention. |
-| **2. The Latency & Compute Tax** | **Microseconds** ($< 1$ ms on CPU). | **Single-digit ms** ($1–5$ ms on CPU). | **Multi-second** ($2,000–15,000$ ms sequential loop). | **Sub-second** ($750–1,100$ ms single forward pass). |
+| **2. The Latency & Compute Tax** | **Microseconds** (&lt; 1 ms on CPU). | **Single-digit ms** (1–5 ms on CPU). | **Multi-second** (2,000–15,000 ms sequential loop). | **Sub-second** (750–1,100 ms single forward pass). |
 | **3. The Syntactic Guarantee** | Categorical output guaranteed. | Regular grammar output guaranteed. | **Probabilistic formatting**. Can hallucinate or drift. | **100% Schema-Guaranteed**. Readout directly into pre-allocated slots. |
 | **4. Uncertainty Calibration** | **Overconfident** ($0.9999$ or $0.0001$). Unusable. | Static arc weights. No probabilistic variance. | Logprobs available, but tied to serial token branches. | **Calibrated entropy & empirical variance** ($\pm\sigma$ and $H$). |
 

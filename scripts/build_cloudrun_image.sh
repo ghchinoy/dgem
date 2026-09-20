@@ -37,12 +37,12 @@ if ! gcloud artifacts repositories describe "$REPOSITORY" --location="$REGION" -
     --description="DiffusionGemma Cloud Run container images"
 fi
 
-# 2. Submit build to Cloud Build
-echo "==> Submitting build to Google Cloud Build (timeout: 20m)..."
+echo "==> Submitting build to Google Cloud Build (machine: e2-highcpu-8, timeout: 30m)..."
 gcloud builds submit deploy/cloudrun \
   --project="$PROJECT_ID" \
   --tag="$AR_TARGET" \
-  --timeout=1200s
+  --machine-type=e2-highcpu-8 \
+  --timeout=1800s
 
 echo ""
 echo "================================================================================"

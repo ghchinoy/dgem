@@ -1,10 +1,16 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import catppuccin from '@catppuccin/starlight';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 export default defineConfig({
   site: 'https://ghchinoy.github.io',
   base: '/dgem',
+  markdown: {
+    remarkPlugins: [remarkMath],
+    rehypePlugins: [rehypeKatex],
+  },
   integrations: [
     starlight({
       title: 'DiffusionGemma',
@@ -18,7 +24,10 @@ export default defineConfig({
           dark: { flavor: 'latte', accent: 'mauve' },
         }),
       ],
-      customCss: ['./src/styles/custom.css'],
+      customCss: [
+        'katex/dist/katex.min.css',
+        './src/styles/custom.css',
+      ],
       sidebar: [
         {
           label: 'Getting Started',
