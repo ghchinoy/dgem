@@ -139,8 +139,28 @@ Raw Text Input (e.g. "Dr. Smith drove 5 miles down Ocean Dr. on 3/5/2026 for $5.
 - **Fast Path (95% of utterances)**: Processed entirely by `ecotone` C++ WFST over UDS in **1.54 ms p50** (`8.42 ms` mean).
 - **Ambiguity Escalation (5% of utterances)**: Triggered only when `ecotone` encounters a polysemic abbreviation (`St.`, `Dr.`, `st.`), a verbatim fallback (`VIII`, `O(N log N)`, `<=`), or a bare 7+ digit integer (`2500000`), escalating that single slot to `dgem decide` (`960.1 ms` mean on L4 GPU).
 - **Effective Blended Latency**:
-  Blended Mean Latency = (0.95 x 1.54 ms) + (0.05 x 960.1 ms) = 49.47 ms
+  $$\text{Blended Mean Latency} = \underbrace{(0.95 \times 1.54\text{ ms})}_{\text{Tier 1: WFST Fast Path (1.46 ms)}} + \underbrace{(0.05 \times 960.1\text{ ms})}_{\text{Tier 2: Neural Escalation (48.01 ms)}} = \mathbf{49.47\text{ ms}}$$
   (More than **10× faster** than Google Cloud TTS's ~500 ms server-side normalizer penalty, while lifting semiotic accuracy from **36.7% -> 93.3%**!)
+
+#### Term-by-Term Latency Breakdown
+
+| Term | Value | What It Represents in the Benchmark |
+| :--- | :--- | :--- |
+| **`0.95`** | **95% Fast-Path Share** | The proportion of real-world utterances containing only standard words and deterministic Non-Standard Words (NSWs) such as slash dates (`3/5/2026`), currency (`$5.99`), or simple cardinals (`5 miles`). |
+| **`1.54 ms`** | **`ecotone` Fast-Path Latency** | The representative p50 latency of the C++ `ecotone_server` (`OpenFst 1.8.4` + NVIDIA NeMo `.far` grammars) over a local Unix Domain Socket (`unix:///tmp/ecotone.sock`), e.g., case `ch-01` (`3/5/2026` -> *"march fifth twenty twenty six"* in `1.54 ms`). Contribution to blended mean: **`1.46 ms`**. |
+| **`0.05`** | **5% Escalation Rate** | The fraction of utterances that trigger the ambiguity gate because `ecotone` encounters a known polysemic abbreviation (`St.`, `Dr.`, `st.`), leaves an OOV token verbatim (`VIII`, `O(N log N)`), or hits a 7+ digit bare integer boundary (`2500000`). |
+| **`960.1 ms`** | **`dgem` GPU Slot Latency** | The measured mean latency of `nvidia/diffusiongemma-26B-A4B-it-NVFP4` (`samples=1`) on a GCE `g2-standard-8` (1× NVIDIA L4 GPU) across `benchmarks/results_ecotone_gce_l4_semiotics.json` to denoise the target slot via `dgem decide`. Contribution to blended mean: **`48.01 ms`**. |
+| **`49.47 ms`** | **Blended Mean Latency** | The expected latency per utterance ($1.463\text{ ms} + 48.005\text{ ms} = 49.468\text{ ms}$). Notably, **median (p50) latency remains `1.54 ms`**, while the 5% GPU tail shifts the arithmetic mean to `49.47 ms`. |
+
+#### Why >10× Faster Than Cloud TTS's ~500 ms Server-Side Penalty
+Cloud-hosted neural TTS pipelines (such as Google Cloud TTS) incur a **$\sim 500\text{ ms}$** server-side normalization and network round-trip penalty on *every* request before audio synthesis begins—even for trivial sentences. By running `ecotone` locally over UDS (`1.54 ms`) and calling the L4 GPU (`960.1 ms`) only on the 5% of sentences containing semiotic ambiguity:
+$$\frac{500\text{ ms (Cloud Server-Side Normalizer)}}{49.47\text{ ms (Cascaded Blended Mean)}} \approx \mathbf{10.1\times \text{ faster mean}} \quad (\text{and } \mathbf{>320\times \text{ faster at p50}})$$
+
+#### How Semiotic Accuracy Lifts from `36.7%` -> `93.3%`
+In **Corpus A** (`benchmarks/ecotone/tn_semiotics.jsonl`, 30 context-dependent polysemic traps):
+1. **Standalone `ecotone` (`36.7%` — 11 / 30):** Fails on 19 of 30 cases because its 1–3 token finite-state window either abstains on ambiguous abbreviations (`"123 St. Mark St."` left as raw `"St."` in `tn-01`/`tn-02`) or collapses to a static default arc weight (`"Ocean Dr."` misread as *"Ocean doctor"* in `tn-06`).
+2. **Standalone `dgem` (`90.0%` — 27 / 30):** Resolves full-sentence bidirectional syntax (`St.` #1 -> **`"Saint"`**, `St.` #2 -> **`"Street"`**, `Dr.` #1 -> **`"Doctor"`**, `Dr.` #2 -> **`"Drive"`** with `p=1.00`), missing only 3 cases under 4-bit `NVFP4` quantization (`samples=1`), such as `tn-10` where `dgem` anchored on an earlier `3/4` fraction instead of the date `3/4/2026`.
+3. **Hybrid Cascaded Normalizer (`93.3%` — 28 / 30):** `ecotone`'s deterministic `M/D/Y` transducer handles `3/4/2026` (`tn-10`) on the fast path (`2.51 ms` -> *"march fourth twenty twenty six"*), while escalating `ecotone`'s polysemic/verbatim slots to `dgem` recovers 17 additional cases—combining `11` WFST passes + `17` `dgem` rescues = **`28 / 30` (`93.3%`)**.
 
 ---
 
