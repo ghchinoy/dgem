@@ -244,8 +244,9 @@ func ParseStructuredContentWithLogprobs(content string, logprobs *ChoiceLogprobs
 	return nil, fmt.Errorf("failed to parse structured decision output from: %s", content)
 }
 
-// extractSlotLogprobTelemetry locates the token(s) corresponding to the slot value in ChoiceLogprobs
-// and computes calibrated probability exp(logprob), Shannon entropy H = -sum(p * ln(p)), and top-k probabilities.
+// extractSlotLogprobTelemetry locates all subword tokens corresponding to the slot value in ChoiceLogprobs
+// and computes the bottleneck branching probability exp(min_logprob), maximum Shannon entropy H = -sum(p * ln(p)),
+// and all candidate runner-up subword probabilities across the label span.
 func extractSlotLogprobTelemetry(label string, lp *ChoiceLogprobs) (confidence float64, logprob float64, entropy float64, probs map[string]float64) {
 	confidence = 1.0
 	if lp == nil || len(lp.Content) == 0 {
@@ -253,54 +254,83 @@ func extractSlotLogprobTelemetry(label string, lp *ChoiceLogprobs) (confidence f
 	}
 
 	normLabel := strings.ToLower(strings.TrimSpace(label))
-	var matched *TokenLogprob
+	if normLabel == "" {
+		return 1.0, 0, 0, nil
+	}
 
-	// Search backwards (after "thought" preamble and JSON key) for the token matching the start of label
+	// Collect all subword tokens in lp.Content that belong to the generated label value
+	// (occurring after the JSON colon ':')
+	colonIdx := -1
 	for i := len(lp.Content) - 1; i >= 0; i-- {
+		if strings.Contains(lp.Content[i].Token, ":") {
+			colonIdx = i
+			break
+		}
+	}
+
+	startSearch := 0
+	if colonIdx != -1 && colonIdx+1 < len(lp.Content) {
+		startSearch = colonIdx + 1
+	}
+
+	var matchedTokens []*TokenLogprob
+	for i := startSearch; i < len(lp.Content); i++ {
 		tokClean := strings.ToLower(strings.Trim(lp.Content[i].Token, " \t\n\r\"',:{}[]"))
 		if tokClean == "" {
 			continue
 		}
-		if tokClean == normLabel || strings.HasPrefix(normLabel, tokClean) || strings.HasSuffix(normLabel, tokClean) {
-			matched = &lp.Content[i]
-			break
+		if strings.Contains(normLabel, tokClean) || strings.HasPrefix(tokClean, normLabel) {
+			matchedTokens = append(matchedTokens, &lp.Content[i])
 		}
 	}
-	if matched == nil {
-		// Fallback to the highest-entropy content token inside the JSON body
+
+	if len(matchedTokens) == 0 {
 		for i := len(lp.Content) - 1; i >= 0; i-- {
 			tokClean := strings.Trim(lp.Content[i].Token, " \t\n\r\"',:{}[]")
 			if len(tokClean) > 0 {
-				matched = &lp.Content[i]
+				matchedTokens = append(matchedTokens, &lp.Content[i])
 				break
 			}
 		}
 	}
-	if matched == nil {
+	if len(matchedTokens) == 0 {
 		return 1.0, 0, 0, nil
 	}
 
-	logprob = matched.Logprob
-	confidence = math.Exp(logprob)
-	if confidence > 1.0 {
-		confidence = 1.0
-	}
+	// Across all subwords of the label, find the bottleneck branching token
+	// (lowest logprob / highest Shannon entropy) and aggregate runner-up subword probabilities.
+	minLogprob := 0.0
+	maxEntropy := 0.0
+	probs = make(map[string]float64)
 
-	if len(matched.TopLogprobs) > 0 {
-		probs = make(map[string]float64, len(matched.TopLogprobs))
+	for idx, mt := range matchedTokens {
+		if idx == 0 || mt.Logprob < minLogprob {
+			minLogprob = mt.Logprob
+		}
 		var h float64
-		for _, item := range matched.TopLogprobs {
+		for _, item := range mt.TopLogprobs {
 			p := math.Exp(item.Logprob)
-			tKey := strings.TrimSpace(item.Token)
+			tKey := strings.Trim(item.Token, " \t\n\r\"',:{}[]")
 			if tKey != "" {
-				probs[tKey] = p
+				if existing, ok := probs[tKey]; !ok || p > existing {
+					probs[tKey] = p
+				}
 			}
 			if p > 0 {
 				h -= p * math.Log(p)
 			}
 		}
-		entropy = h
+		if h > maxEntropy {
+			maxEntropy = h
+		}
 	}
+
+	logprob = minLogprob
+	confidence = math.Exp(minLogprob)
+	if confidence > 1.0 {
+		confidence = 1.0
+	}
+	entropy = maxEntropy
 
 	return confidence, logprob, entropy, probs
 }

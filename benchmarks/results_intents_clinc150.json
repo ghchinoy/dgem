@@ -1,16 +1,25 @@
 {
-  "avg_wall_time_ms": 1512.3666666666666,
+  "avg_wall_time_ms": 1759.0333333333333,
   "candidate_intents": 26,
   "corpus": "benchmarks/intents/clinc150_eval.jsonl",
+  "correct_mean_confidence": 0.9999728221049347,
+  "correct_mean_entropy_nats": 0.00027757607181233123,
   "dataset": "DeepPavlov/clinc150",
   "domain_accuracy_pct": 96.66666666666667,
   "domain_correct": 29,
+  "entropy_threshold": 0.08,
   "in_domain_correct": 24,
   "in_domain_total": 25,
+  "incorrect_mean_confidence": 0.9998294406054757,
+  "incorrect_mean_entropy_nats": 0.0016944786241542974,
   "intent_accuracy_pct": 96.66666666666667,
   "intent_correct": 29,
+  "mean_confidence": 0.9999680427216193,
+  "mean_entropy_nats": 0.0003248061568903968,
   "oos_correct": 5,
   "oos_total": 5,
+  "pass1_accuracy_pct": 96.66666666666667,
+  "pass1_correct": 29,
   "results": [
     {
       "id": "c150-01",
@@ -20,10 +29,22 @@
       "actual_domain": "banking",
       "domain_accurate": true,
       "expected_intent": "transfer",
+      "pass1_intent": "transfer",
+      "pass1_accurate": true,
       "actual_intent": "transfer",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1195
+      "confidence": 0.999998927117538,
+      "logprob": -0.0000010728830375228426,
+      "entropy": 0.000015387537715939568,
+      "top_probabilities": {
+        "Transfer": 7.43405027645837e-8,
+        "ransfer": 7.566874165055544e-9,
+        "transfer": 0.999998927117538,
+        "transform": 9.232799997545591e-7,
+        "transition": 6.560009983226897e-9
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1191
     },
     {
       "id": "c150-02",
@@ -33,10 +54,29 @@
       "actual_domain": "travel",
       "domain_accurate": true,
       "expected_intent": "travel_alert",
+      "pass1_intent": "travel_alert",
+      "pass1_accurate": true,
       "actual_intent": "travel_alert",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 4151
+      "confidence": 0.9999790196052284,
+      "logprob": -0.00002098061486321967,
+      "entropy": 0.0002500046073982954,
+      "top_probabilities": {
+        "-": 1.909128304191204e-7,
+        "Travel": 3.5920840623104416e-7,
+        "\\_": 6.129343919388457e-7,
+        "_": 0.9999790196052284,
+        "alert": 0.9999964237340748,
+        "alerts": 0.00000318019088597524,
+        "alt": 1.2950817040782358e-7,
+        "flight": 1.1424871245429779e-7,
+        "status": 8.878575947862387e-8,
+        "tax": 3.5920840623104416e-7,
+        "transfer": 2.6533846545812815e-7,
+        "travel": 0.9999976158197796
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 494
     },
     {
       "id": "c150-03",
@@ -46,10 +86,27 @@
       "actual_domain": "work",
       "domain_accurate": true,
       "expected_intent": "pto_request",
+      "pass1_intent": "pto_request",
+      "pass1_accurate": true,
       "actual_intent": "pto_request",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1082
+      "confidence": 0.9999514841747886,
+      "logprob": -0.00004851700214203447,
+      "entropy": 0.0004291469792748631,
+      "top_probabilities": {
+        "-": 2.393398435950461e-7,
+        "Request": 0.0000018168233710916637,
+        "_": 0.9999985694905718,
+        "input": 5.907087279303622e-7,
+        "pt": 0.000013747369684957027,
+        "pto": 0.9999514841747886,
+        "request": 0.99998354938796,
+        "requests": 0.000009871781060633126,
+        "vac": 0.00000792809989816424,
+        "work": 0.0000032012874149266833
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 494
     },
     {
       "id": "c150-04",
@@ -59,10 +116,23 @@
       "actual_domain": "work",
       "domain_accurate": true,
       "expected_intent": "payday",
+      "pass1_intent": "payday",
+      "pass1_accurate": true,
       "actual_intent": "payday",
       "intent_accurate": true,
       "confidence": 1,
-      "wall_time_ms": 1734
+      "logprob": 0,
+      "entropy": 2.479991129987377e-8,
+      "top_probabilities": {
+        "DAY": 1.35877167771643e-12,
+        "Pay": 1.2271575929311321e-11,
+        "day": 1,
+        "days": 1.164559594860876e-9,
+        "lay": 4.1610502853793635e-12,
+        "pay": 1
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 3002
     },
     {
       "id": "c150-05",
@@ -72,10 +142,32 @@
       "actual_domain": "credit_cards",
       "domain_accurate": true,
       "expected_intent": "replacement_card_duration",
+      "pass1_intent": "replacement_card_duration",
+      "pass1_accurate": true,
       "actual_intent": "replacement_card_duration",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1309
+      "confidence": 0.9999797348316635,
+      "logprob": -0.000020265373677830212,
+      "entropy": 0.00023519256965575552,
+      "top_probabilities": {
+        "-": 3.806961429358704e-7,
+        "Duration": 0.0000024427708068400444,
+        "Replacement": 0.000018890938531147534,
+        "\\_": 0.000004997644170696848,
+        "^": 7.467813009253725e-9,
+        "_": 0.9999990463265931,
+        "call": 1.5265162691322275e-7,
+        "card": 0.9999909401759619,
+        "cart": 5.461079026109344e-7,
+        "construction": 5.525918689717296e-8,
+        "dur": 0.0000011669527514276759,
+        "duration": 0.9999949932351057,
+        "reduction": 2.0724439175707002e-7,
+        "replacement": 0.9999797348316635,
+        "retirement": 1.1287579228571952e-7
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 5062
     },
     {
       "id": "c150-06",
@@ -85,10 +177,24 @@
       "actual_domain": "travel",
       "domain_accurate": true,
       "expected_intent": "flight_status",
+      "pass1_intent": "flight_status",
+      "pass1_accurate": true,
       "actual_intent": "flight_status",
       "intent_accurate": true,
       "confidence": 1,
-      "wall_time_ms": 3700
+      "logprob": 0,
+      "entropy": 5.882424095860266e-9,
+      "top_probabilities": {
+        "-": 5.843675724028405e-11,
+        "STATUS": 3.222002299602126e-13,
+        "_": 1,
+        "flight": 1,
+        "flights": 7.851655360638424e-11,
+        "radius": 3.792366621700071e-12,
+        "status": 1
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 3663
     },
     {
       "id": "c150-07",
@@ -98,10 +204,20 @@
       "actual_domain": "banking",
       "domain_accurate": true,
       "expected_intent": "balance",
+      "pass1_intent": "balance",
+      "pass1_accurate": true,
       "actual_intent": "balance",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 440
+      "confidence": 0.9999489810279807,
+      "logprob": -0.000051020273531321436,
+      "entropy": 0.0005367998910622466,
+      "top_probabilities": {
+        "bal": 4.4632258837080737e-7,
+        "balance": 0.9999489810279807,
+        "ball": 0.00003875969297798741
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 489
     },
     {
       "id": "c150-08",
@@ -111,10 +227,25 @@
       "actual_domain": "banking",
       "domain_accurate": true,
       "expected_intent": "freeze_account",
+      "pass1_intent": "freeze_account",
+      "pass1_accurate": true,
       "actual_intent": "freeze_account",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 2274
+      "confidence": 0.9999829533624089,
+      "logprob": -0.000017046782886609435,
+      "entropy": 0.00018003733962618232,
+      "top_probabilities": {
+        "-": 5.694480872378884e-7,
+        "Account": 0.000002182078829682752,
+        "_": 0.9999973774024795,
+        "account": 0.9999829533624089,
+        "accounts": 0.00000417947683584491,
+        "card": 0.000004649382379389539,
+        "free": 0.000003430528946728151,
+        "freeze": 0.9999905825550351
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 488
     },
     {
       "id": "c150-09",
@@ -124,10 +255,31 @@
       "actual_domain": "travel",
       "domain_accurate": true,
       "expected_intent": "lost_luggage",
+      "pass1_intent": "lost_luggage",
+      "pass1_accurate": true,
       "actual_intent": "lost_luggage",
       "intent_accurate": true,
       "confidence": 1,
-      "wall_time_ms": 434
+      "logprob": 0,
+      "entropy": 7.750274654103136e-11,
+      "top_probabilities": {
+        "-": 6.266873303448132e-15,
+        "LOST": 1.095762811652758e-13,
+        "Lost": 4.2448270951235523e-16,
+        "Lug": 2.918003296096084e-12,
+        "\\_": 1.539595268956331e-13,
+        "_": 1,
+        "found": 1.267477240443887e-18,
+        "gage": 1,
+        "lod": 1.8750258259549694e-18,
+        "lost": 1,
+        "lu": 2.9213078190146107e-18,
+        "lug": 1,
+        "mage": 1.2099277596368794e-20,
+        "s": 5.547457634088168e-17
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 4784
     },
     {
       "id": "c150-10",
@@ -137,10 +289,27 @@
       "actual_domain": "auto_and_commute",
       "domain_accurate": true,
       "expected_intent": "oil_change_when",
+      "pass1_intent": "oil_change_when",
+      "pass1_accurate": true,
       "actual_intent": "oil_change_when",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1380
+      "confidence": 0.9998730582261783,
+      "logprob": -0.00012694983161054552,
+      "entropy": 0.001025401550059196,
+      "top_probabilities": {
+        "-": 3.0906369852647254e-7,
+        "\\_": 4.2546585513214726e-7,
+        "_": 0.9999969005680498,
+        "auto": 0.00003966364356180361,
+        "change": 0.9999974966112362,
+        "oil": 0.9998730582261783,
+        "order": 0.000010128499690375234,
+        "weather": 0.0000030182523207596338,
+        "when": 0.9999084556470166,
+        "where": 0.000003207916194181289
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 2900
     },
     {
       "id": "c150-11",
@@ -150,10 +319,24 @@
       "actual_domain": "auto_and_commute",
       "domain_accurate": true,
       "expected_intent": "tire_pressure",
+      "pass1_intent": "tire_pressure",
+      "pass1_accurate": true,
       "actual_intent": "tire_pressure",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 4354
+      "confidence": 0.9999104818395896,
+      "logprob": -0.0000895221673999913,
+      "entropy": 0.0008969026512044718,
+      "top_probabilities": {
+        "-": 7.961904130405914e-7,
+        "\\_": 0.0000018409412395311257,
+        "_": 0.9999948740268748,
+        "bore": 0.000005340597828402715,
+        "pressure": 0.9999818805158571,
+        "radius": 9.323067880260938e-7,
+        "tire": 0.9999104818395896
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 5038
     },
     {
       "id": "c150-12",
@@ -163,10 +346,22 @@
       "actual_domain": "credit_cards",
       "domain_accurate": true,
       "expected_intent": "apr",
+      "pass1_intent": "apr",
+      "pass1_accurate": true,
       "actual_intent": "apr",
       "intent_accurate": true,
       "confidence": 1,
-      "wall_time_ms": 433
+      "logprob": 0,
+      "entropy": 8.986134104301491e-7,
+      "top_probabilities": {
+        "Apr": 2.0793570059007777e-9,
+        "ap": 5.122239987699124e-9,
+        "apr": 1,
+        "apt": 4.001864813542287e-8,
+        "pr": 4.013106609200648e-9
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 2535
     },
     {
       "id": "c150-13",
@@ -176,10 +371,30 @@
       "actual_domain": "auto_and_commute",
       "domain_accurate": true,
       "expected_intent": "schedule_maintenance",
+      "pass1_intent": "oil_change_when",
+      "pass1_accurate": false,
       "actual_intent": "oil_change_when",
       "intent_accurate": false,
-      "confidence": 1,
-      "wall_time_ms": 1523
+      "confidence": 0.9998294406054757,
+      "logprob": -0.0001705739414319396,
+      "entropy": 0.0016944786241542974,
+      "top_probabilities": {
+        "(": 3.389063573208723e-7,
+        "-": 4.6957722547388094e-7,
+        "Change": 5.160381637079974e-7,
+        "Oil": 0.000004163623328736161,
+        "\\_": 8.89124806848605e-7,
+        "_": 0.9999974966112362,
+        "change": 0.9999921322487634,
+        "changes": 6.587450642382751e-7,
+        "maintenance": 0.000003857989148634012,
+        "oil": 0.9998294406054757,
+        "schedule": 0.0000649317547150174,
+        "service": 0.00001622127018640693,
+        "when": 0.9998701979342554
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1229
     },
     {
       "id": "c150-14",
@@ -189,10 +404,25 @@
       "actual_domain": "work",
       "domain_accurate": true,
       "expected_intent": "w2",
+      "pass1_intent": "w2",
+      "pass1_accurate": true,
       "actual_intent": "w2",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 437
+      "confidence": 0.9999974966112362,
+      "logprob": -0.00000250339189733495,
+      "entropy": 0.00003711974353517734,
+      "top_probabilities": {
+        "1": 0.000001933459920193658,
+        "2": 0.9999974966112362,
+        "3": 5.123627828686715e-7,
+        "4": 3.889037394052026e-8,
+        "6": 6.621926406761281e-8,
+        "Aff": 2.6774386483220176e-9,
+        "Optional": 7.91351639393684e-9,
+        "w": 0.9999991655356624
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1048
     },
     {
       "id": "c150-15",
@@ -202,10 +432,27 @@
       "actual_domain": "work",
       "domain_accurate": true,
       "expected_intent": "schedule_meeting",
+      "pass1_intent": "schedule_meeting",
+      "pass1_accurate": true,
       "actual_intent": "schedule_meeting",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 578
+      "confidence": 0.9999624504845601,
+      "logprob": -0.00003755022044060752,
+      "entropy": 0.0003291542906543401,
+      "top_probabilities": {
+        "-": 5.715124735430522e-8,
+        "Schedule": 8.318531224680247e-7,
+        "_": 0.9999996423722521,
+        "finding": 0.000002991495725744396,
+        "maintenance": 0.0000017476452473210095,
+        "meeting": 0.9999624504845601,
+        "moving": 0.000002092882630877898,
+        "schedule": 0.9999816421070834,
+        "scheduler": 5.907076012439521e-7,
+        "schema": 0.000014769831776681235
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 496
     },
     {
       "id": "c150-16",
@@ -215,10 +462,25 @@
       "actual_domain": "credit_cards",
       "domain_accurate": true,
       "expected_intent": "international_fees",
+      "pass1_intent": "international_fees",
+      "pass1_accurate": true,
       "actual_intent": "international_fees",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 734
+      "confidence": 0.9999731786297104,
+      "logprob": -0.00002682172998902388,
+      "entropy": 0.0003180505156053863,
+      "top_probabilities": {
+        "INTERNATIONAL": 2.9388839063284317e-7,
+        "\\_": 5.155157837381417e-7,
+        "_": 0.9999984502816872,
+        "feeds": 0.000006292486046675869,
+        "fees": 0.9999731786297104,
+        "frees": 0.000016716679807340277,
+        "international": 0.9999965429424904,
+        "intl": 5.907160514444096e-7
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 860
     },
     {
       "id": "c150-17",
@@ -227,10 +489,24 @@
       "expected_domain": "banking",
       "actual_domain": "credit_cards",
       "expected_intent": "report_fraud",
+      "pass1_intent": "report_fraud",
+      "pass1_accurate": true,
       "actual_intent": "report_fraud",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1215
+      "confidence": 0.9999275260049407,
+      "logprob": -0.00007247662142617628,
+      "entropy": 0.0007643009114575606,
+      "top_probabilities": {
+        "-": 1.6376800943720886e-7,
+        "Fraud": 3.697731352632535e-7,
+        "_": 0.9999275260049407,
+        "fraud": 0.9999973774024795,
+        "report": 0.9999986886995842,
+        "reporting": 7.030595078264084e-8,
+        "status": 1.1328105452738017e-7
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 960
     },
     {
       "id": "c150-18",
@@ -240,10 +516,26 @@
       "actual_domain": "travel",
       "domain_accurate": true,
       "expected_intent": "vaccines",
+      "pass1_intent": "vaccines",
+      "pass1_accurate": true,
       "actual_intent": "vaccines",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 2297
+      "confidence": 0.9999998807907247,
+      "logprob": -1.1920928244535389e-7,
+      "entropy": 0.000001970033476516152,
+      "top_probabilities": {
+        "INES": 1.066062237865378e-9,
+        "imes": 2.397499986108924e-10,
+        "ination": 1.1473010376912072e-9,
+        "ines": 1,
+        "ives": 1.9095806152555852e-10,
+        "raff": 5.801015496472102e-9,
+        "recycl": 1.7093700781588043e-8,
+        "vac": 8.501067773826488e-8,
+        "vacc": 0.9999998807907247
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1141
     },
     {
       "id": "c150-19",
@@ -253,10 +545,32 @@
       "actual_domain": "work",
       "domain_accurate": true,
       "expected_intent": "pto_balance",
+      "pass1_intent": "pto_balance",
+      "pass1_accurate": true,
       "actual_intent": "pto_balance",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 425
+      "confidence": 0.9999998807907247,
+      "logprob": -1.1920928244535389e-7,
+      "entropy": 0.0000039853317001528784,
+      "top_probabilities": {
+        "-": 3.817562752919343e-9,
+        "PTO": 1.0346725025501995e-10,
+        "\\_": 2.835704388319603e-10,
+        "_": 1,
+        "balance": 0.9999998807907247,
+        "balancing": 3.660534128155769e-8,
+        "benefit": 3.186089004653642e-8,
+        "bonus": 1.6942958050357576e-8,
+        "pt": 1.5020072293619147e-9,
+        "pta": 5.923322203526049e-9,
+        "pti": 5.703864482454859e-8,
+        "pto": 1,
+        "pts": 7.155879229626694e-10,
+        "tho": 5.731952579253354e-10,
+        "バランス": 1.5199139800254622e-7
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1602
     },
     {
       "id": "c150-20",
@@ -266,10 +580,24 @@
       "actual_domain": "travel",
       "domain_accurate": true,
       "expected_intent": "book_flight",
+      "pass1_intent": "book_flight",
+      "pass1_accurate": true,
       "actual_intent": "book_flight",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1127
+      "confidence": 0.9999945164027223,
+      "logprob": -0.000005483612312673358,
+      "entropy": 0.00007041863971350308,
+      "top_probabilities": {
+        "\u003c|channel\u003e": 5.892191377974811e-8,
+        "\\_": 6.469171241124213e-8,
+        "_": 0.9999983310727032,
+        "book": 0.9999972581939645,
+        "booking": 7.861062831252121e-8,
+        "boot": 0.0000011652734925947968,
+        "flight": 0.9999945164027223
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 490
     },
     {
       "id": "c150-21",
@@ -279,10 +607,28 @@
       "actual_domain": "banking",
       "domain_accurate": true,
       "expected_intent": "bill_balance",
+      "pass1_intent": "bill_balance",
+      "pass1_accurate": true,
       "actual_intent": "bill_balance",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 2610
+      "confidence": 0.9999997615814777,
+      "logprob": -2.3841855067985307e-7,
+      "entropy": 0.0000036672399531849287,
+      "top_probabilities": {
+        "-": 9.568431188204136e-10,
+        "\\_": 6.8533340626258715e-9,
+        "_": 1,
+        "balance": 1,
+        "base": 7.568847847681463e-10,
+        "bil": 3.8599872601439517e-8,
+        "bill": 0.9999997615814777,
+        "billing": 5.0679092893000297e-8,
+        "size": 3.679703887905334e-10,
+        "バランス": 1.6641250125600845e-9,
+        "빌": 2.9326613238672346e-8
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 2162
     },
     {
       "id": "c150-22",
@@ -292,10 +638,33 @@
       "actual_domain": "credit_cards",
       "domain_accurate": true,
       "expected_intent": "redeem_rewards",
+      "pass1_intent": "redeem_rewards",
+      "pass1_accurate": true,
       "actual_intent": "redeem_rewards",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 2706
+      "confidence": 0.9999961853172863,
+      "logprob": -0.000003814689989667386,
+      "entropy": 0.00004984182661081941,
+      "top_probabilities": {
+        "Rewards": 2.5313883373083344e-8,
+        "\\_": 5.447235094822131e-8,
+        "_": 0.9999961853172863,
+        "am": 3.6965022408942436e-10,
+        "dele": 1.0501011450944741e-9,
+        "em": 1,
+        "eming": 5.34045182061586e-11,
+        "ems": 6.938349007769054e-10,
+        "erde": 2.64619877139295e-10,
+        "irre": 1.2118283810950603e-9,
+        "red": 1.2187272252832318e-8,
+        "rede": 1,
+        "requirements": 1.635693839884099e-8,
+        "rewards": 1,
+        "rounds": 6.712233834246584e-9,
+        "ем": 1.6474892205231073e-11
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1643
     },
     {
       "id": "c150-23",
@@ -305,10 +674,25 @@
       "actual_domain": "auto_and_commute",
       "domain_accurate": true,
       "expected_intent": "jump_start",
+      "pass1_intent": "jump_start",
+      "pass1_accurate": true,
       "actual_intent": "jump_start",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 2056
+      "confidence": 0.9999749666753994,
+      "logprob": -0.000025033637939486653,
+      "entropy": 0.0002950142058749027,
+      "top_probabilities": {
+        "-": 9.486145885120759e-7,
+        "_": 0.9999945164027223,
+        "freeze": 0.000007656819247550207,
+        "jump": 0.9999821189265068,
+        "kick": 0.000002842893868098995,
+        "star": 3.418763094774561e-7,
+        "start": 0.9999749666753994,
+        "status": 0.000007748590136276822
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1699
     },
     {
       "id": "c150-24",
@@ -318,10 +702,20 @@
       "actual_domain": "auto_and_commute",
       "domain_accurate": true,
       "expected_intent": "traffic",
+      "pass1_intent": "traffic",
+      "pass1_accurate": true,
       "actual_intent": "traffic",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 2038
+      "confidence": 0.9999908209686689,
+      "logprob": -0.000009179073458653875,
+      "entropy": 0.00009225896923057511,
+      "top_probabilities": {
+        "_": 0.000001007234677039642,
+        "traffic": 0.9999908209686689,
+        "transit": 0.0000016074058093421827
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 1605
     },
     {
       "id": "c150-25",
@@ -331,10 +725,29 @@
       "actual_domain": "credit_cards",
       "domain_accurate": true,
       "expected_intent": "card_declined",
+      "pass1_intent": "card_declined",
+      "pass1_accurate": true,
       "actual_intent": "card_declined",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 822
+      "confidence": 0.999937776622214,
+      "logprob": -0.00006222531374078244,
+      "entropy": 0.0006825996840058084,
+      "top_probabilities": {
+        "-": 2.791365670419715e-8,
+        "Decl": 0.000004283036116601997,
+        "INED": 0.0000012699423660178725,
+        "_": 0.999998927117538,
+        "card": 0.9999967813595916,
+        "credit": 2.7734532854129796e-7,
+        "decl": 0.999937776622214,
+        "get": 2.4816741272007323e-8,
+        "incl": 0.000019238890617597298,
+        "ined": 0.999993205116773,
+        "iner": 0.0000011341277316231805,
+        "oned": 7.177864231888412e-7
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 4457
     },
     {
       "id": "c150-26",
@@ -345,10 +758,20 @@
       "actual_domain": "oos",
       "domain_accurate": true,
       "expected_intent": "oos",
+      "pass1_intent": "oos",
+      "pass1_accurate": true,
       "actual_intent": "oos",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1018
+      "confidence": 0.9999721058045592,
+      "logprob": -0.000027894584491150454,
+      "entropy": 0.0002713605144139819,
+      "top_probabilities": {
+        "aas": 0.0000055776255635616805,
+        "aos": 0.000004993661278225128,
+        "oos": 0.9999721058045592
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 483
     },
     {
       "id": "c150-27",
@@ -359,10 +782,22 @@
       "actual_domain": "oos",
       "domain_accurate": true,
       "expected_intent": "oos",
+      "pass1_intent": "oos",
+      "pass1_accurate": true,
       "actual_intent": "oos",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 438
+      "confidence": 0.9999914170043662,
+      "logprob": -0.000008583032467868179,
+      "entropy": 0.00011074829333046692,
+      "top_probabilities": {
+        "aas": 1.6397414225022115e-7,
+        "aos": 0.000005913899402204205,
+        "oes": 0.0000019673679540587464,
+        "ooo": 1.6397414225022115e-7,
+        "oos": 0.9999914170043662
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 943
     },
     {
       "id": "c150-28",
@@ -373,10 +808,22 @@
       "actual_domain": "oos",
       "domain_accurate": true,
       "expected_intent": "oos",
+      "pass1_intent": "oos",
+      "pass1_accurate": true,
       "actual_intent": "oos",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 436
+      "confidence": 0.9999816421070834,
+      "logprob": -0.000018358061424805783,
+      "entropy": 0.00021790004786916104,
+      "top_probabilities": {
+        "aas": 2.871201744260499e-7,
+        "aos": 0.000013915496051218078,
+        "oes": 0.000002424325080015923,
+        "ooo": 5.748992627155201e-7,
+        "oos": 0.9999816421070834
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 849
     },
     {
       "id": "c150-29",
@@ -387,10 +834,22 @@
       "actual_domain": "oos",
       "domain_accurate": true,
       "expected_intent": "oos",
+      "pass1_intent": "oos",
+      "pass1_accurate": true,
       "actual_intent": "oos",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 1979
+      "confidence": 0.9999831917733143,
+      "logprob": -0.00001680836794548668,
+      "entropy": 0.0002004304931395602,
+      "top_probabilities": {
+        "aos": 0.000006667711425978479,
+        "ooks": 0.0000021713962764237635,
+        "ooo": 0.0000032884337113353756,
+        "oos": 0.9999831917733143,
+        "osm": 0.000002674875238268737
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 482
     },
     {
       "id": "c150-30",
@@ -401,15 +860,30 @@
       "actual_domain": "oos",
       "domain_accurate": true,
       "expected_intent": "oos",
+      "pass1_intent": "oos",
+      "pass1_accurate": true,
       "actual_intent": "oos",
       "intent_accurate": true,
-      "confidence": 1,
-      "wall_time_ms": 446
+      "confidence": 0.9999044032887385,
+      "logprob": -0.00009560128091834486,
+      "entropy": 0.001031082842740987,
+      "top_probabilities": {
+        "aas": 0.0000073129009662653875,
+        "aos": 0.00006495739620775779,
+        "ooo": 0.0000073129009662653875,
+        "oos": 0.9999044032887385,
+        "osm": 0.00001202475989467505
+      },
+      "tie_break_triggered": false,
+      "wall_time_ms": 482
     }
   ],
   "samples_policy": 1,
   "target_model": "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
-  "target_url": "http://136.111.82.240:8080/v1",
-  "timestamp": "2026-09-20T14:33:22Z",
-  "total_cases": 30
+  "target_url": "http://34.121.236.110:8080/v1",
+  "tie_break_enabled": true,
+  "tie_breaks_triggered": 0,
+  "timestamp": "2026-09-20T16:01:50Z",
+  "total_cases": 30,
+  "workers": 1
 }

@@ -20,34 +20,28 @@ import (
 )
 
 var (
-	intentsCorpus  string
-	intentsDataset string
-	intentsFull    bool
-	intentsOutput  string
-	intentsOffset  int
-	intentsLimit   int
-	intentsWorkers int
-	intentsSamples string
+	intentsCorpus           string
+	intentsDataset          string
+	intentsFull             bool
+	intentsOutput           string
+	intentsOffset           int
+	intentsLimit            int
+	intentsWorkers          int
+	intentsSamples          string
+	intentsTieBreak         bool
+	intentsEntropyThreshold float64
 )
 
 var benchIntentsCmd = &cobra.Command{
 	Use:   "bench-intents",
-	Short: "Benchmark DiffusionGemma high-cardinality intent classification and OOS detection (Banking77 & CLINC150)",
+	Short: "Benchmark DiffusionGemma high-cardinality intent classification, logprob calibration, and OOS detection",
 	Long: `bench-intents evaluates DiffusionGemma's discrete slot readout on high-cardinality intent
 datasets such as PolyAI/banking77 (77 intents, 3,080 test items) and DeepPavlov/clinc150
 (150 intents across 10 domains + Out-of-Scope 'oos', 5,500 test items).
 
-Use --full (-F) with --dataset banking77 or --dataset clinc150 to automatically fetch and run
-the complete upstream evaluation split (3,080 items for Banking77; 5,500 items for CLINC150).
-Use --workers (-w) to parallelize evaluation across vLLM continuous batching.`,
-	Example: `  # Run curated 30-case Banking77 collision cluster
-  dgem bench-intents -c benchmarks/intents/banking77_eval.jsonl
-
-  # Run the FULL 3,080-case PolyAI/banking77 test set across all 77 intents with 16 concurrent workers
-  dgem bench-intents --dataset banking77 --full --workers 16 -o benchmarks/results_banking77_full.json
-
-  # Run the FULL 5,500-case DeepPavlov/clinc150 test set (4,500 in-domain + 1,000 OOS)
-  dgem bench-intents --dataset clinc150 --full --workers 16 -o benchmarks/results_clinc150_full.json`,
+Records token-level logprobs, calibrated confidence exp(min_logprob), and Shannon entropy H.
+When --tie-break is enabled (default true), high-entropy predictions (H >= --entropy-threshold)
+automatically trigger a focused Pass-2 tie-breaker across the top competing finalist candidates.`,
 	RunE: runBenchIntents,
 }
 
@@ -60,6 +54,8 @@ func init() {
 	benchIntentsCmd.Flags().IntVarP(&intentsLimit, "limit", "n", 0, "Limit number of cases to evaluate (0 = all)")
 	benchIntentsCmd.Flags().IntVarP(&intentsWorkers, "workers", "w", 1, "Number of concurrent evaluation workers for vLLM continuous batching")
 	benchIntentsCmd.Flags().StringVar(&intentsSamples, "samples", "1", "DiffusionGemma samples policy ('1', '2', '4', or 'auto')")
+	benchIntentsCmd.Flags().BoolVar(&intentsTieBreak, "tie-break", true, "Enable Entropy-Gated Top-K Tie-Breaker on high-entropy predictions")
+	benchIntentsCmd.Flags().Float64Var(&intentsEntropyThreshold, "entropy-threshold", 0.08, "Shannon entropy threshold (in nats) to trigger Pass-2 finalist tie-breaker")
 
 	RootCmd.AddCommand(benchIntentsCmd)
 }
@@ -76,24 +72,83 @@ type IntentCase struct {
 }
 
 type IntentResult struct {
-	ID               string             `json:"id"`
-	Dataset          string             `json:"dataset"`
-	Text             string             `json:"text"`
-	IsOOS            bool               `json:"is_oos,omitempty"`
-	ExpectedDomain   string             `json:"expected_domain,omitempty"`
-	ActualDomain     string             `json:"actual_domain,omitempty"`
-	DomainAccurate   bool               `json:"domain_accurate,omitempty"`
-	ExpectedIntent   string             `json:"expected_intent"`
-	ActualIntent     string             `json:"actual_intent"`
-	IntentAccurate   bool               `json:"intent_accurate"`
-	Confidence       float64            `json:"confidence"`
-	Logprob          float64            `json:"logprob,omitempty"`
-	Entropy          float64            `json:"entropy,omitempty"`
-	TopProbabilities map[string]float64 `json:"top_probabilities,omitempty"`
-	WallTimeMs       float64            `json:"wall_time_ms"`
+	ID                string             `json:"id"`
+	Dataset           string             `json:"dataset"`
+	Text              string             `json:"text"`
+	IsOOS             bool               `json:"is_oos,omitempty"`
+	ExpectedDomain    string             `json:"expected_domain,omitempty"`
+	ActualDomain      string             `json:"actual_domain,omitempty"`
+	DomainAccurate    bool               `json:"domain_accurate,omitempty"`
+	ExpectedIntent    string             `json:"expected_intent"`
+	Pass1Intent       string             `json:"pass1_intent"`
+	Pass1Accurate     bool               `json:"pass1_accurate"`
+	ActualIntent      string             `json:"actual_intent"`
+	IntentAccurate    bool               `json:"intent_accurate"`
+	Confidence        float64            `json:"confidence"`
+	Logprob           float64            `json:"logprob"`
+	Entropy           float64            `json:"entropy"`
+	TopProbabilities  map[string]float64 `json:"top_probabilities,omitempty"`
+	TieBreakTriggered bool               `json:"tie_break_triggered"`
+	FinalistOptions   []string           `json:"finalist_options,omitempty"`
+	WallTimeMs        float64            `json:"wall_time_ms"`
 }
 
-// ensureFullDataset downloads and caches the complete 3,080-row Banking77 or 5,500-row CLINC150 dataset on demand.
+// buildFinalists selects the 2..5 most plausible competing options for Pass-2 tie-breaking
+// using Pass-1's top_logprobs subwords and semantic token overlap.
+func buildFinalists(pass1Guess string, topProbs map[string]float64, allOptions []string) []string {
+	seen := make(map[string]bool)
+	var finalists []string
+
+	addCandidate := func(opt string) {
+		if opt != "" && !seen[opt] && len(finalists) < 6 {
+			seen[opt] = true
+			finalists = append(finalists, opt)
+		}
+	}
+
+	addCandidate(pass1Guess)
+
+	// 1. Match any option starting with or containing runner-up subword tokens from top_logprobs
+	for subTok, prob := range topProbs {
+		subClean := strings.ToLower(strings.Trim(subTok, " _-\""))
+		if len(subClean) < 3 || prob < 0.005 {
+			continue
+		}
+		for _, opt := range allOptions {
+			optLow := strings.ToLower(opt)
+			if strings.HasPrefix(optLow, subClean) || strings.Contains(optLow, "_"+subClean) || strings.Contains(optLow, subClean+"_") {
+				addCandidate(opt)
+			}
+		}
+	}
+
+	// 2. Also include semantic sibling options that share key root tokens with pass1Guess
+	guessParts := strings.Split(strings.ToLower(pass1Guess), "_")
+	for _, opt := range allOptions {
+		if seen[opt] {
+			continue
+		}
+		optLow := strings.ToLower(opt)
+		shared := 0
+		for _, gp := range guessParts {
+			if len(gp) >= 3 && strings.Contains(optLow, gp) {
+				shared++
+			}
+		}
+		// Special sibling groups in Banking77 & CLINC150 where one word differs
+		if shared >= 2 ||
+			(strings.Contains(pass1Guess, "compromised") && strings.Contains(optLow, "not_recognised")) ||
+			(strings.Contains(pass1Guess, "failed_transfer") && (strings.Contains(optLow, "beneficiary") || strings.Contains(optLow, "transfer"))) ||
+			(strings.Contains(pass1Guess, "top_up") && strings.Contains(optLow, "top_up")) ||
+			(strings.Contains(pass1Guess, "exchange_rate") && strings.Contains(optLow, "exchange_rate")) ||
+			(strings.Contains(pass1Guess, "oil_change") && strings.Contains(optLow, "maintenance")) {
+			addCandidate(opt)
+		}
+	}
+
+	return finalists
+}
+
 func ensureFullDataset(dataset string) (string, error) {
 	if err := os.MkdirAll("benchmarks/intents", 0755); err != nil {
 		return "", err
@@ -253,7 +308,6 @@ func loadIntentCorpus(path string) ([]IntentCase, error) {
 
 	var cases []IntentCase
 	scanner := bufio.NewScanner(file)
-	// Increase scanner buffer for rows with 151 options
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
@@ -321,21 +375,23 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("==========================================================================================")
-	fmt.Println("  DIFFUSIONGEMMA HIGH-CARDINALITY INTENT & OOS BENCHMARK (BANKING77 / CLINC150)")
+	fmt.Println("  DIFFUSIONGEMMA HIGH-CARDINALITY INTENT, LOGPROB CALIBRATION & OOS BENCHMARK")
 	fmt.Println("==========================================================================================")
 	fmt.Printf("Corpus:         %s (%d test cases, %d candidate intents)\n", targetCorpus, len(cases), len(cases[0].Options))
-	fmt.Printf("Template:       %s (Hierarchical Domain+Intent: %v)\n", tmplPath, hasDomains)
+	fmt.Printf("Template:       %s (Hierarchical: %v, Tie-Break: %v @ H>=%.2f nats)\n", tmplPath, hasDomains, intentsTieBreak, intentsEntropyThreshold)
 	fmt.Printf("DiffusionGemma: %s (%s) [samples=%v, workers=%d, logprobs=true]\n\n", c.Model, c.BaseURL, samplesParam, workers)
 
-	fmt.Println(strings.Repeat("-", 126))
-	fmt.Printf("%-8s | %-32s | %-24s | %-24s | %-5s | %-6s | %-6s | %-6s\n",
-		"ID", "Utterance", "Expected Intent", "dgem Slot Output", "Match", "Conf", "Ent", "Latency")
-	fmt.Println(strings.Repeat("-", 126))
+	fmt.Println(strings.Repeat("-", 132))
+	fmt.Printf("%-7s | %-30s | %-24s | %-24s | %-5s | %-6s | %-6s | %-4s | %-6s\n",
+		"ID", "Utterance", "Expected Intent", "dgem Final Output", "Match", "Conf", "Ent(H)", "TieB", "Wall")
+	fmt.Println(strings.Repeat("-", 132))
 
 	results := make([]IntentResult, len(cases))
 	var mu sync.Mutex
-	var intentCorrect, domainCorrect, inDomainCorrect, inDomainTotal, oosCorrect, oosTotal int
+	var pass1Correct, intentCorrect, domainCorrect, inDomainCorrect, inDomainTotal, oosCorrect, oosTotal, tieBreaksCount int
 	var sumWall, sumConf, sumEntropy float64
+	var correctEntropySum, incorrectEntropySum, correctConfSum, incorrectConfSum float64
+	var correctN, incorrectN int
 
 	type jobItem struct {
 		idx int
@@ -372,6 +428,7 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 
 				resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
 				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error on case %s: %v\n", tc.ID, err)
 					continue
 				}
 
@@ -385,36 +442,88 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 						}
 					}
 				}
-				actualIntent := strings.TrimSpace(ansIntent.DisplayValue())
+				pass1Intent := strings.TrimSpace(ansIntent.DisplayValue())
+				actualIntent := pass1Intent
 				actualDomain := strings.TrimSpace(resp.Answers["domain"].DisplayValue())
 				if actualDomain == "" && actualIntent == "oos" {
 					actualDomain = "oos"
 				}
 
-				iAcc := strings.EqualFold(actualIntent, tc.ExpectedIntent)
-				dAcc := !hasDomains || strings.EqualFold(actualDomain, tc.ExpectedDomain)
+				pass1Acc := strings.EqualFold(pass1Intent, tc.ExpectedIntent)
 				wallMs := float64(stats.WallTime.Milliseconds())
 
+				var tieBreakUsed bool
+				var finalists []string
+
+				// If Entropy exceeds threshold (or Confidence < 0.92), trigger focused Pass-2 Tie-Breaker
+				if intentsTieBreak && (ansIntent.Entropy >= intentsEntropyThreshold || ansIntent.Confidence < 0.92) {
+					finalists = buildFinalists(pass1Intent, ansIntent.Probabilities, tc.Options)
+					if len(finalists) >= 2 {
+						tieBreakUsed = true
+						tbVars := map[string]interface{}{
+							"text":        tc.Text,
+							"first_guess": pass1Intent,
+							"options":     finalists,
+						}
+						if tbRendered, err := engine.RenderFile("templates/intent_tiebreak.json.tmpl", tbVars); err == nil {
+							if tbSchema, tbState, err := template.ParseStructuredPayload(tbRendered, tbVars); err == nil {
+								if tbResp, tbStats, err := c.Decide(ctx, tbSchema, tbState); err == nil {
+									wallMs += float64(tbStats.WallTime.Milliseconds())
+									tbAns := tbResp.Answers["intent"]
+									if tbAns.DisplayValue() == "" {
+										for _, v := range tbResp.Answers {
+											tbAns = v
+										}
+									}
+									if strings.TrimSpace(tbAns.DisplayValue()) != "" {
+										actualIntent = strings.TrimSpace(tbAns.DisplayValue())
+									}
+								}
+							}
+						}
+					}
+				}
+
+				iAcc := strings.EqualFold(actualIntent, tc.ExpectedIntent)
+				dAcc := !hasDomains || strings.EqualFold(actualDomain, tc.ExpectedDomain)
+
 				ir := IntentResult{
-					ID:               tc.ID,
-					Dataset:          tc.Dataset,
-					Text:             tc.Text,
-					IsOOS:            tc.IsOOS,
-					ExpectedDomain:   tc.ExpectedDomain,
-					ActualDomain:     actualDomain,
-					DomainAccurate:   dAcc,
-					ExpectedIntent:   tc.ExpectedIntent,
-					ActualIntent:     actualIntent,
-					IntentAccurate:   iAcc,
-					Confidence:       ansIntent.Confidence,
-					Logprob:          ansIntent.Logprob,
-					Entropy:          ansIntent.Entropy,
-					TopProbabilities: ansIntent.Probabilities,
-					WallTimeMs:       wallMs,
+					ID:                tc.ID,
+					Dataset:           tc.Dataset,
+					Text:              tc.Text,
+					IsOOS:             tc.IsOOS,
+					ExpectedDomain:    tc.ExpectedDomain,
+					ActualDomain:      actualDomain,
+					DomainAccurate:    dAcc,
+					ExpectedIntent:    tc.ExpectedIntent,
+					Pass1Intent:       pass1Intent,
+					Pass1Accurate:     pass1Acc,
+					ActualIntent:      actualIntent,
+					IntentAccurate:    iAcc,
+					Confidence:        ansIntent.Confidence,
+					Logprob:           ansIntent.Logprob,
+					Entropy:           ansIntent.Entropy,
+					TopProbabilities:  ansIntent.Probabilities,
+					TieBreakTriggered: tieBreakUsed,
+					FinalistOptions:   finalists,
+					WallTimeMs:        wallMs,
 				}
 
 				mu.Lock()
 				results[j.idx] = ir
+				if pass1Acc {
+					pass1Correct++
+					correctN++
+					correctEntropySum += ansIntent.Entropy
+					correctConfSum += ansIntent.Confidence
+				} else {
+					incorrectN++
+					incorrectEntropySum += ansIntent.Entropy
+					incorrectConfSum += ansIntent.Confidence
+				}
+				if tieBreakUsed {
+					tieBreaksCount++
+				}
 				if iAcc {
 					intentCorrect++
 				}
@@ -440,6 +549,10 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 				if !iAcc {
 					mark = "FAIL"
 				}
+				tbStr := " no "
+				if tieBreakUsed {
+					tbStr = " YES"
+				}
 				expLabel := tc.ExpectedIntent
 				actLabel := actualIntent
 				if hasDomains {
@@ -447,14 +560,15 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 					actLabel = fmt.Sprintf("%s/%s", actualDomain, actualIntent)
 				}
 
-				fmt.Printf("%-8s | %-32s | %-24s | %-24s | %-5s | %5.3f  | %5.3f  | %5.0fms\n",
+				fmt.Printf("%-7s | %-30s | %-24s | %-24s | %-5s | %5.3f  | %5.3f  | %-4s | %4.0fms\n",
 					tc.ID,
-					truncateStr(tc.Text, 32),
+					truncateStr(tc.Text, 30),
 					truncateStr(expLabel, 24),
 					truncateStr(actLabel, 24),
 					mark,
 					ansIntent.Confidence,
 					ansIntent.Entropy,
+					tbStr,
 					wallMs,
 				)
 				mu.Unlock()
@@ -464,47 +578,74 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 	wg.Wait()
 
 	n := float64(len(results))
+	pass1AccPct := float64(pass1Correct) / n * 100
 	intentAccPct := float64(intentCorrect) / n * 100
 	domainAccPct := float64(domainCorrect) / n * 100
 
-	fmt.Println("\n" + strings.Repeat("=", 88))
+	meanCorrectEnt := 0.0
+	meanCorrectConf := 0.0
+	if correctN > 0 {
+		meanCorrectEnt = correctEntropySum / float64(correctN)
+		meanCorrectConf = correctConfSum / float64(correctN)
+	}
+	meanIncorrectEnt := 0.0
+	meanIncorrectConf := 0.0
+	if incorrectN > 0 {
+		meanIncorrectEnt = incorrectEntropySum / float64(incorrectN)
+		meanIncorrectConf = incorrectConfSum / float64(incorrectN)
+	}
+
+	fmt.Println("\n" + strings.Repeat("=", 92))
 	fmt.Printf("  SUMMARY: %s (%d Cases)\n", cases[0].Dataset, len(results))
-	fmt.Println(strings.Repeat("=", 88))
-	fmt.Printf("• Fine-Grained Intent Accuracy:       %.1f%% (%d of %d correct)\n", intentAccPct, intentCorrect, len(results))
+	fmt.Println(strings.Repeat("=", 92))
+	fmt.Printf("• Pass-1 Single-Read Accuracy:          %.1f%% (%d of %d correct)\n", pass1AccPct, pass1Correct, len(results))
+	fmt.Printf("• Post-Tie-Break Final Accuracy:        %.1f%% (%d of %d correct) [Tie-Breaks Triggered: %d]\n", intentAccPct, intentCorrect, len(results), tieBreaksCount)
 	if hasDomains {
-		fmt.Printf("• Hierarchical Domain Accuracy:       %.1f%% (%d of %d correct)\n", domainAccPct, domainCorrect, len(results))
+		fmt.Printf("• Hierarchical Domain Accuracy:         %.1f%% (%d of %d correct)\n", domainAccPct, domainCorrect, len(results))
 	}
 	if inDomainTotal > 0 && oosTotal > 0 {
-		fmt.Printf("• In-Domain Intent Accuracy:          %.1f%% (%d of %d correct)\n", float64(inDomainCorrect)/float64(inDomainTotal)*100, inDomainCorrect, inDomainTotal)
-		fmt.Printf("• Out-of-Scope (OOS) Rejection Rate:  %.1f%% (%d of %d correct)\n", float64(oosCorrect)/float64(oosTotal)*100, oosCorrect, oosTotal)
+		fmt.Printf("• In-Domain Intent Accuracy:            %.1f%% (%d of %d correct)\n", float64(inDomainCorrect)/float64(inDomainTotal)*100, inDomainCorrect, inDomainTotal)
+		fmt.Printf("• Out-of-Scope (OOS) Rejection Rate:    %.1f%% (%d of %d correct)\n", float64(oosCorrect)/float64(oosTotal)*100, oosCorrect, oosTotal)
 	}
-	fmt.Printf("• Mean Slot Confidence exp(logprob):  %.4f (Mean Entropy: %.4f nats)\n", sumConf/n, sumEntropy/n)
-	fmt.Printf("• Average Slot Readout Latency:       %.1f ms\n", sumWall/n)
-	fmt.Println(strings.Repeat("=", 88))
+	fmt.Printf("• Calibration — Correct Predictions:    Mean Conf = %.4f | Mean Entropy H = %.4f nats (n=%d)\n", meanCorrectConf, meanCorrectEnt, correctN)
+	if incorrectN > 0 {
+		fmt.Printf("• Calibration — Incorrect Predictions:  Mean Conf = %.4f | Mean Entropy H = %.4f nats (n=%d)\n", meanIncorrectConf, meanIncorrectEnt, incorrectN)
+	}
+	fmt.Printf("• Average End-to-End Latency:           %.1f ms\n", sumWall/n)
+	fmt.Println(strings.Repeat("=", 92))
 
 	if intentsOutput != "" {
 		outData := map[string]interface{}{
-			"timestamp":           time.Now().UTC().Format(time.RFC3339),
-			"dataset":             cases[0].Dataset,
-			"corpus":              targetCorpus,
-			"target_url":          c.BaseURL,
-			"target_model":        c.Model,
-			"samples_policy":      samplesParam,
-			"workers":             workers,
-			"candidate_intents":   len(cases[0].Options),
-			"total_cases":         len(results),
-			"intent_accuracy_pct": intentAccPct,
-			"intent_correct":      intentCorrect,
-			"domain_accuracy_pct": domainAccPct,
-			"domain_correct":      domainCorrect,
-			"in_domain_correct":   inDomainCorrect,
-			"in_domain_total":     inDomainTotal,
-			"oos_correct":         oosCorrect,
-			"oos_total":           oosTotal,
-			"mean_confidence":     sumConf / n,
-			"mean_entropy_nats":   sumEntropy / n,
-			"avg_wall_time_ms":    sumWall / n,
-			"results":             results,
+			"timestamp":                  time.Now().UTC().Format(time.RFC3339),
+			"dataset":                    cases[0].Dataset,
+			"corpus":                     targetCorpus,
+			"target_url":                 c.BaseURL,
+			"target_model":               c.Model,
+			"samples_policy":             samplesParam,
+			"workers":                    workers,
+			"tie_break_enabled":          intentsTieBreak,
+			"entropy_threshold":          intentsEntropyThreshold,
+			"tie_breaks_triggered":       tieBreaksCount,
+			"candidate_intents":          len(cases[0].Options),
+			"total_cases":                len(results),
+			"pass1_accuracy_pct":         pass1AccPct,
+			"pass1_correct":              pass1Correct,
+			"intent_accuracy_pct":        intentAccPct,
+			"intent_correct":             intentCorrect,
+			"domain_accuracy_pct":        domainAccPct,
+			"domain_correct":             domainCorrect,
+			"in_domain_correct":          inDomainCorrect,
+			"in_domain_total":            inDomainTotal,
+			"oos_correct":                oosCorrect,
+			"oos_total":                  oosTotal,
+			"mean_confidence":            sumConf / n,
+			"mean_entropy_nats":          sumEntropy / n,
+			"correct_mean_confidence":    meanCorrectConf,
+			"correct_mean_entropy_nats":  meanCorrectEnt,
+			"incorrect_mean_confidence":  meanIncorrectConf,
+			"incorrect_mean_entropy_nats": meanIncorrectEnt,
+			"avg_wall_time_ms":           sumWall / n,
+			"results":                    results,
 		}
 		b, _ := json.MarshalIndent(outData, "", "  ")
 		if err := os.WriteFile(intentsOutput, b, 0644); err != nil {
