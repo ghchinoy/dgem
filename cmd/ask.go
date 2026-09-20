@@ -20,8 +20,9 @@ var (
 )
 
 var askCmd = &cobra.Command{
-	Use:   "ask [PROMPT]",
-	Short: "Send a generative prompt or rendered template to DiffusionGemma",
+	Use:     "ask [PROMPT]",
+	GroupID: "core",
+	Short:   "Send a generative prompt or rendered template to DiffusionGemma",
 	Long: `ask sends a natural-language prompt or template to DiffusionGemma
 for standard generative completion. You can enable or disable thinking mode
 and inspect generation statistics.`,

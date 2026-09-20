@@ -33,8 +33,9 @@ var (
 )
 
 var benchIntentsCmd = &cobra.Command{
-	Use:   "bench-intents",
-	Short: "Benchmark DiffusionGemma high-cardinality intent classification, logprob calibration, and OOS detection",
+	Use:     "bench-intents",
+	GroupID: "eval",
+	Short:   "Benchmark DiffusionGemma high-cardinality intent classification, logprob calibration, and OOS detection",
 	Long: `bench-intents evaluates DiffusionGemma's discrete slot readout on high-cardinality intent
 datasets such as PolyAI/banking77 (77 intents, 3,080 test items) and DeepPavlov/clinc150
 (150 intents across 10 domains + Out-of-Scope 'oos', 5,500 test items).

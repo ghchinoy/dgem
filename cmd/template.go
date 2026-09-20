@@ -18,9 +18,10 @@ var (
 )
 
 var templateCmd = &cobra.Command{
-	Use:   "template",
-	Short: "Inspect, list, and render Go template definition files",
-	Long:  `template provides utilities to manage and preview prompt and schema templates.`,
+	Use:     "template",
+	GroupID: "core",
+	Short:   "Inspect, list, and render Go template definition files",
+	Long:    `template provides utilities to manage and preview prompt and schema templates.`,
 }
 
 var templateListCmd = &cobra.Command{
@@ -32,17 +33,19 @@ var templateListCmd = &cobra.Command{
 			dir = args[0]
 		}
 
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			return fmt.Errorf("failed to read directory %s: %w", dir, err)
-		}
-
 		fmt.Printf("\nAvailable Templates in %s/:\n", dir)
-		fmt.Println(strings.Repeat("-", 60))
-		for _, e := range entries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), ".tmpl") {
-				fmt.Printf("  • %-30s\n", filepath.Join(dir, e.Name()))
+		fmt.Println(strings.Repeat("-", 65))
+		err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
 			}
+			if !d.IsDir() && strings.HasSuffix(d.Name(), ".tmpl") {
+				fmt.Printf("  • %-45s\n", path)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to walk directory %s: %w", dir, err)
 		}
 		fmt.Println()
 		return nil

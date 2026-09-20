@@ -25,8 +25,9 @@ var (
 )
 
 var decideCmd = &cobra.Command{
-	Use:   "decide",
-	Short: "Execute a discrete diffusion slot readout decision using single-forward evaluation",
+	Use:     "decide",
+	GroupID: "core",
+	Short:   "Execute a discrete diffusion slot readout decision using single-forward evaluation",
 	Long: `decide evaluates propositions, categorical choices, and ordered scales
 via discrete diffusion slot readout in a single forward pass without autoregressive
 text generation overhead (popularized by TypeSafe AI's Jev evaluations and vLLM PR #57250).

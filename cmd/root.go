@@ -42,6 +42,11 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	RootCmd.AddGroup(
+		&cobra.Group{ID: "core", Title: "Core Inference & Template Commands:"},
+		&cobra.Group{ID: "eval", Title: "Benchmark & Calibration Suites:"},
+	)
+
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/dgem/config.yaml or .dgem.yaml)")
 	RootCmd.PersistentFlags().StringVarP(&serverURL, "url", "u", "http://127.0.0.1:8080/v1", "Base URL for the DiffusionGemma server")
 	RootCmd.PersistentFlags().StringVarP(&modelName, "model", "m", "diffgemma-26b-a4b-it-q4", "Model ID to target")

@@ -51,6 +51,9 @@ bench: build ## Run the local Jev vs autoregressive benchmark suite
 bench-ecotone: build ## Run Ecotone (Sparrowhawk WFST) vs DiffusionGemma semiotics benchmark
 	./bin/dgem bench-ecotone
 
+bench-calibration: build ## Run the public dataset calibration, guardrail, and human-entropy suite
+	./bin/dgem bench-calibration
+
 docs-build: ## Build the Astro Starlight documentation site
 	pnpm run --dir docs-site build
 
@@ -65,6 +68,9 @@ cloudrun-stage: ## Pre-stage model weights in GCS for Cloud Run GCS FUSE volume 
 
 cloudrun-deploy: ## Deploy DiffusionGemma to Google Cloud Run with GPU (L4 or RTX Pro 6000)
 	./scripts/deploy_cloudrun_vllm.sh
+
+cloudrun-teardown: ## Delete Cloud Run dgemma GPU service to eliminate any cloud resource footprint
+	gcloud run services delete dgemma --region=$${GCP_REGION:-us-central1} --quiet
 
 gce-deploy: ## Deploy vLLM with DiffusionGemma structured reads to GCE with L4 GPU
 	./scripts/deploy_gce_vllm.sh

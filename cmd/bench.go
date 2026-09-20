@@ -23,8 +23,9 @@ var (
 )
 
 var benchCmd = &cobra.Command{
-	Use:   "bench",
-	Short: "Run the discrete diffusion slot readout vs autoregression benchmark",
+	Use:     "bench",
+	GroupID: "eval",
+	Short:   "Run the discrete diffusion slot readout vs autoregression benchmark",
 	Long: `bench runs an empirical benchmark comparing single-pass discrete diffusion
 slot readout decisions against traditional autoregressive text generation on Apple Silicon Metal or remote hosts.`,
 	RunE: runBench,

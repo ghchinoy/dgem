@@ -27,8 +27,9 @@ var (
 )
 
 var benchEcotoneCmd = &cobra.Command{
-	Use:   "bench-ecotone",
-	Short: "Benchmark DiffusionGemma slot readout against Ecotone (Sparrowhawk WFST) semiotics",
+	Use:     "bench-ecotone",
+	GroupID: "eval",
+	Short:   "Benchmark DiffusionGemma slot readout against Ecotone (Sparrowhawk WFST) semiotics",
 	Long: `bench-ecotone evaluates text normalization (TN) and inverse text normalization (ITN)
 polysemic tokens (e.g. 'St.' as Saint vs Street, '1984' as year vs quantity) and deterministic
 NSWs comparing DiffusionGemma's single-pass slot readout against compiled WFST finite-state transducers.`,

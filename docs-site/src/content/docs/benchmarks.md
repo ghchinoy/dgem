@@ -191,26 +191,67 @@ To stress-test DiffusionGemma beyond 2–4 option schemas—where fine-tuned BER
 
 ---
 
-## 8. When to Use DiffusionGemma vs. Autoregressive LLMs vs. Custom Models (BERT / WFST)
+## 8. Public Dataset Calibration, Guardrail & Human-Entropy Benchmark (`dgem bench-calibration`)
 
-| Workload / Architectural Dimension | Compiled / Custom Model (`ecotone` WFST or Fine-Tuned BERT) | Discrete Diffusion Slot Readout (**DiffusionGemma / `dgem`**) | Autoregressive LLM (**Gemini / Gemma 4 Generation**) |
-| :--- | :--- | :--- | :--- |
-| **Latency Profile** | **0.86 – 8.68 ms** (`1.54 ms` p50 CPU WFST; `~5 ms` GPU BERT) | **425 – 960 ms** (1–2 slot L4) / **1,968 ms** (3-slot L4) / **2,733 ms** (2× A100 `bf16`) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) |
-| **Latency Scaling Law** | $O(N_{\text{chars}})$ or $O(1)$ linear head | **$O(K_{\text{steps}})$ constant time** (1 slot or 5 slots take identical time) | **$O(T_{\text{output}})$ linear penalty** (serial token generation) |
-| **Deterministic NSWs** (`3/5/2026`, `$5.99`) | **100% accuracy in 1.5 ms** ⭐ *(Best choice: `ecotone`)* | 94.7% accuracy in ~960 ms | ~95% accuracy in ~3,000+ ms |
-| **Semiotic Polysemy** (`123 St. Mark St.`, `Ocean Dr.`) | **36.7%** (`ecotone` WFST drops `St.` or flips `Ocean Dr.` $\rightarrow$ `Doctor`) | **90.0% standalone / 93.3% cascaded** ⭐ *(Best choice)* | ~90% (at 15× higher latency) |
-| **Zero-Shot High-Cardinality Routing & OOS** (`CLINC150` / `Banking77`) | **0% zero-shot** (requires 10k+ training rows & retraining per label change) | **96.7% (`CLINC150`), 100% OOS rejection, 83.3% (`Banking77`)** ⭐ *(Best for evolving schemas)* | Suffers from left-to-right shared-prefix bias on `card_payment_*` |
-| **Multi-Field Triage & Extraction** (`support`, `security`, `code_review`) | Requires separate classifier heads per field; 512–8k token limit | **80.0% – 86.7% (`100%` on `code_review` with `s=4`)**, 100% valid JSON, 256k context ⭐ | `0%` raw JSON without markdown stripping; `4.2×–8.9×` slower |
-| **Multi-Hop Symbolic / Control-Flow Reasoning** (`complex` tier) | **0%** | **28.6%** (fixed-step denoising lacks long serial scratchpad) | **80%+** ⭐ *(Best choice: Gemini Thinking)* |
+Ported from the [`mizan-templates`](https://github.com/ghchinoy/mizan-templates) public calibration pack, `dgem bench-calibration` evaluates **50 test cases across 11 public dataset categories and 8 difficulty/entropy tiers** ([`benchmarks/calibration_suite.jsonl`](../benchmarks/calibration_suite.jsonl) — Receipt: [`benchmarks/results_calibration_cloudrun.json`](../benchmarks/results_calibration_cloudrun.json)) running on **Serverless Google Cloud Run (1× NVIDIA L4 GPU, `--workers 4`)**:
+
+### 8.1 Category Scorecard (Serverless Cloud Run 1× L4 GPU, `NVFP4`)
+
+| Public Dataset Category | Benchmark Source | Cases | Accuracy | Mean Confidence $P(y)$ | Mean Shannon Entropy $H$ | Avg Latency |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **`agent-trajectory`** | **AgentDrift** (Hijack Check + 4-Way Step Localization) | 7 | **100.0% (7 / 7)** ⭐ | `0.997` | `0.0186 nats` | **693 ms** |
+| **`guardrail`** | **deepset/prompt-injections** (`en` & `de` Jailbreaks) | 4 | **100.0% (4 / 4)** ⭐ | `0.980` | `0.0817 nats` | **669 ms** |
+| **`grounding`** | **LLM-AggreFact** (RAG Claim Verification) | 2 | **100.0% (2 / 2)** ⭐ | `0.992` | `0.0471 nats` | **793 ms** |
+| **`retrieval`** | **MS MARCO** (Passage Answer Relevance) | 2 | **100.0% (2 / 2)** ⭐ | `0.995` | `0.0334 nats` | **664 ms** |
+| **`intent`** | **CLINC150 OOS + Banking77** (26-Option Slice) | 7 | **100.0% (7 / 7)** ⭐ | `0.912` | `0.2420 nats` | **765 ms** |
+| **`emotion`** | **GoEmotions** (26-Way Author Affect) | 4 | **100.0% (4 / 4)** ⭐ | `0.885` | `0.4305 nats` | **1,020 ms** |
+| **`reading-comprehension`** | **BoolQ** (Held-Out Passage QA) | 2 | **100.0% (2 / 2)** ⭐ | `0.911` | `0.2729 nats` | **913 ms** |
+| **`ordinal`** | **Yelp 5-Star & SST-5** (Ordinal Sentiment Grading) | 7 | **100.0% (7 / 7)** ⭐ | `0.890` | `0.3580 nats` | **636 ms** |
+| **`toxicity`** | **Jigsaw Civil Comments** (Crowd Toxicity + Rate) | 6 | **83.3% (5 / 6)** | `0.943` | `0.1791 nats` | **549 ms** |
+| **`nli-soft`** | **ChaosNLI** (100-Annotator Soft Distribution NLI) | 6 | **66.7% (4 / 6)** | `0.873` | `0.3338 nats` | **678 ms** |
+| **`nli`** | **ANLI Round 3** (Human-Adversarial NLI Traps) | 3 | **0.0% (0 / 3)** | `0.843` | `0.4104 nats` | **695 ms** |
+| **Overall Suite** | **50 Cases (`--workers 4`, `9.3s` total wall time)** | **50** | **88.0% (44 / 50)** | **`0.925`** | **`0.2279 nats`** | **712 ms** |
+
+### 8.2 Empirical Proof of Uncertainty Calibration: Shannon Entropy $H$ vs. Human Disagreement
+
+Stratifying the 50 benchmark items by their human annotator disagreement tier (`low-entropy` vs. `ambiguous` vs. `high-entropy` in `ChaosNLI`) demonstrates that DiffusionGemma's single-pass restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ rises monotonically with human uncertainty:
+
+| Difficulty / Human-Entropy Tier | Cases | Accuracy | Mean Confidence $P(y)$ | Mean Shannon Entropy $H$ | Entropy Multiplier vs. `low-entropy` |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **`low-entropy`** (ChaosNLI Consensus) | 3 | **100.0% (3 / 3)** | `0.986` | **`0.0744 nats`** | **1.0× (Baseline)** |
+| **`easy`** (Clear In-Domain Consensus) | 17 | **100.0% (17 / 17)** | `0.983` | **`0.0892 nats`** | **1.2×** |
+| **`localization`** (AgentDrift Step Pinpointing) | 3 | **100.0% (3 / 3)** | `0.994` | **`0.0359 nats`** | **0.5×** |
+| **`out-of-scope`** (CLINC150 Abstention) | 2 | **100.0% (2 / 2)** | `0.990` | **`0.0567 nats`** | **0.8×** |
+| **`held-out`** (BoolQ, Banking77, SST-5) | 8 | **100.0% (8 / 8)** | `0.848` | **`0.4083 nats`** | **5.5×** |
+| **`ambiguous`** (Borderline Rater Splits) | 9 | **77.8% (7 / 9)** | `0.861` | **`0.4061 nats`** | **5.5× higher entropy** |
+| **`high-entropy`** (ChaosNLI Crowd Split) | 3 | **33.3% (1 / 3)** | `0.759` | **`0.5932 nats`** | **8.0× higher entropy** ⭐ |
+
+* **Why This Matters for Production Guardrails**: On `ChaosNLI`, when 100 human annotators agree (`low-entropy`), DiffusionGemma achieves **100% accuracy** with near-zero entropy (`H = 0.0744 nats`). When the human crowd itself splits evenly across `entailment`, `neutral`, and `contradiction` (`high-entropy`), DiffusionGemma's internal Shannon entropy spikes **8.0× higher (`H = 0.5932 nats`)**—providing an uncalibrated autoregressive LLM's missing signal: **a mathematically grounded abstention / escalation gate**.
 
 ---
 
-## 9. How to Reproduce
+## 9. When to Use DiffusionGemma vs. Autoregressive LLMs vs. Custom Models (BERT / WFST)
+
+| Workload / Architectural Dimension | Compiled / Custom Model (`ecotone` WFST or Fine-Tuned BERT) | Discrete Diffusion Slot Readout (**DiffusionGemma / `dgem`**) | Autoregressive LLM (**Gemini / Gemma 4 Generation**) |
+| :--- | :--- | :--- | :--- |
+| **Latency Profile** | **0.86 – 8.68 ms** (`1.54 ms` p50 CPU WFST; `~5 ms` GPU BERT) | **399 – 960 ms** (1–2 slot L4) / **1,968 ms** (3-slot L4) / **2,733 ms** (2× A100 `bf16`) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) |
+| **Latency Scaling Law** | $O(N_{\text{chars}})$ or $O(1)$ linear head | **$O(K_{\text{steps}})$ constant time** (1 slot or 5 slots take identical time) | **$O(T_{\text{output}})$ linear penalty** (serial token generation) |
+| **Deterministic NSWs** (`3/5/2026`, `$5.99`) | **100% accuracy in 1.5 ms** ⭐ *(Best choice: `ecotone`)* | 94.7% accuracy in ~960 ms | ~95% accuracy in ~3,000+ ms |
+| **Semiotic Polysemy** (`123 St. Mark St.`, `Ocean Dr.`) | **36.7%** (`ecotone` WFST drops `St.` or flips `Ocean Dr.` $\rightarrow$ `Doctor`) | **90.0% standalone / 93.3% cascaded** ⭐ *(Best choice)* | ~90% (at 15× higher latency) |
+| **Agent Trajectory Hijack & Guardrails** (`AgentDrift`, `prompt-injections`) | Requires custom sequence-pair classifiers | **100.0% accuracy (`7/7` AgentDrift, `4/4` Prompt Injection) in ~680 ms** ⭐ | High latency for inline per-step tool-call gating |
+| **Zero-Shot High-Cardinality Routing & OOS** (`CLINC150` / `Banking77`) | **0% zero-shot** (requires 10k+ training rows & retraining per label change) | **96.7% (`CLINC150`), 100% OOS rejection, 86.7% (`Banking77`)** ⭐ *(Best for evolving schemas)* | Suffers from left-to-right shared-prefix bias on `card_payment_*` |
+| **Multi-Field Triage & Extraction** (`support`, `security`, `code_review`) | Requires separate classifier heads per field; 512–8k token limit | **80.0% – 86.7% (`100%` on `code_review` with `s=4`)**, 100% valid JSON, 256k context ⭐ | `0%` raw JSON without markdown stripping; `4.2×–8.9×` slower |
+| **Multi-Hop Symbolic / Control-Flow Reasoning** (`complex` / `ANLI-R3`) | **0%** | **0% – 28.6%** (fixed-step denoising lacks long serial scratchpad) | **80%+** ⭐ *(Best choice: Gemini Thinking)* |
+
+---
+
+## 10. How to Reproduce
 
 ### Local Apple Silicon Metal
 ```bash
 make serve
 ./bin/dgem bench -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_local_metal_slot.json
+./bin/dgem bench-calibration -o benchmarks/results_calibration_metal.json
 ```
 
 ### Serverless Google Cloud Run (1× NVIDIA L4, 24 GB)
@@ -225,9 +266,10 @@ make cloudrun-stage
 # Deploy service dgemma to Cloud Run:
 make cloudrun-deploy
 
-# Run benchmark suite against Cloud Run:
+# Run decision & calibration benchmark suites against Cloud Run:
 SERVICE_URL=$(gcloud run services describe dgemma --region=$GCP_REGION --format="value(status.url)")
 ./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
+./bin/dgem bench-calibration -u "${SERVICE_URL}/v1" -m "/mnt/gcs/dgemma" --gcp-auth -w 4 -o benchmarks/results_calibration_cloudrun.json
 
 # Immediate teardown for zero idle cost:
 make cloudrun-teardown
