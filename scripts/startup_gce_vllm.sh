@@ -47,8 +47,23 @@ cp -r /tmp/vllm-pr/examples/features/diffusion_reads/* /opt/diffusion_reads/
 # Find vllm executable path
 VLLM_BIN=$(which vllm || echo "/usr/local/bin/vllm")
 
+MODEL_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/model-id" -H "Metadata-Flavor: Google" 2>/dev/null || echo "nvidia/diffusiongemma-26B-A4B-it-NVFP4")
+if [[ -z "$MODEL_ID" ]]; then
+  MODEL_ID="nvidia/diffusiongemma-26B-A4B-it-NVFP4"
+fi
+
+TP_SIZE=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/tensor-parallel-size" -H "Metadata-Flavor: Google" 2>/dev/null || echo "1")
+if [[ -z "$TP_SIZE" ]]; then
+  TP_SIZE="1"
+fi
+
+DTYPE=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dtype" -H "Metadata-Flavor: Google" 2>/dev/null || echo "auto")
+if [[ -z "$DTYPE" ]]; then
+  DTYPE="auto"
+fi
+
 # Create systemd service for vllm
-echo "==> Creating systemd service for vllm..."
+echo "==> Creating systemd service for vllm ($MODEL_ID, TP=$TP_SIZE, dtype=$DTYPE)..."
 cat <<EOF > /etc/systemd/system/vllm.service
 [Unit]
 Description=vLLM DiffusionGemma Service
@@ -59,7 +74,9 @@ Type=simple
 User=root
 Environment="HF_TOKEN=$HF_TOKEN"
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=$VLLM_BIN serve nvidia/diffusiongemma-26B-A4B-it-NVFP4 \
+ExecStart=$VLLM_BIN serve $MODEL_ID \
+  --tensor-parallel-size $TP_SIZE \
+  --dtype $DTYPE \
   --diffusion-config '{"canvas_length":32}' \
   --max-model-len 32768 \
   --max-logprobs 32 \
