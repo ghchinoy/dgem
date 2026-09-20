@@ -172,12 +172,54 @@ type RequestStats struct {
 }
 
 // ParseStructuredContent attempts to unmarshal the raw assistant text as a StructuredDecisionResponse.
+// If the content is wrapped in thinking blocks or markdown code fences, it extracts and normalizes the JSON.
 func ParseStructuredContent(content string) (*StructuredDecisionResponse, error) {
 	var structured StructuredDecisionResponse
-	if err := json.Unmarshal([]byte(content), &structured); err != nil {
-		return nil, err
+	if err := json.Unmarshal([]byte(content), &structured); err == nil && len(structured.Answers) > 0 {
+		return &structured, nil
 	}
-	return &structured, nil
+
+	cleaned := cleanJSON(content)
+	if err := json.Unmarshal([]byte(cleaned), &structured); err == nil && len(structured.Answers) > 0 {
+		return &structured, nil
+	}
+
+	// Fallback: Check if response is a direct JSON key-value map (e.g. from generative completions)
+	var rawMap map[string]interface{}
+	if err := json.Unmarshal([]byte(cleaned), &rawMap); err == nil && len(rawMap) > 0 {
+		structured.Answers = make(map[string]QuestionAnswer)
+		for k, v := range rawMap {
+			label := fmt.Sprintf("%v", v)
+			structured.Answers[k] = QuestionAnswer{
+				Type:       "auto",
+				Label:      label,
+				Confidence: 1.0,
+			}
+		}
+		return &structured, nil
+	}
+
+	return nil, fmt.Errorf("failed to parse structured decision output from: %s", content)
+}
+
+func cleanJSON(content string) string {
+	content = strings.TrimSpace(content)
+	if idx := strings.Index(content, "```json"); idx != -1 {
+		content = content[idx+7:]
+		if end := strings.Index(content, "```"); end != -1 {
+			content = content[:end]
+		}
+	} else if idx := strings.Index(content, "```"); idx != -1 {
+		content = content[idx+3:]
+		if end := strings.Index(content, "```"); end != -1 {
+			content = content[:end]
+		}
+	} else if idx := strings.Index(content, "{"); idx != -1 {
+		if end := strings.LastIndex(content, "}"); end != -1 && end > idx {
+			content = content[idx : end+1]
+		}
+	}
+	return strings.TrimSpace(content)
 }
 
 // RawContent returns the content as a string regardless of whether it was deserialized as string or map.

@@ -201,11 +201,12 @@ func runBench(cmd *cobra.Command, args []string) error {
 	// Warmup
 	fmt.Println("Warming up server & prefilling template KV cache...")
 	warmupState := `{"ticket": "Health check prefill"}`
-	_, _, err = c.Decide(ctx, `{"questions":[{"id":"q","type":"boolean"}],"samples":"auto"}`, warmupState)
-	if err != nil {
-		return fmt.Errorf("failed to connect to server at %s: %w", c.BaseURL, err)
+	warmupSchema := `{"instructions":"Output valid JSON","questions":[{"id":"q","type":"boolean","instructions":"Is this active?"}]}`
+	if _, _, err := c.Decide(ctx, warmupSchema, warmupState); err != nil {
+		fmt.Printf("Warmup notice: %v (continuing to benchmark)\n", err)
+	} else {
+		fmt.Println("Warmup complete. Server is healthy.\n")
 	}
-	fmt.Println("Warmup complete. Server is healthy.\n")
 
 	var results []CaseResult
 	var correctCount int
@@ -235,34 +236,40 @@ func runBench(cmd *cobra.Command, args []string) error {
 
 			resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
 			if err != nil {
-				return fmt.Errorf("case %s decide query failed: %w", tc.ID, err)
-			}
+				cr.SlotAccurate = false
+				cr.SlotWallTimeMs = 0
+			} else {
+				cr.SlotDenoiseMs = stats.DenoiseMs
+				cr.SlotPrefillMs = stats.PrefillMs
+				cr.SlotWallTimeMs = float64(stats.WallTime.Milliseconds())
+				cr.SlotSamples = stats.SamplesN
+				cr.SlotExtended = stats.Extended
+				cr.SlotAnswers = make(map[string]interface{})
 
-			cr.SlotDenoiseMs = stats.DenoiseMs
-			cr.SlotPrefillMs = stats.PrefillMs
-			cr.SlotWallTimeMs = float64(stats.WallTime.Milliseconds())
-			cr.SlotSamples = stats.SamplesN
-			cr.SlotExtended = stats.Extended
-			cr.SlotAnswers = make(map[string]interface{})
-
-			// Check accuracy against expected
-			matchAll := true
-			for expKey, expVal := range tc.Expected {
-				ans, ok := resp.Answers[expKey]
-				if !ok {
-					matchAll = false
-					break
+				// Check accuracy against expected
+				matchAll := true
+				for expKey, expVal := range tc.Expected {
+					ans, ok := resp.Answers[expKey]
+					if !ok {
+						matchAll = false
+						break
+					}
+					actual := strings.ToLower(ans.DisplayValue())
+					expected := strings.ToLower(expVal)
+					if actual != expected {
+						if (actual == "true" && expected == "yes") || (actual == "false" && expected == "no") ||
+							(actual == "yes" && expected == "true") || (actual == "no" && expected == "false") {
+							// match
+						} else {
+							matchAll = false
+						}
+					}
+					cr.SlotAnswers[expKey] = actual
 				}
-				actual := strings.ToLower(ans.DisplayValue())
-				expected := strings.ToLower(expVal)
-				if actual != expected {
-					matchAll = false
+				cr.SlotAccurate = matchAll
+				if matchAll {
+					correctCount++
 				}
-				cr.SlotAnswers[expKey] = actual
-			}
-			cr.SlotAccurate = matchAll
-			if matchAll {
-				correctCount++
 			}
 		}
 

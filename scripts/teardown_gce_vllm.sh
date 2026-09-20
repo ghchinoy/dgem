@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load .env if present
+if [[ -f .env ]]; then
+  set -a
+  source .env
+  set +a
+elif [[ -f "../.env" ]]; then
+  set -a
+  source "../.env"
+  set +a
+fi
+
 PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
 ZONE="${GCP_ZONE:-us-central1-a}"
 INSTANCE_NAME="${GCE_INSTANCE_NAME:-diffgemma-bench-l4}"
