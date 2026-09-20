@@ -4,9 +4,9 @@ set -euo pipefail
 # Stage DiffusionGemma Model Weights in Google Cloud Storage for Cloud Run GCS FUSE Mounting
 
 PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
-REGION="${GCP_REGION:-us-central1}"
+REGION="${2:-${GCP_REGION:-us-central1}}"
 BUCKET="${1:-${GCS_BUCKET:-}}"
-MODEL_ID="${2:-${MODEL_ID:-nvidia/diffusiongemma-26B-A4B-it-NVFP4}}"
+MODEL_ID="${3:-${MODEL_ID:-nvidia/diffusiongemma-26B-A4B-it-NVFP4}}"
 
 if [[ -z "$PROJECT_ID" ]]; then
   echo "Error: No GCP project detected. Set GCP_PROJECT=<project-id>."
@@ -42,21 +42,55 @@ if gcloud storage ls "gs://${BUCKET}/dgemma/config.json" >/dev/null 2>&1; then
   exit 0
 fi
 
-# 3. Download weights from Hugging Face Hub using python / huggingface_hub
-echo "==> Downloading model weights from Hugging Face Hub ($MODEL_ID)..."
-TMP_DIR=$(mktemp -d /tmp/dgemma-stage-XXXXXX)
-trap 'rm -rf "$TMP_DIR"' EXIT
+# 3. Stage weights into GCS via Cloud Build (zero local disk footprint)
+echo "==> Staging weights via Google Cloud Build directly to gs://${BUCKET}/dgemma/..."
+BUILD_CONFIG=$(mktemp /tmp/cloudbuild-stage-XXXXXX)
+mv "$BUILD_CONFIG" "${BUILD_CONFIG}.yaml"
+BUILD_CONFIG="${BUILD_CONFIG}.yaml"
+trap 'rm -f "$BUILD_CONFIG"' EXIT
 
-python3 -c "
-import os
-from huggingface_hub import snapshot_download
-token = os.environ.get('HF_TOKEN', None)
-print(f'Downloading {sys.argv[1]} to {sys.argv[2]}...')
-snapshot_download(repo_id=sys.argv[1], local_dir=sys.argv[2], token=token)
-" "$MODEL_ID" "$TMP_DIR"
+# Read HF_TOKEN if available
+HF_TOKEN_VAL=""
+if [[ -f .env ]]; then
+  HF_TOKEN_VAL=$(grep HF_TOKEN .env | cut -d= -f2- | tr -d '"\047' || true)
+elif [[ -n "${HF_TOKEN:-}" ]]; then
+  HF_TOKEN_VAL="$HF_TOKEN"
+fi
 
-echo "==> Uploading weights to gs://${BUCKET}/dgemma/ via Google internal network..."
-gcloud storage cp -r "$TMP_DIR/*" "gs://${BUCKET}/dgemma/"
+cat <<EOF > "$BUILD_CONFIG"
+steps:
+- name: 'python:3.11-slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    pip install --no-cache-dir -U huggingface_hub
+    python3 -c "
+    import os, sys
+    from huggingface_hub import snapshot_download
+    token = os.environ.get('HF_TOKEN', None) or None
+    print('Downloading ${MODEL_ID} directly in Cloud Build...')
+    snapshot_download(repo_id='${MODEL_ID}', local_dir='/workspace/dgemma', token=token)
+    "
+  env:
+  - "HF_TOKEN=${HF_TOKEN_VAL}"
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  entrypoint: 'gcloud'
+  args:
+  - 'storage'
+  - 'cp'
+  - '-r'
+  - '/workspace/dgemma/*'
+  - 'gs://${BUCKET}/dgemma/'
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 100
+EOF
+
+gcloud builds submit --no-source \
+  --project="$PROJECT_ID" \
+  --config="$BUILD_CONFIG" \
+  --timeout=1200s
 
 echo ""
 echo "================================================================================"

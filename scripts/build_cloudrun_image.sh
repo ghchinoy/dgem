@@ -7,7 +7,7 @@ set -euo pipefail
 PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
 REGION="${GCP_REGION:-us-central1}"
 REPOSITORY="${AR_REPOSITORY:-dgem}"
-IMAGE_NAME="${IMAGE_NAME:-djev-run}"
+IMAGE_NAME="${IMAGE_NAME:-dgemma}"
 TAG="${IMAGE_TAG:-latest}"
 
 if [[ -z "$PROJECT_ID" ]]; then

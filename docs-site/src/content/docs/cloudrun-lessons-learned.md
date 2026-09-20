@@ -153,7 +153,7 @@ make cloudrun-deploy
 CLOUDRUN_GPU_TYPE="nvidia-rtx-pro-6000" make cloudrun-deploy
 
 # 4. Query & Benchmark via dgem
-SERVICE_URL=$(gcloud run services describe djev-dgemma --region=us-central1 --format="value(status.url)")
+SERVICE_URL=$(gcloud run services describe dgemma --region=us-central1 --format="value(status.url)")
 ./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v 'ticket=Emergency' --stats
 ./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
 ```

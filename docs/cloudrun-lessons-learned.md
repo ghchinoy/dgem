@@ -185,7 +185,7 @@ CLOUDRUN_GPU_TYPE="nvidia-rtx-pro-6000" make cloudrun-deploy
 ### Step 4: Query & Benchmark via `dgem`
 ```bash
 # Obtain service URL:
-SERVICE_URL=$(gcloud run services describe djev-dgemma --region=us-central1 --format="value(status.url)")
+SERVICE_URL=$(gcloud run services describe dgemma --region=us-central1 --format="value(status.url)")
 
 # Run discrete decision with automatic IAM authentication:
 ./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth \
