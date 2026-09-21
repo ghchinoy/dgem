@@ -42,6 +42,11 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ## 3. Uncertainty & Cascade Telemetry
 
+### Distributional Discrete Regression (`score` Slots)
+* **In Plain English**: Turning continuous regression (like a `1..5` severity score) into a probability histogram over discrete levels so that classification confidence and regression variance come out of the exact same softmax formula.
+* **Under the Hood**: Instead of a point-estimate MSE head or quantile pinball loss, `dgem` evaluates the restricted-softmax probabilities $p_{m,1}, \dots, p_{m,L}$ over the discrete numeric bins $v_1, \dots, v_L$ (`pkg/client/client.go`), yielding the continuous expected value $\mathbb{E}[v] = \sum_k v_k p_{m,k}$, ordinal variance $\text{Var}(v) = \sum_k p_{m,k}(v_k - \mathbb{E}[v])^2$, and normalized entropy $\tilde{H}_m = H(p) / \ln L$ in 1 pass.
+* **Where You See It in `dgem`**: Every `score` primitive in `.json.tmpl` templates (`sentiment`, `risk_score`, `severity`).
+
 ### Cardinality-Normalized Entropy
 * **In Plain English**: A universal **`0.0` to `1.0` uncertainty meter** that adjusts for how many answer choices a question has (`2` options vs. `26` options).
 * **Under the Hood**: Raw Shannon entropy $H_m = -\sum_{k \in \mathcal{V}_m} p_{m,k} \ln p_{m,k}$ has a theoretical maximum of $\ln|\mathcal{V}_m|$ (`0.693 nats` for binary vs. `3.258 nats` for 26-way `choice`). Dividing by $\ln|\mathcal{V}_m|$ yields the dimensionless normalized entropy:

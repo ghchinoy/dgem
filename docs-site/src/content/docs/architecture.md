@@ -71,6 +71,27 @@ Single-pass restricted-softmax readout provides calibrated epistemic uncertainty
   - **Low Normalized Entropy ($\tilde{H}_m < 0.160$, `66%` of suite)**: The decision is decisive. `dgem` early-exits immediately after **1 forward pass** (`712 ms` mean latency) with **100.0% early-exit precision (`33/33`)**.
   - **High Normalized Entropy ($\tilde{H}_m \ge 0.160$, `34%` of suite)**: `dgem` forwards the **Pass-1 Slot Prior Distribution (`[TIER-1 DISCRETE DIFFUSION PRIOR TELEMETRY]`)** to Stage 2—either an **Intra-Model Self-Cascade** (`--cascade-self-think 256` on the same `dgemma` GPU) or a **Cross-Model Cascade** (`gemini-3.8-flash`), lifting overall accuracy from **`86.0%` $\to$ `98.0%` (`49/50`)**.
 
+### Why `dgem` Uncertainty Quantification is Task-Agnostic (Unifying Classification & Regression)
+
+Practitioners frequently raise a classic challenge: *"Uncertainty quantification—whether confidence scores for classification or variances/quantiles for regression—is notoriously task-specific. How can one threshold work across tasks?"*
+
+:::note[The 2-Sentence Elevator Pitch]
+Rather than just computing raw entropy and "punting" to an LLM, `dgem` makes uncertainty **task-agnostic** in three steps: **(1)** it projects each masked canvas slot onto its policy-valid token set (`{yes,no}`, `[A–Z]`, or discrete score bins `1..5`, turning regression into a histogram expectation $\mathbb{E}[v] = \sum v_k p_k$ + spread), **(2)** it **normalizes Shannon entropy by slot capacity ($\tilde{H}_m = H_m / \ln|\mathcal{V}_m| \in [0, 1]$)** so a 2-way guardrail, a 5-point regressor, and a 26-way classifier all live on the exact same $[0, 1]$ uncertainty scale, and **(3)** when $\tilde{H}_m \ge 0.16$, it **forwards the Pass-1 probability distribution as a Bayesian prior** to guide test-time compute (`think > 0`) in disambiguating the top competing candidates.
+:::
+
+Four concrete mechanisms in [`pkg/client/client.go`](https://github.com/ghchinoy/dgem/blob/main/pkg/client/client.go) and [`cmd/bench_calibration.go`](https://github.com/ghchinoy/dgem/blob/main/cmd/bench_calibration.go) eliminate task-specific calibration:
+
+1. **Subspace Projection Eliminates Lexical/Phrasing Noise**:
+   Autoregressive LLMs compute entropy over 256,000 BPE tokens, mixing *semantic decision ambiguity* with *phrasing synonyms* (`"Yes"` vs. `"True"` vs. `"Certainly"`). `dgem` slices the canvas logits strictly over the policy-allowed single-token options $\mathcal{V}_m$, ensuring 100% of $H_m$ measures epistemic competition between the declared choices.
+2. **[Distributional Discrete Regression](/dgem/glossary/#distributional-discrete-regression-score-slots) Unifies `score` (Regression) and `choice` (Classification)**:
+   Instead of fitting a separate Gaussian variance head $(\mu, \sigma^2)$ or pinball-loss quantile head for regression, `dgem` evaluates every `score` slot (`1..5` or `0.0..0.9`) as a **Histogram Distribution** over its numeric scale levels $v_1, \dots, v_L$:
+   $$\hat{y}_m = \mathbb{E}[v] = \sum_{k=1}^L v_k \cdot p_{m,k}, \qquad \text{Var}(v) = \sum_{k=1}^L p_{m,k}\bigl(v_k - \mathbb{E}[v]\bigr)^2$$
+   Both the continuous expected value $\mathbb{E}[v]$, the ordinal variance $\text{Var}(v)$, and the normalized entropy $\tilde{H}_m = H(p) / \ln L$ are derived from the **exact same single-pass softmax vector** $p_{m,k}$.
+3. **Capacity Normalization ($\tilde{H}_m = H_m / \ln|\mathcal{V}_m| \in [0, 1]$) Removes Class-Count Drift**:
+   Dividing $H_m$ by the slot's maximum possible entropy $\ln|\mathcal{V}_m|$ converts task-dependent nats into a dimensionless $[0, 1]$ information-efficiency ratio. In `EXP-05b`, **one universal threshold ($\tau = 0.16$)** applied across **11 heterogeneous public datasets** (`|V| = 2` boolean gates, `|V| = 3` NLI, `|V| = 12` toxicity, `|V| = 26` banking/emotions) achieved **100.0% early-exit precision (`33/33`)** and **98.0% overall accuracy (`49/50`)** with zero per-task threshold tuning.
+4. **Prior-Conditioned Escalation (A Bayesian Proposal, Not a Blind "Punt")**:
+   When $\tilde{H}_m \ge 0.16$, Stage 1 does not discard its computation. It injects its restricted-softmax distribution (`{entailment: 94.2%, neutral: 4.9%, contradiction: 0.9%}`) into Stage 2—either `--cascade-self-think 256` on the **same `dgemma` checkpoint** or a frontier model—turning open-ended generation into targeted verification of the surviving candidates.
+
 ---
 
 ## 5. Architectural FAQ: Can Dual-Encoders (`GTR`) + `TabPFN` Replace a Decision Model, or Do You Need Test-Time Compute?
