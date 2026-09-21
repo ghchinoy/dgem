@@ -1,6 +1,6 @@
 ---
 title: Discrete Diffusion vs. Autoregression
-description: Theoretical and mechanical breakdown of DiffusionGemma's discrete block diffusion canvas compared to sequential autoregression.
+description: Theoretical and mechanical breakdown of DiffusionGemma's discrete block diffusion canvas compared to sequential autoregression, Dual-Encoders (GTR) + TabPFN, and Test-Time Compute cascades.
 ---
 
 ## 1. The Bottleneck of Autoregressive LLMs
@@ -12,61 +12,151 @@ $$P(x_1, x_2, \dots, x_T) = \prod_{t=1}^T P(x_t \mid x_{<t})$$
 Each forward pass generates exactly **one token**. Even if the model only needs to output a single boolean decision or three fields of a JSON object:
 1. It must sequentially predict structural characters (`{`, `\n`, `"`, `k`, `e`, `y`, `"`, `:`, ` `).
 2. It suffers from high memory bandwidth pressure: loading billions of parameters from memory to compute a single token's logits.
-3. It takes dozens or hundreds of forward passes (10–30 seconds on consumer hardware).
+3. It takes dozens or hundreds of forward passes (2–17.5 seconds across cloud or consumer GPUs).
 
 ---
 
 ## 2. Discrete Block Diffusion & Multi-Canvas Sampling
 
-**DiffusionGemma** breaks this sequential bottleneck by using **discrete diffusion**:
+**DiffusionGemma (`dgemma`)** breaks this sequential bottleneck by using **discrete block diffusion**:
 
-* **Block-Autoregressive Canvas**: The decoder works on a **256-token canvas** with bidirectional attention.
-* **Iterative Denoising**: The entire block of tokens begins as noise and is iteratively denoised in parallel across a small number of denoising steps (typically 1 to 8 steps).
-* **Throughput**: By predicting multiple tokens per step, DiffusionGemma achieves **15–20 tokens per forward pass**, decoupling throughput from pure sequential memory bandwidth.
+* **Block-Autoregressive Canvas**: The decoder works on a **32-to-256-token canvas** with **bidirectional self-attention**.
+* **Iterative Denoising**: The entire block of tokens begins as masked slots and is denoised in parallel across a single pass (`steps: 1`, `think: 0`) or a small number of steps.
+* **Joint Multi-Slot Conditioning (`slot_1 <-> slot_2`)**: Unlike independent classification heads, all masked decision slots attend to the prompt and to *each other* simultaneously in $O(1)$ forward passes (`458.9 ms` on Cloud Run 1×L4).
 
 ---
 
 ## 3. How Discrete Diffusion Slot Readout Works
 
-In a structured decision query, no text is generated at all:
+In a structured decision query (`steps: 1, think: 0`), no conversational prose is generated:
 
-1. **Canvas Seeding**: The known question template (e.g. `urgent: @\nteam: @\nsentiment: @`) is pre-seeded into the canvas, where `@` represents masked noise tokens at the candidate slots.
-2. **Single-Pass Denoise**: A single forward pass (or minimal diffusion step) is executed on the Metal GPU (~850–900 ms).
-3. **Logit Readout**: Rather than decoding text, the engine reads the logits directly at each candidate slot index.
-4. **Normalized Softmax**: The logits corresponding to the allowed single-token labels (`yes`/`no` for boolean, `A`/`B`/`C` for choices, `1`/`2`/`3` for scores) are extracted and normalized via softmax at temperature 1.
+1. **Canvas Seeding**: The known policy template (e.g. `urgent: @\nteam: @\nsentiment: @`) is pre-seeded into the canvas, where `@` represents masked tokens at the candidate decision slots.
+2. **Single-Pass Readout**: A single forward pass executes across the causal prompt prefix and bidirectional canvas (~458–880 ms).
+3. **Restricted-Softmax Logit Readout**: Rather than decoding free-form text, the engine extracts the raw logits $z_{m,k}$ restricted to the valid single-token candidate vocabulary $\mathcal{V}_m$ (`{"yes","no"}` for `boolean`, `[A–Z]` for `choice`, `1..5` for `score`) and normalizes via softmax:
 
-```
+$$p_{m,k} = \frac{\exp(z_{m,k})}{\sum_{j \in \mathcal{V}_m} \exp(z_{m,j})}$$
+
+```text
 Seeded Canvas:
 [<|channel>thought\n<channel|>urgent: @ \nteam: @ \nsentiment: @ ]
                                       ▲          ▲           ▲
                                    Slot 1     Slot 2      Slot 3
-                              [p(yes), p(no)] [p(A), p(B)] [p(1), p(2), p(3)]
+                              [p(yes), p(no)] [p(A)..p(Z)] [p(1)..p(5)]
+                                |V_1| = 2      |V_2| = 26   |V_3| = 5
 ```
 
 ---
 
-## 4. Empirical Uncertainty & The `auto` Sampling Policy
+## 4. Empirical Uncertainty & Cardinality-Normalized Entropy (`EXP-05b`)
 
-Unlike traditional LLMs that exhibit overconfident hallucinations, single-pass diffusion permits true empirical error estimation:
+Single-pass restricted-softmax readout provides calibrated epistemic uncertainty at every decision slot $m$:
 
-* **Shannon Entropy**: Calculated over the top logprobs for each slot:
-  $$H = -\sum_{i} p_i \ln p_i$$
-* **Adaptive Multi-Sampling (`samples: "auto"`)**:
-  - If entropy across all slots is low ($H < 0.10$ nats), the answer is decisive. The engine concludes after **1 sample** (~880 ms).
-  - If any slot exhibits entropy above the threshold ($H \ge 0.10$ nats), the question is ambiguous. The engine draws 3 additional independent noise vectors, computes the mean probability across reads, and reports the standard error:
-    $$\text{stderr} = \frac{\sigma}{\sqrt{N}}$$
-* **Agreement**: The percentage of independent noise draws that converged on the winning label ($0.0 \dots 1.0$).
+* **Raw Shannon Entropy ($H_m$)**:
+  $$H_m = -\sum_{k \in \mathcal{V}_m} p_{m,k} \ln p_{m,k} \in [0, \ln|\mathcal{V}_m|]$$
+* **Cardinality-Normalized Epistemic Entropy ($\tilde{H}_m$)**: Because maximum entropy scales logarithmically with option count ($\ln 2 = 0.693\text{ nats}$ for binary `boolean` vs. $\ln 26 = 3.258\text{ nats}$ for 26-way `choice`), `dgem` normalizes each slot's entropy by its theoretical ceiling $\ln|\mathcal{V}_m|$:
+  $$\tilde{H}_m = \frac{H_m}{\ln|\mathcal{V}_m|} \in [0, 1]$$
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: Why does Raw Entropy ($H_m$) cause "Multi-Slot Scale Inversion" without $\ln|\mathcal{V}_m|$ normalization?</strong> <em>(click to expand)</em></summary>
+
+* **In Plain English**: A 26-option banking classifier naturally leaks tiny $0.3\%$ probability crumbs across 25 runner-up classes even when it is **88.6% confident and right**, inflating its raw entropy (`0.516 nats`). Meanwhile, a 3-option NLI slot (`entailment` / `neutral` / `contradiction`) has a tiny maximum ceiling (`1.099 nats`), so a massive **3.3× epistemic spike** (`0.246 nats`) looks smaller in raw nats than the 26-way slot!
+* **How $\tilde{H}_m = H_m / \ln|\mathcal{V}_m|$ Fixes It**: Dividing by $\ln|\mathcal{V}_m|$ puts every slot onto a universal $[0, 1]$ uncertainty scale (`--normalize-entropy --cascade-threshold 0.16`):
+  * **`b77-01` (`Banking77`, $|\mathcal{V}|=26$, Correct Pass-1)**: $0.5162 / \ln(26) = \mathbf{0.158 < 0.160} \implies$ **Early-Exits in `754 ms`!**
+  * **`anli-01` & `anli-02` (`ANLI-R3`, $|\mathcal{V}|=3$, Adversarial Traps)**: $0.1847 / \ln(3) = \mathbf{0.168 \ge 0.160}$ and $0.2464 / \ln(3) = \mathbf{0.224 \ge 0.160} \implies$ **Both Escalate to Stage 2 (`0% -> 100%`)!**
+* **Full Reference**: See [Experiment `EXP-05b`](/dgem/experiments/exp-05-roadmap-cascades-and-dags/) and the [Glossary entry on Multi-Slot Scale Inversion](/dgem/glossary/#multi-slot-scale-inversion).
+
+</details>
+
+* **Adaptive Sampling & Prior-Guided Escalation**:
+  - **Low Normalized Entropy ($\tilde{H}_m < 0.160$, `66%` of suite)**: The decision is decisive. `dgem` early-exits immediately after **1 forward pass** (`712 ms` mean latency) with **100.0% early-exit precision (`33/33`)**.
+  - **High Normalized Entropy ($\tilde{H}_m \ge 0.160$, `34%` of suite)**: `dgem` forwards the **Pass-1 Slot Prior Distribution (`[TIER-1 DISCRETE DIFFUSION PRIOR TELEMETRY]`)** to Stage 2—either an **Intra-Model Self-Cascade** (`--cascade-self-think 256` on the same `dgemma` GPU) or a **Cross-Model Cascade** (`gemini-3.8-flash`), lifting overall accuracy from **`86.0%` $\to$ `98.0%` (`49/50`)**.
 
 ---
 
-## 5. Terminology: Discrete Diffusion Slot Readout vs. "Jev-Style"
+## 5. Architectural FAQ: Can Dual-Encoders (`GTR`) + `TabPFN` Replace a Decision Model, or Do You Need Test-Time Compute?
 
-In community discourse and open-source benchmarks (such as `open-jev` and vLLM PR #57250), this single-pass evaluation pattern was informally termed "Jev-style" following commercial evaluations published by startup TypeSafe AI.
+Engineers from search, retrieval, and tabular ML backgrounds frequently ask a foundational design question:
+
+> *"Could the goal of a fast, reasoning-capable classifier be achieved without a generative model—specifically by pairing a **GTR-style Dual Encoder** (`Sentence-T5`) with a **TabPFN / TabFM** zero-shot tabular classification foundation model? Or do you strictly need a decoder and test-time compute (`think > 0`) to pull off reasoning?"*
+
+:::tip[TL;DR: The 30-Second Architectural Answer]
+1. **Why `GTR Dual-Encoder + TabPFN` Hits an Early Information Wall**: A Dual Encoder compresses your entire input document into a single fixed vector $u \in \mathbb{R}^d$ **before** reading your policy rules or hypothesis. That pooling step permanently destroys token-to-token relational alignment (such as negation scope, numerical bounds like `50–75% < 100%`, or SQL parameter tampering in `AgentDrift`). Feeding those pooled embeddings into `TabPFN` cannot recover fine-grained relational bindings already lost in $u$—and `TabPFN` further requires **labeled support rows ($N_{\text{support}} > 0$)** rather than zero-shot instructions.
+2. **When You Do *NOT* Need a Decoder (`think=0` in $O(1)$ — `86%–90%` of Tasks)**: Full **token-level cross-attention** across a 26B-A4B model (`dgem` with `steps=1, think=0`) solves 1-hop relational policy grounding (`AgentDrift` `100%`, `deepset/prompt-injections` `100%`, `LLM-AggreFact` `100%`, `MS MARCO` `100%`) in **a single `458–712 ms` forward pass** without generating a single scratchpad token.
+3. **When You *DO* Need a Decoder + Test-Time Compute (`think > 0` — `anli-01..03`)**: When a decision hinges on synthesizing an **unwritten intermediate variable** (such as computing `2015 + 4 = 2019` and checking `2019 > 2018` in `anli-02`), constant-depth circuit bounds ($\mathsf{TC}^0$) prevent *any* single-pass model (`GTR`, `TabPFN`, or `dgemma [think=0]`) from reliably chaining the arithmetic. Because `dgemma` is a unified architecture, its **normalized entropy gate ($\tilde{H}_m \ge 0.160$)** detects those exact multi-hop traps and triggers `think > 0` (conditioned on Pass-1 priors) only on the **34% of queries** that need a scratchpad—reaching **`98.0%` accuracy (`49/50`)**.
+:::
+
+### The Operative Decoder Ring (5 Core Concepts in Plain English)
+
+For readers arriving from different specialties (Platform Engineering, Search/Retrieval, or LLM Infrastructure), here is how the five architectural terms map to plain English:
+
+| Term | 10-Word Plain-English Mental Model | Canonical Example |
+| :--- | :--- | :--- |
+| **[Dual Encoder (`GTR` / `T5`)](/dgem/glossary/#dual-encoder-gtr--sentence-t5)** | Compresses input and label into two separate vectors, then compares. | Semantic search & topical intent (`Banking77` similarity). |
+| **[Tabular FM (`TabPFN` / `TabFM`)](/dgem/glossary/#tabpfn--tabular-foundation-models)** | Predicts a spreadsheet column by attending to labeled example rows. | Few-shot classification over numerical/embedding feature grids. |
+| **[Cross-Attention Canvas (`dgem`)](/dgem/glossary/#bidirectional-canvas-attention)** | Every input word directly inspects every policy rule and slot. | Zero-shot `AgentDrift` security audit & `LLM-AggreFact` grounding. |
+| **[Normalized Entropy ($\tilde{H}_m$)](/dgem/glossary/#cardinality-normalized-entropy)** | A universal `0.0–1.0` uncertainty gauge adjusted for option count. | Early-exiting `b77-01` ($\tilde{H}=0.158$) while escalating `anli-01` ($\tilde{H}=0.168$). |
+| **[Test-Time Compute (`think > 0`)](/dgem/glossary/#fixed-depth-circuits-tc0-vs-test-time-compute)** | Scratchpad tokens generated only when a problem needs multi-step math. | Solving `2015 + 4 = 2019 > 2018` in `anli-02` (`--cascade-self-think 256`). |
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: Late Interaction (`GTR` Pooling Bottleneck) vs. Early All-to-All Cross-Attention (`dgem`)</strong> <em>(click to expand)</em></summary>
+
+```text
+1. GTR Dual-Encoder + TabPFN (Late Interaction / Vector Bottleneck):
+   Input Text (1,000 tokens) ──► [T5 Encoder] ──► Single Vector u (R^768) ──┐
+                                                                            ├──► [TabPFN Grid] ──► Prediction
+   Policy Rules / Labels     ──► [T5 Encoder] ──► Label Vectors v_k       ──┘
+   ⚠️ Bottleneck: Input tokens never attend to Policy tokens! Fine-grained numbers,
+      negations ("NOT in allowlist"), and variable bindings are crushed during pooling.
+
+2. DiffusionGemma Canvas Readout (Early Token-Level Cross-Attention):
+   [Policy Rules (.json.tmpl) + Input Text (1,000 tokens) + Masked Slots <s_1, s_2, s_3>]
+                                       │
+              ┌────────────────────────┴────────────────────────┐
+              │ All 26B-A4B Layers: Every token in Input,       │
+              │ Policy, and Slots <s_1 <-> s_2> mutually attend │
+              └────────────────────────┬────────────────────────┘
+                                       ▼
+                     Joint Calibrated Readout (458.9 ms)
+```
+
+* **Why Normalization + `TabPFN` Cannot Undo Pooling Loss**: By the Data Processing Inequality, once $E_x(x)$ compresses a multi-clause passage or tool trajectory into a fixed vector $u \in \mathbb{R}^d$, information about which specific quantifier modifies which entity is lost. `TabPFN` is a powerful Bayesian decision boundary estimator over tabular columns, but it can only partition the features it is given—and it requires **in-context labeled support rows ($X_{\text{train}}, y_{\text{train}}$)**, whereas `dgem` executes declarative `.json.tmpl` policies with **zero support rows ($N_{\text{support}} = 0$)**.
+
+</details>
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: Why Fixed-Depth Circuits (`think=0`) Cannot Solve Latent Multi-Hop Arithmetic Without Test-Time Compute (`think > 0`)</strong> <em>(click to expand)</em></summary>
+
+* **The Circuit-Depth Bound ($\mathsf{TC}^0$)**: Any single forward pass through a transformer of fixed depth $L$ (`GTR`, `DeBERTa`, `TabPFN`, or `dgemma` at `steps=1, think=0`) executes a constant number of sequential layer operations.
+* **Concrete Proof (`anli-02` in `dgem bench-calibration`)**:
+  * **Premise**: *"Mira joined the lab in **2015** and became its second director **four years later**, succeeding the founder."*
+  * **Hypothesis**: *"Mira led the lab before **2018**."*
+  * Notice that the number **`2019`** never appears in the input tokens! To recognize the contradiction, the model must (1) bind `2015` + `four years later`, (2) compute the latent sum `2019`, and (3) evaluate `2019 < 2018` (`False` $\implies$ `contradiction`).
+* **Why `dgem` Solves This Without Slowing Down Easy Traffic**: In Pass 1 (`think=0`), `dgemma` outputs `entailment`, **but its normalized epistemic entropy $\tilde{H}_m$ spikes 3.0× above baseline to `0.224` ($\ge 0.160$)**! That spike triggers Pass 2 (`think > 0` with the Pass-1 prior block), which computes `2015 + 4 = 2019` on its scratchpad and flips the answer to `contradiction` (`100%` `3/3` on `ANLI-R3`).
+
+</details>
+
+### Architectural Comparison Matrix
+
+| Capability / Dimension | `GTR Dual-Encoder` + `TabPFN / TabFM` | Fine-Tuned Cross-Encoder (`DeBERTa-v3`) | `dgem` Single-Pass Canvas (`steps=1, think=0`) | `dgem` Prior-Guided Cascade (`EXP-05b`, `think=0 → think>0`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Token-to-Policy Cross-Attention** | ❌ **No** (Late pooling into $u \in \mathbb{R}^d$) | ✅ **Yes** (Full cross-attention) | ✅ **Yes** (Full 26B-A4B cross-attention) | ✅ **Yes** (Full 26B-A4B cross-attention) |
+| **Zero-Shot Policy Onboarding** | ⚠️ **Partial** (`TabPFN` requires $N>0$ support rows) | ❌ **No** (Requires fine-tuning per head) | ✅ **Yes** (`0 s` via `.json.tmpl`, $N=0$ rows) | ✅ **Yes** (`0 s` via `.json.tmpl`, $N=0$ rows) |
+| **Joint Multi-Slot Readout (`s_1 <-> s_2`)** | ❌ **No** (1 target column per pass) | ❌ **No** (Independent linear heads) | ✅ **Yes** (`boolean` + `choice` + `score` in 1 pass) | ✅ **Yes** (`boolean` + `choice` + `score` in 1 pass) |
+| **1-Hop Relational Grounding (`AgentDrift`, `AggreFact`)** | ⚠️ **Brittle** (Pooling loses parameter/negation scope) | ✅ **Strong** (If fine-tuned on domain) | ✅ **100.0%** (`7/7` `AgentDrift`, `2/2` `AggreFact`) | ✅ **100.0%** (`7/7` `AgentDrift`, `2/2` `AggreFact`) |
+| **Latent Multi-Hop Arithmetic (`ANLI-R3` `anli-01..03`)** | ❌ **Fails** (Fixed circuit depth, no scratchpad) | ❌ **Fails** (Fixed circuit depth, no scratchpad) | ❌ **0.0% (`0/3`)** (Single-pass $\mathsf{TC}^0$ limit) | ✅ **100.0% (`3/3`)** ($\tilde{H}_m \ge 0.16$ triggers `think>0` + Priors) |
+| **Overall 50-Case Calibration Suite Accuracy** | — | — | **86.0% (`43/50`)** | **98.0% (`49/50`)** ⭐ |
+| **Mean Wall-Clock Latency (Cloud Run L4)** | `~15–45 ms` | `~15–30 ms` | **`712 ms`** (`458.9 ms` 3-slot triage) | **`1,259 ms` blended** (`66%` exit @ `712 ms`) |
+
+---
+
+## 6. Terminology: Discrete Diffusion Slot Readout vs. "Jev-Style"
+
+In community discourse and open-source benchmarks (such as `open-jev` and vLLM PR #57250), single-pass canvas evaluation was informally termed "Jev-style" following commercial evaluations published by startup TypeSafe AI.
 
 From a computer science and machine learning perspective, the formal technique is **Discrete Diffusion Slot Readout** (or bidirectional masked logit extraction). It builds directly upon foundational literature:
 * **Masked Language Modeling (BERT, 2018)**: Evaluating logits across bidirectional transformer encoder layers.
 * **Non-Autoregressive Sequence Generation (Mask-Predict, 2019)**: Parallel canvas denoising.
 * **Discrete Denoising Diffusion (D3PM, 2021; MDLM, 2024)**: Denoising categorical state spaces.
-* **DiffusionGemma (Google DeepMind, 2025/2026)**: The 26B MoE architecture providing an autoregressive prefix encoder paired with a 256-token discrete diffusion decoder with bidirectional attention.
+* **DiffusionGemma (Google DeepMind, 2025/2026)**: The 26B-A4B MoE architecture providing an autoregressive prefix encoder paired with a discrete diffusion decoder with bidirectional attention.
 
 `dgem` uses stock, unmodified weights from Google DeepMind (`google/diffusiongemma-26B-A4B-it`) and implements this technique directly.

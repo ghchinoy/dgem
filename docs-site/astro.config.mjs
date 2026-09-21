@@ -42,6 +42,7 @@ export default defineConfig({
           items: [
             { label: 'The Journey to Decision Models', slug: 'decision-models-primer' },
             { label: 'Discrete Diffusion vs. Autoregression', slug: 'architecture' },
+            { label: 'Glossary & Mental Models', slug: 'glossary' },
             { label: 'Template Catalog (Policy-as-Code)', slug: 'templates' },
           ],
         },

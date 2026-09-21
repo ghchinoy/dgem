@@ -20,12 +20,23 @@ Bag-of-Words / Zero Context           Local Sliding Window              Causal S
 Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Second / Heavy GPU Loops   Sub-Second / Guaranteed Schema
 ```
 
-### Era 1: Classical Statistical ML (1960s–2010s)
-* **Core Algorithms**: Naive Bayes, Logistic Regression, Support Vector Machines (SVMs), Random Forests, XGBoost.
-* **Mechanism**: Treat text as an unordered Bag-of-Words (BoW) or TF-IDF matrix. Calculate class probabilities using feature weights or Bayes' Theorem:
+### Era 1: Classical Statistical ML & Discriminative Encoders (1960s–Present)
+* **Core Algorithms**: Naive Bayes, Logistic Regression, Support Vector Machines (SVMs), Random Forests, XGBoost, Dual-Encoders (`GTR` / `Sentence-T5`), Tabular Foundation Models (`TabPFN`), and Fine-Tuned Cross-Encoder Heads (`BERT`, `DeBERTa-v3`).
+* **Mechanism**: Treat text as an unordered Bag-of-Words (BoW) matrix, static linear classification head, or pooled dense embedding vector $u \in \mathbb{R}^d$:
   $$P(C \mid w_1, \dots, w_n) \propto P(C) \prod_{i=1}^n P(w_i \mid C)$$
-* **Strength**: Microsecond inference ($< 1$ ms), minimal memory footprints (< 50 MB), and runs effortlessly on inexpensive CPUs.
-* **Fatal Flaw**: **Zero semantic context**. Classical statistical ML cannot model word order, grammatical modifiers, or negation. In the sentence *"This is NOT an outage; where do I update my card?"*, high-frequency tokens like `"outage"` inevitably trigger a false classification into `engineering`.
+* **Strength**: Microsecond to 45 ms inference, minimal memory footprints, and fixed output schemas.
+* **Fatal Flaw**: **Zero-Shot Rigidity, Late-Pooling Loss & Independent Heads**. Classical statistical ML cannot model word order, grammatical modifiers, or negation. Fine-tuned encoder heads understand context but require dataset relabeling and weight retraining whenever policies change—and evaluating 3 questions requires 3 separate classification heads that cannot attend to each other.
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: What about pairing a <code>GTR</code> Dual-Encoder with a Zero-Shot Tabular FM (<code>TabPFN</code> / <code>TabFM</code>)?</strong> <em>(click to expand)</em></summary>
+
+* **Why Engineers Ask**: Can we encode the input and policy labels with a `GTR` (`Sentence-T5`) dual encoder, normalize the similarity vectors into a table, and run a zero-shot tabular model (`TabPFN`) on top?
+* **The Two Bottlenecks**:
+  1. **Late Vector Pooling**: `GTR` compresses a 1,000-token input into a single vector $u \in \mathbb{R}^d$ *before* reading your policy rules, destroying token-to-token alignment (e.g., SQL parameter drift in `AgentDrift` or `50–75% < 100%` in `ANLI-R3`).
+  2. **Support-Row Requirement**: `TabPFN` requires **labeled support rows ($N_{\text{support}} > 0$)** in its tabular context grid, whereas `dgem`'s `.json.tmpl` policies compile **zero-shot ($N=0$)** via full token-level cross-attention.
+* **Deep Dive**: Read the full breakdown in [Discrete Diffusion vs. Autoregression (§5)](/dgem/architecture/#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute) and the [Glossary & Mental Models](/dgem/glossary/).
+
+</details>
 
 ### Era 2: Classical Symbolic NLP & Automata (1990s–Present)
 * **Core Algorithms**: Regular Grammars, Hidden Markov Models (HMMs), Weighted Finite-State Transducers (WFSTs like OpenFst, Google Sparrowhawk, NVIDIA NeMo).

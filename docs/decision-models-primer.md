@@ -18,9 +18,20 @@ Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Se
 ```
 
 ### Era 1: Classical Statistical ML & Discriminative Encoders (1960s–Present)
-* **Core Algorithms**: Naive Bayes, Logistic Regression, SVMs, XGBoost, and Fine-Tuned Encoder Heads (`BERT`, `DeBERTa-v3`).
-* **Strength**: Microsecond to 20 ms inference, minimal memory footprints, and fixed output schemas.
-* **Fatal Flaw**: **Zero-Shot Rigidity & Independent Heads**. Classical statistical ML cannot model word order or negation (*"This is NOT an outage"*). Fine-tuned encoder classifiers understand context, but every policy change (adding a 4th severity level or a new department) requires curating thousands of labeled examples, retraining weights, and redeploying model binaries. Furthermore, evaluating 3 questions requires 3 separate classification heads that cannot attend to each other's predictions.
+* **Core Algorithms**: Naive Bayes, Logistic Regression, SVMs, XGBoost, Dual-Encoders (`GTR` / `Sentence-T5`), Tabular Foundation Models (`TabPFN`), and Fine-Tuned Cross-Encoder Heads (`BERT`, `DeBERTa-v3`).
+* **Strength**: Microsecond to 45 ms inference, minimal memory footprints, and fixed output schemas.
+* **Fatal Flaw**: **Zero-Shot Rigidity, Late-Pooling Loss & Independent Heads**. Classical statistical ML cannot model word order or negation (*"This is NOT an outage"*). Fine-tuned encoder classifiers understand context, but every policy change (adding a 4th severity level or a new department) requires curating thousands of labeled examples, retraining weights, and redeploying model binaries. Furthermore, evaluating 3 questions requires 3 separate classification heads that cannot attend to each other's predictions.
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: What about pairing a <code>GTR</code> Dual-Encoder with a Zero-Shot Tabular FM (<code>TabPFN</code> / <code>TabFM</code>)?</strong> <em>(click to expand)</em></summary>
+
+* **Why Engineers Ask**: Can we encode the input and policy labels with a `GTR` (`Sentence-T5`) dual encoder, normalize the similarity vectors into a table, and run a zero-shot tabular model (`TabPFN`) on top?
+* **The Two Bottlenecks**:
+  1. **Late Vector Pooling**: `GTR` compresses a 1,000-token input into a single vector $u \in \mathbb{R}^d$ *before* reading your policy rules, destroying token-to-token alignment (e.g., SQL parameter drift in `AgentDrift` or `50–75% < 100%` in `ANLI-R3`).
+  2. **Support-Row Requirement**: `TabPFN` requires **labeled support rows ($N_{\text{support}} > 0$)** in its tabular context grid, whereas `dgem`'s `.json.tmpl` policies compile **zero-shot ($N=0$)** via full token-level cross-attention.
+* **Deep Dive**: Read the full breakdown in [Discrete Diffusion vs. Autoregression (§5)](architecture.md#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute) and the [Glossary & Mental Models](glossary.md).
+
+</details>
 
 ### Era 2: Classical Symbolic NLP & Automata (1990s–Present)
 * **Core Algorithms**: Regular Grammars, Hidden Markov Models (HMMs), Weighted Finite-State Transducers (WFSTs like OpenFst, Google Sparrowhawk, NVIDIA NeMo).
