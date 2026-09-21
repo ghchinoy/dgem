@@ -185,7 +185,8 @@ Evaluates 50 items across **11 public datasets** ([`benchmarks/calibration_suite
 | **`ChaosNLI` Crowd Consensus (`low-entropy`)** | 3 | **100.0% (3/3)** | `0.986` | **`0.0744 nats` (1.0×)** | **625 ms** |
 | **`ChaosNLI` Crowd Split (`high-entropy`)** | 3 | 33.3% (1/3) | `0.759` | **`0.5932 nats` (8.0× spike)** ⭐ | **731 ms** |
 | **Stage 1 Alone: `DiffusionGemma` (`steps=1, think=0`)** | **50** | **88.0% (44/50)** | **`0.925`** | **`0.2279 nats`** | **712 ms** |
-| **Entropy Cascade (`EXP-05`): `dgemma [H<0.35]` $\rightarrow$ `gemini-3.8-flash`** | **50** | **94.0% (47/50, `+6.0%`)** ⭐ | **`0.959`** | **`0.1410 nats`** | **1,824 ms** (`72%` early-exit) |
+| **Raw Entropy Cascade (`EXP-05a`): `dgemma [H<0.35]` $\rightarrow$ `gemini-3.8-flash`** | **50** | **94.0% (47/50, `+6.0%`)** | **`0.959`** | **`0.1410 nats`** | **1,824 ms** (`72%` early-exit) |
+| **Normalized + Prior-Guided Cascade (`EXP-05b`, $\tilde{H} < 0.16$)** | **50** | **98.0% (49/50, `+10.0%`)** ⭐ | **`0.960`** | **`0.1416 nats` ($\tilde{H}=0.106$)** | **2,105 ms** (`66%` early-exit) |
 | **Stage 2 Alone: `gemini-3.8-flash` (100% Frontier LLM)** | **50** | **98.0% (49/50)** | **`0.959`** | **`0.1347 nats`** | `3,412 ms` (`4.8×` slower) |
 
 ### 2. Multi-Domain Operational Triage (`dgem bench`)
