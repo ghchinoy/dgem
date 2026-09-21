@@ -45,6 +45,10 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ## 3. Uncertainty & Cascade Telemetry
 
+### Relative Tie-Detection vs. Target-Domain Probability Calibration
+* **In Plain English**: `dgem`'s single-pass logprob scores tell you **whether the model is torn between your template choices** (relative routing ambiguity), *not* the real-world base rate of how often a class appears in your database.
+* **Why This Matters**: True statistical calibration ($P(\text{Gold}=A \mid \hat{p}=0.80) = 0.80$) depends on the target environment's class prior $P_{\text{target}}(Y)$ and always requires post-hoc target data (Platt scaling, temperature scaling, or conformal prediction). What `dgem` provides zero-shot in 1 forward pass is a **tie-detector over the user-supplied option letters (`A..Z`)**—eliminating the $10\times\text{–}50\times$ token-cost multiplier of multi-sample autoregressive confidence rollouts.
+
 ### Distributional Discrete Regression (`score` Slots)
 * **In Plain English**: Turning continuous regression (like a `1..5` severity score) into a probability histogram over discrete levels so that classification confidence and regression variance come out of the exact same softmax formula.
 * **Under the Hood**: Instead of a point-estimate MSE head or quantile pinball loss, `dgem` evaluates the restricted-softmax probabilities $p_{m,1}, \dots, p_{m,L}$ over the discrete numeric bins $v_1, \dots, v_L$ (`pkg/client/client.go`), yielding the continuous expected value $\mathbb{E}[v] = \sum_k v_k p_{m,k}$, ordinal variance $\text{Var}(v) = \sum_k p_{m,k}(v_k - \mathbb{E}[v])^2$, and normalized entropy $\tilde{H}_m = H(p) / \ln L$ in 1 pass.

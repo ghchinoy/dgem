@@ -72,26 +72,43 @@ Single-pass restricted-softmax readout provides calibrated epistemic uncertainty
   - **Low Normalized Entropy ($\tilde{H}_m < 0.160$, `66%` of suite)**: The decision is decisive. `dgem` early-exits immediately after **1 forward pass** (`712 ms` mean latency) with **100.0% early-exit precision (`33/33`)**.
   - **High Normalized Entropy ($\tilde{H}_m \ge 0.160$, `34%` of suite)**: `dgem` forwards the **Pass-1 Slot Prior Distribution (`[TIER-1 DISCRETE DIFFUSION PRIOR TELEMETRY]`)** to Stage 2—either an **Intra-Model Self-Cascade** (`--cascade-self-think 256` on the same `dgemma` GPU) or a **Cross-Model Cascade** (`gemini-3.8-flash`), lifting overall accuracy from **`86.0%` $\to$ `98.0%` (`49/50`)**.
 
-### Why `dgem` Uncertainty Quantification is Task-Agnostic (Unifying Classification & Regression)
+### How `dgem` Computes Confidence & Entropy from Template Logprobs (Step-by-Step)
 
-Practitioners frequently raise a classic challenge: *"Uncertainty quantification—whether confidence scores for classification or variances/quantiles for regression—is notoriously task-specific. How can one threshold work across tasks?"*
+In standard autoregressive LLM pipelines, estimating whether the model is confident on a custom task—without generating long Chain-of-Thought rationales or running $N=10\text{–}20$ Monte Carlo rollouts (self-consistency)—multiplies token costs by orders of magnitude.
 
-> [!NOTE]
-> **The 2-Sentence Elevator Pitch**
-> Rather than just computing raw entropy and "punting" to an LLM, `dgem` makes uncertainty **task-agnostic** in three steps: **(1)** it projects each masked canvas slot onto its policy-valid token set (`{yes,no}`, `[A–Z]`, or discrete score bins `1..5`, turning regression into a histogram expectation $\mathbb{E}[v] = \sum v_k p_k$ + spread), **(2)** it **normalizes Shannon entropy by slot capacity ($\tilde{H}_m = H_m / \ln|\mathcal{V}_m| \in [0, 1]$)** so a 2-way guardrail, a 5-point regressor, and a 26-way classifier all live on the exact same $[0, 1]$ uncertainty scale, and **(3)** when $\tilde{H}_m \ge 0.16$, it **forwards the Pass-1 probability distribution as a Bayesian prior** to guide test-time compute (`think > 0`) in disambiguating the top competing candidates.
+`dgem` avoids that token-cost explosion by turning your `.json.tmpl` policy into a **single-token `logprob` tie-detector** across 4 concrete steps:
 
-Four concrete mechanisms in [`pkg/client/client.go`](../pkg/client/client.go) and [`cmd/bench_calibration.go`](../cmd/bench_calibration.go) eliminate task-specific calibration:
+1. **Step 1 — Map User-Supplied Classes to Single Letters (`A`, `B`, `C`...) in the Prompt**:
+   When you define custom classes in a template (even for a domain not in the model's training distribution), `dgem` formats them into a single-letter legend in the prompt prefix and places **one masked blank (`@`)** per question on the diffusion canvas:
+   ```text
+   Prompt Prefix:
+     Slot 'intent' options:
+       A = billing_dispute
+       B = account_compromise
+       C = feature_request
 
-1. **Subspace Projection Eliminates Lexical/Phrasing Noise**:
-   Autoregressive LLMs compute entropy over 256,000 BPE tokens, mixing *semantic decision ambiguity* with *phrasing synonyms* (`"Yes"` vs. `"True"` vs. `"Certainly"`). `dgem` slices the canvas logits strictly over the policy-allowed single-token options $\mathcal{V}_m$, ensuring 100% of $H_m$ measures epistemic competition between the declared choices.
-2. **[Distributional Discrete Regression](glossary.md#distributional-discrete-regression-score-slots) Unifies `score` (Regression) and `choice` (Classification)**:
-   Instead of fitting a separate Gaussian variance head $(\mu, \sigma^2)$ or pinball-loss quantile head for regression, `dgem` evaluates every `score` slot (`1..5` or `0.0..0.9`) as a **Histogram Distribution** over its numeric scale levels $v_1, \dots, v_L$:
-   $$\hat{y}_m = \mathbb{E}[v] = \sum_{k=1}^L v_k \cdot p_{m,k}, \qquad \text{Var}(v) = \sum_{k=1}^L p_{m,k}\bigl(v_k - \mathbb{E}[v]\bigr)^2$$
-   Both the continuous expected value $\mathbb{E}[v]$, the ordinal variance $\text{Var}(v)$, and the normalized entropy $\tilde{H}_m = H(p) / \ln L$ are derived from the **exact same single-pass softmax vector** $p_{m,k}$.
-3. **Capacity Normalization ($\tilde{H}_m = H_m / \ln|\mathcal{V}_m| \in [0, 1]$) Removes Class-Count Drift**:
-   Dividing $H_m$ by the slot's maximum possible entropy $\ln|\mathcal{V}_m|$ converts task-dependent nats into a dimensionless $[0, 1]$ information-efficiency ratio. In `EXP-05b`, **one universal threshold ($\tau = 0.16$)** applied across **11 heterogeneous public datasets** (`|V| = 2` boolean gates, `|V| = 3` NLI, `|V| = 12` toxicity, `|V| = 26` banking/emotions) achieved **100.0% early-exit precision (`33/33`)** and **98.0% overall accuracy (`49/50`)** with zero per-task threshold tuning.
-4. **Prior-Conditioned Escalation (A Bayesian Proposal, Not a Blind "Punt")**:
-   When $\tilde{H}_m \ge 0.16$, Stage 1 does not discard its computation. It injects its restricted-softmax distribution (`{entailment: 94.2%, neutral: 4.9%, contradiction: 0.9%}`) into Stage 2—either `--cascade-self-think 256` on the **same `dgemma` checkpoint** or a frontier model—turning open-ended generation into targeted verification of the surviving candidates.
+   Seeded Diffusion Canvas (1 token per slot):
+     intent: @
+   ```
+2. **Step 2 — Run 1 Forward Pass (`think=0`) & Read `logprobs` of *Only* Those Letters**:
+   Instead of generating free-form text, `dgem` executes **1 forward pass** (`~460–712 ms`) and inspects the raw token logits at that exact `@` blank. It discards the other ~255,997 words in the vocabulary and runs a softmax strictly over the valid letters (`A`, `B`, `C`) you supplied:
+   $$p_A, p_B, p_C = \text{softmax}(z_A, z_B, z_C)$$
+   *(For numeric `score` slots like `1..5`, it does the exact same thing over the digit tokens `'1'..'5'`, computing the weighted average $\mathbb{E}[v] = \sum_{k=1}^5 k \cdot p_k$ and spread from those 5 probabilities).*
+3. **Step 3 — Measure Whether the Top Letters Are in a Close Race ($H_m$)**:
+   - If the restricted probabilities are **`{A: 97.5%, B: 1.5%, C: 1.0%}`**, letter `A` dominates ($H_m = 0.13\text{ nats}$). We take `A` immediately and pay **zero** generation tokens.
+   - If the restricted probabilities are **`{A: 54.0%, B: 42.0%, C: 4.0%}`**, the model's attention is **torn** between `A` and `B` ($H_m = 0.82\text{ nats}$).
+4. **Step 4 — Divide by $\ln(\text{Number of Choices})$ to Scale the "Tie Meter" from `0.0` to `1.0` ($\tilde{H}_m$)**:
+   Why can't we use the same raw entropy cutoff ($H_m$) for a 2-choice `yes/no` question and a 26-choice `A..Z` question? Because a flat dead tie between 2 choices has a maximum entropy of $\ln(2) = 0.693$, while a flat tie between 26 choices has a maximum entropy of $\ln(26) = 3.258$. Dividing by $\ln(\text{number of choices})$:
+   $$\tilde{H}_m = \frac{H_m}{\ln(\text{number of choices})} \in [0, 1]$$
+   scales our "tie meter" onto `0.0` (one letter dominates) to `1.0` (dead tie) regardless of how many classes you put in your template. When $\tilde{H}_m \ge 0.16$, `dgem` escalates the query to a reasoning pass (`think > 0` or Tier-2 LLM) **and passes along the Pass-1 letter breakdown (`{A: 54%, B: 42%}`)** so the reasoning model knows which two candidates to disambiguate.
+
+> [!CAUTION]
+> **Important Statistical Distinction: Relative Tie-Detection vs. Target-Domain Base-Rate Calibration**
+> In statistics and classical ML, **true probability calibration** means that when a classifier outputs `0.80` for class `A`, class `A` empirically occurs `80%` of the time in your production environment.
+>
+> **No zero-shot model can provide true out-of-the-box base-rate calibration on an unseen task without target-domain data**, because the model does not know your production class priors $P_{\text{target}}(Y)$ (e.g., whether a rare clinical or fraud event happens in `0.1%` or `30%` of cases). If your application requires calibrated frequentist probabilities tied to production base rates, you still need a post-hoc calibration layer fit on labeled target examples (such as Platt/temperature scaling, isotonic regression, or conformal prediction).
+>
+> What `dgem`'s normalized entropy $\tilde{H}_m$ provides zero-shot is **Relative Routing Ambiguity (Tie-Detection)**—answering *"Given the options in the template, does one choice clearly win in 1 forward pass, or are the top choices competing?"*—allowing you to early-exit **66%** of traffic in a single pass (`712 ms`) and reserve expensive autoregressive reasoning tokens for the **34%** of inputs where the choices are in contention.
 
 ---
 
