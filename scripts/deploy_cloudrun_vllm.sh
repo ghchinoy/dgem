@@ -76,7 +76,7 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
 if [[ "$GPU_TYPE" == "nvidia-rtx-pro-6000" ]]; then
   CPU="20"
   MEMORY="80Gi"
-  COPY_SHM="${COPY_TO_SHM:-0}"
+  COPY_SHM="${COPY_TO_SHM:-1}"
   CANVAS_LEN="128"
   MAX_MODEL_LEN="4096"
 else
