@@ -5,7 +5,45 @@ description: Complete reference guide to dgem decision schemas and templates acr
 
 import { Card, CardGrid, Tabs, TabItem, Badge } from '@astrojs/starlight/components';
 
-`dgem` leverages Go's `text/template` engine to define declarative decision schemas. Each template pairs a **Decision Schema** (specifying the discrete questions, authorized labels, and sampling policy) with an **Input State** (injecting variables, text payloads, and optional multimodal references).
+`dgem` leverages Go's `text/template` engine to define declarative decision schemas (`Policy-as-Template`). Each `.json.tmpl` file pairs a **Decision Schema** (`"schema"`, specifying the discrete questions, authorized labels, and sampling policy) with an **Input State** (`"state"`, injecting runtime variables, text payloads, and optional multimodal image references).
+
+---
+
+## 0. Gentle Template Intro & Template Creator's Guide
+
+If you are authoring your first `.json.tmpl` file, think of a `dgem` template as a **digital Scantron sheet** (`"schema"`) paired with an **input case folder** (`"state"`):
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ my_policy.json.tmpl                                                     │
+│                                                                         │
+│  1. "schema" (Static Policy Rules & Slot Definitions)                   │
+│     ├── "instructions": High-level rubric for the model                 │
+│     ├── "steps": 1, "think": 0   (Single-pass O(1) readout)             │
+│     └── "questions": [                                                  │
+│           { "id": "is_valid", "type": "boolean", ... },    <-- Slot 1   │
+│           { "id": "category", "type": "choice",  ... },    <-- Slot 2   │
+│           { "id": "severity", "type": "score",   ... }     <-- Slot 3   │
+│         ]                                                               │
+│                                                                         │
+│  2. "state" (Dynamic Input Injected at Runtime via -v or -d)            │
+│     └── "document": {{ default "" .document | toJson }}                 │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### The Three Building Blocks (`boolean`, `choice`, `score`)
+
+Because DiffusionGemma evaluates all questions on a bidirectional `[MASK]` canvas simultaneously, **asking 5 questions takes the exact same GPU forward-pass latency (`~450 ms`) as asking 1 question**:
+
+1. **`"type": "boolean"` (Yes/No Gate)**: Maps to two tokens (`yes` / `no`) and returns calibrated probability $P(\text{yes})$ and normalized entropy $\tilde{H} \in [0, 1]$.
+2. **`"type": "choice"` (Mutually Exclusive Label, `2..26` Options)**: Maps each option to a single uppercase ASCII letter (`A`–`Z`). Adding a `"description"` field to each option teaches `dgemma` your exact domain rubric zero-shot without fine-tuning.
+3. **`"type": "score"` (Ordered Scale Levels)**: Maps ordered levels (e.g., `["minimal", "moderate", "elevated", "severe"]`) and computes the continuous probability-weighted expectation $\mathbb{E}[\text{score}] = \sum_k k \cdot P(\text{level}_k)$.
+
+### 3-Step Workflow to Create & Validate a New Template
+
+1. **Always pipe input variables through `| toJson`**: Write `"clause": {{ default "" .clause | toJson }}` inside `"state"` so quotes, newlines, and special characters in user text are automatically JSON-escaped.
+2. **Dry-run locally in `<5 ms` (`0` GPU cost)**: Run `./bin/dgem template render -t path/to/my_template.json.tmpl -v 'clause=Test input'` to verify that your template compiles into valid JSON before calling a server.
+3. **Execute with `--stats`**: Run `./bin/dgem decide -t path/to/my_template.json.tmpl -v 'clause=Test input' --stats` to inspect the slot probabilities, expected scores, and normalized Shannon entropy $\tilde{H}$.
 
 ---
 
