@@ -239,45 +239,65 @@ func runServe(cmd *cobra.Command, args []string) error {
 		})
 	})
 
-	// 2. Upstream GPU readiness check (non-blocking)
-	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+	// 2. IAP User Identity Endpoint (reads Cloud Run IAP headers)
+	mux.HandleFunc("/api/auth/me", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		upstream := strings.TrimSuffix(viper.GetString("url"), "/v1")
-		healthURL := strings.TrimSuffix(upstream, "/") + "/health"
-
-		req, err := http.NewRequestWithContext(r.Context(), "GET", healthURL, nil)
-		if err != nil {
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "error", "error": err.Error()})
-			return
-		}
-		if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
-			if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), upstream); tok != "" {
-				req.Header.Set("Authorization", "Bearer "+tok)
-			}
-		}
-
-		hc := &http.Client{Timeout: 4 * time.Second}
-		resp, err := hc.Do(req)
-		if err != nil {
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"status":       "scaled_to_zero",
-				"reachable":    false,
-				"upstream_url": viper.GetString("url"),
-				"detail":       "Container is idle or waking up",
-			})
-			return
-		}
-		defer resp.Body.Close()
-
+		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
+		userID := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Id"), "accounts.google.com:")
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":       "container_reachable",
-			"http_status":  resp.StatusCode,
-			"reachable":    resp.StatusCode == 200,
-			"upstream_url": viper.GetString("url"),
+			"email": userEmail,
+			"id":    userID,
 		})
 	})
 
-	// 3. Template Catalog API
+	// 3. Upstream GPU & Engine Readiness Status (GET /api/status)
+	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
+		st := CheckHealthAndGPUStatus(r.Context(), userEmail)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":                  st.GPUState,
+			"gpu_state":               st.GPUState,
+			"gpu_available":           st.GPUAvailable,
+			"gateway_healthy":         st.GatewayHealthy,
+			"reachable":               st.ContainerReachable,
+			"container_reachable":     st.ContainerReachable,
+			"warmup_in_progress":      st.WarmupInProgress,
+			"warmup_elapsed_seconds":  st.WarmupElapsedSeconds,
+			"seconds_since_last_read": st.SecondsSinceLastRead,
+			"estimated_wake_seconds":  st.EstimatedWakeSeconds,
+			"upstream_url":            st.UpstreamURL,
+			"model":                   st.Model,
+			"gpu_tier":                st.GPUTier,
+			"templates_available":     st.TemplatesAvailable,
+			"authenticated_user":      st.AuthenticatedUser,
+			"detail":                  st.Detail,
+		})
+	})
+
+	// 4. Explicit GPU Warmup Endpoint (POST /api/warmup)
+	mux.HandleFunc("/api/warmup", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error": "Method not allowed; use POST"}`, http.StatusMethodNotAllowed)
+			return
+		}
+		var reqBody struct {
+			WaitForReady *bool `json:"wait_for_ready"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&reqBody)
+		wait := true
+		if reqBody.WaitForReady != nil {
+			wait = *reqBody.WaitForReady
+		}
+		out, err := TriggerGPUWarmup(r.Context(), wait)
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+		}
+		_ = json.NewEncoder(w).Encode(out)
+	})
+
+	// 5. Template Catalog API
 	mux.HandleFunc("/api/templates", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		catalog, err := discoverTemplates(serveTemplatesDir)
@@ -291,7 +311,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		})
 	})
 
-	// 4. Simplified REST Decision API: POST /api/decide and POST /api/decide/{template}
+	// 6. Simplified REST Decision API: POST /api/decide and POST /api/decide/{template}
 	decideHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodOptions {
@@ -358,6 +378,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			http.Error(w, fmt.Sprintf(`{"error": "upstream decision failed after %d attempt(s): %s"}`, attempts, err.Error()), http.StatusBadGateway)
 			return
 		}
+		MarkGPUWarm()
 
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
@@ -386,7 +407,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	mux.HandleFunc("/api/decide", decideHandler)
 	mux.HandleFunc("/api/decide/", decideHandler)
 
-	// 5. OpenAI / dgem CLI Pass-Through Proxy: POST /v1/chat/completions
+	// 7. OpenAI / dgem CLI Pass-Through Proxy: POST /v1/chat/completions
 	mux.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -425,10 +446,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 			if err == nil {
 				respBody, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
-				// Check if vLLM inside the container is still starting (ConnectionRefusedError(111))
 				if resp.StatusCode >= 500 && strings.Contains(string(respBody), "ConnectionRefusedError") && time.Now().Before(deadline) {
 					time.Sleep(6 * time.Second)
 					continue
+				}
+				if resp.StatusCode == http.StatusOK {
+					MarkGPUWarm()
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(resp.StatusCode)
@@ -443,7 +466,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 	})
 
-	// 6. Serve Lit WebComponents Studio (from --ui-dir on disk if available, else embedded studio/dist)
+	// 8. Model Context Protocol (MCP) Streamable HTTP Server at /mcp
+	mcpHandler := newMCPHTTPHandler()
+	mux.Handle("/mcp", mcpHandler)
+	mux.Handle("/mcp/", mcpHandler)
+
+	// 9. Serve Lit WebComponents Studio (from --ui-dir on disk if available, else embedded studio/dist)
 	var uiFS fs.FS
 	uiSource := "embedded studio/dist"
 	if info, err := os.Stat(filepath.Join(serveUIDir, "index.html")); err == nil && !info.IsDir() {
@@ -468,7 +496,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 			fileServer.ServeHTTP(w, r)
 			return
 		}
-		// SPA fallback to index.html for client-side routes
 		if indexBytes, err := fs.ReadFile(uiFS, "index.html"); err == nil {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = w.Write(indexBytes)
@@ -477,11 +504,24 @@ func runServe(cmd *cobra.Command, args []string) error {
 		http.NotFound(w, r)
 	})
 
+	corsWrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Mcp-Session-Id")
+		w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
 	addr := fmt.Sprintf("%s:%d", serveHost, servePort)
-	fmt.Printf("🚀 dgem HTTP Gateway & Lit Web Studio listening on http://%s\n", addr)
+	fmt.Printf("🚀 dgem HTTP Gateway, Lit Studio & MCP Server listening on http://%s\n", addr)
 	fmt.Printf("   • Upstream GPU Engine: %s (gcp-auth=%v, iap-client-id=%q)\n",
 		viper.GetString("url"), viper.GetBool("gcp_auth"), viper.GetString("iap_client_id"))
+	fmt.Printf("   • MCP Endpoint:        http://%s/mcp (Streamable HTTP) | 'dgem mcp' (stdio)\n", addr)
 	fmt.Printf("   • Templates Catalog:   %s\n", serveTemplatesDir)
 	fmt.Printf("   • Studio Assets:       %s\n", uiSource)
-	return http.ListenAndServe(addr, mux)
+	return http.ListenAndServe(addr, corsWrapped)
 }
