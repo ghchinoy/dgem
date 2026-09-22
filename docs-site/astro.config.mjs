@@ -21,7 +21,7 @@ export default defineConfig({
       plugins: [
         catppuccin({
           light: { flavor: 'latte', accent: 'mauve' },
-          dark: { flavor: 'latte', accent: 'mauve' },
+          dark: { flavor: 'mocha', accent: 'mauve' },
         }),
       ],
       customCss: [

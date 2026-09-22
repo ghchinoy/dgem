@@ -1,9 +1,24 @@
-/* Catppuccin Latte refinement */
+/* Catppuccin Latte (Light) & Mocha (Dark) typography and high-contrast sidebar active state */
 :root {
   --sl-font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --sl-color-accent-low: #ea76cb22;
-  --sl-color-accent: #8839ef;
-  --sl-color-accent-high: #7287fd;
+}
+
+/* Explicit WCAG AAA contrast for active sidebar link in Dark Mode (Catppuccin Mocha) */
+:root:not([data-theme='light']) .sidebar-content a[aria-current='page'],
+:root:not([data-theme='light']) .sidebar-content a[aria-current='page']:hover,
+:root:not([data-theme='light']) .sidebar-content a[aria-current='page']:focus {
+  background-color: #cba6f7;
+  color: #11111b;
+  font-weight: 700;
+}
+
+/* Explicit high contrast for active sidebar link in Light Mode (Catppuccin Latte) */
+:root[data-theme='light'] .sidebar-content a[aria-current='page'],
+:root[data-theme='light'] .sidebar-content a[aria-current='page']:hover,
+:root[data-theme='light'] .sidebar-content a[aria-current='page']:focus {
+  background-color: #8839ef;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* Warm badge and card highlights */
@@ -43,4 +58,3 @@ details.term-aside[open] summary {
   padding-bottom: 0.45rem;
   border-bottom: 1px solid rgba(136, 57, 239, 0.16);
 }
-
