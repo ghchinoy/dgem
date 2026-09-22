@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,10 +20,13 @@ import (
 )
 
 var (
-	gpuStateMu        sync.RWMutex
-	lastWarmTimestamp time.Time
-	warmupInProgress  bool
-	warmupStartedAt   time.Time
+	gpuStateMu         sync.RWMutex
+	lastWarmTimestamp  time.Time
+	warmupInProgress   bool
+	warmupStartedAt    time.Time
+	warmupDoneCh       chan struct{}
+	warmupLastAttempts int
+	warmupLastErr      error
 )
 
 var mcpCmd = &cobra.Command{
@@ -49,11 +51,19 @@ func init() {
 	RootCmd.AddCommand(mcpCmd)
 }
 
-// MarkGPUWarm records that the upstream vLLM engine successfully completed a decision readout.
+// MarkGPUWarm records that the upstream vLLM engine successfully completed a decision readout
+// and wakes any callers waiting on an in-flight warmup broadcast channel.
 func MarkGPUWarm() {
 	gpuStateMu.Lock()
 	lastWarmTimestamp = time.Now()
-	warmupInProgress = false
+	if warmupInProgress {
+		warmupInProgress = false
+		warmupLastErr = nil
+		if warmupDoneCh != nil {
+			close(warmupDoneCh)
+			warmupDoneCh = nil
+		}
+	}
 	gpuStateMu.Unlock()
 }
 
@@ -148,88 +158,156 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 
 // WarmupGPUInput defines arguments for the warmup_gpu MCP tool and POST /api/warmup.
 type WarmupGPUInput struct {
-	WaitForReady bool `json:"wait_for_ready,omitempty" jsonschema:"If true (default), waits until vLLM finishes loading weights and confirms a test decision (~3.5-4.5m if cold, ~500ms if already warm). If false, triggers background wakeup and returns immediately."`
+	WaitForReady bool `json:"wait_for_ready,omitempty" jsonschema:"If true (default), waits until vLLM finishes loading weights and confirms a test decision (~3.5-4.5m if cold, <10ms if already warm). If false, triggers background wakeup and returns immediately."`
 }
 
 // WarmupGPUOutput is returned by warmup_gpu and POST /api/warmup.
 type WarmupGPUOutput struct {
-	Status         string `json:"status"` // "warm_and_ready" or "warming_up_started"
-	GPUAvailable   bool   `json:"gpu_available"`
-	WarmupAttempts int    `json:"warmup_attempts,omitempty"`
-	ElapsedMs      int64  `json:"elapsed_ms"`
-	UpstreamURL    string `json:"upstream_url"`
-	Message        string `json:"message"`
+	Status                string `json:"status"` // "warm_and_ready", "warming_up_started", or "warming_up_in_progress"
+	GPUAvailable          bool   `json:"gpu_available"`
+	Coalesced             bool   `json:"coalesced"`
+	WarmupElapsedSeconds  int    `json:"warmup_elapsed_seconds,omitempty"`
+	WarmupAttempts        int    `json:"warmup_attempts,omitempty"`
+	ElapsedMs             int64  `json:"elapsed_ms"`
+	UpstreamURL           string `json:"upstream_url"`
+	Message               string `json:"message"`
 }
 
-// TriggerGPUWarmup starts or awaits a cold-start wakeup probe against the upstream GPU service.
+// TriggerGPUWarmup is a strictly idempotent, single-flight coalesced GPU warmup coordinator
+// shared across MCP (warmup_gpu), Web Studio (Wake GPU button), and REST (POST /api/warmup).
 func TriggerGPUWarmup(ctx context.Context, waitForReady bool) (WarmupGPUOutput, error) {
-	start := time.Now()
-	gpuStateMu.Lock()
-	if !warmupInProgress {
-		warmupInProgress = true
-		warmupStartedAt = start
-	}
-	gpuStateMu.Unlock()
+	callStart := time.Now()
 
-	probeTask := func(runCtx context.Context) (int, error) {
-		engine := template.NewEngine()
-		vars := map[string]interface{}{"ticket": "GPU warmup readiness probe"}
-		targetPath := filepath.Join(serveTemplatesDir, "support_triage.json.tmpl")
-		rendered, err := engine.RenderFile(targetPath, vars)
-		if err != nil {
-			// Fallback minimal schema if templates dir is elsewhere
-			rendered = `{"questions":[{"id":"ready","type":"boolean","prompt":"Is the system ready?"}]}`
-		}
-		schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, vars)
-		if err != nil {
-			return 1, err
-		}
-		_, _, attempts, err := executeDecideWithWarmup(runCtx, schemaContent, stateContent, nil)
-		if err == nil {
-			MarkGPUWarm()
-		} else {
-			gpuStateMu.Lock()
-			warmupInProgress = false
-			gpuStateMu.Unlock()
-		}
-		return attempts, err
-	}
-
-	if !waitForReady {
-		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), serveWakeupTimeout)
-			defer cancel()
-			_, _ = probeTask(bgCtx)
-		}()
+	// 1. Fast-Path Idempotency: If the GPU was verified warm within the 14m window and /health is up,
+	// return immediately without running a redundant GPU forward pass.
+	currentStatus := CheckHealthAndGPUStatus(ctx, "")
+	if currentStatus.GPUAvailable && currentStatus.GPUState == "warm_and_ready" {
 		return WarmupGPUOutput{
-			Status:       "warming_up_started",
-			GPUAvailable: false,
-			ElapsedMs:    time.Since(start).Milliseconds(),
+			Status:       "warm_and_ready",
+			GPUAvailable: true,
+			Coalesced:    true,
+			ElapsedMs:    time.Since(callStart).Milliseconds(),
 			UpstreamURL:  viper.GetString("url"),
-			Message:      "Background GPU wakeup triggered (0 -> 1 instance). Poll get_health_and_gpu_status to monitor readiness.",
+			Message:      fmt.Sprintf("GPU is already warm and ready (last readout %ds ago; no duplicate warmup sent).", currentStatus.SecondsSinceLastRead),
 		}, nil
 	}
 
-	attempts, err := probeTask(ctx)
-	if err != nil {
-		return WarmupGPUOutput{
-			Status:         "error",
-			GPUAvailable:   false,
-			WarmupAttempts: attempts,
-			ElapsedMs:      time.Since(start).Milliseconds(),
-			UpstreamURL:    viper.GetString("url"),
-			Message:        fmt.Sprintf("Warmup failed after %d attempt(s): %v", attempts, err),
-		}, err
+	// 2. Single-Flight Coalescing: Join existing in-flight warmup if one is already running,
+	// or start exactly ONE background warmup worker if none is active.
+	gpuStateMu.Lock()
+	alreadyRunning := warmupInProgress
+	var waitCh chan struct{}
+	var startedAt time.Time
+
+	if alreadyRunning {
+		waitCh = warmupDoneCh
+		startedAt = warmupStartedAt
+		gpuStateMu.Unlock()
+	} else {
+		warmupInProgress = true
+		warmupStartedAt = callStart
+		warmupDoneCh = make(chan struct{})
+		warmupLastAttempts = 0
+		warmupLastErr = nil
+		waitCh = warmupDoneCh
+		startedAt = warmupStartedAt
+		gpuStateMu.Unlock()
+
+		// Launch the single background warmup poller
+		go func(doneCh chan struct{}) {
+			bgCtx, cancel := context.WithTimeout(context.Background(), serveWakeupTimeout)
+			defer cancel()
+
+			engine := template.NewEngine()
+			vars := map[string]interface{}{"ticket": "GPU warmup readiness probe"}
+			targetPath, _ := resolveTemplateFile(serveTemplatesDir, "support_triage")
+			rendered, err := engine.RenderFile(targetPath, vars)
+			if err != nil {
+				rendered = `{"questions":[{"id":"ready","type":"boolean","prompt":"Is the system ready?"}]}`
+			}
+			schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, vars)
+			attempts := 1
+			if err == nil {
+				_, _, attempts, err = executeDecideWithWarmup(bgCtx, schemaContent, stateContent, nil)
+			}
+
+			gpuStateMu.Lock()
+			warmupLastAttempts = attempts
+			warmupLastErr = err
+			if err == nil {
+				lastWarmTimestamp = time.Now()
+			}
+			if warmupInProgress {
+				warmupInProgress = false
+				if warmupDoneCh != nil {
+					close(warmupDoneCh)
+					warmupDoneCh = nil
+				}
+			}
+			gpuStateMu.Unlock()
+		}(waitCh)
 	}
 
-	return WarmupGPUOutput{
-		Status:         "warm_and_ready",
-		GPUAvailable:   true,
-		WarmupAttempts: attempts,
-		ElapsedMs:      time.Since(start).Milliseconds(),
-		UpstreamURL:    viper.GetString("url"),
-		Message:        fmt.Sprintf("GPU is warm and ready! Completed readiness decision in %d ms (%d attempt(s)).", time.Since(start).Milliseconds(), attempts),
-	}, nil
+	// 3. Non-blocking mode (wait_for_ready=false): Return immediately (coalesced if already running)
+	if !waitForReady {
+		elapsedSec := int(time.Since(startedAt).Seconds())
+		if alreadyRunning {
+			return WarmupGPUOutput{
+				Status:               "warming_up_in_progress",
+				GPUAvailable:         false,
+				Coalesced:            true,
+				WarmupElapsedSeconds: elapsedSec,
+				ElapsedMs:            time.Since(callStart).Milliseconds(),
+				UpstreamURL:          viper.GetString("url"),
+				Message:              fmt.Sprintf("Joined existing in-flight GPU warmup (%ds elapsed; 1 active poller, no duplicate requests sent).", elapsedSec),
+			}, nil
+		}
+		return WarmupGPUOutput{
+			Status:       "warming_up_started",
+			GPUAvailable: false,
+			Coalesced:    false,
+			ElapsedMs:    time.Since(callStart).Milliseconds(),
+			UpstreamURL:  viper.GetString("url"),
+			Message:      "Background GPU wakeup started (0 -> 1 instance; 1 active poller). Poll get_health_and_gpu_status to monitor readiness.",
+		}, nil
+	}
+
+	// 4. Blocking mode (wait_for_ready=true): Subscribe to the shared waitCh until the single poller finishes
+	select {
+	case <-waitCh:
+		gpuStateMu.RLock()
+		attempts := warmupLastAttempts
+		err := warmupLastErr
+		gpuStateMu.RUnlock()
+		if err != nil {
+			return WarmupGPUOutput{
+				Status:         "error",
+				GPUAvailable:   false,
+				Coalesced:      alreadyRunning,
+				WarmupAttempts: attempts,
+				ElapsedMs:      time.Since(callStart).Milliseconds(),
+				UpstreamURL:    viper.GetString("url"),
+				Message:        fmt.Sprintf("Warmup failed after %d attempt(s): %v", attempts, err),
+			}, err
+		}
+		return WarmupGPUOutput{
+			Status:         "warm_and_ready",
+			GPUAvailable:   true,
+			Coalesced:      alreadyRunning,
+			WarmupAttempts: attempts,
+			ElapsedMs:      time.Since(callStart).Milliseconds(),
+			UpstreamURL:    viper.GetString("url"),
+			Message:        fmt.Sprintf("GPU is warm and ready! Completed readiness decision in %d ms (%d attempt(s), coalesced=%v).", time.Since(callStart).Milliseconds(), attempts, alreadyRunning),
+		}, nil
+	case <-ctx.Done():
+		return WarmupGPUOutput{
+			Status:      "warming_up_in_progress",
+			Coalesced:   alreadyRunning,
+			ElapsedMs:   time.Since(callStart).Milliseconds(),
+			UpstreamURL: viper.GetString("url"),
+			Message:     "Caller context expired while waiting, but single-flight background GPU warmup continues running.",
+		}, ctx.Err()
+	}
 }
 
 // MCP Tool Input/Output Structs
