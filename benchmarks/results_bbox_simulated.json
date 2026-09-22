@@ -1,0 +1,801 @@
+{
+  "timestamp": "2026-09-21T22:26:28Z",
+  "mode": "simulated_reference",
+  "target_url": "http://127.0.0.1:8080/v1",
+  "target_model": "diffgemma-26b-a4b-it-q4",
+  "total_cases": 12,
+  "mean_argmax_iou": 0.7996947431071767,
+  "mean_expectation_iou": 0.9865607156697368,
+  "subbin_iou_gain_pct": 18.68659725625601,
+  "acc_at_50_argmax_pct": 90.9090909090909,
+  "acc_at_50_expectation_pct": 100,
+  "acc_at_75_argmax_pct": 72.72727272727273,
+  "acc_at_75_expectation_pct": 100,
+  "visible_edge_mean_h_norm": 0.24441761049110355,
+  "occluded_edge_mean_h_norm": 0.6999130730367122,
+  "occlusion_entropy_multiplier": 2.863595105239719,
+  "cases": [
+    {
+      "id": "bbox-t1-01-offgrid-cta",
+      "tier": "subbin_precision",
+      "target": "primary_cta_button",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "argmax_box": [
+        20,
+        35,
+        45,
+        70
+      ],
+      "expectation_box": [
+        17.593915880689906,
+        32.593915880689906,
+        42.5939158806899,
+        67.5939158806899
+      ],
+      "argmax_iou": 0.7177914110429447,
+      "expectation_iou": 0.9872224263165432,
+      "iou_gain": 0.2694310152735985,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.2637748804428841,
+      "highest_entropy_edge": "ymin",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "70",
+          "argmax_coord": 70,
+          "expected_coord": 67.5939158806899,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "xmin": {
+          "argmax_bin": "35",
+          "argmax_coord": 35,
+          "expected_coord": 32.593915880689906,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymax": {
+          "argmax_bin": "45",
+          "argmax_coord": 45,
+          "expected_coord": 42.5939158806899,
+          "confidence": 0.5071457557254833,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymin": {
+          "argmax_bin": "20",
+          "argmax_coord": 20,
+          "expected_coord": 17.593915880689906,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        }
+      },
+      "wall_time_ms": 0.012
+    },
+    {
+      "id": "bbox-t1-02-offgrid-badge",
+      "tier": "subbin_precision",
+      "target": "status_alert_badge",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "argmax_box": [
+        15,
+        65,
+        30,
+        90
+      ],
+      "expectation_box": [
+        12.593915882596947,
+        62.59391588068991,
+        27.593915880689906,
+        87.59391587880324
+      ],
+      "argmax_iou": 0.6,
+      "expectation_iou": 0.9802094433500802,
+      "iou_gain": 0.3802094433500802,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.2637748804428841,
+      "highest_entropy_edge": "xmin",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "90",
+          "argmax_coord": 90,
+          "expected_coord": 87.59391587880324,
+          "confidence": 0.507145755780454,
+          "raw_entropy_nats": 0.803068539507745,
+          "normalized_entropy": 0.2637748796189687
+        },
+        "xmin": {
+          "argmax_bin": "65",
+          "argmax_coord": 65,
+          "expected_coord": 62.59391588068991,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymax": {
+          "argmax_bin": "30",
+          "argmax_coord": 30,
+          "expected_coord": 27.593915880689906,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymin": {
+          "argmax_bin": "15",
+          "argmax_coord": 15,
+          "expected_coord": 12.593915882596947,
+          "confidence": 0.507145755780454,
+          "raw_entropy_nats": 0.8030685395077451,
+          "normalized_entropy": 0.2637748796189687
+        }
+      },
+      "wall_time_ms": 0.01
+    },
+    {
+      "id": "bbox-t1-03-offgrid-card",
+      "tier": "subbin_precision",
+      "target": "checkout_summary_card",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "argmax_box": [
+        25,
+        15,
+        80,
+        55
+      ],
+      "expectation_box": [
+        22.59391588068991,
+        12.593915882596946,
+        77.59391588068992,
+        52.59391588068991
+      ],
+      "argmax_iou": 0.8097686375321337,
+      "expectation_iou": 0.9919297973576565,
+      "iou_gain": 0.18216115982552283,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.2637748804428841,
+      "highest_entropy_edge": "ymin",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "55",
+          "argmax_coord": 55,
+          "expected_coord": 52.59391588068991,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "xmin": {
+          "argmax_bin": "15",
+          "argmax_coord": 15,
+          "expected_coord": 12.593915882596946,
+          "confidence": 0.507145755780454,
+          "raw_entropy_nats": 0.803068539507745,
+          "normalized_entropy": 0.2637748796189687
+        },
+        "ymax": {
+          "argmax_bin": "80",
+          "argmax_coord": 80,
+          "expected_coord": 77.59391588068992,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymin": {
+          "argmax_bin": "25",
+          "argmax_coord": 25,
+          "expected_coord": 22.59391588068991,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        }
+      },
+      "wall_time_ms": 0.009
+    },
+    {
+      "id": "bbox-t1-04-ongrid-control",
+      "tier": "subbin_precision",
+      "target": "primary_cta_button",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "argmax_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "expectation_box": [
+        19.999999999999996,
+        29.999999999999996,
+        45,
+        69.99999999999997
+      ],
+      "argmax_iou": 1,
+      "expectation_iou": 0.9999999999999993,
+      "iou_gain": -6.661338147750939e-16,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.22909332177925687,
+      "highest_entropy_edge": "xmin",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "70",
+          "argmax_coord": 70,
+          "expected_coord": 69.99999999999997,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "xmin": {
+          "argmax_bin": "30",
+          "argmax_coord": 30,
+          "expected_coord": 29.999999999999996,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "ymax": {
+          "argmax_bin": "45",
+          "argmax_coord": 45,
+          "expected_coord": 45,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        },
+        "ymin": {
+          "argmax_bin": "20",
+          "argmax_coord": 20,
+          "expected_coord": 19.999999999999996,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        }
+      },
+      "wall_time_ms": 0.01
+    },
+    {
+      "id": "bbox-t1-05-micro-pill",
+      "tier": "subbin_precision",
+      "target": "notification_counter_pill",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "argmax_box": [
+        50,
+        50,
+        60,
+        60
+      ],
+      "expectation_box": [
+        47.593915880689906,
+        47.59391588068991,
+        57.59391588068991,
+        57.5939158806899
+      ],
+      "argmax_iou": 0.391304347826087,
+      "expectation_iou": 0.9632962276544185,
+      "iou_gain": 0.5719918798283314,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.2637748804428841,
+      "highest_entropy_edge": "ymin",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "60",
+          "argmax_coord": 60,
+          "expected_coord": 57.5939158806899,
+          "confidence": 0.5071457557254833,
+          "raw_entropy_nats": 0.8030685420161741,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "xmin": {
+          "argmax_bin": "50",
+          "argmax_coord": 50,
+          "expected_coord": 47.59391588068991,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymax": {
+          "argmax_bin": "60",
+          "argmax_coord": 60,
+          "expected_coord": 57.59391588068991,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.803068542016174,
+          "normalized_entropy": 0.2637748804428841
+        },
+        "ymin": {
+          "argmax_bin": "50",
+          "argmax_coord": 50,
+          "expected_coord": 47.593915880689906,
+          "confidence": 0.5071457557254834,
+          "raw_entropy_nats": 0.8030685420161741,
+          "normalized_entropy": 0.2637748804428841
+        }
+      },
+      "wall_time_ms": 0.008
+    },
+    {
+      "id": "bbox-t2-01a-unoccluded-twin",
+      "tier": "paired_occlusion",
+      "target": "primary_cta_button",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "argmax_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "expectation_box": [
+        24.99999999999999,
+        19.999999999999996,
+        54.999999999999986,
+        64.99999999999999
+      ],
+      "argmax_iou": 1,
+      "expectation_iou": 0.9999999999999987,
+      "iou_gain": -1.3322676295501878e-15,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.22909332177925687,
+      "highest_entropy_edge": "ymin",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "65",
+          "argmax_coord": 65,
+          "expected_coord": 64.99999999999999,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "xmin": {
+          "argmax_bin": "20",
+          "argmax_coord": 20,
+          "expected_coord": 19.999999999999996,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "ymax": {
+          "argmax_bin": "55",
+          "argmax_coord": 55,
+          "expected_coord": 54.999999999999986,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        },
+        "ymin": {
+          "argmax_bin": "25",
+          "argmax_coord": 25,
+          "expected_coord": 24.99999999999999,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        }
+      },
+      "wall_time_ms": 0.009
+    },
+    {
+      "id": "bbox-t2-01b-right-edge-occluded",
+      "tier": "paired_occlusion",
+      "target": "primary_cta_button",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "xmax",
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "argmax_box": [
+        25,
+        20,
+        55,
+        55
+      ],
+      "expectation_box": [
+        24.999999999999993,
+        19.999999999999996,
+        54.99999999999999,
+        64.16149068322981
+      ],
+      "argmax_iou": 0.7777777777777778,
+      "expectation_iou": 0.9813664596273288,
+      "iou_gain": 0.20358868184955103,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.6999130730367122,
+      "highest_entropy_edge": "xmax",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "55",
+          "argmax_coord": 55,
+          "expected_coord": 64.16149068322981,
+          "confidence": 0.13753327417923691,
+          "raw_entropy_nats": 2.1309010553162233,
+          "normalized_entropy": 0.6999130730367122
+        },
+        "xmin": {
+          "argmax_bin": "20",
+          "argmax_coord": 20,
+          "expected_coord": 19.999999999999996,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "ymax": {
+          "argmax_bin": "55",
+          "argmax_coord": 55,
+          "expected_coord": 54.99999999999999,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        },
+        "ymin": {
+          "argmax_bin": "25",
+          "argmax_coord": 25,
+          "expected_coord": 24.999999999999993,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        }
+      },
+      "wall_time_ms": 0.008
+    },
+    {
+      "id": "bbox-t2-02a-unoccluded-twin",
+      "tier": "paired_occlusion",
+      "target": "warning_modal_banner",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "argmax_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "expectation_box": [
+        30,
+        24.999999999999993,
+        69.99999999999999,
+        75
+      ],
+      "argmax_iou": 1,
+      "expectation_iou": 0.9999999999999996,
+      "iou_gain": -4.440892098500626e-16,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.22909332177925687,
+      "highest_entropy_edge": "ymax",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "75",
+          "argmax_coord": 75,
+          "expected_coord": 75,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "xmin": {
+          "argmax_bin": "25",
+          "argmax_coord": 25,
+          "expected_coord": 24.999999999999993,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        },
+        "ymax": {
+          "argmax_bin": "70",
+          "argmax_coord": 70,
+          "expected_coord": 69.99999999999999,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "ymin": {
+          "argmax_bin": "30",
+          "argmax_coord": 30,
+          "expected_coord": 30,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        }
+      },
+      "wall_time_ms": 0.008
+    },
+    {
+      "id": "bbox-t2-02b-bottom-edge-occluded",
+      "tier": "paired_occlusion",
+      "target": "warning_modal_banner",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "ymax",
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "argmax_box": [
+        30,
+        25,
+        80,
+        75
+      ],
+      "expectation_box": [
+        29.999999999999996,
+        25,
+        68.88198757763976,
+        74.99999999999999
+      ],
+      "argmax_iou": 0.8,
+      "expectation_iou": 0.9720496894409939,
+      "iou_gain": 0.17204968944099386,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.6999130730367121,
+      "highest_entropy_edge": "ymax",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "75",
+          "argmax_coord": 75,
+          "expected_coord": 74.99999999999999,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895398,
+          "normalized_entropy": 0.2290933217792569
+        },
+        "xmin": {
+          "argmax_bin": "25",
+          "argmax_coord": 25,
+          "expected_coord": 25,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        },
+        "ymax": {
+          "argmax_bin": "80",
+          "argmax_coord": 80,
+          "expected_coord": 68.88198757763976,
+          "confidence": 0.13753327417923691,
+          "raw_entropy_nats": 2.130901055316223,
+          "normalized_entropy": 0.6999130730367121
+        },
+        "ymin": {
+          "argmax_bin": "30",
+          "argmax_coord": 30,
+          "expected_coord": 29.999999999999996,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        }
+      },
+      "wall_time_ms": 0.014
+    },
+    {
+      "id": "bbox-t3-01-detr-dual-buttons",
+      "tier": "detr_and_negative",
+      "target": "dual_dialog_controls",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        60,
+        15,
+        78,
+        45
+      ],
+      "argmax_box": [
+        60,
+        15,
+        80,
+        45
+      ],
+      "expectation_box": [
+        59.99999999999998,
+        15.000000000002027,
+        78.13424297407325,
+        44.99999999999999
+      ],
+      "argmax_iou": 0.9,
+      "expectation_iou": 0.9925972661628936,
+      "iou_gain": 0.09259726616289354,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.2586650526189384,
+      "highest_entropy_edge": "ymax",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "45",
+          "argmax_coord": 45,
+          "expected_coord": 44.99999999999999,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895396,
+          "normalized_entropy": 0.22909332177925684
+        },
+        "xmin": {
+          "argmax_bin": "15",
+          "argmax_coord": 15,
+          "expected_coord": 15.000000000002027,
+          "confidence": 0.773649748761195,
+          "raw_entropy_nats": 0.6974797584895089,
+          "normalized_entropy": 0.22909332177924677
+        },
+        "ymax": {
+          "argmax_bin": "80",
+          "argmax_coord": 80,
+          "expected_coord": 78.13424297407325,
+          "confidence": 0.593874766568615,
+          "raw_entropy_nats": 0.7875115565532679,
+          "normalized_entropy": 0.2586650526189384
+        },
+        "ymin": {
+          "argmax_bin": "60",
+          "argmax_coord": 60,
+          "expected_coord": 59.99999999999998,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        }
+      },
+      "wall_time_ms": 0.008
+    },
+    {
+      "id": "bbox-t3-02-detr-stacked-banner-cta",
+      "tier": "detr_and_negative",
+      "target": "banner_and_cta",
+      "object_present_gt": true,
+      "object_present_pred": true,
+      "occluded_edge": "none",
+      "gt_box": [
+        12,
+        20,
+        28,
+        80
+      ],
+      "argmax_box": [
+        10,
+        20,
+        30,
+        80
+      ],
+      "expectation_box": [
+        11.865757032419118,
+        19.999999999999996,
+        28.134242974073228,
+        79.99999999999997
+      ],
+      "argmax_iou": 0.8,
+      "expectation_iou": 0.9834965624571933,
+      "iou_gain": 0.18349656245719326,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0.2586650526189384,
+      "highest_entropy_edge": "ymax",
+      "edges": {
+        "xmax": {
+          "argmax_bin": "80",
+          "argmax_coord": 80,
+          "expected_coord": 79.99999999999997,
+          "confidence": 0.7736497487611165,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "xmin": {
+          "argmax_bin": "20",
+          "argmax_coord": 20,
+          "expected_coord": 19.999999999999996,
+          "confidence": 0.7736497487611166,
+          "raw_entropy_nats": 0.6974797584895397,
+          "normalized_entropy": 0.22909332177925687
+        },
+        "ymax": {
+          "argmax_bin": "30",
+          "argmax_coord": 30,
+          "expected_coord": 28.134242974073228,
+          "confidence": 0.593874766568615,
+          "raw_entropy_nats": 0.7875115565532679,
+          "normalized_entropy": 0.2586650526189384
+        },
+        "ymin": {
+          "argmax_bin": "10",
+          "argmax_coord": 10,
+          "expected_coord": 11.865757032419118,
+          "confidence": 0.593874766797222,
+          "raw_entropy_nats": 0.7875115481267356,
+          "normalized_entropy": 0.2586650498511703
+        }
+      },
+      "wall_time_ms": 0.01
+    },
+    {
+      "id": "bbox-t3-03-absent-target-gate",
+      "tier": "detr_and_negative",
+      "target": "primary_cta_button",
+      "object_present_gt": false,
+      "object_present_pred": false,
+      "occluded_edge": "none",
+      "gt_box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "argmax_box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expectation_box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "argmax_iou": 1,
+      "expectation_iou": 1,
+      "iou_gain": 0,
+      "pass_acc_50": true,
+      "pass_acc_75": true,
+      "max_edge_normalized_entropy": 0,
+      "highest_entropy_edge": "none",
+      "wall_time_ms": 0
+    }
+  ]
+}

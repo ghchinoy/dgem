@@ -718,7 +718,40 @@ Ported from the `mizan-templates` calibration pack and evaluated by `dgem bench-
 
 ---
 
-## 7. Template Engine Functions Reference
+## 7. Multimodal Spatial Grounding & DETR Object Queries (`EXP-09`)
+
+While autoregressive Vision-Language Models (`PaliGemma`, `Qwen2.5-VL`, `Gemini`) predict 2D bounding boxes by sequentially emitting 4 coordinate tokens left-to-right ($O(4)$ serial steps where an early `ymin` error conditions downstream `xmax` drift), `dgem` factors a 2D bounding box `[ymin, xmin, ymax, xmax]` into **4 parallel 21-bin (`00..100`, `5%` step) `choice` slots** plus a `boolean` presence gate (`object_present`) in a **single forward pass (`reads=1`, `think=0`)**:
+
+* **`templates/multimodal/bbox_localization.json.tmpl`**: Single-object 5-slot spatial localization (`object_present`, `ymin`, `xmin`, `ymax`, `xmax`).
+* **`templates/multimodal/bbox_multi_object_detr.json.tmpl`**: Dual-object parallel `DETR` query canvas (`obj1_*` and `obj2_*` co-adapting via bidirectional attention).
+* **`templates/multimodal/bbox_multi_object_set.json.tmpl`**: Multi-instance set localization (`matched_count` + `obj1_*` + `obj2_*`).
+
+### Key Design Principles (`EXP-09`)
+1. **Continuous Softmax Expectation (`DFL` Sub-Bin Interpolation)**:
+   Because `structured_server.py` enforces a maximum of 26 options (`[A–Z]`) per `choice` slot, discrete `argmax` over 21 bins (`00, 05, ..., 100`) has a `5%` quantization step and can collapse narrow objects onto the same bin (e.g., `xmin=55, xmax=55` $\rightarrow$ `0.000 IoU` on narrow stemware in `008.png`). Computing the **continuous expected value** over all 21 bin probabilities:
+   $$\hat{c}_m = \sum_{k=0}^{20} (5k) \cdot P(\text{slot}_m = \text{bin}_k)$$
+   improves live Cloud Run `dgemma` `mIoU` from **`0.2898` to `0.3773` (`+30.2%` relative gain)** on `EXP-09` (`+21.2%` on `bbox-t1-03-offgrid-card`) and recovers **`0.5040 IoU` (`+50.4%` gain)** from a `0.0000` `argmax` box on `008.png`.
+2. **Flat `level 0` Canvas (`reads=1`) vs. `depends_on` (`reads=2`)**:
+   In `structured_server.py`, adding `depends_on: ["object_present"]` splits questions into `level 0` and `level 1`, requiring 2 sequential forward passes (`reads=2`). Keeping all 5 slots in `level 0` without `depends_on` executes the entire bounding box + presence gate in **1 forward pass (`~415–650 ms`)**, while client-side gating zeros the box whenever `object_present == false`.
+3. **Per-Edge Occlusion Entropy ($\tilde{H}_{\text{edge}} = H / \ln 21$)**:
+   Each of the 4 box boundaries returns its own independent 21-bin Shannon entropy, spiking **`1.37×` higher on occluded edges** (`0.6810` vs. `0.4970` on visible edges) to flag which specific boundary (`ymin`, `xmin`, `ymax`, or `xmax`) is obstructed.
+
+```bash
+# Single image localization with SigLIP vision readout
+./bin/dgem decide -u "${URL}/v1" --gcp-auth \
+  -t templates/multimodal/bbox_localization.json.tmpl \
+  -I fixtures/bbox/bbox-t1-03-offgrid-card.png \
+  -v 'target_object=checkout_summary_card' \
+  --stats
+
+# Full 12-case EXP-09 spatial benchmark + annotated SVG overlays
+./bin/dgem bench-bbox -u "${URL}/v1" --gcp-auth --annotate \
+  -o benchmarks/results_bbox_cloudrun.json
+```
+
+---
+
+## 8. Template Engine Functions Reference
 
 The Go template engine in `dgem` exposes the following helper functions:
 
@@ -731,4 +764,5 @@ The Go template engine in `dgem` exposes the following helper functions:
 | `lower` | `lower(s string) string` | Converts string to lowercase. | `{{ lower .status }}` |
 | `trim` | `trim(s string) string` | Trims leading and trailing whitespace. | `{{ trim .text }}` |
 | `indent` | `indent(spaces int, s string) string` | Prepends $N$ spaces to each non-empty line. | `{{ indent 2 .payload }}` |
+
 

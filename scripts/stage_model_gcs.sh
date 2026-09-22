@@ -97,7 +97,7 @@ echo "==========================================================================
 echo "  Model Weights Successfully Staged in GCS!"
 echo "================================================================================"
 echo "GCS Path: gs://${BUCKET}/dgemma/"
-gcloud storage ls -lh "gs://${BUCKET}/dgemma/"
+gcloud storage ls -l --readable-sizes "gs://${BUCKET}/dgemma/"
 echo ""
 echo "Now deploy to Cloud Run:"
 echo "  GCS_BUCKET=\"$BUCKET\" make cloudrun-deploy"

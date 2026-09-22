@@ -1,5 +1,5 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-08)"
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-09)"
 description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, and Next-Horizon Cascades."
 ---
 
@@ -33,7 +33,7 @@ flowchart LR
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-08`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-09`)
 
 ### Part A — Completed Empirical Studies
 
@@ -47,7 +47,7 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-08`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-09`)
 
 Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**.
 
@@ -56,6 +56,7 @@ Detailed architectural specifications, mathematical formulations, and empirical 
 | **`EXP-06`** | **Decision Models vs. Discriminative Encoder Heads** | Compare zero-shot `dgemma` (`Policy-as-Template`) against fine-tuned encoder heads (`DeBERTa-v3-large`, `Llama-Guard-3-8B`, `ModernBERT`) across joint multi-slot capability, policy adaptability (`0s` template edit vs. fine-tuning), and Expected Calibration Error (`ECE`). | `calibration_suite.jsonl` (`AgentDrift`, `prompt-injections`, `ChaosNLI`) | `dgem bench-encoders` | 🔬 Planned ([Spec](./exp-05-roadmap-cascades-and-dags.md#exp-06-decision-models-vs-discriminative-encoder-heads)) |
 | **`EXP-07`** | **Conditional Policy DAGs (`depends_on` & `ask_if`)** | Multi-stage conditional templates prune irrelevant downstream branches when upstream gate slots resolve negative, cutting slot density and eliminating contradictory sub-slot classifications. | [`templates/secops_conditional_dag.json.tmpl`](../../templates/secops_conditional_dag.json.tmpl) | Native `structured_server.py` DAG execution (`depends_on`, `ask_if`) | 🧪 Template Ready ([Spec](./exp-05-roadmap-cascades-and-dags.md#exp-07-stateful--hierarchical-policy-dags-depends_on--ask_if)) |
 | **`EXP-08`** | **Multimodal Vision & Document Policy Readout (`SigLIP`)** | Because DiffusionGemma inherits Gemma 4's `SigLIP` vision encoder (`896×896` patches), bidirectional slot readout can classify receipts, UI screenshots, and PDF invoices in a single forward pass (`~500 ms`). | Receipt & UI compliance image suite | `dgem decide --image <path>` | 🔬 Planned ([Spec](./exp-05-roadmap-cascades-and-dags.md#exp-08-multimodal-vision--document-policy-readout)) |
+| **`EXP-09`** | **Single-Pass Spatial Grounding, Softmax-Expectation Sub-Bin Regression & Per-Edge Occlusion Entropy** | Predicting a 2D bounding box `[ymin, xmin, ymax, xmax]` as 4 parallel 21-bin (`00..100`) slots in `think=0` (`reads=1`): (1) On live Cloud Run `dgemma` (`SigLIP` enabled), Softmax Expectation ($\hat{c}_m = \sum_k v_k p_{m,k}$) improves `mIoU` from `0.2898` to `0.3773` (`+8.75%` absolute / `+30.2%` relative, `Acc@0.5` `0%` $\rightarrow$ `18.2%`; up to `+50.4%` IoU on narrow stemware in `008.png` and `0.9866` vs `0.7997` simulated), (2) Per-edge normalized entropy ($\tilde{H}_m = H_m / \ln 21$) spikes `1.37×` on occluded box edges (`0.6810` vs `0.4970` live; `2.86×` simulated), and (3) `DETR`-style parallel object query slots prevent duplicate collapse via bidirectional self-attention. | [`templates/multimodal/bbox_localization.json.tmpl`](../../templates/multimodal/bbox_localization.json.tmpl)<br>[`templates/multimodal/bbox_multi_object_detr.json.tmpl`](../../templates/multimodal/bbox_multi_object_detr.json.tmpl)<br>[`templates/multimodal/bbox_multi_object_set.json.tmpl`](../../templates/multimodal/bbox_multi_object_set.json.tmpl)<br>[`benchmarks/bbox_suite.jsonl`](../../benchmarks/bbox_suite.jsonl) | `dgem bench-bbox --annotate`<br>[`results_bbox_cloudrun.json`](../../benchmarks/results_bbox_cloudrun.json)<br>[`results_bbox_simulated.json`](../../benchmarks/results_bbox_simulated.json) | ✅ Completed |
 
 ---
 

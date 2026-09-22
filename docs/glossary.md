@@ -83,3 +83,25 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 ### Fixed-Depth Circuits ($\mathsf{TC}^0$) vs. Test-Time Compute
 * **In Plain English**: Why a single forward pass (`think=0`) can verify direct relational facts in `712 ms`, whereas multi-step mental arithmetic (`2015 + 4 = 2019 > 2018`) requires generating scratchpad tokens (`think > 0`).
 * **Under the Hood**: A transformer with fixed layer depth $L$ and no scratchpad generation (`think=0`) is bounded by the circuit complexity class $\mathsf{TC}^0$. When a contradiction depends on an intermediate state not present in the input text (`anli-02`'s latent year `2019`), test-time compute (`--cascade-self-think 256` or Tier-2 reasoning) allocates working-memory tokens to materialize the intermediate state.
+
+---
+
+## 5. Spatial Grounding & Vision-Language Terminology (`EXP-09`)
+
+### `DETR` Object Queries (Detection Transformer)
+* **In Plain English**: Instead of scanning an image with thousands of sliding-window guesses and filtering duplicates afterward (`Non-Maximum Suppression`), `DETR` creates a fixed number of parallel "empty parking spots" (**Object Queries**—e.g., `obj1` and `obj2`). Because all query slots attend to the image and to **each other simultaneously**, `obj2` sees that `obj1` already claimed the left object and automatically claims the right object in a single pass.
+* **Under the Hood**: In `dgem`, `templates/multimodal/bbox_multi_object_detr.json.tmpl` places `obj1_[ymin,xmin,ymax,xmax]` and `obj2_[ymin,xmin,ymax,xmax]` on the same bidirectional `[MASK]` canvas (`reads=1`), allowing the query slots to co-adapt without autoregressive left-to-right drift.
+* **Where You See It in `dgem`**: `dgem bench-bbox` (`bbox-t3-01-detr-dual-buttons`, `bbox-t3-02-detr-stacked-banner-cta`).
+
+### Softmax Expectation (`DFL` / Distribution Focal Loss) Sub-Bin Regression
+* **In Plain English**: Turning 21 coarse `5%` coordinate bins (`00, 05, 10, ..., 100`) into a smooth, continuous coordinate (`32.4%`) by taking the **probability-weighted average** across all 21 bins rather than picking only the single winning bin (`argmax`).
+* **Under the Hood**: When an edge lies at `32.5%`, `dgemma` splits probability mass between bin `30` (`P=0.50`) and bin `35` (`P=0.50`). Discrete `argmax` suffers a `2.5%` quantization penalty (or collapses narrow objects like `008.png` onto `xmin=55, xmax=55` $\rightarrow$ `0.000 IoU`), whereas Softmax Expectation:
+  $$\hat{c}_m = \sum_{k=0}^{20} (5k) \cdot P(\text{slot}_m = \text{bin}_k)$$
+  recovers the continuous coordinate (`+8.75%` `mIoU` across `EXP-09` and `0.000` $\rightarrow$ `0.504 IoU` on `008.png`).
+* **Where You See It in `dgem`**: `cmd/bench_bbox.go` (`computeEdgeMetrics`).
+
+### Per-Edge Occlusion Entropy ($\tilde{H}_{\text{edge}}$)
+* **In Plain English**: Traditional object detectors give you a single confidence number for an entire box, hiding *which side* of the object is blocked. Because `dgem` evaluates `ymin`, `xmin`, `ymax`, and `xmax` as 4 independent 21-bin distributions, an object covering the bottom edge causes entropy to spike **specifically on `ymax`** (`1.37×` higher on live Cloud Run `dgemma`) while the 3 visible edges stay sharp.
+* **Under the Hood**: Computed per edge $m \in \{\text{ymin}, \text{xmin}, \text{ymax}, \text{xmax}\}$ as $\tilde{H}_m = H_m / \ln(21) \in [0, 1]$.
+* **Where You See It in `dgem`**: `dgem bench-bbox --annotate` and `scratch/render_bbox_results.py`.
+

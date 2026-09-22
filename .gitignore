@@ -20,6 +20,8 @@ diffgemma.pid
 
 # Scratch and exploratory scripts
 scratch/
+tmp/
+fixtures/bbox/annotated_*.svg
 
 # Python cache (for benchmark scripts)
 __pycache__/

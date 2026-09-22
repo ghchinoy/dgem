@@ -217,6 +217,34 @@ Runs the 49-case Text Normalization evaluation (`EXP-02` & `EXP-07`) comparing D
 
 ---
 
+### `dgem bench-bbox`
+Runs the **Single-Pass Spatial Grounding, Softmax-Expectation Sub-Bin Regression & Per-Edge Occlusion Entropy (`EXP-09`)** suite (`benchmarks/bbox_suite.jsonl`, `fixtures/bbox/`) or any custom image directory (`--dir`). Compares discrete 21-bin `argmax` (`[A–U]`, `5%` step) against continuous Softmax Expectation ($E[c] = \sum_{i=0}^{20} 5i \cdot P_i$) and computes per-edge normalized Shannon entropy ($\tilde{H}_{\text{edge}} = H / \ln 21$).
+
+```bash
+dgem bench-bbox [flags]
+```
+
+#### Key Flags
+* `-d`, `--dataset string`: Path to the bounding-box JSONL suite (default: `benchmarks/bbox_suite.jsonl`).
+* `--dir string`: Custom directory containing `.png`/`.jpg`/`.svg` images (and optional `manifest.jsonl` or `index.txt`) for ad-hoc spatial grounding runs.
+* `--target string`: Default target object description when running `--dir` without a manifest.
+* `--annotate`: Emit annotated visual overlay `.svg` files (`annotated_<name>.svg`) showing Ground Truth (green), Discrete Argmax (dashed orange), and Softmax Expectation $E[\text{box}]$ (solid cyan) boxes.
+* `--simulate`: Run offline mathematical verification using synthetic slot probability distributions without a live GPU endpoint.
+* `-o`, `--output string`: Output JSON receipt path (default: `benchmarks/results_bbox.json`).
+
+```bash
+# 1. Run the 12-case EXP-09 synthetic SVG/PNG suite on Cloud Run (SigLIP enabled)
+./bin/dgem bench-bbox -u "${CLOUDRUN_URL}/v1" --gcp-auth --annotate \
+  -o benchmarks/results_bbox_cloudrun.json
+
+# 2. Run a custom directory of images + index.txt prompts
+./bin/dgem bench-bbox -u "${CLOUDRUN_URL}/v1" --gcp-auth \
+  --dir ./tmp/dgem-bounding-boxes --annotate \
+  -o ./tmp/dgem-bounding-boxes/results_cloudrun.json
+```
+
+---
+
 ### `dgem ask`
 Executes standard generative completions with optional `<|think|>` mode.
 

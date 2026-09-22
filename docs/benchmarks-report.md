@@ -260,7 +260,24 @@ As detailed in [`docs/experiments/exp-05-roadmap-cascades-and-dags.md`](experime
 
 ---
 
-## 10. How to Reproduce
+## 10. Single-Pass Spatial Grounding & Per-Edge Occlusion Entropy (`EXP-09`)
+
+Can a single-pass `dgemma` canvas (`reads=1`, `think=0`) predict multi-token continuous coordinates such as a 2D bounding box `[ymin, xmin, ymax, xmax]` without serial autoregressive token generation?
+
+In `EXP-09` (`dgem bench-bbox`), we factor the 2D box into **4 parallel 21-bin (`00..100`, `5%` step) `choice` slots** plus a `boolean` presence gate (`object_present`) and evaluate live `dgemma` on Google Cloud Run (`NVIDIA RTX Pro 6000`, `SigLIP` vision tower enabled via `DISABLE_MM=0`, receipt in `benchmarks/results_bbox_cloudrun.json`):
+
+| Evaluation Dimension | Discrete Argmax (`[A–U]`) | Softmax Expectation ($E[c] = \sum_{i=0}^{20} 5i \cdot P_i$) | Empirical Finding (`EXP-09` Cloud Run `dgemma`) |
+| :--- | :---: | :---: | :--- |
+| **12-Case Synthetic SVG/PNG `mIoU`** | `0.2898` | **`0.3773`** | **`+8.75%` absolute (`+30.2%` relative) `mIoU` gain**; `Acc@0.5` jumps from `0.0%` $\rightarrow$ **`18.2%`**. |
+| **Off-Grid Card (`bbox-t1-03-offgrid-card`)** | `0.4985` | **`0.7109`** | **`+21.2%` `IoU` gain**, crossing the `Acc@0.5` threshold without extra tokens. |
+| **Narrow Real-World Stemware (`008.png`)** | `0.0000` (`[10,55,65,55]`) | **`0.5040` (`[7.6,49.9,50.7,55.2]`)** | **`+50.4%` `IoU` recovery**: Discrete `argmax` collapsed `xmin=55, xmax=55` (`0` width), whereas Softmax Expectation separated left-skewed `xmin=49.9` from right-skewed `xmax=55.2` (`GT: [8, 48, 46, 56]`). |
+| **Per-Edge Normalized Entropy ($\tilde{H}_{\text{edge}}$)** | `0.4970` (visible) | **`0.6810` (occluded)** | **`1.37×` empirical entropy spike** on occluded box edges (`2.86×` in offline simulation), flagging the exact obstructed boundary (`ymax` on `bbox-t2-02b`). |
+| **Absent Target Gate (`bbox-t3-03`)** | `1.0000` (`no`) | `1.0000` (`no`) | **100% presence gate accuracy** when requested UI elements are absent. |
+| **Coordinate Rulers vs. Un-Gridded Photos (`think=0`)** | `0.2898` vs `0.0739` | **`0.3773` vs `0.0951`** | Compositing a `00..100` border ruler onto input images gives `SigLIP` patches direct spatial anchors in `think=0` mode (`3.97×` higher `mIoU` than raw un-gridded photos). |
+
+---
+
+## 11. How to Reproduce
 
 ### Local Apple Silicon Metal
 ```bash
