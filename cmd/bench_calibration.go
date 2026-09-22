@@ -36,6 +36,10 @@ var (
 	calCascadeThreshold float64
 	calNormalizeEntropy bool
 	calCascadeSelfThink int
+	calFromReceipt      string
+	calTempScale        float64
+	calAutoTemp         bool
+	calUSDPer1k         float64
 )
 
 // Semantic color palette following A2A CLI guidelines
@@ -61,9 +65,11 @@ Gemini models or Entropy-Gated Cascades) across public calibration benchmarks ad
   • Jigsaw Civil Comments, GoEmotions, Yelp, & SST-5 (toxicity, affect, and ordinal grading)
 
 Computes both per-category accuracy and stratified uncertainty telemetry (calibrated confidence
-exp(logprob), Shannon entropy H in nats, and cardinality-normalized entropy H/ln(|V|) in [0,1]).`,
-	Example: `  # 1. Run full calibration suite against Local Apple Silicon Metal
-  dgem bench-calibration -o benchmarks/results_calibration_metal.json
+exp(logprob), Shannon entropy H in nats, cardinality-normalized entropy H/ln(|V|) in [0,1],
+and JevBench v1.3.1 4-Axis Parity metrics: Chance-Corrected Intelligence, 10-Bin ECE, Brier Score,
+Slot Temperature Scaling, and USD per 1,000 decisions).`,
+	Example: `  # 1. Recompute & chart existing Cloud Run receipt with JevBench v1.3.1 4-Axis parity + Auto Temperature
+  dgem bench-calibration --from-receipt benchmarks/results_calibration_cloudrun.json --auto-temperature
 
   # 2. Run against Google Cloud Run GPU (Serverless L4) with IAM authentication
   dgem bench-calibration \
@@ -77,14 +83,7 @@ exp(logprob), Shannon entropy H in nats, and cardinality-normalized entropy H/ln
     --cascade-from benchmarks/results_calibration_cloudrun.json \
     --vertex-model gemini-3.8-flash \
     --cascade-threshold 0.35 \
-    -o benchmarks/results_calibration_cascade_prior_guided.json
-
-  # 4. Run an Intra-Model Self-Cascade (dgemma think=0 -> dgemma think=256 when H >= 0.35)
-  dgem bench-calibration \
-    --cascade-from benchmarks/results_calibration_cloudrun.json \
-    --cascade-self-think 256 \
-    --cascade-threshold 0.35 \
-    -o benchmarks/results_calibration_self_cascade.json`,
+    -o benchmarks/results_calibration_cascade_prior_guided.json`,
 	RunE: runBenchCalibration,
 }
 
@@ -103,6 +102,10 @@ func init() {
 	benchCalibrationCmd.Flags().Float64Var(&calCascadeThreshold, "cascade-threshold", 0.35, "Shannon entropy threshold H (nats) or normalized H/ln(|V|) to trigger Pass-2 escalation")
 	benchCalibrationCmd.Flags().BoolVar(&calNormalizeEntropy, "normalize-entropy", false, "Use cardinality-normalized entropy H/ln(|V|) in [0,1] for cascade threshold comparison")
 	benchCalibrationCmd.Flags().IntVar(&calCascadeSelfThink, "cascade-self-think", 0, "Escalate high-entropy cases (H >= threshold) to DiffusionGemma with think=N tokens on the same endpoint (intra-model self-cascade)")
+	benchCalibrationCmd.Flags().StringVar(&calFromReceipt, "from-receipt", "", "Recompute JevBench v1.3.1 4-Axis telemetry, ECE, Brier, and Temperature Scaling offline from a saved JSON receipt")
+	benchCalibrationCmd.Flags().Float64Var(&calTempScale, "temperature-scale", 1.0, "Post-hoc slot logit temperature scaling factor T > 0 (e.g. 1.45)")
+	benchCalibrationCmd.Flags().BoolVar(&calAutoTemp, "auto-temperature", false, "Automatically fit optimal temperature T* in [0.50, 3.50] to maximize JevBench Calibration Score")
+	benchCalibrationCmd.Flags().Float64Var(&calUSDPer1k, "usd-per-1k", 0.0, "Override estimated cost in USD per 1,000 decisions (0 = auto from model tariff)")
 
 	RootCmd.AddCommand(benchCalibrationCmd)
 }
@@ -130,6 +133,9 @@ type CalibrationCaseResult struct {
 	Entropy                float64            `json:"entropy_nats"`
 	NormalizedEntropy      float64            `json:"normalized_entropy,omitempty"`
 	VocabCardinality       int                `json:"vocab_cardinality,omitempty"`
+	ChanceBaseline         float64            `json:"chance_baseline,omitempty"`
+	BrierScore             float64            `json:"brier_score,omitempty"`
+	TVDGold                float64            `json:"tvd_gold,omitempty"`
 	Stderr                 float64            `json:"stderr,omitempty"`
 	WallTimeMs             float64            `json:"wall_time_ms"`
 	Escalated              bool               `json:"escalated,omitempty"`
@@ -150,9 +156,13 @@ type CalibrationGroupSummary struct {
 	Total                int     `json:"total"`
 	Correct              int     `json:"correct"`
 	AccuracyPct          float64 `json:"accuracy_pct"`
+	ChanceBaselinePct    float64 `json:"chance_baseline_pct,omitempty"`
+	ChanceCorrectedPct   float64 `json:"chance_corrected_pct,omitempty"`
 	AvgConfidence        float64 `json:"avg_confidence"`
 	AvgEntropy           float64 `json:"avg_entropy_nats"`
 	AvgNormalizedEntropy float64 `json:"avg_normalized_entropy,omitempty"`
+	AvgBrierScore        float64 `json:"avg_brier_score,omitempty"`
+	ECE10Bin             float64 `json:"ece_10bin,omitempty"`
 	AvgLatencyMs         float64 `json:"avg_latency_ms"`
 }
 
@@ -180,25 +190,89 @@ type CascadeSummary struct {
 
 // CalibrationReport represents the full exported JSON report.
 type CalibrationReport struct {
-	Timestamp            string                    `json:"timestamp"`
-	TargetURL            string                    `json:"target_url"`
-	TargetModel          string                    `json:"target_model"`
-	Workers              int                       `json:"workers"`
-	TotalCases           int                       `json:"total_cases"`
-	TotalCorrect         int                       `json:"total_correct"`
-	OverallAccuracyPct   float64                   `json:"overall_accuracy_pct"`
-	AvgConfidence        float64                   `json:"avg_confidence"`
-	AvgEntropyNats       float64                   `json:"avg_entropy_nats"`
-	AvgNormalizedEntropy float64                   `json:"avg_normalized_entropy,omitempty"`
-	AvgWallTimeMs        float64                   `json:"avg_wall_time_ms"`
-	TotalElapsedSec      float64                   `json:"total_elapsed_sec"`
-	Cascade              *CascadeSummary           `json:"cascade,omitempty"`
-	Categories           []CalibrationGroupSummary `json:"categories"`
-	Tiers                []CalibrationGroupSummary `json:"tiers"`
-	Cases                []CalibrationCaseResult   `json:"cases"`
+	Timestamp             string                    `json:"timestamp"`
+	TargetURL             string                    `json:"target_url"`
+	TargetModel           string                    `json:"target_model"`
+	Workers               int                       `json:"workers"`
+	TotalCases            int                       `json:"total_cases"`
+	TotalCorrect          int                       `json:"total_correct"`
+	OverallAccuracyPct    float64                   `json:"overall_accuracy_pct"`
+	ChanceBaselinePct     float64                   `json:"chance_baseline_pct,omitempty"`
+	ChanceCorrectedAccPct float64                   `json:"chance_corrected_acc_pct,omitempty"`
+	AvgConfidence         float64                   `json:"avg_confidence"`
+	AvgEntropyNats        float64                   `json:"avg_entropy_nats"`
+	AvgNormalizedEntropy  float64                   `json:"avg_normalized_entropy,omitempty"`
+	AvgBrierScore         float64                   `json:"avg_brier_score,omitempty"`
+	ECE10Bin              float64                   `json:"ece_10bin,omitempty"`
+	P50LatencyMs          float64                   `json:"p50_latency_ms,omitempty"`
+	P95LatencyMs          float64                   `json:"p95_latency_ms,omitempty"`
+	AvgWallTimeMs         float64                   `json:"avg_wall_time_ms"`
+	TotalElapsedSec       float64                   `json:"total_elapsed_sec"`
+	TemperatureScale      float64                   `json:"temperature_scale,omitempty"`
+	JevParity             *JevParitySummary         `json:"jev_parity,omitempty"`
+	Cascade               *CascadeSummary           `json:"cascade,omitempty"`
+	Categories            []CalibrationGroupSummary `json:"categories"`
+	Tiers                 []CalibrationGroupSummary `json:"tiers"`
+	Cases                 []CalibrationCaseResult   `json:"cases"`
 }
 
 func runBenchCalibration(cmd *cobra.Command, args []string) error {
+	if calFromReceipt != "" {
+		raw, err := os.ReadFile(calFromReceipt)
+		if err != nil {
+			return fmt.Errorf("failed to read --from-receipt %q: %w\n  Hint: Verify the receipt path (e.g., 'benchmarks/results_calibration_cloudrun.json')", calFromReceipt, err)
+		}
+		var prevReport CalibrationReport
+		if err := json.Unmarshal(raw, &prevReport); err != nil {
+			return fmt.Errorf("failed to parse --from-receipt %q: %w", calFromReceipt, err)
+		}
+		activeTemp := calTempScale
+		if calAutoTemp {
+			activeTemp = findOptimalTemperature(prevReport.Cases)
+		}
+		report := buildCalibrationReportWithJevParity(
+			prevReport.Cases,
+			prevReport.TotalElapsedSec,
+			prevReport.TargetURL,
+			prevReport.TargetModel,
+			prevReport.Workers,
+			prevReport.Cascade,
+			activeTemp,
+			calUSDPer1k,
+		)
+		if prevReport.Timestamp != "" {
+			report.Timestamp = prevReport.Timestamp
+		}
+		if calOutput != "" {
+			data, err := json.MarshalIndent(report, "", "  ")
+			if err != nil {
+				return fmt.Errorf("failed to serialize calibration report: %w", err)
+			}
+			if err := os.WriteFile(calOutput, data, 0644); err != nil {
+				return fmt.Errorf("failed to write output file %q: %w", calOutput, err)
+			}
+		}
+		if calJSON {
+			data, err := json.MarshalIndent(report, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(data))
+			return nil
+		}
+		fmt.Println()
+		fmt.Println(styleAccent.Render("=========================================================================================="))
+		fmt.Println(styleAccent.Render("  DiffusionGemma Calibration & JevBench v1.3.1 Parity Replay (--from-receipt)"))
+		fmt.Println(styleAccent.Render("=========================================================================================="))
+		fmt.Printf("  Source Receipt:  %s\n", styleID.Render(calFromReceipt))
+		fmt.Printf("  Target Endpoint: %s\n", styleID.Render(report.TargetURL))
+		fmt.Printf("  Target Model:    %s\n", styleID.Render(report.TargetModel))
+		fmt.Printf("  Temperature (T): %.2f (AutoFit=%v, Optimal T*=%.2f)\n",
+			activeTemp, calAutoTemp, report.JevParity.OptimalTemperature)
+		printCalibrationSummary(report, calOutput)
+		return nil
+	}
+
 	cases, err := loadCalibrationCases(calDataset, calCategory, calTier, calLimit)
 	if err != nil {
 		return fmt.Errorf("failed to load dataset %q: %w\n  Hint: Verify '--dataset benchmarks/calibration_suite.jsonl' exists and is readable", calDataset, err)
@@ -976,21 +1050,61 @@ func formatTier1PriorBlock(pass1Prior *CalibrationCaseResult, threshold float64,
 }
 
 func buildCalibrationReport(results []CalibrationCaseResult, totalElapsedSec float64) CalibrationReport {
+	activeTemp := calTempScale
+	if calAutoTemp {
+		activeTemp = findOptimalTemperature(results)
+	}
+	return buildCalibrationReportWithJevParity(
+		results,
+		totalElapsedSec,
+		viper.GetString("url"),
+		viper.GetString("model"),
+		calWorkers,
+		nil,
+		activeTemp,
+		calUSDPer1k,
+	)
+}
+
+func buildCalibrationReportWithJevParity(
+	rawResults []CalibrationCaseResult,
+	totalElapsedSec float64,
+	targetURL string,
+	targetModel string,
+	workers int,
+	cascade *CascadeSummary,
+	activeTemp float64,
+	overrideUSD float64,
+) CalibrationReport {
+	if activeTemp <= 0 {
+		activeTemp = 1.0
+	}
+	jevParity, scaledResults := buildJevParitySummary(rawResults, activeTemp, targetModel, cascade, overrideUSD)
+
 	report := CalibrationReport{
-		Timestamp:       time.Now().UTC().Format(time.RFC3339),
-		TargetURL:       viper.GetString("url"),
-		TargetModel:     viper.GetString("model"),
-		Workers:         calWorkers,
-		TotalCases:      len(results),
-		TotalElapsedSec: totalElapsedSec,
-		Cases:           results,
+		Timestamp:             time.Now().UTC().Format(time.RFC3339),
+		TargetURL:             targetURL,
+		TargetModel:           targetModel,
+		Workers:               workers,
+		TotalCases:            len(scaledResults),
+		TotalElapsedSec:       totalElapsedSec,
+		TemperatureScale:      activeTemp,
+		ChanceBaselinePct:     jevParity.ChanceBaselinePct,
+		ChanceCorrectedAccPct: jevParity.ChanceCorrectedAccPct,
+		AvgBrierScore:         jevParity.BrierMean,
+		ECE10Bin:              jevParity.ECE10Bin,
+		P50LatencyMs:          jevParity.P50LatencySec * 1000.0,
+		P95LatencyMs:          jevParity.P95LatencySec * 1000.0,
+		JevParity:             jevParity,
+		Cascade:               cascade,
+		Cases:                 scaledResults,
 	}
 
 	catMap := make(map[string][]CalibrationCaseResult)
 	tierMap := make(map[string][]CalibrationCaseResult)
 
 	var sumConf, sumEnt, sumNormEnt, sumLat float64
-	for _, r := range results {
+	for _, r := range scaledResults {
 		if r.Accurate {
 			report.TotalCorrect++
 		}
@@ -1002,8 +1116,8 @@ func buildCalibrationReport(results []CalibrationCaseResult, totalElapsedSec flo
 		tierMap[r.Tier] = append(tierMap[r.Tier], r)
 	}
 
-	if len(results) > 0 {
-		n := float64(len(results))
+	if len(scaledResults) > 0 {
+		n := float64(len(scaledResults))
 		report.OverallAccuracyPct = float64(report.TotalCorrect) / n * 100.0
 		report.AvgConfidence = sumConf / n
 		report.AvgEntropyNats = sumEnt / n
@@ -1020,7 +1134,7 @@ func summarizeCalibrationGroups(groups map[string][]CalibrationCaseResult) []Cal
 	var out []CalibrationGroupSummary
 	for name, items := range groups {
 		var correct int
-		var sumConf, sumEnt, sumNormEnt, sumLat float64
+		var sumConf, sumEnt, sumNormEnt, sumLat, sumChance, sumBrier float64
 		for _, it := range items {
 			if it.Accurate {
 				correct++
@@ -1029,16 +1143,30 @@ func summarizeCalibrationGroups(groups map[string][]CalibrationCaseResult) []Cal
 			sumEnt += it.Entropy
 			sumNormEnt += it.NormalizedEntropy
 			sumLat += it.WallTimeMs
+			ch := it.ChanceBaseline
+			if ch <= 0 {
+				ch = 1.0 / float64(calibrationMetricVocabSize(it.Metric, len(it.TopProbabilities)))
+			}
+			sumChance += ch
+			sumBrier += it.BrierScore
 		}
 		n := float64(len(items))
+		acc := float64(correct) / n
+		meanChance := sumChance / n
+		chanceCorr := math.Max(0.0, (acc-meanChance)/(1.0-meanChance)) * 100.0
+		ece10, _ := compute10BinECE(items)
 		out = append(out, CalibrationGroupSummary{
 			Name:                 name,
 			Total:                len(items),
 			Correct:              correct,
-			AccuracyPct:          float64(correct) / n * 100.0,
+			AccuracyPct:          acc * 100.0,
+			ChanceBaselinePct:    meanChance * 100.0,
+			ChanceCorrectedPct:   chanceCorr,
 			AvgConfidence:        sumConf / n,
 			AvgEntropy:           sumEnt / n,
 			AvgNormalizedEntropy: sumNormEnt / n,
+			AvgBrierScore:        sumBrier / n,
+			ECE10Bin:             ece10,
 			AvgLatencyMs:         sumLat / n,
 		})
 	}
@@ -1050,11 +1178,12 @@ func summarizeCalibrationGroups(groups map[string][]CalibrationCaseResult) []Cal
 
 func printCalibrationSummary(report CalibrationReport, outputPath string) {
 	fmt.Println()
-	fmt.Println(styleAccent.Render("=========================================================================================="))
-	fmt.Println(styleAccent.Render("  Table 1: Accuracy, Confidence & Latency by Public Dataset Category"))
-	fmt.Println(styleAccent.Render("=========================================================================================="))
-	fmt.Printf("  %-22s %7s %10s %12s %14s %11s %11s\n", "CATEGORY", "CASES", "ACCURACY", "CONF P(y)", "ENTROPY H", "NORM H~", "AVG LATENCY")
-	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
+	fmt.Println(styleAccent.Render("  Table 1: Accuracy, Chance-Corrected Intelligence, Brier & Latency by Public Dataset Category"))
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
+	fmt.Printf("  %-22s %7s %9s %11s %9s %8s %11s %8s %9s\n",
+		"CATEGORY", "CASES", "RAW ACC", "CHANCE-CORR", "CONF P(y)", "BRIER", "ENTROPY H", "NORM H~", "LATENCY")
+	fmt.Println(styleMuted.Render("  --------------------------------------------------------------------------------------------------------"))
 	for _, cat := range report.Categories {
 		accStr := fmt.Sprintf("%.1f%%", cat.AccuracyPct)
 		if cat.AccuracyPct >= 85.0 {
@@ -1064,16 +1193,18 @@ func printCalibrationSummary(report CalibrationReport, outputPath string) {
 		} else {
 			accStr = styleFail.Render(fmt.Sprintf("%6.1f%%", cat.AccuracyPct))
 		}
-		fmt.Printf("  %-22s %3d/%-3d %10s %12.3f %9.4f nats %11.4f %8.0f ms\n",
-			cat.Name, cat.Correct, cat.Total, accStr, cat.AvgConfidence, cat.AvgEntropy, cat.AvgNormalizedEntropy, cat.AvgLatencyMs)
+		fmt.Printf("  %-22s %3d/%-3d %9s %10.1f%% %9.3f %8.4f %7.4f nats %8.4f %6.0f ms\n",
+			cat.Name, cat.Correct, cat.Total, accStr, cat.ChanceCorrectedPct,
+			cat.AvgConfidence, cat.AvgBrierScore, cat.AvgEntropy, cat.AvgNormalizedEntropy, cat.AvgLatencyMs)
 	}
 
 	fmt.Println()
-	fmt.Println(styleAccent.Render("=========================================================================================="))
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
 	fmt.Println(styleAccent.Render("  Table 2: Uncertainty Calibration by Difficulty & Human-Disagreement Tier"))
-	fmt.Println(styleAccent.Render("=========================================================================================="))
-	fmt.Printf("  %-22s %7s %10s %12s %14s %11s %11s\n", "DIFFICULTY TIER", "CASES", "ACCURACY", "CONF P(y)", "ENTROPY H", "NORM H~", "AVG LATENCY")
-	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
+	fmt.Printf("  %-22s %7s %9s %11s %9s %8s %11s %8s %9s\n",
+		"DIFFICULTY TIER", "CASES", "RAW ACC", "CHANCE-CORR", "CONF P(y)", "BRIER", "ENTROPY H", "NORM H~", "LATENCY")
+	fmt.Println(styleMuted.Render("  --------------------------------------------------------------------------------------------------------"))
 
 	// Order tiers from easiest/lowest-entropy to most ambiguous/highest-entropy
 	tierOrder := map[string]int{
@@ -1098,15 +1229,16 @@ func printCalibrationSummary(report CalibrationReport, outputPath string) {
 	})
 
 	for _, t := range tiers {
-		fmt.Printf("  %-22s %3d/%-3d %9.1f%% %12.3f %9.4f nats %11.4f %8.0f ms\n",
-			t.Name, t.Correct, t.Total, t.AccuracyPct, t.AvgConfidence, t.AvgEntropy, t.AvgNormalizedEntropy, t.AvgLatencyMs)
+		fmt.Printf("  %-22s %3d/%-3d %8.1f%% %10.1f%% %9.3f %8.4f %7.4f nats %8.4f %6.0f ms\n",
+			t.Name, t.Correct, t.Total, t.AccuracyPct, t.ChanceCorrectedPct,
+			t.AvgConfidence, t.AvgBrierScore, t.AvgEntropy, t.AvgNormalizedEntropy, t.AvgLatencyMs)
 	}
 
-	fmt.Println(styleMuted.Render("------------------------------------------------------------------------------------------"))
-	fmt.Printf("  OVERALL SUITE:         %3d/%-3d %9.1f%% %12.3f %9.4f nats %11.4f %8.0f ms (%.1fs wall)\n",
-		report.TotalCorrect, report.TotalCases, report.OverallAccuracyPct,
-		report.AvgConfidence, report.AvgEntropyNats, report.AvgNormalizedEntropy, report.AvgWallTimeMs, report.TotalElapsedSec)
-	fmt.Println(styleAccent.Render("=========================================================================================="))
+	fmt.Println(styleMuted.Render("  --------------------------------------------------------------------------------------------------------"))
+	fmt.Printf("  OVERALL SUITE:         %3d/%-3d %8.1f%% %10.1f%% %9.3f %8.4f %7.4f nats %8.4f %6.0f ms\n",
+		report.TotalCorrect, report.TotalCases, report.OverallAccuracyPct, report.ChanceCorrectedAccPct,
+		report.AvgConfidence, report.AvgBrierScore, report.AvgEntropyNats, report.AvgNormalizedEntropy, report.AvgWallTimeMs)
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
 
 	if report.Cascade != nil {
 		cs := report.Cascade
@@ -1124,6 +1256,8 @@ func printCalibrationSummary(report CalibrationReport, outputPath string) {
 			cs.CascadeCorrect, cs.TotalCases, cs.AccuracyGainPct, cs.CascadeAvgLatMs)
 		fmt.Println(styleAccent.Render("=========================================================================================="))
 	}
+
+	printJevParityDashboard(report)
 
 	if outputPath != "" {
 		fmt.Printf("\n  Saved structured JSON receipt to: %s\n\n", styleID.Render(outputPath))

@@ -1,6 +1,6 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-10)"
-description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, and Next-Horizon Cascades."
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-11)"
+description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, JevBench v1.3.1 Parity, and Next-Horizon Cascades."
 ---
 
 # DiffusionGemma (`dgem`) Experiment Ledger
@@ -28,13 +28,13 @@ flowchart LR
 | [`templates/`](../../templates/) | **Executable Decision Policies** (`choice` & `score` slots, `depends_on` / `ask_if` DAGs) | `.json.tmpl` |
 | [`templates/calibration/`](../../templates/calibration/) | **Public Dataset Calibration & Guardrail Policies** (`AgentDrift`, `ChaosNLI`, `LLM-AggreFact`, `prompt-injections`) | `.json.tmpl` |
 | [`templates/rerank/`](../../templates/rerank/) | **Listwise & Pointwise Neural Reranking + RAG Security Policies** (`EXP-10`) | `.json.tmpl` |
-| [`benchmarks/*.jsonl`](../../benchmarks/) | **Evaluation Datasets** (`eval_dataset.jsonl`, `calibration_suite.jsonl`, `rerank_suite.jsonl`, `banking77_26.jsonl`, `clinc150_26.jsonl`, `tn_*.jsonl`) | `.jsonl` |
+| [`benchmarks/*.jsonl`](../../benchmarks/) | **Evaluation Datasets** (`eval_dataset.jsonl`, `calibration_suite.jsonl`, `rerank_suite.jsonl`, `jevbench/jevbench_public.jsonl`, `banking77_26.jsonl`, `clinc150_26.jsonl`, `tn_*.jsonl`) | `.jsonl` |
 | [`benchmarks/results_*.json`](../../benchmarks/) | **Immutable Telemetry Receipts** (`logprobs`, slot probabilities $p_i$, Shannon entropy $H$, wall latency) | `.json` |
 | [`docs/experiments/`](./) | **Experiment Ledger & Architectural Deep-Dives** | `.md` |
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-10`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-11`)
 
 ### Part A — Completed Empirical Studies
 
@@ -48,9 +48,9 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-10`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-11`)
 
-Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**, and `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](./exp-10-listwise-diffusion-reranking.md)**.
+Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**, `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](./exp-10-listwise-diffusion-reranking.md)**, and `EXP-11` is documented in **[`exp-11-jevbench-parity.md`](./exp-11-jevbench-parity.md)**.
 
 | ID | Experiment Title | Core Hypothesis | Target Datasets & Templates | Target CLI Flag / Feature | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -59,6 +59,7 @@ Detailed architectural specifications, mathematical formulations, and empirical 
 | **`EXP-08`** | **Multimodal Vision & Document Policy Readout (`SigLIP`)** | Because DiffusionGemma inherits Gemma 4's `SigLIP` vision encoder (`896×896` patches), bidirectional slot readout can classify receipts, UI screenshots, and PDF invoices in a single forward pass (`~500 ms`). | Receipt & UI compliance image suite | `dgem decide --image <path>` | 🔬 Planned ([Spec](./exp-05-roadmap-cascades-and-dags.md#exp-08-multimodal-vision--document-policy-readout)) |
 | **`EXP-09`** | **Single-Pass Spatial Grounding, Softmax-Expectation Sub-Bin Regression & Per-Edge Occlusion Entropy** | Predicting a 2D bounding box `[ymin, xmin, ymax, xmax]` as 4 parallel 21-bin (`00..100`) slots in `think=0` (`reads=1`): (1) On live Cloud Run `dgemma` (`SigLIP` enabled), Softmax Expectation ($\hat{c}_m = \sum_k v_k p_{m,k}$) improves `mIoU` from `0.2898` to `0.3773` (`+8.75%` absolute / `+30.2%` relative, `Acc@0.5` `0%` $\rightarrow$ `18.2%`; up to `+50.4%` IoU on narrow stemware in `008.png` and `0.9866` vs `0.7997` simulated), (2) Per-edge normalized entropy ($\tilde{H}_m = H_m / \ln 21$) spikes `1.37×` on occluded box edges (`0.6810` vs `0.4970` live; `2.86×` simulated), and (3) `DETR`-style parallel object query slots prevent duplicate collapse via bidirectional self-attention. | [`templates/multimodal/bbox_localization.json.tmpl`](../../templates/multimodal/bbox_localization.json.tmpl)<br>[`templates/multimodal/bbox_multi_object_detr.json.tmpl`](../../templates/multimodal/bbox_multi_object_detr.json.tmpl)<br>[`templates/multimodal/bbox_multi_object_set.json.tmpl`](../../templates/multimodal/bbox_multi_object_set.json.tmpl)<br>[`benchmarks/bbox_suite.jsonl`](../../benchmarks/bbox_suite.jsonl) | `dgem bench-bbox --annotate`<br>[`results_bbox_cloudrun.json`](../../benchmarks/results_bbox_cloudrun.json)<br>[`results_bbox_simulated.json`](../../benchmarks/results_bbox_simulated.json) | ✅ Completed |
 | **`EXP-10`** | **Listwise Diffusion Canvas Reranking, Softmax Expectation & RAG Poison Quarantine** | Evaluate 10 candidate passages (`doc_01`..`doc_10`) + 2 RAG security/abstention gates (`answer_present`, `poisoned_passage`) simultaneously in 1 forward pass (`12` slots, `~138 ms` effective/passage on Cloud Run 1× L4). Continuous Softmax Expectation ($\hat{r}_i = \sum_{g=0}^3 g \cdot p_{i,g}$) cuts Exact Tie Rate from `70.0%` (discrete `argmax`) to **`0.0%`**, lifting **`nDCG@10` from `0.8416` to `0.9265` (`+8.49 pts`)** and **`MRR@10` from `0.7407` to `0.9444` (`+20.37 pts`)**, with **`100.0%` `NevIR` negation accuracy**, **`+0.7533` `FollowIR p-MRR` policy steerability**, and **`100.0%` prompt-injection quarantine**. | [`templates/rerank/listwise_decision_rerank.json.tmpl`](../../templates/rerank/listwise_decision_rerank.json.tmpl)<br>[`templates/rerank/pointwise_rerank.json.tmpl`](../../templates/rerank/pointwise_rerank.json.tmpl)<br>[`benchmarks/rerank_suite.jsonl`](../../benchmarks/rerank_suite.jsonl) | `dgem bench-rerank`<br>[`results_rerank_cloudrun.json`](../../benchmarks/results_rerank_cloudrun.json) | ✅ Completed ([Analysis](./exp-10-listwise-diffusion-reranking.md)) |
+| **`EXP-11`** | **`JevBench v1.3.1` 4-Axis Parity, Slot Temperature Calibration & Upstream Sync Architecture** | Upgrade `dgem` with `JevBench v1.3.1`'s 4-Axis Geometric Mean Scorecard (Chance-Corrected Intelligence, 10-Bin ECE + Soft TVD Calibration, Speed, Cost) and Post-Hoc Slot Temperature Scaling ($p_k(T) = p_k^{1/T} / \sum p_j^{1/T}$). On Cloud Run `EXP-04`, `T* = 1.35` cuts 10-bin ECE by **56.2%** (`0.0745` $\rightarrow$ `0.0326`), lifting Calibration from `82.67` to **`88.18`** (`76.79` Composite). On `EXP-05`, the Entropy-Gated Cascade scores **`70.16` Composite (`98.0%` raw / `97.17%` chance-corrected)** vs. standalone `gemini-3.8-flash` at `62.76` (`56%` lower cost). Syncs and replays all 231 `JevBench` public tasks (`97.2%` paraphrase consistency). | [`templates/jevbench_generic.json.tmpl`](../../templates/jevbench_generic.json.tmpl)<br>[`benchmarks/jevbench/jevbench_public.jsonl`](../../benchmarks/jevbench/jevbench_public.jsonl)<br>[`benchmarks/jevbench/manifest.lock.json`](../../benchmarks/jevbench/manifest.lock.json) | `dgem bench-jev --sync --check-upstream`<br>`dgem bench-calibration --auto-temperature`<br>[`results_djev_upstream_calibrated.json`](../../benchmarks/jevbench/results_djev_upstream_calibrated.json) | ✅ Completed ([Analysis](./exp-11-jevbench-parity.md)) |
 
 ---
 

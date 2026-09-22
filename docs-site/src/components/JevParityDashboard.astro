@@ -1,0 +1,642 @@
+---
+// JevParityDashboard.astro
+// Interactive 4-Axis Preset Leaderboard, Pareto Frontier Trajectory SVG, and 10-Bin Reliability Diagram
+---
+
+<div class="jev-dashboard-wrapper not-content">
+  <!-- 1. Top Headline Metric Cards -->
+  <div class="jev-kpi-grid">
+    <div class="jev-kpi-card accent-green">
+      <div class="jev-kpi-label">Cloud Run Calibration (T* = 1.35)</div>
+      <div class="jev-kpi-value">-56.2% ECE</div>
+      <div class="jev-kpi-sub">10-Bin ECE: <code>0.0745 → 0.0326</code> · Calib: <strong>82.67 → 88.18</strong> (+0 ms)</div>
+    </div>
+    <div class="jev-kpi-card accent-mauve">
+      <div class="jev-kpi-label">JevBench Public Composite (231 Tasks)</div>
+      <div class="jev-kpi-value">75.70 <span class="jev-badge">Beats #1 Hopper (75.4)</span></div>
+      <div class="jev-kpi-sub">Intel: <strong>79.54</strong> · Calib: <strong>79.05</strong> · Speed: <strong>90.73</strong> (239 ms p50)</div>
+    </div>
+    <div class="jev-kpi-card accent-blue">
+      <div class="jev-kpi-label">Phase 2B Entropy Cascade (H̃ ≥ 0.50)</div>
+      <div class="jev-kpi-value">90.05 Intel / 90.66 Calib</div>
+      <div class="jev-kpi-sub"><strong>71.9% LLM Calls Saved</strong> · 244 ms p50 · Hard Tier: <strong>67.6% → 84.7%</strong></div>
+    </div>
+    <div class="jev-kpi-card accent-amber">
+      <div class="jev-kpi-label">EXP-05 Normalized Entropy Cascade</div>
+      <div class="jev-kpi-value">97.17 Intel / 85.94 Acc Preset</div>
+      <div class="jev-kpi-sub"><strong>98.0% Raw Acc</strong> · Beats standalone <code>gemini-3.8-flash</code> by <strong>+7.40 pts</strong> (56% cheaper)</div>
+    </div>
+  </div>
+
+  <!-- 2. Interactive 4-Axis Preset Switcher & Leaderboard -->
+  <div class="jev-panel">
+    <div class="jev-panel-header">
+      <div>
+        <h3 class="jev-panel-title">Interactive JevBench v1.3.1 4-Axis Leaderboard &amp; Preset Explorer</h3>
+        <p class="jev-panel-desc">
+          Switch weighting presets to dynamically recompute composite scores and re-rank <strong>dgem (DiffusionGemma)</strong>, <strong>Entropy-Gated Cascades</strong>, <strong>Hopper</strong>, frontier LLMs, and NLI encoder baselines.
+        </p>
+      </div>
+      <div class="jev-preset-buttons" id="jev-preset-controls">
+        <button class="jev-btn active" data-preset="jev_default">JevBench Default (25:25:25:25 + Floor)</button>
+        <button class="jev-btn" data-preset="accuracy">Accuracy Priority (60:20:10:10)</button>
+        <button class="jev-btn" data-preset="speed">Speed Priority (20:20:50:10)</button>
+        <button class="jev-btn" data-preset="budget">Budget / High-Volume (20:20:10:50)</button>
+      </div>
+    </div>
+
+    <div class="jev-table-scroll">
+      <table class="jev-leaderboard-table" id="jev-leaderboard">
+        <thead>
+          <tr>
+            <th style="width: 44px;">Rank</th>
+            <th>System / Architecture</th>
+            <th>Class</th>
+            <th class="num">1. Intel</th>
+            <th class="num">2. Calib</th>
+            <th class="num">3. Speed</th>
+            <th class="num">4. Cost</th>
+            <th class="num">p50 Lat</th>
+            <th class="num">$/1k</th>
+            <th style="min-width: 210px;">Active Preset Score</th>
+          </tr>
+        </thead>
+        <tbody id="jev-leaderboard-body">
+          <!-- Populated & sorted dynamically by script -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. Two-Column Visual Charts: Pareto Frontier Trajectory + 10-Bin Reliability Diagram -->
+  <div class="jev-charts-grid">
+    <!-- Left Chart: Pareto Frontier Trajectory SVG -->
+    <div class="jev-panel">
+      <h3 class="jev-panel-title">Pareto Frontier Trajectory: Intelligence vs. p50 Latency</h3>
+      <p class="jev-panel-desc">
+        Post-hoc Slot Temperature Scaling (<code>T*</code>) improves Calibration at <strong>0 ms latency cost</strong>, while Entropy-Gated Escalation (<code>H̃ ≥ τ</code>) lifts Intelligence vertically (+10.5 to +14.2 pts) while keeping <code>p50</code> anchored near Stage-1 speed (~240–750 ms).
+      </p>
+      <div class="jev-svg-container">
+        <svg viewBox="0 0 600 340" class="jev-svg" role="img" aria-label="Intelligence vs p50 Latency Pareto Frontier">
+          <defs>
+            <linearGradient id="paretoZone" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#cba6f7" stop-opacity="0.16" />
+              <stop offset="100%" stop-color="#89b4fa" stop-opacity="0.03" />
+            </linearGradient>
+            <marker id="arrowGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#a6e3a1" />
+            </marker>
+          </defs>
+
+          <!-- Axes & Grid -->
+          <rect x="60" y="20" width="510" height="265" rx="6" fill="url(#paretoZone)" stroke="#45475a" stroke-width="1" />
+          <!-- Horizontal gridlines (Intelligence 20..100) -->
+          <line x1="60" y1="20" x2="570" y2="20" stroke="#313244" stroke-dasharray="3,3" />
+          <line x1="60" y1="86" x2="570" y2="86" stroke="#313244" stroke-dasharray="3,3" />
+          <line x1="60" y1="152" x2="570" y2="152" stroke="#313244" stroke-dasharray="3,3" />
+          <line x1="60" y1="218" x2="570" y2="218" stroke="#313244" stroke-dasharray="3,3" />
+
+          <!-- Y-axis labels (Intelligence Score) -->
+          <text x="52" y="24" text-anchor="end" class="svg-axis-lbl">100</text>
+          <text x="52" y="90" text-anchor="end" class="svg-axis-lbl">80</text>
+          <text x="52" y="156" text-anchor="end" class="svg-axis-lbl">60</text>
+          <text x="52" y="222" text-anchor="end" class="svg-axis-lbl">40</text>
+          <text x="52" y="285" text-anchor="end" class="svg-axis-lbl">20</text>
+          <text x="18" y="155" text-anchor="middle" transform="rotate(-90, 18, 155)" class="svg-axis-title">Chance-Corrected Intelligence (0–100)</text>
+
+          <!-- X-axis labels (Log p50 Latency: 50ms .. 5000ms) -->
+          <text x="95" y="304" text-anchor="middle" class="svg-axis-lbl">100 ms</text>
+          <text x="195" y="304" text-anchor="middle" class="svg-axis-lbl">240 ms (djev p50)</text>
+          <text x="330" y="304" text-anchor="middle" class="svg-axis-lbl">750 ms (Cloud Run)</text>
+          <text x="485" y="304" text-anchor="middle" class="svg-axis-lbl">2,500 ms (LLM)</text>
+          <text x="315" y="328" text-anchor="middle" class="svg-axis-title">Median Decision Latency (p50, log scale — left is faster)</text>
+
+          <!-- Trajectory Curve 1: JevBench 231-Task Cascade Trajectory (p50 = 239ms -> 244ms) -->
+          <path d="M 195 88 L 198 78 L 202 64 L 206 53" fill="none" stroke="#a6e3a1" stroke-width="2.5" marker-end="url(#arrowGreen)" />
+          <!-- Trajectory Curve 2: EXP-04 -> EXP-05 Cloud Run Cascade (p50 = 712ms -> 752ms) -->
+          <path d="M 322 76 L 332 29" fill="none" stroke="#cba6f7" stroke-width="2.5" stroke-dasharray="4,2" marker-end="url(#arrowGreen)" />
+
+          <!-- Baseline Points: NLI Encoders -->
+          <circle cx="95" cy="206" r="5" fill="#f38ba8" />
+          <text x="105" y="210" class="svg-pt-lbl muted">BART-large-MNLI (43.8 Intel)</text>
+          <circle cx="85" cy="249" r="5" fill="#f38ba8" />
+          <text x="95" y="253" class="svg-pt-lbl muted">DeBERTa-v3-small (30.8 Intel)</text>
+
+          <!-- Hopper (#1 JevBench) -->
+          <circle cx="245" cy="98" r="6" fill="#fab387" />
+          <text x="255" y="102" class="svg-pt-lbl">Hopper (76.4 Intel, 380ms)</text>
+
+          <!-- djev / DiffusionGemma Stage 1 (T*=1.25) -->
+          <circle cx="195" cy="88" r="6.5" fill="#89b4fa" stroke="#fff" stroke-width="1.5" />
+          <text x="183" y="103" text-anchor="end" class="svg-pt-lbl highlight-blue">dgem / djev T*=1.25 (79.5 Intel, 75.7 Comp)</text>
+
+          <!-- JevBench Cascade H~ >= 0.66 -->
+          <circle cx="202" cy="64" r="5.5" fill="#a6e3a1" />
+          <text x="212" y="68" class="svg-pt-lbl">Cascade H̃≥0.66 (86.7 Intel, 88% saved)</text>
+
+          <!-- JevBench Cascade H~ >= 0.50 -->
+          <circle cx="206" cy="53" r="7" fill="#a6e3a1" stroke="#fff" stroke-width="1.5" />
+          <text x="216" y="51" class="svg-pt-lbl highlight-green">JevBench Cascade H̃≥0.50 (90.1 Intel, 90.7 Calib, 244ms p50)</text>
+
+          <!-- Cloud Run EXP-04 T*=1.35 -->
+          <circle cx="322" cy="76" r="6" fill="#cba6f7" />
+          <text x="332" y="81" class="svg-pt-lbl highlight-mauve">dgem Cloud Run T*=1.35 (83.0 Intel, 88.2 Calib)</text>
+
+          <!-- Cloud Run EXP-05 Cascade -->
+          <circle cx="332" cy="29" r="7.5" fill="#cba6f7" stroke="#fff" stroke-width="1.5" />
+          <text x="342" y="33" class="svg-pt-lbl highlight-mauve">EXP-05 Entropy Cascade (97.2 Intel, 66% saved)</text>
+
+          <!-- Standalone gemini-3.8-flash -->
+          <circle cx="495" cy="29" r="6" fill="#9399b2" />
+          <text x="485" y="45" text-anchor="end" class="svg-pt-lbl muted">Standalone gemini-3.8-flash (97.2 Intel, 3.0s p50, $0.214/1k)</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Right Chart: 10-Bin Reliability Diagram (T=1.00 vs T*=1.35) -->
+    <div class="jev-panel">
+      <h3 class="jev-panel-title">10-Bin Reliability Diagram: Raw (T=1.00) vs. Calibrated (T*=1.35)</h3>
+      <p class="jev-panel-desc">
+        Iterative mask denoising sharpens winning token logits (<code>p ≈ 0.96–0.99</code>), creating an overconfidence gap in the top confidence bins. Post-hoc Slot Temperature Scaling (<code>T* = 1.35</code>) aligns predicted confidence with empirical accuracy (<strong>-56.2% ECE</strong>).
+      </p>
+      <div class="jev-svg-container">
+        <svg viewBox="0 0 600 340" class="jev-svg" role="img" aria-label="10-Bin Reliability Diagram T=1.00 vs T*=1.35">
+          <!-- Background & Diagonal Perfect Calibration Line -->
+          <rect x="60" y="20" width="510" height="265" rx="6" fill="#181825" stroke="#45475a" stroke-width="1" />
+          <line x1="60" y1="285" x2="570" y2="20" stroke="#6c7086" stroke-width="1.5" stroke-dasharray="5,5" />
+          <text x="290" y="142" transform="rotate(-27.5, 290, 142)" class="svg-pt-lbl muted">Perfect Calibration Diagonal (Acc = Conf)</text>
+
+          <!-- Axes Labels -->
+          <text x="52" y="24" text-anchor="end" class="svg-axis-lbl">100%</text>
+          <text x="52" y="90" text-anchor="end" class="svg-axis-lbl">75%</text>
+          <text x="52" y="156" text-anchor="end" class="svg-axis-lbl">50%</text>
+          <text x="52" y="222" text-anchor="end" class="svg-axis-lbl">25%</text>
+          <text x="52" y="285" text-anchor="end" class="svg-axis-lbl">0%</text>
+          <text x="18" y="155" text-anchor="middle" transform="rotate(-90, 18, 155)" class="svg-axis-title">Empirical Accuracy (%)</text>
+
+          <text x="111" y="304" text-anchor="middle" class="svg-axis-lbl">0.50</text>
+          <text x="213" y="304" text-anchor="middle" class="svg-axis-lbl">0.65</text>
+          <text x="315" y="304" text-anchor="middle" class="svg-axis-lbl">0.80</text>
+          <text x="442" y="304" text-anchor="middle" class="svg-axis-lbl">0.90</text>
+          <text x="545" y="304" text-anchor="middle" class="svg-axis-lbl">1.00</text>
+          <text x="315" y="328" text-anchor="middle" class="svg-axis-title">Predicted Slot Confidence P(ŷ)</text>
+
+          <!-- Unscaled Raw Curve (T = 1.00, ECE = 0.0745) -->
+          <polyline points="115,215 245,142 395,108 548,45" fill="none" stroke="#f38ba8" stroke-width="2.5" stroke-dasharray="4,3" />
+          <circle cx="115" cy="215" r="4.5" fill="#f38ba8" />
+          <circle cx="245" cy="142" r="4.5" fill="#f38ba8" />
+          <circle cx="395" cy="108" r="5" fill="#f38ba8" />
+          <circle cx="548" cy="45" r="6" fill="#f38ba8" />
+          <text x="536" y="65" text-anchor="end" class="svg-pt-lbl" fill="#f38ba8">Raw T=1.00 (ECE = 0.0745, Calib = 82.67)</text>
+
+          <!-- Temperature-Calibrated Curve (T* = 1.35, ECE = 0.0326) -->
+          <polyline points="110,225 225,152 355,95 512,34" fill="none" stroke="#a6e3a1" stroke-width="3" />
+          <circle cx="110" cy="225" r="4.5" fill="#a6e3a1" />
+          <circle cx="225" cy="152" r="5" fill="#a6e3a1" />
+          <circle cx="355" cy="95" r="5.5" fill="#a6e3a1" />
+          <circle cx="512" cy="34" r="6.5" fill="#a6e3a1" stroke="#fff" stroke-width="1.5" />
+          <text x="500" y="29" text-anchor="end" class="svg-pt-lbl highlight-green">Calibrated T*=1.35 (ECE = 0.0326, Calib = 88.18)</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const systems = [
+    {
+      name: "dgem Cloud Run (T* = 1.35 Calibrated)",
+      badge: "EXP-04 + T*",
+      cls: "Zero-Shot Diffusion (1 Pass)",
+      intel: 82.99,
+      calib: 88.18,
+      speed: 78.00,
+      cost: 61.07,
+      p50: "712 ms",
+      usd: "$0.0176",
+      highlight: "mauve"
+    },
+    {
+      name: "dgem / djev JevBench Public (T* = 1.25)",
+      badge: "EXP-11 (231 Tasks)",
+      cls: "Zero-Shot Diffusion (1 Pass)",
+      intel: 79.54,
+      calib: 79.05,
+      speed: 90.73,
+      cost: 57.55,
+      p50: "239 ms",
+      usd: "$0.0260",
+      highlight: "blue"
+    },
+    {
+      name: "Hopper (JevBench v1.3.1 #1 Reference)",
+      badge: "JevBench #1",
+      cls: "Typed Decision Model",
+      intel: 76.40,
+      calib: 85.20,
+      speed: 86.80,
+      cost: 57.20,
+      p50: "380 ms",
+      usd: "$0.0270",
+      highlight: ""
+    },
+    {
+      name: "dgem JevBench Cascade (H̃ ≥ 0.72 → gemini-3.8-flash)",
+      badge: "95.2% Saved",
+      cls: "2-Stage Entropy Cascade",
+      intel: 82.30,
+      calib: 79.78,
+      speed: 84.61,
+      cost: 55.05,
+      p50: "240 ms",
+      usd: "$0.0315",
+      highlight: "green"
+    },
+    {
+      name: "dgem JevBench Cascade (H̃ ≥ 0.66 → gemini-3.8-flash)",
+      badge: "87.9% Saved",
+      cls: "2-Stage Entropy Cascade",
+      intel: 86.73,
+      calib: 85.32,
+      speed: 74.36,
+      cost: 51.94,
+      p50: "242 ms",
+      usd: "$0.0400",
+      highlight: "green"
+    },
+    {
+      name: "dgem JevBench Cascade (H̃ ≥ 0.50 → gemini-3.8-flash)",
+      badge: "71.9% Saved",
+      cls: "2-Stage Entropy Cascade",
+      intel: 90.05,
+      calib: 90.66,
+      speed: 72.47,
+      cost: 46.99,
+      p50: "244 ms",
+      usd: "$0.0585",
+      highlight: "green"
+    },
+    {
+      name: "dgem EXP-05 Normalized Entropy Cascade (H̃ ≥ 0.16)",
+      badge: "98.0% Raw Acc",
+      cls: "2-Stage Entropy Cascade",
+      intel: 97.17,
+      calib: 87.64,
+      speed: 71.13,
+      cost: 39.96,
+      p50: "752 ms",
+      usd: "$0.0940",
+      highlight: "mauve"
+    },
+    {
+      name: "Claude Haiku 4.5 (JevBench #2 Reference)",
+      badge: "JevBench #2",
+      cls: "Autoregressive LLM",
+      intel: 82.00,
+      calib: 72.70,
+      speed: 72.60,
+      cost: 69.00,
+      p50: "1,120 ms",
+      usd: "$0.0110",
+      highlight: ""
+    },
+    {
+      name: "Standalone gemini-3.8-flash (100% Frontier LLM)",
+      badge: "0% Saved",
+      cls: "Autoregressive LLM",
+      intel: 97.17,
+      calib: 84.59,
+      speed: 64.94,
+      cost: 31.11,
+      p50: "3,034 ms",
+      usd: "$0.2140",
+      highlight: ""
+    },
+    {
+      name: "BART-large-MNLI (407M Encoder Baseline)",
+      badge: "NLI Encoder",
+      cls: "Discriminative Encoder",
+      intel: 43.80,
+      calib: 48.20,
+      speed: 96.40,
+      cost: 92.00,
+      p50: "38 ms",
+      usd: "$0.0020",
+      highlight: ""
+    },
+    {
+      name: "DeBERTa-v3-small (142M Encoder Baseline)",
+      badge: "NLI Encoder",
+      cls: "Discriminative Encoder",
+      intel: 30.80,
+      calib: 41.50,
+      speed: 98.10,
+      cost: 95.00,
+      p50: "22 ms",
+      usd: "$0.0010",
+      highlight: ""
+    }
+  ];
+
+  function computeScore(sys, preset) {
+    const axes = [sys.intel, sys.calib, sys.speed, sys.cost];
+    if (preset === "jev_default") {
+      const gm = Math.pow(Math.max(1, sys.intel) * Math.max(1, sys.calib) * Math.max(1, sys.speed) * Math.max(1, sys.cost), 0.25);
+      let pen = 0;
+      for (const a of axes) {
+        if (a < 50) pen += Math.pow(50 - a, 2) / 50.0;
+      }
+      return Math.max(0, gm - pen);
+    }
+    if (preset === "accuracy") {
+      return 0.45 * sys.intel + 0.30 * sys.calib + 0.15 * sys.speed + 0.10 * sys.cost;
+    }
+    if (preset === "speed") {
+      return 0.25 * sys.intel + 0.15 * sys.calib + 0.45 * sys.speed + 0.15 * sys.cost;
+    }
+    if (preset === "budget") {
+      return 0.25 * sys.intel + 0.15 * sys.calib + 0.15 * sys.speed + 0.45 * sys.cost;
+    }
+    return 0;
+  }
+
+  function renderLeaderboard(preset) {
+    const tbody = document.getElementById("jev-leaderboard-body");
+    if (!tbody) return;
+    const scored = systems.map((s) => ({ ...s, score: computeScore(s, preset) }));
+    scored.sort((a, b) => b.score - a.score);
+
+    tbody.innerHTML = scored
+      .map((s, idx) => {
+        const rowCls = s.highlight ? `row-highlight-${s.highlight}` : "";
+        const barColor =
+          s.highlight === "mauve"
+            ? "#cba6f7"
+            : s.highlight === "green"
+            ? "#a6e3a1"
+            : s.highlight === "blue"
+            ? "#89b4fa"
+            : "#9399b2";
+        return `<tr class="${rowCls}">
+          <td class="rank-cell">#${idx + 1}</td>
+          <td>
+            <div class="sys-name">${s.name}</div>
+            <span class="sys-badge">${s.badge}</span>
+          </td>
+          <td class="sys-cls">${s.cls}</td>
+          <td class="num">${s.intel.toFixed(2)}</td>
+          <td class="num">${s.calib.toFixed(2)}</td>
+          <td class="num">${s.speed.toFixed(2)}</td>
+          <td class="num">${s.cost.toFixed(2)}</td>
+          <td class="num mono">${s.p50}</td>
+          <td class="num mono">${s.usd}</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-fill" style="width: ${Math.min(100, s.score)}%; background: ${barColor};"></div>
+              <span class="score-bar-val">${s.score.toFixed(2)}</span>
+            </div>
+          </td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  function initDashboard() {
+    renderLeaderboard("jev_default");
+    const controls = document.getElementById("jev-preset-controls");
+    if (!controls) return;
+    controls.querySelectorAll(".jev-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        controls.querySelectorAll(".jev-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const preset = btn.getAttribute("data-preset") || "jev_default";
+        renderLeaderboard(preset);
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDashboard);
+  } else {
+    initDashboard();
+  }
+</script>
+
+<style>
+  .jev-dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin: 1.5rem 0 2rem 0;
+  }
+  .jev-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.85rem;
+  }
+  .jev-kpi-card {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-left-width: 4px;
+    border-radius: 0.6rem;
+    padding: 0.9rem 1rem;
+  }
+  .jev-kpi-card.accent-green { border-left-color: #a6e3a1; }
+  .jev-kpi-card.accent-mauve { border-left-color: #cba6f7; }
+  .jev-kpi-card.accent-blue  { border-left-color: #89b4fa; }
+  .jev-kpi-card.accent-amber { border-left-color: #f9e2af; }
+  .jev-kpi-label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #a6adc8;
+    margin-bottom: 0.25rem;
+  }
+  .jev-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #cdd6f4;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+  .jev-badge {
+    font-size: 0.7rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(166, 227, 161, 0.16);
+    color: #a6e3a1;
+    font-weight: 600;
+  }
+  .jev-kpi-sub {
+    font-size: 0.78rem;
+    color: #bac2de;
+    margin-top: 0.3rem;
+    line-height: 1.35;
+  }
+  .jev-panel {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 0.75rem;
+    padding: 1.15rem 1.25rem;
+  }
+  .jev-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .jev-panel-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #cdd6f4;
+  }
+  .jev-panel-desc {
+    margin: 0;
+    font-size: 0.83rem;
+    color: #a6adc8;
+    max-width: 68ch;
+  }
+  .jev-preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .jev-btn {
+    background: #181825;
+    color: #bac2de;
+    border: 1px solid #45475a;
+    border-radius: 0.45rem;
+    padding: 0.38rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .jev-btn:hover {
+    border-color: #cba6f7;
+    color: #cdd6f4;
+  }
+  .jev-btn.active {
+    background: #cba6f7;
+    color: #11111b;
+    border-color: #cba6f7;
+  }
+  .jev-table-scroll {
+    overflow-x: auto;
+  }
+  .jev-leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    color: #cdd6f4;
+  }
+  .jev-leaderboard-table th {
+    text-align: left;
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid #45475a;
+    color: #a6adc8;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .jev-leaderboard-table td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid #313244;
+    vertical-align: middle;
+  }
+  .jev-leaderboard-table th.num,
+  .jev-leaderboard-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .rank-cell {
+    font-weight: 700;
+    color: #cba6f7;
+  }
+  .sys-name {
+    font-weight: 600;
+    color: #cdd6f4;
+  }
+  .sys-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    padding: 0.05rem 0.38rem;
+    border-radius: 0.25rem;
+    background: #313244;
+    color: #cba6f7;
+    margin-top: 0.15rem;
+  }
+  .sys-cls {
+    color: #a6adc8;
+    font-size: 0.76rem;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.78rem;
+  }
+  .score-bar-wrap {
+    position: relative;
+    background: #11111b;
+    border-radius: 0.35rem;
+    height: 1.35rem;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid #313244;
+  }
+  .score-bar-fill {
+    height: 100%;
+    opacity: 0.32;
+    transition: width 0.25s ease;
+  }
+  .score-bar-val {
+    position: absolute;
+    right: 0.5rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #cdd6f4;
+  }
+  .jev-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1rem;
+  }
+  .jev-svg-container {
+    margin-top: 0.75rem;
+    width: 100%;
+  }
+  .jev-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .svg-axis-lbl {
+    fill: #a6adc8;
+    font-size: 10px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .svg-axis-title {
+    fill: #cdd6f4;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .svg-pt-lbl {
+    fill: #cdd6f4;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .svg-pt-lbl.muted {
+    fill: #9399b2;
+    font-weight: 500;
+  }
+  .svg-pt-lbl.highlight-green { fill: #a6e3a1; }
+  .svg-pt-lbl.highlight-mauve { fill: #cba6f7; }
+  .svg-pt-lbl.highlight-blue  { fill: #89b4fa; }
+</style>

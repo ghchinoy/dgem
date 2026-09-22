@@ -15,7 +15,7 @@ hero:
       link: /dgem/decision-models-primer/
       icon: open-book
       variant: secondary
-    - text: Experiments Ledger (EXP-01–10)
+    - text: Experiments Ledger (EXP-01–11)
       link: /dgem/experiments/
       icon: document
       variant: secondary
@@ -26,6 +26,13 @@ hero:
 ---
 
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+import JevParityDashboard from '../../components/JevParityDashboard.astro';
+
+## `EXP-11`: `JevBench v1.3.1` 4-Axis Parity & Calibration Gains
+
+<JevParityDashboard />
+
+---
 
 ## Four Ways to Use `dgem`
 
@@ -39,8 +46,8 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
   <Card title="🌐 3. HTTP Gateway REST API (/api/decide)" icon="external">
     Call `POST /api/decide/{template}` from any microservice, web frontend, or `curl` with a simple JSON variable map—no local `dgem` CLI or `.json.tmpl` files required. Automatically mints GCP IAM/IAP identity tokens and holds requests while scale-from-zero Cloud Run GPUs wake up.
   </Card>
-  <Card title="⌨️ 4. CLI & 6 Benchmark Harnesses" icon="terminal">
-    Execute sub-second decisions (`dgem decide`), generative prompts (`dgem ask`), and six reproducible benchmark suites (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`) backed by immutable JSON telemetry receipts.
+  <Card title="⌨️ 4. CLI & 7 Benchmark Harnesses" icon="terminal">
+    Execute sub-second decisions (`dgem decide`), generative prompts (`dgem ask`), and seven reproducible benchmark suites (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`) backed by immutable JSON telemetry receipts.
   </Card>
 </CardGrid>
 
