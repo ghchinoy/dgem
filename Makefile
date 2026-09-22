@@ -72,6 +72,9 @@ cloudrun-deploy: ## Deploy DiffusionGemma to Google Cloud Run with GPU (L4 or RT
 gateway-deploy: ## Deploy lightweight Go HTTP API & Web Studio Gateway (dgemma-gateway) to Cloud Run
 	./scripts/deploy_cloudrun_gateway.sh
 
+cloudrun-iam: ## Configure least-privilege Service Accounts (dgemma-gpu-sa, dgemma-gateway-sa) and Google Group IAM/IAP bindings
+	./scripts/setup_cloudrun_iam.sh
+
 cloudrun-teardown: ## Delete Cloud Run dgemma GPU service to eliminate any cloud resource footprint
 	gcloud run services delete dgemma --region=$${GCP_REGION:-us-central1} --quiet
 

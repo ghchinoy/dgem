@@ -58,11 +58,25 @@ if ! gcloud storage ls "gs://${BUCKET}/dgemma/config.json" >/dev/null 2>&1; then
   ./scripts/stage_model_gcs.sh "$BUCKET" "$REGION"
 fi
 
-# 2. Adaptive CPU, Memory, and SHM Staging based on GPU tier
+# 2. Ensure least-privilege GPU Service Account (dgemma-gpu-sa) exists and has read-only access to weights bucket
+GPU_SA_NAME="${GPU_SA_NAME:-dgemma-gpu-sa}"
+GPU_SA="${GPU_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+if ! gcloud iam service-accounts describe "${GPU_SA}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  echo "==> Creating least-privilege Service Account ${GPU_SA}..."
+  gcloud iam service-accounts create "${GPU_SA_NAME}" \
+    --project="${PROJECT_ID}" \
+    --display-name="DiffusionGemma GPU Engine SA (Read-Only GCS Weights)"
+fi
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${GPU_SA}" \
+  --role="roles/storage.objectViewer" \
+  --quiet >/dev/null
+
+# 3. Adaptive CPU, Memory, and SHM Staging based on GPU tier
 if [[ "$GPU_TYPE" == "nvidia-rtx-pro-6000" ]]; then
   CPU="20"
   MEMORY="80Gi"
-  COPY_SHM="1"
+  COPY_SHM="${COPY_TO_SHM:-0}"
   CANVAS_LEN="128"
   MAX_MODEL_LEN="4096"
 else
@@ -84,6 +98,7 @@ DEPLOY_FLAGS=(
   "--project" "$PROJECT_ID"
   "--region" "$REGION"
   "--image" "$IMAGE_TAG"
+  "--service-account" "$GPU_SA"
   "--execution-environment" "gen2"
   "--no-allow-unauthenticated"
   "--cpu" "$CPU"
@@ -96,7 +111,7 @@ DEPLOY_FLAGS=(
   "--max-instances" "1"
   "--concurrency" "32"
   "--port" "8080"
-  "--add-volume=name=weights,type=cloud-storage,bucket=${BUCKET},readonly=false,mount-options=enable-buffered-read=true"
+  "--add-volume=name=weights,type=cloud-storage,bucket=${BUCKET},readonly=true,mount-options=enable-buffered-read=true"
   "--add-volume-mount=volume=weights,mount-path=/mnt/gcs"
   "--startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,periodSeconds=5,timeoutSeconds=4,failureThreshold=120"
   "--set-env-vars=${ENV_VARS}"
@@ -105,24 +120,25 @@ DEPLOY_FLAGS=(
 echo "==> Deploying to Cloud Run..."
 gcloud beta run deploy "$SERVICE_NAME" "${DEPLOY_FLAGS[@]}"
 
+# Bind invoker permissions (dgemma-gateway-sa and ALLOW_GROUP)
+if [[ -x "./scripts/setup_cloudrun_iam.sh" ]]; then
+  GCP_PROJECT="$PROJECT_ID" GCP_REGION="$REGION" UPSTREAM_SERVICE="$SERVICE_NAME" ./scripts/setup_cloudrun_iam.sh
+fi
+
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format="value(status.url)")
 
 echo ""
 echo "================================================================================"
 echo "  Deployment Successful! Zero-to-N Autoscaling Active"
 echo "================================================================================"
-echo "Service URL: $SERVICE_URL"
+echo "Service URL:     $SERVICE_URL"
+echo "Service Account: $GPU_SA (Read-only on gs://${BUCKET}, IAP OFF)"
 echo ""
 echo "Query using dgem with automatic IAM identity authentication:"
 echo "  ./bin/dgem decide -u \"${SERVICE_URL}/v1\" --gcp-auth \\"
 echo "    -t templates/support_triage.json.tmpl \\"
 echo "    -v 'ticket=Emergency: cluster outage' --stats"
 echo ""
-echo "Run the decision benchmark suite against Cloud Run:"
-echo "  ./bin/dgem bench -u \"${SERVICE_URL}/v1\" --gcp-auth \\"
-echo "    -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json"
-echo ""
-echo "View web UI / snake demo (with gcloud proxy):"
-echo "  gcloud run services proxy $SERVICE_NAME --project $PROJECT_ID --region $REGION --port 8080"
-echo "  open http://localhost:8080/snake"
+echo "Deploy or update the IAP-ready Web Decision Studio Gateway (dgemma-gateway):"
+echo "  make gateway-deploy"
 echo "================================================================================"

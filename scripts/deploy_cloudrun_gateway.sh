@@ -6,12 +6,22 @@ REGION="${GCP_REGION:-us-central1}"
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-dgemma-gateway}"
 UPSTREAM_SERVICE="${UPSTREAM_SERVICE:-dgemma}"
 IMAGE="us-central1-docker.pkg.dev/${PROJECT}/dgem/dgemma-gateway:latest"
-ALLOW_GROUP="${ALLOW_GROUP:-}"
+ALLOW_GROUP="${ALLOW_GROUP:-aaie-decision-model@google.com}"
+GATEWAY_SA_NAME="dgemma-gateway-sa"
+GATEWAY_SA="${GATEWAY_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
 
 echo "================================================================"
 echo " Deploying ${GATEWAY_SERVICE} (Go HTTP API & Web Studio Gateway)"
 echo " Project: ${PROJECT} | Region: ${REGION}"
+echo " Gateway SA: ${GATEWAY_SA} | Group: ${ALLOW_GROUP}"
 echo "================================================================"
+
+if ! gcloud iam service-accounts describe "${GATEWAY_SA}" --project="${PROJECT}" >/dev/null 2>&1; then
+  echo "-> Creating Service Account ${GATEWAY_SA}..."
+  gcloud iam service-accounts create "${GATEWAY_SA_NAME}" \
+    --project="${PROJECT}" \
+    --display-name="DiffusionGemma HTTP Gateway SA (Invoker on dgemma GPU)"
+fi
 
 UPSTREAM_URL="$(gcloud run services describe "${UPSTREAM_SERVICE}" \
   --project="${PROJECT}" \
@@ -42,6 +52,7 @@ gcloud run deploy "${GATEWAY_SERVICE}" \
   --project="${PROJECT}" \
   --region="${REGION}" \
   --image="${IMAGE}" \
+  --service-account="${GATEWAY_SA}" \
   --cpu=1 \
   --memory=512Mi \
   --min-instances=0 \
@@ -52,26 +63,8 @@ gcloud run deploy "${GATEWAY_SERVICE}" \
   --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1" \
   --quiet
 
-# Ensure the project's default compute service account can invoke the upstream dgemma service
-PROJECT_NUM="$(gcloud projects describe "${PROJECT}" --format='value(projectNumber)')"
-COMPUTE_SA="${PROJECT_NUM}-compute@developer.gserviceaccount.com"
-gcloud run services add-iam-policy-binding "${UPSTREAM_SERVICE}" \
-  --project="${PROJECT}" \
-  --region="${REGION}" \
-  --member="serviceAccount:${COMPUTE_SA}" \
-  --role="roles/run.invoker" \
-  --quiet >/dev/null
-
-# Optional: Grant a Google Group (e.g. ALLOW_GROUP=aaie-team@google.com) invoker & IAP access
-if [ -n "${ALLOW_GROUP}" ]; then
-  echo "-> Granting roles/run.invoker and roles/iap.httpsResourceAccessor to group:${ALLOW_GROUP}..."
-  gcloud run services add-iam-policy-binding "${GATEWAY_SERVICE}" \
-    --project="${PROJECT}" \
-    --region="${REGION}" \
-    --member="group:${ALLOW_GROUP}" \
-    --role="roles/run.invoker" \
-    --quiet
-fi
+# Run Zero-Trust IAM & IAP bindings for dgemma-gpu-sa, dgemma-gateway-sa, and group:${ALLOW_GROUP}
+GCP_PROJECT="${PROJECT}" GCP_REGION="${REGION}" ALLOW_GROUP="${ALLOW_GROUP}" ./scripts/setup_cloudrun_iam.sh
 
 GATEWAY_URL="$(gcloud run services describe "${GATEWAY_SERVICE}" \
   --project="${PROJECT}" \
@@ -81,4 +74,5 @@ GATEWAY_URL="$(gcloud run services describe "${GATEWAY_SERVICE}" \
 echo "================================================================"
 echo " ✅ ${GATEWAY_SERVICE} deployed: ${GATEWAY_URL}"
 echo " -> Upstream GPU Backend: ${UPSTREAM_URL}/v1"
+echo " -> Authorized Group:     group:${ALLOW_GROUP}"
 echo "================================================================"
