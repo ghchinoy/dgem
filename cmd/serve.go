@@ -286,6 +286,7 @@ func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent st
 
 	deadline := time.Now().Add(serveWakeupTimeout)
 	orchStart := time.Now()
+	NotifyColdStartWarmup()
 	attempts := 0
 	for {
 		attempts++

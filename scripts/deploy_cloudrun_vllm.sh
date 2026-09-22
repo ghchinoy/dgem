@@ -76,7 +76,7 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
 if [[ "$GPU_TYPE" == "nvidia-rtx-pro-6000" ]]; then
   CPU="20"
   MEMORY="80Gi"
-  COPY_SHM="${COPY_TO_SHM:-1}"
+  COPY_SHM="${COPY_TO_SHM:-0}" # Stream over GCS FUSE buffered-read into 80Gi RAM without filling /dev/shm
   CANVAS_LEN="128"
   MAX_MODEL_LEN="4096"
 else
@@ -101,6 +101,8 @@ DEPLOY_FLAGS=(
   "--service-account" "$GPU_SA"
   "--execution-environment" "gen2"
   "--no-allow-unauthenticated"
+  "--clear-command"
+  "--clear-args"
   "--cpu" "$CPU"
   "--memory" "$MEMORY"
   "--gpu" "1"

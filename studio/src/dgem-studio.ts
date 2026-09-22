@@ -2,6 +2,8 @@ import { LitElement, html, css, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import './components/dgem-nav-rail.js';
 import './components/dgem-about-modal.js';
+import './components/dgem-preset-selector.js';
+import './components/dgem-policy-composer.js';
 import type { StudioTab, ThemePreference } from './components/dgem-nav-rail.js';
 import type {
   TemplateEntry,
@@ -165,6 +167,7 @@ export class DgemStudio extends LitElement {
   @state() private aboutOpen = false;
 
   @state() private activeTab: StudioTab = 'studio';
+  @state() private activePresetId = 'support-vip';
   @state() private templates: TemplateEntry[] = [];
   @state() private selectedTemplateName = 'support_triage';
   @state() private variableValues: Record<string, string> = {
@@ -1015,14 +1018,16 @@ export class DgemStudio extends LitElement {
   }
 
   private selectPreset(p: PresetSample) {
+    this.activePresetId = p.id;
     this.selectedTemplateName = p.template;
     this.variableValues = { ...p.variables };
     this.errorMessage = '';
   }
 
-  private handleTemplateChange(e: Event) {
-    const name = (e.target as HTMLSelectElement).value;
+  private selectTemplateByName(name: string) {
     this.selectedTemplateName = name;
+    const matchingPreset = PRESETS.find((p) => p.template === name);
+    this.activePresetId = matchingPreset ? matchingPreset.id : '';
     const found = this.templates.find((t) => t.name === name);
     if (found) {
       const nextVars: Record<string, string> = {};
@@ -1052,6 +1057,26 @@ export class DgemStudio extends LitElement {
   private async runDecision() {
     this.loading = true;
     this.errorMessage = '';
+
+    // If the GPU is quiesced (scaled_to_zero), automatically trigger the Wake GPU state & coordinator
+    // just as if the user had clicked "Wake GPU" first.
+    if (this.gpuStatus?.gpu_state !== 'warm_and_ready') {
+      this.warmingUp = true;
+      this.warmupToast =
+        'GPU was quiesced (0 instances) — automatically triggered GPU wakeup (0 → 1). Your decision policy will evaluate as soon as vLLM EngineCore comes online...';
+      if (this.gpuStatus) {
+        this.gpuStatus = {
+          ...this.gpuStatus,
+          gpu_state: 'warming_up',
+          warmup_in_progress: true,
+        };
+      }
+      // Trigger async single-flight warmup on the gateway in parallel
+      fetch('/api/warmup?wait=false', { method: 'POST' })
+        .then(() => this.fetchGPUStatus())
+        .catch(() => {});
+    }
+
     try {
       const payload: Record<string, unknown> = {
         variables: this.variableValues,
@@ -1075,11 +1100,13 @@ export class DgemStudio extends LitElement {
         throw new Error(data.error || `HTTP ${resp.status}`);
       }
       this.result = data;
+      this.warmupToast = '';
       this.fetchGPUStatus();
     } catch (err) {
       this.errorMessage = (err as Error).message;
     } finally {
       this.loading = false;
+      this.warmingUp = false;
     }
   }
 
@@ -1417,12 +1444,6 @@ export class DgemStudio extends LitElement {
   }
 
   private renderStudioTab() {
-    const activeTemplate = this.templates.find((t) => t.name === this.selectedTemplateName);
-    const varNames =
-      activeTemplate?.variables && activeTemplate.variables.length > 0
-        ? activeTemplate.variables
-        : Object.keys(this.variableValues);
-
     const rawRes = this.result as Record<string, any> | null;
     const answers: Record<string, QuestionAnswer> =
       this.result?.decision?.answers || rawRes?.answers || {};
@@ -1453,161 +1474,104 @@ export class DgemStudio extends LitElement {
         : null}
 
       <div class="workspace-grid">
-        <!-- LEFT PANEL: Policy Input & Multimodal Canvas -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <span class="material-symbols-outlined">policy</span>
-              Policy Template & Input Context
-            </h2>
-            <span class="pill tabular">${this.selectedTemplateName}.json.tmpl</span>
-          </div>
-          <div class="card-body">
-            <div class="field-label">
-              <span>Quick Challenge Presets</span>
-              <span style="color:var(--text-muted);font-weight:400">1-click scenario load</span>
-            </div>
-            <div class="preset-grid">
-              ${PRESETS.map(
-                (p) => html`
-                  <button class="preset-chip" @click=${() => this.selectPreset(p)}>
-                    <span class="preset-chip-badge">${p.badge}</span>
-                    <span class="preset-chip-title">${p.title}</span>
-                  </button>
-                `
-              )}
-            </div>
+        <!-- LEFT PANEL: Distinct Preset Selector + Multi-Mode Policy Composer WebComponents -->
+        <div>
+          <dgem-preset-selector
+            .presets=${PRESETS}
+            .activePresetId=${this.activePresetId}
+            .resolvedTheme=${this.resolvedTheme}
+            @preset-select=${(e: CustomEvent<PresetSample>) => this.selectPreset(e.detail)}
+          ></dgem-preset-selector>
 
-            <div class="field">
-              <label class="field-label">
-                <span>Executable Decision Policy (.json.tmpl)</span>
-                <span class="field-var-badge">${activeTemplate?.category || 'core'}</span>
-              </label>
-              <select .value=${this.selectedTemplateName} @change=${this.handleTemplateChange}>
-                ${(this.templates.length > 0
-                  ? this.templates
-                  : PRESETS.map((p) => ({
-                      name: p.template,
-                      category: 'core',
-                      description: p.description,
-                    }))
-                ).map(
-                  (t) => html`
-                    <option value=${t.name} ?selected=${t.name === this.selectedTemplateName}>
-                      ${t.name} — ${t.description}
-                    </option>
-                  `
-                )}
-              </select>
-            </div>
-
-            ${varNames.map(
-              (vName) => html`
-                <div class="field">
-                  <label class="field-label">
-                    <span>Template Variable</span>
-                    <span class="field-var-badge">.{{${vName}}}</span>
-                  </label>
-                  <textarea
-                    .value=${this.variableValues[vName] || ''}
-                    placeholder="Enter value for {{.${vName}}}..."
-                    @input=${(e: Event) => {
-                      this.variableValues = {
-                        ...this.variableValues,
-                        [vName]: (e.target as HTMLTextAreaElement).value,
-                      };
-                    }}
-                  ></textarea>
-                </div>
-              `
-            )}
-
-            <!-- Multimodal SigLIP Image Upload & Spatial BBox Stage -->
-            <div class="field">
-              <label class="field-label">
-                <span>Multimodal Vision Attachment (SigLIP 896×896)</span>
-                <span class="field-var-badge">Optional · EXP-09 BBox</span>
-              </label>
-              <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-                <label class="btn btn--sm" style="cursor:pointer">
-                  <span class="material-symbols-outlined">upload_file</span>
-                  ${this.imageName ? `Loaded: ${this.imageName}` : 'Attach Image (PNG/JPEG)'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style="display:none"
-                    @change=${this.handleImageUpload}
-                  />
+          <dgem-policy-composer
+            .templates=${this.templates.length > 0
+              ? this.templates
+              : PRESETS.map((p) => ({
+                  name: p.template,
+                  path: `${p.template}.json.tmpl`,
+                  category: 'core',
+                  description: p.description,
+                  variables: Object.keys(p.variables),
+                }))}
+            .selectedTemplateName=${this.selectedTemplateName}
+            .variableValues=${this.variableValues}
+            .loading=${this.loading}
+            .gpuState=${this.gpuStatus?.gpu_state || 'scaled_to_zero'}
+            .warmupElapsedSec=${this.gpuStatus?.warmup_elapsed_seconds || 0}
+            .errorMessage=${this.errorMessage}
+            .resolvedTheme=${this.resolvedTheme}
+            @template-change=${(e: CustomEvent<string>) => this.selectTemplateByName(e.detail)}
+            @variable-change=${(e: CustomEvent<{ name: string; value: string }>) => {
+              this.variableValues = {
+                ...this.variableValues,
+                [e.detail.name]: e.detail.value,
+              };
+            }}
+            @evaluate-decision=${() => this.runDecision()}
+          >
+            <div slot="multimodal">
+              <div class="field">
+                <label class="field-label">
+                  <span>Multimodal Vision Attachment (SigLIP 896×896)</span>
+                  <span class="field-var-badge">Optional · EXP-09 BBox</span>
                 </label>
-                ${this.imageDataUrl
-                  ? html`
-                      <button
-                        class="btn btn--sm"
-                        @click=${() => {
-                          this.imageDataUrl = '';
-                          this.imageName = '';
-                        }}
-                      >
-                        Clear Image
-                      </button>
-                    `
-                  : null}
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+                  <label class="btn btn--sm" style="cursor:pointer">
+                    <span class="material-symbols-outlined">upload_file</span>
+                    ${this.imageName ? `Loaded: ${this.imageName}` : 'Attach Image (PNG/JPEG)'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style="display:none"
+                      @change=${this.handleImageUpload}
+                    />
+                  </label>
+                  ${this.imageDataUrl
+                    ? html`
+                        <button
+                          class="btn btn--sm"
+                          @click=${() => {
+                            this.imageDataUrl = '';
+                            this.imageName = '';
+                          }}
+                        >
+                          Clear Image
+                        </button>
+                      `
+                    : null}
+                </div>
               </div>
-            </div>
 
-            ${this.imageDataUrl
-              ? html`
-                  <div class="bbox-stage">
-                    <img src=${this.imageDataUrl} alt="Uploaded multimodal frame" />
-                    ${this.renderBBoxOverlay()}
-                  </div>
-                  <div
-                    style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem"
-                  >
-                    <span style="font-size:0.74rem;color:var(--text-muted)">
-                      Solid Blue = Softmax Expectation E[c] · Dashed Amber = Discrete Argmax
-                    </span>
-                    <div class="segmented">
-                      ${(['both', 'expectation', 'argmax'] as const).map(
-                        (m) => html`
-                          <button
-                            class="seg"
-                            aria-selected=${this.bboxMode === m ? 'true' : 'false'}
-                            @click=${() => (this.bboxMode = m)}
-                          >
-                            ${m}
-                          </button>
-                        `
-                      )}
+              ${this.imageDataUrl
+                ? html`
+                    <div class="bbox-stage">
+                      <img src=${this.imageDataUrl} alt="Uploaded multimodal frame" />
+                      ${this.renderBBoxOverlay()}
                     </div>
-                  </div>
-                `
-              : null}
-
-            <div style="display:flex;gap:0.65rem;align-items:center;margin-top:1rem">
-              <button
-                class="btn btn--brand"
-                style="flex:1;padding:0.65rem 1rem"
-                ?disabled=${this.loading}
-                @click=${() => this.runDecision()}
-              >
-                <span class="material-symbols-outlined">bolt</span>
-                ${this.loading
-                  ? 'Evaluating Joint Diffusion Slots...'
-                  : 'Evaluate Decision Policy (Single Forward Pass)'}
-              </button>
+                    <div
+                      style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem"
+                    >
+                      <span style="font-size:0.74rem;color:var(--text-muted)">
+                        Solid Blue = Softmax Expectation E[c] · Dashed Amber = Discrete Argmax
+                      </span>
+                      <div class="segmented">
+                        ${(['both', 'expectation', 'argmax'] as const).map(
+                          (m) => html`
+                            <button
+                              class="seg"
+                              aria-selected=${this.bboxMode === m ? 'true' : 'false'}
+                              @click=${() => (this.bboxMode = m)}
+                            >
+                              ${m}
+                            </button>
+                          `
+                        )}
+                      </div>
+                    </div>
+                  `
+                : null}
             </div>
-
-            ${this.errorMessage
-              ? html`
-                  <div
-                    style="margin-top:0.85rem;padding:0.7rem;border-radius:6px;background:rgba(239,68,68,0.12);color:#b91c1c;font-size:0.78rem"
-                  >
-                    <strong>Execution Error:</strong> ${this.errorMessage}
-                  </div>
-                `
-              : null}
-          </div>
+          </dgem-policy-composer>
         </div>
 
         <!-- RIGHT PANEL: Joint Slot Readout & Epistemic Telemetry -->

@@ -52,6 +52,22 @@ func init() {
 	RootCmd.AddCommand(mcpCmd)
 }
 
+// NotifyColdStartWarmup ensures that if a decision request arrives while the GPU is scaled to zero,
+// the global status coordinator immediately reflects "warming_up" (just as if "Wake GPU" had been pressed).
+func NotifyColdStartWarmup() {
+	gpuStateMu.Lock()
+	const cloudRunIdleWindow = 15 * time.Minute
+	isWarm := !lastWarmTimestamp.IsZero() && time.Since(lastWarmTimestamp) < cloudRunIdleWindow
+	if !isWarm && !warmupInProgress {
+		warmupInProgress = true
+		warmupStartedAt = time.Now()
+		if warmupDoneCh == nil {
+			warmupDoneCh = make(chan struct{})
+		}
+	}
+	gpuStateMu.Unlock()
+}
+
 // MarkGPUWarm records that the upstream vLLM engine successfully completed a decision readout
 // and wakes any callers waiting on an in-flight warmup broadcast channel.
 func MarkGPUWarm(latencyMs ...int64) {
