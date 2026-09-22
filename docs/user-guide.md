@@ -1,12 +1,16 @@
 # dgem User Guide
 
-`dgem` is the command-line companion, declarative policy engine (`Policy-as-Template`), and benchmark harness for **DiffusionGemma (`dgemma`, 26B-A4B MoE)** across **Local Apple Silicon Metal (`diffgemma`)**, **Serverless Cloud Run GPU (`dgemma`, 1× NVIDIA L4)**, and **Cloud GPU vLLM (`GCE L4 / A100`)**.
+`dgem` is the command-line companion, **Lit WebComponents Decision Studio (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp`)**, **HTTP Gateway REST API**, declarative policy engine (`Policy-as-Template`), and benchmark harness for **DiffusionGemma (`dgemma`, 26B-A4B MoE)** across **Local Apple Silicon Metal (`diffgemma`)**, **Serverless Cloud Run GPU (`dgemma`, `1× NVIDIA L4` & `1× NVIDIA RTX Pro 6000`)**, and **Cloud GPU vLLM (`GCE L4 / A100`)**.
+
+> [!TIP]
+> For a dedicated guide to the **Decision Studio Web App (`http://localhost:8080/`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `POST /mcp`)**, and **HTTP Gateway REST API (`POST /api/decide/{template}`)**, see **[Decision Studio Web App, MCP Server & HTTP Gateway API (`studio-mcp-api.md`)](./studio-mcp-api.md)**.
 
 It enables:
-1. **Discrete Diffusion Slot Readout (`dgem decide`)**: Schema-governed multi-slot classification (`boolean`, `choice [A–Z]`, `score`) and **Conditional Policy DAGs (`depends_on` / `ask_if`)** executed in $O(1)$ forward passes (~458–712 ms on Cloud Run L4; ~880 ms on Apple Silicon M-series).
-2. **Public Dataset Calibration & Entropy-Gated Cascades (`dgem bench-calibration`)**: 50-case evaluation across 11 public benchmarks (`ChaosNLI`, `ANLI-R3`, `AgentDrift`, `LLM-AggreFact`, `MS MARCO`, `Banking77`, `CLINC150`) with **Cardinality-Normalized Epistemic Entropy ($\tilde{H}_m = H_m / \ln|\mathcal{V}_m|$)**, **Pass-1 Slot Prior Forwarding**, **Cross-Model Cascades (`gemini-3.8-flash`)**, and **Intra-Model Self-Cascades (`--cascade-self-think`)**.
-3. **High-Cardinality Intent & Hybrid WFST Benchmarks (`dgem bench`, `dgem bench-intents`, `dgem bench-ecotone`)**: Concurrent worker harnesses (`-w 16`) for full-split evaluations (`Banking77` 3,080 items, `CLINC150` 5,500 items) and C++ `Ecotone` Sparrowhawk WFST sidecar comparisons.
-4. **Generative Prompt Execution (`dgem ask`) & Template Management (`dgem template`)**: Natural-language prompting with `<|think|>` control and local `.json.tmpl` policy rendering.
+1. **Decision Studio Web App & HTTP Gateway API (`dgem serve`)**: Launches an interactive browser playground (with 26+ `.json.tmpl` presets, `SigLIP` bounding-box SVG overlays, scale-to-zero GPU warmup, and OpenTelemetry trace waterfalls) alongside `POST /api/decide/{template}` and `POST /mcp`.
+2. **Model Context Protocol (`MCP`) Server (`dgem mcp`)**: Exposes 6 native MCP tools (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) over `stdio` or Streamable HTTP to AI coding assistants (`Gemini CLI`, `Claude Desktop`, `Cursor`).
+3. **Discrete Diffusion Slot Readout (`dgem decide`)**: Schema-governed multi-slot classification (`boolean`, `choice [A–Z]`, `score`) and **Conditional Policy DAGs (`depends_on` / `ask_if`)** executed in $O(1)$ forward passes (~458–712 ms on Cloud Run L4; ~880 ms on Apple Silicon M-series).
+4. **6 Reproducible Benchmark Harnesses (`dgem bench-*`)**: `bench` (`EXP-01`), `bench-ecotone` (`EXP-02`), `bench-intents` (`EXP-03`), `bench-calibration` (`EXP-04` / `EXP-05`), `bench-bbox` (`EXP-09` `SigLIP` spatial localization), and `bench-rerank` (`EXP-10` listwise diffusion canvas reranking).
+5. **Generative Prompt Execution (`dgem ask`) & Template Management (`dgem template`)**: Natural-language prompting with `<|think|>` control and local `.json.tmpl` policy rendering.
 
 ---
 
@@ -14,8 +18,12 @@ It enables:
 
 1. [Configuration & Environment](#1-configuration--environment)
 2. [Command Reference](#2-command-reference)
+   - [`dgem serve` (Decision Studio & HTTP Gateway API)](./studio-mcp-api.md)
+   - [`dgem mcp` (Model Context Protocol Server)](./studio-mcp-api.md#3-model-context-protocol-mcp-server-dgem-mcp--post-mcp)
    - [`dgem decide`](#dgem-decide)
    - [`dgem bench-calibration`](#dgem-bench-calibration)
+   - [`dgem bench-rerank` (`EXP-10`)](./experiments/exp-10-listwise-diffusion-reranking.md)
+   - [`dgem bench-bbox` (`EXP-09`)](./templates.md#7-multimodal-spatial-grounding--detr-object-queries-exp-09)
    - [`dgem bench`](#dgem-bench)
    - [`dgem bench-intents`](#dgem-bench-intents)
    - [`dgem bench-ecotone`](#dgem-bench-ecotone)

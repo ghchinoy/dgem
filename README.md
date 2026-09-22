@@ -1,6 +1,19 @@
 # dgem — DiffusionGemma as a Zero-Shot Decision Model
 
-**`dgem`** is a declarative **Policy-as-Template** engine, CLI assistant, and empirical benchmark harness for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **Local Apple Silicon (macOS Metal)**, **Serverless Cloud Run GPU (NVIDIA L4)**, and **Google Compute Engine (L4 / A100)** deployments.
+**`dgem`** is a declarative **Policy-as-Template** engine, **Lit WebComponents Decision Studio (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `/mcp`)**, **HTTP Gateway REST API**, and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **Local Apple Silicon (macOS Metal)**, **Serverless Cloud Run GPU (`NVIDIA L4` & `NVIDIA RTX Pro 6000`)**, and **Google Compute Engine (`L4` / `2× A100`)** deployments.
+
+---
+
+## Four Ways to Use `dgem`
+
+See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-api.md`)](docs/studio-mcp-api.md)** for full details:
+
+| Interaction Surface | Command / Endpoint | Description |
+| :--- | :--- | :--- |
+| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090`<br>`http://localhost:8090/` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, one-click **Scale-to-Zero Cloud Run GPU warmup**, and **OpenTelemetry Trace Waterfall** inspection. |
+| **2. 🤖 Model Context Protocol (`MCP`)** | `./bin/dgem mcp` (`stdio`)<br>`POST /mcp` (`Streamable HTTP`) | Native MCP server exposing **6 tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) to **Gemini CLI**, **Claude Desktop**, **Cursor**, and cloud agent orchestrators. |
+| **3. 🌐 HTTP Gateway REST API** | `POST /api/decide/{template}`<br>`GET /api/templates`, `POST /api/warmup` | Execute any `.json.tmpl` decision policy with a simple JSON variable map (`curl` / microservices) without installing `dgem` or managing local templates. Automatically handles GCP IAM/IAP auth and holds requests while scale-from-zero Cloud Run GPUs wake up. |
+| **4. ⌨️ CLI & 6 Benchmark Suites** | `./bin/dgem decide` / `./bin/dgem bench-*` | Direct single-pass decisions (`--stats`) and six reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-10`). |
 
 ### Why a "Decision Model"?
 
@@ -15,7 +28,7 @@ Instead of generating text left-to-right, `dgem` compiles declarative `.json.tmp
 | :--- | :--- | :--- | :--- | :--- |
 | **Policy Adaptability** | **Zero-Shot Policy-as-Template** (edit `.json.tmpl` in seconds) | Requires labeled dataset & weight retraining per label change | Zero-shot prompt engineering | Manual grammar authoring & compilation |
 | **Inference Latency** | **425 – 712 ms** (1-pass Metal / **458.9 ms** Cloud Run L4) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
-| **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 5 joint slots take same time) | $O(M_{\text{heads}})$ separate classifiers per attribute | **$O(T_{\text{output}})$ linear penalty** (serial token loop) | $O(N_{\text{chars}})$ graph traversal |
+| **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 12 joint slots take same pass) | $O(M_{\text{heads}})$ separate classifiers per attribute | **$O(T_{\text{output}})$ linear penalty** (serial token loop) | $O(N_{\text{chars}})$ graph traversal |
 | **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single forward pass | Independent static classification heads | Unidirectional causal bias (`left -> right`) | Local sliding window (1–3 tokens) |
 | **Epistemic Calibration ($H$)** | **Monotonic with human disagreement** (**8.0×** $H$ spike on `ChaosNLI`) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
 | **Guardrail & Policy Accuracy** | **100%** `AgentDrift` hijack, **100%** Prompt Injection, **100%** RAG Grounding | Narrow single-task scope (512–8k context) | High accuracy at 15–25× higher latency | **36.7%** on semiotic polysemy traps |
@@ -24,17 +37,18 @@ Instead of generating text left-to-right, `dgem` compiles declarative `.json.tmp
 
 ## Supported Deployment Environments
 
-`dgem` is client-agnostic and connects to any OpenAI-compatible or native Jev endpoint:
+`dgem` connects to any OpenAI-compatible or native Jev endpoint and exposes Decision Studio, MCP, REST API, and CLI surfaces:
 
 ```
-                  ┌───────────────────────────────┐
-                  │           dgem CLI            │
-                  └───────────────┬───────────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         ▼                        ▼                        ▼
+    ┌──────────────────────┬──────────────────────┬──────────────────────┐
+    │ 1. Decision Studio   │ 2. MCP Server        │ 3. REST API & CLI    │
+    │ Browser Web UI (:8090│ dgem mcp & POST /mcp │ POST /api/decide/... │
+    └──────────────────────┴──────────┬───────────┴──────────────────────┘
+                                      │
+          ┌───────────────────────────┼───────────────────────────┐
+          ▼                           ▼                           ▼
 Local Apple Silicon (Metal)  Cloud Run Serverless GPU   Cloud GPU on GCE VM
-• diffgemma serve (:8080)    • 1× NVIDIA L4 (24GB)      • 1× L4 (NVFP4) / 2× A100 (bf16)
+• diffgemma serve (:8080)    • 1× L4 (24GB) / RTX 6000  • 1× L4 (NVFP4) / 2× A100 (bf16)
 • 4-bit Q4 Unified Memory    • Self-contained container • vLLM PR #57250 nightly wheel
 • 32k KV Context             • GCS FUSE weight mount    • 32k context + Triton Attn
 • Zero cloud cost            • 459ms avg wall latency   • Direct raw completions

@@ -33,6 +33,7 @@ export default defineConfig({
           label: 'Getting Started',
           items: [
             { label: 'Overview', link: '/' },
+            { label: 'Decision Studio, MCP & HTTP API', slug: 'studio-mcp-api' },
             { label: 'Setup & Metal Engine', slug: 'setup' },
             { label: 'dgem User Guide', slug: 'user-guide' },
           ],
