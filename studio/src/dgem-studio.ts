@@ -912,10 +912,29 @@ export class DgemStudio extends LitElement {
     }
   `;
 
+  private statusPollTimer?: number;
+
   connectedCallback() {
     super.connectedCallback();
     this.initTheme();
     this.loadInitialData();
+    this.startStatusPolling();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.statusPollTimer) {
+      window.clearInterval(this.statusPollTimer);
+    }
+  }
+
+  private startStatusPolling() {
+    if (this.statusPollTimer) {
+      window.clearInterval(this.statusPollTimer);
+    }
+    this.statusPollTimer = window.setInterval(() => {
+      this.fetchGPUStatus();
+    }, 3000);
   }
 
   private initTheme() {
@@ -956,7 +975,11 @@ export class DgemStudio extends LitElement {
     try {
       const resp = await fetch('/api/status');
       if (!resp.ok) return;
+      const prevState = this.gpuStatus?.gpu_state;
       this.gpuStatus = await resp.json();
+      if (prevState === 'warming_up' && this.gpuStatus?.gpu_state === 'warm_and_ready') {
+        this.warmupToast = 'vLLM EngineCore & SigLIP Vision Tower are now Warm & Ready!';
+      }
     } catch {
       // ignore
     }
@@ -976,13 +999,13 @@ export class DgemStudio extends LitElement {
     this.warmingUp = true;
     this.warmupToast = waitForReady
       ? 'Waking Cloud Run GPU (NVIDIA RTX Pro 6000 48GB) and polling until vLLM EngineCore is ready...'
-      : 'Sent async GPU wakeup probe to dgemma Cloud Run instance...';
+      : 'Dispatched single-flight GPU warmup to dgemma; header indicator will update automatically every 3s...';
     try {
       const resp = await fetch(`/api/warmup?wait=${waitForReady ? 'true' : 'false'}`, {
         method: 'POST',
       });
       const data = await resp.json();
-      this.gpuStatus = data.status || this.gpuStatus;
+      await this.fetchGPUStatus();
       this.warmupToast = data.message || 'GPU warmup signal dispatched.';
     } catch (err) {
       this.warmupToast = `Warmup request error: ${(err as Error).message}`;
@@ -1297,18 +1320,25 @@ export class DgemStudio extends LitElement {
 
   private renderHeader() {
     const state = this.gpuStatus?.gpu_state || 'scaled_to_zero';
-    const dotClass =
-      state === 'warm_and_ready'
-        ? 'dot--ready'
-        : state === 'warming_up'
-          ? 'dot--warming'
-          : 'dot--cold';
-    const stateLabel =
-      state === 'warm_and_ready'
-        ? 'GPU Warm & Ready'
-        : state === 'warming_up'
-          ? 'GPU Warming Up...'
-          : 'GPU Scaled-to-Zero (Standby)';
+    const isWarm = state === 'warm_and_ready';
+    const isWarming = state === 'warming_up' || this.warmingUp;
+    const elapsedSec = this.gpuStatus?.warmup_elapsed_seconds || 0;
+    const lastReadoutMs = this.gpuStatus?.last_readout_ms || 0;
+    const idleRemSec = this.gpuStatus?.idle_remaining_seconds || 0;
+    const idleMinsLeft = Math.max(1, Math.ceil(idleRemSec / 60));
+
+    const dotClass = isWarm ? 'dot--ready' : isWarming ? 'dot--warming' : 'dot--cold';
+    const stateLabel = isWarm
+      ? 'GPU Warm & Ready'
+      : isWarming
+        ? 'GPU Warming Up...'
+        : 'GPU Scaled-to-Zero (Standby)';
+
+    const subDetail = isWarm
+      ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
+      : isWarming
+        ? `(${elapsedSec}s / ~210s)`
+        : '($0/hr idle)';
 
     return html`
       <header>
@@ -1327,21 +1357,27 @@ export class DgemStudio extends LitElement {
             <span class="pill" title=${this.gpuStatus?.message || ''}>
               <span class="dot ${dotClass}"></span>
               <span>${stateLabel}</span>
-              ${this.gpuStatus?.probe_latency_ms
-                ? html`<span class="tabular" style="color:var(--text-muted)">
-                    (${this.gpuStatus.probe_latency_ms}ms)
-                  </span>`
-                : null}
+              <span class="tabular" style="color:var(--text-muted)">${subDetail}</span>
             </span>
 
             <button
-              class="btn btn--sm btn--brand"
-              ?disabled=${this.warmingUp}
+              class="btn btn--sm ${isWarm || isWarming ? '' : 'btn--brand'}"
+              ?disabled=${isWarm || isWarming}
               @click=${() => this.handleWarmupGPU(false)}
-              title="Trigger scale-from-zero GPU warmup on dgemma"
+              title=${isWarm
+                ? 'vLLM EngineCore & SigLIP are already warm and ready'
+                : isWarming
+                  ? 'Single-flight GPU warmup is currently in progress'
+                  : 'Trigger scale-from-zero GPU warmup on dgemma'}
             >
-              <span class="material-symbols-outlined">bolt</span>
-              ${this.warmingUp ? 'Waking GPU...' : 'Wake GPU'}
+              <span class="material-symbols-outlined">
+                ${isWarm ? 'check_circle' : isWarming ? 'hourglass_top' : 'bolt'}
+              </span>
+              ${isWarm
+                ? 'GPU Ready'
+                : isWarming
+                  ? `Warming Up (${elapsedSec}s)...`
+                  : 'Wake GPU'}
             </button>
 
             <button

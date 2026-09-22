@@ -411,6 +411,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"warmup_in_progress":      st.WarmupInProgress,
 			"warmup_elapsed_seconds":  st.WarmupElapsedSeconds,
 			"seconds_since_last_read": st.SecondsSinceLastRead,
+			"idle_remaining_seconds":  st.IdleRemainingSeconds,
+			"last_readout_ms":         st.LastReadoutMs,
 			"estimated_wake_seconds":  st.EstimatedWakeSeconds,
 			"upstream_url":            st.UpstreamURL,
 			"model":                   st.Model,
@@ -571,8 +573,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 			http.Error(w, fmt.Sprintf(`{"error": "upstream decision failed after %d attempt(s): %s"}`, attempts, err.Error()), http.StatusBadGateway)
 			return
 		}
-		MarkGPUWarm()
-
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
 			if q.Entropy > maxEntropy {
@@ -590,6 +590,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if gpuForwardMs <= 0 && resp.Diagnostics.Timing.TotalMs > 0 {
 			gpuForwardMs = int64(resp.Diagnostics.Timing.TotalMs)
 		}
+		MarkGPUWarm(gpuForwardMs)
 		coldWaitMs := wallTimeMs - gpuForwardMs
 		if coldWaitMs < 0 {
 			coldWaitMs = 0

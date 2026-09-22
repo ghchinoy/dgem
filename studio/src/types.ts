@@ -16,6 +16,12 @@ export interface GPUHealthStatus {
   vram_gb: number;
   multimodal_vision: boolean;
   probe_latency_ms: number;
+  warmup_in_progress?: boolean;
+  warmup_elapsed_seconds?: number;
+  seconds_since_last_read?: number;
+  idle_remaining_seconds?: number;
+  last_readout_ms?: number;
+  estimated_wake_seconds?: number;
   message: string;
   checked_at: string;
 }

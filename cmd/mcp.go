@@ -20,13 +20,14 @@ import (
 )
 
 var (
-	gpuStateMu         sync.RWMutex
-	lastWarmTimestamp  time.Time
-	warmupInProgress   bool
-	warmupStartedAt    time.Time
-	warmupDoneCh       chan struct{}
-	warmupLastAttempts int
-	warmupLastErr      error
+	gpuStateMu           sync.RWMutex
+	lastWarmTimestamp    time.Time
+	lastReadoutLatencyMs int64
+	warmupInProgress     bool
+	warmupStartedAt      time.Time
+	warmupDoneCh         chan struct{}
+	warmupLastAttempts   int
+	warmupLastErr        error
 )
 
 var mcpCmd = &cobra.Command{
@@ -53,9 +54,12 @@ func init() {
 
 // MarkGPUWarm records that the upstream vLLM engine successfully completed a decision readout
 // and wakes any callers waiting on an in-flight warmup broadcast channel.
-func MarkGPUWarm() {
+func MarkGPUWarm(latencyMs ...int64) {
 	gpuStateMu.Lock()
 	lastWarmTimestamp = time.Now()
+	if len(latencyMs) > 0 && latencyMs[0] > 0 {
+		lastReadoutLatencyMs = latencyMs[0]
+	}
 	if warmupInProgress {
 		warmupInProgress = false
 		warmupLastErr = nil
@@ -76,6 +80,8 @@ type HealthAndGPUStatusOutput struct {
 	WarmupInProgress      bool   `json:"warmup_in_progress"`
 	WarmupElapsedSeconds  int    `json:"warmup_elapsed_seconds,omitempty"`
 	SecondsSinceLastRead  int    `json:"seconds_since_last_read,omitempty"`
+	IdleRemainingSeconds  int    `json:"idle_remaining_seconds,omitempty"`
+	LastReadoutMs         int64  `json:"last_readout_ms,omitempty"`
 	EstimatedWakeSeconds  int    `json:"estimated_wake_seconds"`
 	UpstreamURL           string `json:"upstream_url"`
 	Model                 string `json:"model"`
@@ -85,13 +91,13 @@ type HealthAndGPUStatusOutput struct {
 	Detail                string `json:"detail"`
 }
 
-// CheckHealthAndGPUStatus inspects both the gateway and the upstream Cloud Run GPU service.
+// CheckHealthAndGPUStatus inspects both the gateway and the upstream Cloud Run GPU service
+// WITHOUT sending unsolicited HTTP probes when idle (which would otherwise trigger Cloud Run's
+// scale-from-zero activator or reset its 15-minute idle scale-down timer).
 func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPUStatusOutput {
-	upstream := strings.TrimSuffix(viper.GetString("url"), "/v1")
-	healthURL := strings.TrimSuffix(upstream, "/") + "/health"
-
 	gpuStateMu.RLock()
 	lastWarm := lastWarmTimestamp
+	lastReadMs := lastReadoutLatencyMs
 	warming := warmupInProgress
 	warmStart := warmupStartedAt
 	gpuStateMu.RUnlock()
@@ -106,53 +112,43 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 		TemplatesAvailable:   len(catalog),
 		AuthenticatedUser:    userEmail,
 		WarmupInProgress:     warming,
+		LastReadoutMs:        lastReadMs,
 		EstimatedWakeSeconds: 210,
 	}
 
 	if warming {
 		out.WarmupElapsedSeconds = int(time.Since(warmStart).Seconds())
+		out.ContainerReachable = out.WarmupElapsedSeconds > 3
+		out.GPUState = "warming_up"
+		rem := 210 - out.WarmupElapsedSeconds
+		if rem < 10 {
+			rem = 10
+		}
+		out.EstimatedWakeSeconds = rem
+		out.Detail = fmt.Sprintf("GPU warmup in progress (%ds elapsed of ~210s cold-start). vLLM EngineCore is loading 17.53 GiB NVFP4 weights over GCS FUSE.", out.WarmupElapsedSeconds)
+		return out
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", healthURL, nil)
-	if err == nil {
-		if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
-			if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), upstream); tok != "" {
-				req.Header.Set("Authorization", "Bearer "+tok)
-			}
-		}
-		hc := &http.Client{Timeout: 3500 * time.Millisecond}
-		if resp, doErr := hc.Do(req); doErr == nil {
-			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				out.ContainerReachable = true
-			}
-		}
-	}
-
-	if !lastWarm.IsZero() && time.Since(lastWarm) < 14*time.Minute && out.ContainerReachable {
+	const cloudRunIdleWindow = 15 * time.Minute
+	if !lastWarm.IsZero() && time.Since(lastWarm) < cloudRunIdleWindow {
+		sinceSec := int(time.Since(lastWarm).Seconds())
+		remSec := int(cloudRunIdleWindow.Seconds()) - sinceSec
 		out.GPUAvailable = true
+		out.ContainerReachable = true
 		out.GPUState = "warm_and_ready"
-		out.SecondsSinceLastRead = int(time.Since(lastWarm).Seconds())
+		out.SecondsSinceLastRead = sinceSec
+		out.IdleRemainingSeconds = remSec
 		out.EstimatedWakeSeconds = 0
-		out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %ds ago; ~450-700ms latency).", out.SecondsSinceLastRead)
-		return out
-	}
-
-	if out.ContainerReachable {
-		out.GPUState = "warming_up"
-		out.EstimatedWakeSeconds = 90
-		out.Detail = "GPU container is allocated and reachable; vLLM EngineCore is loading 17.53 GiB bfloat16/NVFP4 weights over GCS FUSE."
-		return out
-	}
-
-	if warming {
-		out.GPUState = "warming_up"
-		out.Detail = fmt.Sprintf("GPU warmup in progress (%ds elapsed of ~210s cold-start). Container scaling 0 -> 1.", out.WarmupElapsedSeconds)
+		if lastReadMs > 0 {
+			out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %dms, %ds ago; %dm%ds until Cloud Run scale-to-zero).", lastReadMs, sinceSec, remSec/60, remSec%60)
+		} else {
+			out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %ds ago; %dm%ds until Cloud Run scale-to-zero).", sinceSec, remSec/60, remSec%60)
+		}
 		return out
 	}
 
 	out.GPUState = "scaled_to_zero"
-	out.Detail = "GPU service is scaled to 0 instances ($0.00/hr idle). Call warmup_gpu or execute any decision to wake automatically."
+	out.Detail = "GPU service is scaled to 0 instances ($0.00/hr idle). Click 'Wake GPU' or execute any decision to wake automatically."
 	return out
 }
 
@@ -227,8 +223,12 @@ func TriggerGPUWarmup(ctx context.Context, waitForReady bool) (WarmupGPUOutput, 
 			}
 			schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, vars)
 			attempts := 1
+			var readoutMs int64
 			if err == nil {
-				_, _, attempts, err = executeDecideWithWarmup(bgCtx, schemaContent, stateContent, nil)
+				_, stats, att, decErr := executeDecideWithWarmup(bgCtx, schemaContent, stateContent, nil)
+				attempts = att
+				err = decErr
+				readoutMs = stats.WallTime.Milliseconds()
 			}
 
 			gpuStateMu.Lock()
@@ -236,6 +236,9 @@ func TriggerGPUWarmup(ctx context.Context, waitForReady bool) (WarmupGPUOutput, 
 			warmupLastErr = err
 			if err == nil {
 				lastWarmTimestamp = time.Now()
+				if readoutMs > 0 {
+					lastReadoutLatencyMs = readoutMs
+				}
 			}
 			if warmupInProgress {
 				warmupInProgress = false
