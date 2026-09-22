@@ -17,17 +17,18 @@ if [ -f "$JIT_CACHE_ARCHIVE" ]; then
   tar -xzf "$JIT_CACHE_ARCHIVE" -C /root/ || true
 fi
 
-# On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /dev/shm in background
+# On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /tmp/dgemma (in-memory rootfs tmpfs)
 if [ "${COPY_TO_SHM:-0}" = "1" ] && [ -d "/mnt/gcs/dgemma" ] && [ -f "/mnt/gcs/dgemma/config.json" ]; then
-  echo "[init] Staging weights into /dev/shm/dgemma in background (xargs -P 16)..."
-  mkdir -p /dev/shm/dgemma
-  find /mnt/gcs/dgemma -maxdepth 1 -type f ! -name "*.safetensors" | xargs -I {} cp -f {} /dev/shm/dgemma/
+  echo "[init] Staging weights into /tmp/dgemma RAM disk (xargs -P 8)..."
+  mkdir -p /tmp/dgemma
+  find /mnt/gcs/dgemma -maxdepth 1 -type f ! -name "*.safetensors" | xargs -I {} cp -f {} /tmp/dgemma/
   (
-    find /mnt/gcs/dgemma -maxdepth 1 -type f -name "*.safetensors" | xargs -P 16 -I {} cp -f {} /dev/shm/dgemma/
-    touch /dev/shm/dgemma/.ready
-    echo "[init] Background safetensors copy to /dev/shm/dgemma complete"
+    set -e
+    find /mnt/gcs/dgemma -maxdepth 1 -type f -name "*.safetensors" | xargs -P 8 -I {} cp -f {} /tmp/dgemma/
+    touch /tmp/dgemma/.ready
+    echo "[init] Safetensors copy to /tmp/dgemma complete"
   ) &
-  MODEL="/dev/shm/dgemma"
+  MODEL="/tmp/dgemma"
 fi
 
 echo "[init] Starting structured_server proxy on port $PORT (upstream: http://127.0.0.1:8000)..."
@@ -53,12 +54,12 @@ if [ -n "$EXTRA_ARGS" ]; then
   VLLM_EXTRA_ARGS+=($EXTRA_ARGS)
 fi
 
-if [ "${COPY_TO_SHM:-0}" = "1" ] && [ "$MODEL" = "/dev/shm/dgemma" ]; then
-  echo "[init] Waiting for /dev/shm/dgemma/.ready before launching vLLM..."
-  while [ ! -f /dev/shm/dgemma/.ready ]; do
+if [ "${COPY_TO_SHM:-0}" = "1" ] && [ "$MODEL" = "/tmp/dgemma" ]; then
+  echo "[init] Waiting for /tmp/dgemma/.ready before launching vLLM..."
+  while [ ! -f /tmp/dgemma/.ready ]; do
     sleep 1
   done
-  echo "[init] /dev/shm/dgemma/.ready confirmed."
+  echo "[init] /tmp/dgemma/.ready confirmed."
 fi
 
 echo "[init] Launching vLLM engine core on port 8000..."

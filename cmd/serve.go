@@ -265,10 +265,12 @@ func isColdStartRetryable(err error) bool {
 	s := err.Error()
 	return strings.Contains(s, "ConnectionRefusedError") ||
 		strings.Contains(s, "Connection refused") ||
-		strings.Contains(s, "status 502") ||
-		strings.Contains(s, "status 503") ||
-		strings.Contains(s, "status 504") ||
-		strings.Contains(s, "status 429") ||
+		strings.Contains(s, "502") ||
+		strings.Contains(s, "503") ||
+		strings.Contains(s, "504") ||
+		strings.Contains(s, "429") ||
+		strings.Contains(s, "Service Unavailable") ||
+		strings.Contains(s, "Bad Gateway") ||
 		strings.Contains(s, "Client.Timeout") ||
 		strings.Contains(s, "context deadline exceeded")
 }
