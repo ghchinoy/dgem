@@ -53,6 +53,14 @@ if [ -n "$EXTRA_ARGS" ]; then
   VLLM_EXTRA_ARGS+=($EXTRA_ARGS)
 fi
 
+if [ "${COPY_TO_SHM:-0}" = "1" ] && [ "$MODEL" = "/dev/shm/dgemma" ]; then
+  echo "[init] Waiting for /dev/shm/dgemma/.ready before launching vLLM..."
+  while [ ! -f /dev/shm/dgemma/.ready ]; do
+    sleep 1
+  done
+  echo "[init] /dev/shm/dgemma/.ready confirmed."
+fi
+
 echo "[init] Launching vLLM engine core on port 8000..."
 exec vllm serve "$MODEL" \
   --host 127.0.0.1 \

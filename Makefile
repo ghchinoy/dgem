@@ -69,6 +69,9 @@ cloudrun-stage: ## Pre-stage model weights in GCS for Cloud Run GCS FUSE volume 
 cloudrun-deploy: ## Deploy DiffusionGemma to Google Cloud Run with GPU (L4 or RTX Pro 6000)
 	./scripts/deploy_cloudrun_vllm.sh
 
+gateway-deploy: ## Deploy lightweight Go HTTP API & Web Studio Gateway (dgemma-gateway) to Cloud Run
+	./scripts/deploy_cloudrun_gateway.sh
+
 cloudrun-teardown: ## Delete Cloud Run dgemma GPU service to eliminate any cloud resource footprint
 	gcloud run services delete dgemma --region=$${GCP_REGION:-us-central1} --quiet
 

@@ -2,9 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
@@ -13,14 +17,23 @@ import (
 )
 
 var (
-	cfgFile   string
-	serverURL string
-	modelName string
-	timeout   time.Duration
-	showStats bool
-	authToken string
-	gcpAuth   bool
+	cfgFile     string
+	serverURL   string
+	modelName   string
+	timeout     time.Duration
+	showStats   bool
+	authToken   string
+	gcpAuth     bool
+	iapClientID string
+
+	tokenCacheMu sync.Mutex
+	tokenCache   = map[string]cachedToken{}
 )
+
+type cachedToken struct {
+	token   string
+	expires time.Time
+}
 
 // RootCmd is the base command for dgem.
 var RootCmd = &cobra.Command{
@@ -53,7 +66,8 @@ func init() {
 	RootCmd.PersistentFlags().DurationVar(&timeout, "timeout", 120*time.Second, "Client timeout")
 	RootCmd.PersistentFlags().BoolVarP(&showStats, "stats", "s", false, "Display execution timing, token breakdown, and inference telemetry")
 	RootCmd.PersistentFlags().StringVarP(&authToken, "token", "k", "", "Authorization Bearer token / API key")
-	RootCmd.PersistentFlags().BoolVar(&gcpAuth, "gcp-auth", false, "Automatically obtain GCP IAM identity token via gcloud auth print-identity-token")
+	RootCmd.PersistentFlags().BoolVar(&gcpAuth, "gcp-auth", false, "Automatically obtain GCP IAM identity token via gcloud auth print-identity-token or Cloud Run metadata server")
+	RootCmd.PersistentFlags().StringVar(&iapClientID, "iap-client-id", "", "OAuth 2.0 Client ID / Audience for Identity-Aware Proxy (IAP) protected endpoints (env: DGEM_IAP_CLIENT_ID)")
 
 	viper.BindPFlag("url", RootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("model", RootCmd.PersistentFlags().Lookup("model"))
@@ -61,6 +75,7 @@ func init() {
 	viper.BindPFlag("stats", RootCmd.PersistentFlags().Lookup("stats"))
 	viper.BindPFlag("token", RootCmd.PersistentFlags().Lookup("token"))
 	viper.BindPFlag("gcp_auth", RootCmd.PersistentFlags().Lookup("gcp-auth"))
+	viper.BindPFlag("iap_client_id", RootCmd.PersistentFlags().Lookup("iap-client-id"))
 }
 
 func initConfig() {
@@ -81,19 +96,75 @@ func initConfig() {
 	_ = viper.ReadInConfig()
 }
 
+// FetchGCPIdentityToken mints an OIDC identity token for either Cloud Run IAM or Identity-Aware Proxy (IAP).
+// On Cloud Run / GCE, it queries the local metadata server; on workstations, it invokes gcloud auth print-identity-token.
+func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
+	cacheKey := explicitAudience + "|" + targetURL
+	tokenCacheMu.Lock()
+	if cached, ok := tokenCache[cacheKey]; ok && time.Now().Before(cached.expires) {
+		tokenCacheMu.Unlock()
+		return cached.token
+	}
+	tokenCacheMu.Unlock()
+
+	aud := strings.TrimSpace(explicitAudience)
+	if aud == "" && targetURL != "" {
+		if parsed, err := url.Parse(targetURL); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+			aud = parsed.Scheme + "://" + parsed.Host
+		}
+	}
+
+	var token string
+	// 1. Try GCP Metadata Server first (fast path inside Cloud Run / GCE containers)
+	if aud != "" {
+		metaURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=" + url.QueryEscape(aud)
+		req, err := http.NewRequest("GET", metaURL, nil)
+		if err == nil {
+			req.Header.Set("Metadata-Flavor", "Google")
+			httpClient := &http.Client{Timeout: 800 * time.Millisecond}
+			if resp, err := httpClient.Do(req); err == nil {
+				defer resp.Body.Close()
+				if resp.StatusCode == http.StatusOK {
+					if body, err := io.ReadAll(resp.Body); err == nil {
+						token = strings.TrimSpace(string(body))
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Fall back to gcloud CLI on developer workstations
+	if token == "" {
+		args := []string{"auth", "print-identity-token"}
+		if explicitAudience != "" {
+			args = append(args, "--audiences="+explicitAudience)
+		}
+		if out, err := exec.Command("gcloud", args...).Output(); err == nil {
+			token = strings.TrimSpace(string(out))
+		}
+	}
+
+	if token != "" {
+		tokenCacheMu.Lock()
+		tokenCache[cacheKey] = cachedToken{
+			token:   token,
+			expires: time.Now().Add(45 * time.Minute),
+		}
+		tokenCacheMu.Unlock()
+	}
+	return token
+}
+
 // GetClient returns a configured API client using Viper values.
 func GetClient() *client.Client {
 	baseURL := viper.GetString("url")
 	model := viper.GetString("model")
 	to := viper.GetDuration("timeout")
 	token := viper.GetString("token")
+	iapAud := viper.GetString("iap_client_id")
 
-	if token == "" && viper.GetBool("gcp_auth") {
-		// Attempt to fetch identity token using gcloud CLI
-		out, err := exec.Command("gcloud", "auth", "print-identity-token").Output()
-		if err == nil {
-			token = strings.TrimSpace(string(out))
-		}
+	if token == "" && (viper.GetBool("gcp_auth") || iapAud != "") {
+		token = FetchGCPIdentityToken(iapAud, baseURL)
 	}
 
 	c := client.NewClient(baseURL, model, to)
