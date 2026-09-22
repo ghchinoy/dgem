@@ -845,9 +845,22 @@ export class DgemStudio extends LitElement {
       border: 1px solid #1e293b;
     }
 
+    .catalog-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(380px, 1fr);
+      gap: 1.15rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .catalog-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .catalog-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
       gap: 0.85rem;
     }
 
@@ -860,6 +873,28 @@ export class DgemStudio extends LitElement {
       flex-direction: column;
       justify-content: space-between;
       gap: 0.65rem;
+      cursor: pointer;
+      transition:
+        border-color 120ms ease,
+        box-shadow 120ms ease;
+    }
+
+    .template-card:hover {
+      border-color: var(--brand-border, #bfdbfe);
+    }
+
+    .template-card--active {
+      border-color: var(--brand, #1447e6);
+      box-shadow: 0 0 0 2px var(--brand-soft, #eff6ff);
+    }
+
+    .catalog-inspector-panel {
+      position: sticky;
+      top: 76px;
+      border-radius: 8px;
+      border: 1px solid var(--border-default, #e2e8f0);
+      background: var(--neutral-secondary-soft, #f8fafc);
+      padding: 0.95rem;
     }
 
     .toast-banner {
@@ -1488,7 +1523,7 @@ export class DgemStudio extends LitElement {
                     style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem"
                   >
                     <span style="font-size:0.74rem;color:var(--text-muted)">
-                      Solid Blue = Softmax Expectation ($E[c]$) · Dashed Amber = Discrete Argmax
+                      Solid Blue = Softmax Expectation E[c] · Dashed Amber = Discrete Argmax
                     </span>
                     <div class="segmented">
                       ${(['both', 'expectation', 'argmax'] as const).map(
@@ -1538,7 +1573,7 @@ export class DgemStudio extends LitElement {
           <div class="card-header">
             <h2 class="card-title">
               <span class="material-symbols-outlined">analytics</span>
-              Joint Slot Readout & Epistemic Entropy ($H$)
+              Joint Slot Readout &amp; Epistemic Entropy (H)
             </h2>
             <div style="display:flex;gap:0.45rem">
               <button
@@ -1567,7 +1602,7 @@ export class DgemStudio extends LitElement {
                 <div class="kpi-value">${this.result ? `${Math.round(wallMs)} ms` : '—'}</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Peak Entropy $H_{\max}$</div>
+                <div class="kpi-label">Peak Entropy (Hₘₐₓ)</div>
                 <div class="kpi-value">
                   ${this.result ? `${maxEntropy.toFixed(3)} nats` : '—'}
                 </div>
@@ -1591,7 +1626,7 @@ export class DgemStudio extends LitElement {
                     <div style="font-size:0.8rem">
                       Select any preset on the left and click
                       <strong>Evaluate Decision Policy</strong> to inspect joint slot probabilities and
-                      calibrated Shannon entropy $H$.
+                      calibrated Shannon entropy (H).
                     </div>
                   </div>
                 `
@@ -1752,6 +1787,14 @@ export class DgemStudio extends LitElement {
     const blendedAccuracy = (84.0 + 10.0 * (1 - Math.abs(tau - 0.35))).toFixed(1);
     const blendedLatencyMs = Math.round(712 + (escalatePct / 100) * 1450);
 
+    const activeInspected =
+      (this.inspectedTemplate &&
+        filtered.find((f) => f.name === this.inspectedTemplate?.name)) ||
+      this.inspectedTemplate ||
+      filtered[0] ||
+      this.templates[0] ||
+      null;
+
     return html`
       <!-- EXP-05 Interactive Entropy-Gated Cascade Simulator -->
       <div class="card" style="margin-bottom:1.25rem">
@@ -1766,8 +1809,8 @@ export class DgemStudio extends LitElement {
           <div class="workspace-grid">
             <div>
               <div class="field-label">
-                <span>Shannon Entropy Escalation Threshold ($\tau$)</span>
-                <span class="field-var-badge tabular">$\tau$ = ${tau.toFixed(2)} nats</span>
+                <span>Shannon Entropy Escalation Threshold (τ)</span>
+                <span class="field-var-badge tabular">τ = ${tau.toFixed(2)} nats</span>
               </div>
               <input
                 type="range"
@@ -1811,7 +1854,7 @@ export class DgemStudio extends LitElement {
         </div>
       </div>
 
-      <!-- 24-Template Policy Catalog -->
+      <!-- Policy-as-Template Catalog + Side-by-Side Source Inspector -->
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">
@@ -1843,69 +1886,122 @@ export class DgemStudio extends LitElement {
           </div>
         </div>
         <div class="card-body">
-          <div class="catalog-grid">
-            ${filtered.map(
-              (t) => html`
-                <div class="template-card">
-                  <div>
-                    <div
-                      style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem"
-                    >
-                      <strong class="tabular" style="font-size:0.84rem">${t.name}</strong>
-                      <span class="field-var-badge">${t.category}</span>
+          <div class="catalog-split">
+            <!-- Left Column: Policy Catalog Tiles -->
+            <div class="catalog-grid">
+              ${filtered.map((t) => {
+                const isSelected = activeInspected?.name === t.name;
+                return html`
+                  <div
+                    class="template-card ${isSelected ? 'template-card--active' : ''}"
+                    @click=${() => (this.inspectedTemplate = t)}
+                  >
+                    <div>
+                      <div
+                        style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem"
+                      >
+                        <strong class="tabular" style="font-size:0.84rem">${t.name}</strong>
+                        <span class="field-var-badge">${t.category}</span>
+                      </div>
+                      <p style="font-size:0.77rem;color:var(--text-muted);margin:0 0 0.5rem">
+                        ${t.description}
+                      </p>
+                      <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
+                        ${(t.variables || []).map(
+                          (v) => html`<span class="prob-chip">.{{${v}}}</span>`
+                        )}
+                      </div>
                     </div>
-                    <p style="font-size:0.77rem;color:var(--text-muted);margin:0 0 0.5rem">
-                      ${t.description}
-                    </p>
-                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
-                      ${(t.variables || []).map(
-                        (v) => html`<span class="prob-chip">.{{${v}}}</span>`
-                      )}
+                    <div style="display:flex;gap:0.45rem;margin-top:0.5rem">
+                      <button
+                        class="btn btn--sm btn--brand"
+                        style="flex:1"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this.selectedTemplateName = t.name;
+                          const nextVars: Record<string, string> = {};
+                          for (const v of t.variables || []) {
+                            nextVars[v] = this.variableValues[v] || '';
+                          }
+                          this.variableValues = nextVars;
+                          this.activeTab = 'studio';
+                        }}
+                      >
+                        Open in Studio
+                      </button>
+                      <button
+                        class="btn btn--sm"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this.inspectedTemplate = t;
+                        }}
+                      >
+                        ${isSelected ? 'Viewing' : 'Source'}
+                      </button>
                     </div>
                   </div>
-                  <div style="display:flex;gap:0.45rem;margin-top:0.5rem">
-                    <button
-                      class="btn btn--sm btn--brand"
-                      style="flex:1"
-                      @click=${() => {
-                        this.selectedTemplateName = t.name;
-                        const nextVars: Record<string, string> = {};
-                        for (const v of t.variables || []) {
-                          nextVars[v] = this.variableValues[v] || '';
-                        }
-                        this.variableValues = nextVars;
-                        this.activeTab = 'studio';
-                      }}
-                    >
-                      Open in Studio
-                    </button>
-                    <button
-                      class="btn btn--sm"
-                      @click=${() =>
-                        (this.inspectedTemplate =
-                          this.inspectedTemplate?.name === t.name ? null : t)}
-                    >
-                      Source
-                    </button>
-                  </div>
-                </div>
-              `
-            )}
-          </div>
+                `;
+              })}
+            </div>
 
-          ${this.inspectedTemplate
-            ? html`
-                <div style="margin-top:1.25rem">
-                  <div class="field-label">
-                    <span>Template Source: ${this.inspectedTemplate.path}</span>
-                    <button class="btn btn--sm" @click=${() => (this.inspectedTemplate = null)}>
-                      Close Source
-                    </button>
-                  </div>
-                  <pre class="code-block">${this.inspectedTemplate.raw_source}</pre>
-                </div>
-              `
-            : null}
+            <!-- Right Column: Sticky Side-by-Side Template Source Inspector -->
+            <div class="catalog-inspector-panel">
+              ${activeInspected
+                ? html`
+                    <div
+                      style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.6rem;flex-wrap:wrap"
+                    >
+                      <div>
+                        <div
+                          style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)"
+                        >
+                          Policy Source Inspector
+                        </div>
+                        <div
+                          class="tabular"
+                          style="font-size:0.82rem;font-weight:700;color:var(--text-heading)"
+                        >
+                          ${activeInspected.path}
+                        </div>
+                      </div>
+                      <div style="display:flex;gap:0.4rem">
+                        <button
+                          class="btn btn--sm"
+                          @click=${() =>
+                            this.copyText('tmpl-src', activeInspected.raw_source || '')}
+                        >
+                          <span class="material-symbols-outlined">content_copy</span>
+                          ${this.copiedSnippet === 'tmpl-src' ? 'Copied!' : 'Copy'}
+                        </button>
+                        <button
+                          class="btn btn--sm btn--brand"
+                          @click=${() => {
+                            this.selectedTemplateName = activeInspected.name;
+                            const nextVars: Record<string, string> = {};
+                            for (const v of activeInspected.variables || []) {
+                              nextVars[v] = this.variableValues[v] || '';
+                            }
+                            this.variableValues = nextVars;
+                            this.activeTab = 'studio';
+                          }}
+                        >
+                          <span class="material-symbols-outlined">tune</span>
+                          Open in Studio
+                        </button>
+                      </div>
+                    </div>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin:0 0 0.65rem">
+                      ${activeInspected.description}
+                    </p>
+                    <pre class="code-block" style="max-height:560px;overflow-y:auto">${activeInspected.raw_source}</pre>
+                  `
+                : html`
+                    <div style="font-size:0.8rem;color:var(--text-muted)">
+                      Select any policy tile on the left to inspect its <code>.json.tmpl</code> source.
+                    </div>
+                  `}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -2031,14 +2127,13 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
           </div>
         </div>
 
-        <!-- RIGHT: 4-Pillar Architecture & Copyable Integration Configs -->
+        <!-- RIGHT: Ways to Access & Copyable Integration Configs -->
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">
               <span class="material-symbols-outlined">integration_instructions</span>
-              MCP Client Configuration & HTTP Gateway Endpoints
+              MCP Client Configuration &amp; HTTP Gateway Endpoints
             </h2>
-            <span class="pill tabular">4-Pillar Package</span>
           </div>
           <div class="card-body">
             <div class="field-label">

@@ -230,7 +230,7 @@ export class DgemAboutModal extends LitElement {
             </div>
 
             <div style="font-weight:600;color:var(--modal-heading);font-size:0.8rem">
-              The 4-Pillar Package:
+              Ways to Access:
             </div>
             <ul class="pillar-list">
               <li>
