@@ -1064,7 +1064,13 @@ export class DgemStudio extends LitElement {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json();
+      const rawText = await resp.text();
+      let data: DecideAPIResponse & { error?: string };
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(rawText || `HTTP ${resp.status}`);
+      }
       if (!resp.ok) {
         throw new Error(data.error || `HTTP ${resp.status}`);
       }
@@ -1201,17 +1207,17 @@ export class DgemStudio extends LitElement {
         );
         return;
       }
-      // Fallback for decide_custom_questions via /v1/chat/completions
-      const schemaPayload = JSON.stringify({
+      // Route decide_custom_questions through /api/decide with custom_template normalizer
+      const customSchema = JSON.stringify({
         context: parsedArgs.context || '',
         questions: parsedArgs.questions || [],
       });
-      const resp = await fetch('/v1/chat/completions', {
+      const resp = await fetch('/api/decide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'diffgemma-26b-a4b-it-q4',
-          messages: [{ role: 'user', content: schemaPayload }],
+          custom_template: customSchema,
+          variables: { context: parsedArgs.context || '' },
         }),
       });
       const data = await resp.json();

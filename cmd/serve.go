@@ -483,11 +483,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 			w.Header().Set("X-Dgem-Trace-Id", traceID)
 		}
 
+		writeErr := func(status int, msg string) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		}
+
 		var payload GatewayDecideRequest
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			rootSpan.SetStatus(codes.Error, err.Error())
 			rootSpan.End()
-			http.Error(w, fmt.Sprintf(`{"error": "invalid JSON body: %s"}`, err.Error()), http.StatusBadRequest)
+			writeErr(http.StatusBadRequest, fmt.Sprintf("invalid JSON body: %s", err.Error()))
 			return
 		}
 
@@ -536,7 +542,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			renderSpan.End()
 			rootSpan.SetStatus(codes.Error, err.Error())
 			rootSpan.End()
-			http.Error(w, fmt.Sprintf(`{"error": "template render failed: %s"}`, err.Error()), http.StatusBadRequest)
+			writeErr(http.StatusBadRequest, fmt.Sprintf("template render failed: %s", err.Error()))
 			return
 		}
 
@@ -545,7 +551,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			rootSpan.SetStatus(codes.Error, err.Error())
 			rootSpan.End()
-			http.Error(w, fmt.Sprintf(`{"error": "failed to parse rendered template: %s"}`, err.Error()), http.StatusBadRequest)
+			writeErr(http.StatusBadRequest, fmt.Sprintf("failed to parse rendered template: %s", err.Error()))
 			return
 		}
 
@@ -570,7 +576,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			rootSpan.SetStatus(codes.Error, err.Error())
 			rootSpan.End()
-			http.Error(w, fmt.Sprintf(`{"error": "upstream decision failed after %d attempt(s): %s"}`, attempts, err.Error()), http.StatusBadGateway)
+			writeErr(http.StatusBadGateway, fmt.Sprintf("upstream decision failed after %d attempt(s): %s", attempts, err.Error()))
 			return
 		}
 		maxEntropy := 0.0

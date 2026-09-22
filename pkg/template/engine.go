@@ -101,32 +101,130 @@ type StructuredPayload struct {
 }
 
 // ParseStructuredPayload parses rendered output that has separate "schema" and "state" envelopes,
-// or treats the full payload as the schema if not wrapped.
+// or treats the full payload as the schema if not wrapped, and normalizes legacy question fields
+// ("name" -> "id", "question"/"prompt" -> "instructions", "items" -> "levels", dict "options" -> list)
+// so that all templates and ad-hoc schemas conform to structured_server.py's parse_schema contract.
 func ParseStructuredPayload(rendered string, fallbackState map[string]interface{}) (string, string, error) {
 	trimmed := strings.TrimSpace(rendered)
 	if strings.HasPrefix(trimmed, "{") {
 		var envelope StructuredPayload
 		if err := json.Unmarshal([]byte(trimmed), &envelope); err == nil && len(envelope.Schema) > 0 {
-			// Schema is present in envelope
-			schemaStr := string(envelope.Schema)
+			schemaStr := normalizeSchemaJSON(string(envelope.Schema))
 
 			var stateStr string
 			if len(envelope.State) > 0 && string(envelope.State) != "null" {
 				stateStr = string(envelope.State)
 			} else {
-				// Fallback to variables provided via CLI
 				sb, _ := json.Marshal(fallbackState)
 				stateStr = string(sb)
 			}
 			return schemaStr, stateStr, nil
 		}
+
+		// Check if it's a flat {"input": ..., "questions": [...]} or {"context": ..., "questions": [...]} object
+		var rawObj map[string]interface{}
+		if err := json.Unmarshal([]byte(trimmed), &rawObj); err == nil {
+			stateMap := make(map[string]interface{})
+			for k, v := range fallbackState {
+				stateMap[k] = v
+			}
+			if inp, ok := rawObj["input"]; ok {
+				stateMap["input"] = inp
+				delete(rawObj, "input")
+			}
+			if ctxVal, ok := rawObj["context"]; ok {
+				stateMap["context"] = ctxVal
+				delete(rawObj, "context")
+			}
+			normalizeSchemaMap(rawObj)
+			schemaBytes, _ := json.Marshal(rawObj)
+			stateBytes, _ := json.Marshal(stateMap)
+			return string(schemaBytes), string(stateBytes), nil
+		}
 	}
 
-	// Not wrapped in schema/state envelope: treat rendered as the schema itself
+	// Fallback if not a JSON object
 	stateBytes, err := json.Marshal(fallbackState)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to serialize fallback state: %w", err)
 	}
 
 	return trimmed, string(stateBytes), nil
+}
+
+func normalizeSchemaJSON(schemaStr string) string {
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(schemaStr), &m); err != nil {
+		return schemaStr
+	}
+	normalizeSchemaMap(m)
+	b, err := json.Marshal(m)
+	if err != nil {
+		return schemaStr
+	}
+	return string(b)
+}
+
+func normalizeSchemaMap(m map[string]interface{}) {
+	rawQs, ok := m["questions"].([]interface{})
+	if !ok {
+		return
+	}
+	for _, item := range rawQs {
+		q, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		// 1. "name" -> "id"
+		if _, hasID := q["id"]; !hasID {
+			if nameVal, hasName := q["name"]; hasName {
+				q["id"] = nameVal
+				delete(q, "name")
+			}
+		}
+		// 2. "question" or "prompt" -> "instructions"
+		if _, hasInst := q["instructions"]; !hasInst {
+			if qText, hasQ := q["question"]; hasQ {
+				q["instructions"] = qText
+				delete(q, "question")
+			} else if pText, hasP := q["prompt"]; hasP {
+				q["instructions"] = pText
+				delete(q, "prompt")
+			}
+		}
+		// 3. "choices" -> "options"
+		if _, hasOpts := q["options"]; !hasOpts {
+			if chVal, hasChoices := q["choices"]; hasChoices {
+				q["options"] = chVal
+				delete(q, "choices")
+			}
+		}
+		// 4. Dictionary "options": {"yes": "desc"} -> [{"name": "yes", "description": "desc"}]
+		if optsMap, isMap := q["options"].(map[string]interface{}); isMap {
+			optList := make([]map[string]interface{}, 0, len(optsMap))
+			for k, v := range optsMap {
+				optList = append(optList, map[string]interface{}{
+					"name":        k,
+					"description": fmt.Sprintf("%v", v),
+				})
+			}
+			q["options"] = optList
+		}
+		// 5. "items" -> "levels" (and ensure string elements for score levels)
+		if _, hasLevels := q["levels"]; !hasLevels {
+			if itemsVal, hasItems := q["items"]; hasItems {
+				q["levels"] = itemsVal
+				delete(q, "items")
+			} else if q["type"] == "score" {
+				q["levels"] = []string{"1", "2", "3", "4", "5"}
+			}
+		}
+		if lvls, isSlice := q["levels"].([]interface{}); isSlice {
+			strLvls := make([]string, 0, len(lvls))
+			for _, l := range lvls {
+				strLvls = append(strLvls, fmt.Sprintf("%v", l))
+			}
+			q["levels"] = strLvls
+		}
+	}
 }

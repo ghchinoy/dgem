@@ -559,9 +559,9 @@ func buildMCPServer() *mcp.Server {
 		qList := make([]map[string]interface{}, 0, len(input.Questions))
 		for _, q := range input.Questions {
 			qMap := map[string]interface{}{
-				"id":     q.ID,
-				"type":   q.Type,
-				"prompt": q.Question,
+				"id":           q.ID,
+				"type":         q.Type,
+				"instructions": q.Question,
 			}
 			if len(q.Options) > 0 {
 				qMap["options"] = q.Options
@@ -570,10 +570,10 @@ func buildMCPServer() *mcp.Server {
 		}
 		schemaObj := map[string]interface{}{"questions": qList}
 		schemaBytes, _ := json.Marshal(schemaObj)
-		stateBytes, _ := json.Marshal(map[string]interface{}{"context": input.Context})
+		schemaStr, stateStr, _ := template.ParseStructuredPayload(string(schemaBytes), map[string]interface{}{"context": input.Context})
 
 		start := time.Now()
-		resp, stats, attempts, err := executeDecideWithWarmup(ctx, string(schemaBytes), string(stateBytes), nil)
+		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaStr, stateStr, nil)
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
