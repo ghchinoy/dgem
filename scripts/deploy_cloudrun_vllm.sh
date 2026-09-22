@@ -76,7 +76,7 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
 if [[ "$GPU_TYPE" == "nvidia-rtx-pro-6000" ]]; then
   CPU="20"
   MEMORY="80Gi"
-  COPY_SHM="${COPY_TO_SHM:-0}" # Stream over GCS FUSE buffered-read into 80Gi RAM without filling /dev/shm
+  COPY_SHM="${COPY_TO_SHM:-1}" # Stage sequentially into /tmp/dgemma (80Gi tmpfs) in ~55s instead of 429s FUSE random mmap
   CANVAS_LEN="128"
   MAX_MODEL_LEN="4096"
 else
@@ -101,8 +101,8 @@ DEPLOY_FLAGS=(
   "--service-account" "$GPU_SA"
   "--execution-environment" "gen2"
   "--no-allow-unauthenticated"
-  "--command="
-  "--args="
+  "--command=/bin/bash"
+  "--args=^@^-c@sed 's|/dev/shm/dgemma|/tmp/dgemma|g' /app/entrypoint.sh > /tmp/run.sh && chmod +x /tmp/run.sh && exec /tmp/run.sh"
   "--cpu" "$CPU"
   "--memory" "$MEMORY"
   "--gpu" "1"

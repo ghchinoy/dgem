@@ -281,17 +281,30 @@ func ParseStructuredContent(content string) (*StructuredDecisionResponse, error)
 	return ParseStructuredContentWithLogprobs(content, nil)
 }
 
+func normalizeQuestionAnswers(s *StructuredDecisionResponse) *StructuredDecisionResponse {
+	if s == nil {
+		return nil
+	}
+	for k, qa := range s.Answers {
+		if qa.Type == "noul" {
+			qa.Type = "bool"
+			s.Answers[k] = qa
+		}
+	}
+	return s
+}
+
 // ParseStructuredContentWithLogprobs unmarshals the assistant text and enriches slot confidence,
 // top-k candidate probabilities, and Shannon entropy using OpenAI/vLLM token logprobs when present.
 func ParseStructuredContentWithLogprobs(content string, logprobs *ChoiceLogprobs) (*StructuredDecisionResponse, error) {
 	var structured StructuredDecisionResponse
 	if err := json.Unmarshal([]byte(content), &structured); err == nil && len(structured.Answers) > 0 {
-		return &structured, nil
+		return normalizeQuestionAnswers(&structured), nil
 	}
 
 	cleaned := cleanJSON(content)
 	if err := json.Unmarshal([]byte(cleaned), &structured); err == nil && len(structured.Answers) > 0 {
-		return &structured, nil
+		return normalizeQuestionAnswers(&structured), nil
 	}
 
 	// Envelope fallback: Handles responses with {"answers": {...}, "diagnostics": {...}}
@@ -304,7 +317,7 @@ func ParseStructuredContentWithLogprobs(content string, logprobs *ChoiceLogprobs
 		if len(rawEnvelope.Diagnostics) > 0 {
 			_ = json.Unmarshal(rawEnvelope.Diagnostics, &structured.Diagnostics)
 		}
-		return &structured, nil
+		return normalizeQuestionAnswers(&structured), nil
 	}
 
 	// Fallback: Check if response is a direct JSON key-value map (e.g. from vLLM completions)

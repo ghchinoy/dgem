@@ -1293,7 +1293,9 @@
                           <div class="slot-top">
                             <div class="slot-name">
                               <span>${n}</span>
-                              <span class="slot-type-pill">${d.type}</span>
+                              <span class="slot-type-pill">
+                                ${d.type==="noul"||d.type==="boolean"?"bool":d.type}
+                              </span>
                             </div>
                             <span class="slot-answer-chip">${x}</span>
                           </div>

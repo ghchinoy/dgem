@@ -1667,7 +1667,9 @@ export class DgemStudio extends LitElement {
                           <div class="slot-top">
                             <div class="slot-name">
                               <span>${qName}</span>
-                              <span class="slot-type-pill">${ans.type}</span>
+                              <span class="slot-type-pill">
+                                ${ans.type === 'noul' || ans.type === 'boolean' ? 'bool' : ans.type}
+                              </span>
                             </div>
                             <span class="slot-answer-chip">${primaryVal}</span>
                           </div>

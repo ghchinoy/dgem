@@ -53,19 +53,20 @@ func init() {
 }
 
 // NotifyColdStartWarmup ensures that if a decision request arrives while the GPU is scaled to zero,
-// the global status coordinator immediately reflects "warming_up" (just as if "Wake GPU" had been pressed).
+// the global status coordinator immediately starts the single-flight background warmup worker
+// (just as if "Wake GPU" had been pressed) and guarantees warmupInProgress is cleared on completion or timeout.
 func NotifyColdStartWarmup() {
-	gpuStateMu.Lock()
+	gpuStateMu.RLock()
 	const cloudRunIdleWindow = 15 * time.Minute
 	isWarm := !lastWarmTimestamp.IsZero() && time.Since(lastWarmTimestamp) < cloudRunIdleWindow
-	if !isWarm && !warmupInProgress {
-		warmupInProgress = true
-		warmupStartedAt = time.Now()
-		if warmupDoneCh == nil {
-			warmupDoneCh = make(chan struct{})
-		}
+	alreadyWarming := warmupInProgress
+	gpuStateMu.RUnlock()
+
+	if !isWarm && !alreadyWarming {
+		go func() {
+			_, _ = TriggerGPUWarmup(context.Background(), false)
+		}()
 	}
-	gpuStateMu.Unlock()
 }
 
 // MarkGPUWarm records that the upstream vLLM engine successfully completed a decision readout
@@ -111,12 +112,20 @@ type HealthAndGPUStatusOutput struct {
 // WITHOUT sending unsolicited HTTP probes when idle (which would otherwise trigger Cloud Run's
 // scale-from-zero activator or reset its 15-minute idle scale-down timer).
 func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPUStatusOutput {
-	gpuStateMu.RLock()
+	gpuStateMu.Lock()
+	// Safety expiry: never allow warmupInProgress to stay stuck past serveWakeupTimeout (10m)
+	if warmupInProgress && time.Since(warmupStartedAt) > 10*time.Minute {
+		warmupInProgress = false
+		if warmupDoneCh != nil {
+			close(warmupDoneCh)
+			warmupDoneCh = nil
+		}
+	}
 	lastWarm := lastWarmTimestamp
 	lastReadMs := lastReadoutLatencyMs
 	warming := warmupInProgress
 	warmStart := warmupStartedAt
-	gpuStateMu.RUnlock()
+	gpuStateMu.Unlock()
 
 	catalog, _ := discoverTemplates(serveTemplatesDir)
 
