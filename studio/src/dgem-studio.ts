@@ -4,6 +4,7 @@ import './components/dgem-nav-rail.js';
 import './components/dgem-about-modal.js';
 import './components/dgem-preset-selector.js';
 import './components/dgem-policy-composer.js';
+import './components/dgem-concept-visualizer.js';
 import type { StudioTab, ThemePreference } from './components/dgem-nav-rail.js';
 import type {
   TemplateEntry,
@@ -1422,6 +1423,16 @@ export class DgemStudio extends LitElement {
             </button>
 
             <button
+              class="btn btn--sm ${this.activeTab === 'concepts' ? 'btn--brand' : ''}"
+              @click=${() =>
+                (this.activeTab = this.activeTab === 'concepts' ? 'studio' : 'concepts')}
+              title="Toggle 4-Tab Interactive Concept Walkthrough (Diffusion, Live Race, Entropy & Safety Gate)"
+            >
+              <span class="material-symbols-outlined">auto_awesome</span>
+              ${this.activeTab === 'concepts' ? 'Back to Studio' : 'Concept Walkthrough'}
+            </button>
+
+            <button
               class="btn btn--sm"
               @click=${() => this.fetchGPUStatus()}
               title="Refresh live GPU & health telemetry"
@@ -2243,9 +2254,22 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
           <main>
             ${this.activeTab === 'studio'
               ? this.renderStudioTab()
-              : this.activeTab === 'catalog'
-                ? this.renderCatalogTab()
-                : this.renderMcpTab()}
+              : this.activeTab === 'concepts'
+                ? html`
+                    <dgem-concept-visualizer
+                      .resolvedTheme=${this.resolvedTheme}
+                      @open-preset-from-visualizer=${(e: CustomEvent<string>) => {
+                        const found = PRESETS.find((p) => p.id === e.detail);
+                        if (found) {
+                          this.selectPreset(found);
+                        }
+                        this.activeTab = 'studio';
+                      }}
+                    ></dgem-concept-visualizer>
+                  `
+                : this.activeTab === 'catalog'
+                  ? this.renderCatalogTab()
+                  : this.renderMcpTab()}
           </main>
         </div>
       </div>

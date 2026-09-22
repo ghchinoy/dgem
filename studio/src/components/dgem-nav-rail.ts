@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-export type StudioTab = 'studio' | 'catalog' | 'mcp';
+export type StudioTab = 'studio' | 'concepts' | 'catalog' | 'mcp';
 export type ThemePreference = 'auto' | 'light' | 'dark';
 
 @customElement('dgem-nav-rail')
@@ -218,6 +218,16 @@ export class DgemNavRail extends LitElement {
         >
           <span class="material-symbols-outlined">tune</span>
           <span class="nav-label">Decision Studio</span>
+        </button>
+
+        <button
+          class="nav-btn"
+          aria-current=${this.activeTab === 'concepts' ? 'page' : 'false'}
+          @click=${() => this.selectTab('concepts')}
+          title="Interactive Concept Walkthrough (1-Pass Diffusion, Entropy Gate & Safety Stencil)"
+        >
+          <span class="material-symbols-outlined">auto_awesome</span>
+          <span class="nav-label">Concepts</span>
         </button>
 
         <button

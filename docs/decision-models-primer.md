@@ -1,14 +1,41 @@
 # The Journey to Decision Models
 
-For decades, software engineers and machine learning practitioners had to choose between two extremes when building classification and decision systems: **fast, rigid classical models** (like Naive Bayes, Logistic Regression, DeBERTa encoders, and Finite-State Transducers) or **slow, expensive autoregressive Large Language Models** (like GPT-4 and Gemini).
+For decades, software engineers and product teams had to choose between two extremes when building classification and decision systems: **fast, rigid classical models** (like Naive Bayes, Logistic Regression, DeBERTa encoders, and Finite-State Transducers) or **slow, expensive autoregressive Large Language Models** (like GPT-4 and Gemini).
 
 **DiffusionGemma** introduces a third paradigm: **Discrete Diffusion Decision Models**.
 
-This primer explains the architectural journey from classical machine learning to discrete block diffusion, detailing why decision models are needed, how their mechanics differ from both statistical counting and next-token prediction, and how declarative `.json.tmpl` templates act as executable **Policy-as-Code**.
+---
+
+## 0. Product & Executive Overview: Why Decision Models & How the Entropy Gate Works
+
+If you are a Product Manager, Engineering Leader, or Systems Architect, here is the core problem `dgem` solves—without the machine learning jargon:
+
+### The Three Generations of Classification
+1. **Traditional Predictive ML (`~10 ms` · Fast & Trustworthy, Slow to Build)**:
+   Give a traditional model 10,000 labeled customer tickets and it will classify new ones in milliseconds with a genuine confidence score (e.g., `99% Billing` vs. `51% Billing`). **The catch:** Every time your product adds a new routing department or policy rule, your team has to collect new data and retrain the model from scratch.
+2. **Autoregressive LLMs (`~2,500 ms` · Instant Setup, Slow & Overconfident at Runtime)**:
+   Chat models let you define categories on the fly in plain English (*zero-shot*). **The catch:** They generate text one word at a time from left to right. Using a chat LLM just to classify a ticket into three fields is like asking a novelist to write a paragraph just to check a box—and because it outputs a plain string (`"department": "Technical"`), **it hides whether the model was 99% certain or guessing 51/49 on a coin flip**.
+3. **Decision Models (`dgem` + `DiffusionGemma` · `~450 ms` · Zero-Shot Setup + Honest Uncertainty)**:
+   Instead of generating words left to right, `DiffusionGemma` evaluates all of your decision blanks simultaneously on a fixed canvas in **one single pass (`~450 ms`)**. Because it locks directly onto your allowed options, it cannot hallucinate invalid JSON or succumb to prompt injection—and it returns an honest **uncertainty score (`Shannon Entropy` in `nats`)** for every single field.
+
+### How the Entropy Gate Works (The "Triage Nurse vs. Specialist" Pattern)
+In real products, **70%+ of incoming requests are obvious** (e.g., *"Our API is returning 502 Bad Gateway"*), while **~25–30% are genuinely mixed** (e.g., *"Our API is returning 502 Bad Gateway AND we are disputing our $45,000 Q3 invoice"*).
+
+Instead of sending 100% of your traffic to a slow, expensive frontier reasoning model—or letting a fast model guess blindly on ambiguous edge cases—`dgem` uses an **Entropy Gate**:
+
+```mermaid
+flowchart LR
+    IN["Incoming Request / Ticket\n(100% of Production Traffic)"] --> S1["Stage 1: dgem + DiffusionGemma\nSingle Forward Pass (~450–712 ms)\nComputes Answer + Uncertainty (nats)"]
+    S1 -->|"Low Uncertainty (H < 0.35 nats)\n72% of Traffic (Clear Signal)"| FAST["✅ Fast Auto-Route\nDone in ~450 ms · $0 Frontier Cost"]
+    S1 -->|"High Uncertainty (H ≥ 0.35 nats)\n28% of Traffic (Mixed / Borderline)"| ESC["⚠️ Auto-Escalate to Frontier Model\n(e.g., Gemini 3.8 Flash)\nwith Stage-1 Odds Attached (75% Tech / 23% Billing)\n➔ 98.0% Combined System Accuracy"]
+```
+
+* **When the signal is clear (`H < 0.35 nats`)**: `DiffusionGemma` is 98%+ confident. The request takes the **Green Fast Lane** (`72%` of traffic), finishing in sub-second latency at a fraction of LLM cost.
+* **When the request contains conflicting signals (`H ≥ 0.35 nats`)**: `DiffusionGemma` detects its own internal tug-of-war (`75.5% Technical` vs. `23.2% Billing`) and raises an **Amber Flag (`0.56 nats`)**. Your application automatically routes **only that ambiguous 28% slice** to a frontier model (or human reviewer)—passing along `DiffusionGemma`'s exact odds (`75% vs 23%`) as a diagnostic clue to reach **98.0% overall accuracy** (`EXP-05`).
 
 ---
 
-## 1. The Three Eras of Decision Systems
+## 1. The Three Eras of Decision Systems (Technical Deep Dive)
 
 ```
 Era 1: Classical Statistical ML   --> Era 2: Classical Symbolic NLP --> Era 3: Autoregressive GenAI --> The Emerging Era: Decision Models
