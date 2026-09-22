@@ -66,11 +66,13 @@ type TemplateCatalogEntry struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
 	Category    string            `json:"category"`
+	Description string            `json:"description"`
 	Path        string            `json:"path"`
 	Variables   []string          `json:"variables"`
 	SampleVars  map[string]string `json:"sample_vars"`
 	Multimodal  bool              `json:"multimodal"`
 	RawTemplate string            `json:"raw_template"`
+	RawSource   string            `json:"raw_source"`
 }
 
 // GatewayDecideRequest is the JSON body accepted by POST /api/decide.
@@ -79,22 +81,77 @@ type GatewayDecideRequest struct {
 	CustomTemplate string                 `json:"custom_template,omitempty"`
 	Variables      map[string]interface{} `json:"variables,omitempty"`
 	Image          string                 `json:"image,omitempty"`
+	ImageURL       string                 `json:"image_url,omitempty"`
 	Images         []string               `json:"images,omitempty"`
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
 type GatewayDecideResponse struct {
-	Template       string                           `json:"template"`
-	Answers        map[string]client.QuestionAnswer `json:"answers"`
-	Diagnostics    client.Diagnostics               `json:"diagnostics"`
-	MaxEntropy     float64                          `json:"max_entropy"`
-	WallTimeMs     int64                            `json:"wall_time_ms"`
-	WarmupAttempts int                              `json:"warmup_attempts"`
-	Model          string                           `json:"model"`
-	UpstreamURL    string                           `json:"upstream_url"`
+	Template       string                             `json:"template"`
+	Answers        map[string]client.QuestionAnswer   `json:"answers"`
+	Diagnostics    client.Diagnostics                 `json:"diagnostics"`
+	Decision       *client.StructuredDecisionResponse `json:"decision,omitempty"`
+	MaxEntropy     float64                            `json:"max_entropy"`
+	WallTimeMs     int64                              `json:"wall_time_ms"`
+	WarmupAttempts int                                `json:"warmup_attempts"`
+	Model          string                             `json:"model"`
+	UpstreamURL    string                             `json:"upstream_url"`
 }
 
 var varRegex = regexp.MustCompile(`\{\{\s*(?:default\s+"[^"]*"\s+)?\.([a-zA-Z0-9_]+)`)
+
+// resolveTemplateFile locates a .json.tmpl file whether addressed by short name ("grounding_claim_check"),
+// legacy preset alias ("factuality_grounding", "bbox_single"), or category-qualified ID ("calibration/grounding_claim_check").
+func resolveTemplateFile(rootDir, name string) (string, string) {
+	cleanID := strings.TrimSuffix(strings.TrimSpace(name), ".json.tmpl")
+	cleanID = strings.TrimPrefix(cleanID, "/")
+	if cleanID == "" {
+		cleanID = "support_triage"
+	}
+	aliases := map[string]string{
+		"factuality_grounding": "calibration/grounding_claim_check",
+		"bbox_single":          "multimodal/bbox_localization",
+		"bbox_detr_multi":      "multimodal/bbox_multi_object_detr",
+		"tn_polysemy_router":   "security_incident",
+	}
+	if mapped, ok := aliases[cleanID]; ok {
+		cleanID = mapped
+	} else if mapped, ok := aliases[filepath.Base(cleanID)]; ok {
+		cleanID = mapped
+	}
+	candidates := []string{
+		filepath.Join(rootDir, cleanID+".json.tmpl"),
+		filepath.Join(rootDir, "calibration", filepath.Base(cleanID)+".json.tmpl"),
+		filepath.Join(rootDir, "multimodal", filepath.Base(cleanID)+".json.tmpl"),
+	}
+	for _, c := range candidates {
+		if info, err := os.Stat(c); err == nil && !info.IsDir() {
+			rel, relErr := filepath.Rel(rootDir, c)
+			if relErr == nil {
+				return c, strings.TrimSuffix(filepath.ToSlash(rel), ".json.tmpl")
+			}
+			return c, cleanID
+		}
+	}
+	targetBase := filepath.Base(cleanID) + ".json.tmpl"
+	var matchedPath string
+	var matchedID string
+	_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() && info.Name() == targetBase && matchedPath == "" {
+			matchedPath = path
+			if rel, relErr := filepath.Rel(rootDir, path); relErr == nil {
+				matchedID = strings.TrimSuffix(filepath.ToSlash(rel), ".json.tmpl")
+			} else {
+				matchedID = cleanID
+			}
+		}
+		return nil
+	})
+	if matchedPath != "" {
+		return matchedPath, matchedID
+	}
+	return filepath.Join(rootDir, cleanID+".json.tmpl"), cleanID
+}
 
 func discoverTemplates(rootDir string) ([]TemplateCatalogEntry, error) {
 	var catalog []TemplateCatalogEntry
@@ -109,6 +166,7 @@ func discoverTemplates(rootDir string) ([]TemplateCatalogEntry, error) {
 		raw := string(rawBytes)
 		rel, _ := filepath.Rel(rootDir, path)
 		id := strings.TrimSuffix(filepath.ToSlash(rel), ".json.tmpl")
+		shortName := strings.TrimSuffix(info.Name(), ".json.tmpl")
 		category := "core"
 		if strings.Contains(id, "/") {
 			category = strings.Split(id, "/")[0]
@@ -128,16 +186,19 @@ func discoverTemplates(rootDir string) ([]TemplateCatalogEntry, error) {
 
 		multimodal := strings.Contains(id, "bbox") || strings.Contains(id, "multimodal")
 		samples := defaultSampleVars(id, vars)
+		desc := fmt.Sprintf("Executable %s decision policy (%d variables: %s)", category, len(vars), strings.Join(vars, ", "))
 
 		catalog = append(catalog, TemplateCatalogEntry{
 			ID:          id,
-			Name:        id,
+			Name:        shortName,
 			Category:    category,
+			Description: desc,
 			Path:        path,
 			Variables:   vars,
 			SampleVars:  samples,
 			Multimodal:  multimodal,
 			RawTemplate: raw,
+			RawSource:   raw,
 		})
 		return nil
 	})
@@ -254,6 +315,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
+		probeStart := time.Now()
 		st := CheckHealthAndGPUStatus(r.Context(), userEmail)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":                  st.GPUState,
@@ -269,9 +331,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"upstream_url":            st.UpstreamURL,
 			"model":                   st.Model,
 			"gpu_tier":                st.GPUTier,
+			"gpu_hardware":            st.GPUTier,
+			"probe_latency_ms":        time.Since(probeStart).Milliseconds(),
 			"templates_available":     st.TemplatesAvailable,
 			"authenticated_user":      st.AuthenticatedUser,
 			"detail":                  st.Detail,
+			"message":                 st.Detail,
 		})
 	})
 
@@ -286,12 +351,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 			WaitForReady *bool `json:"wait_for_ready"`
 		}
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
-		wait := true
-		if reqBody.WaitForReady != nil {
+		wait := false
+		if q := r.URL.Query().Get("wait"); q != "" {
+			wait = (q == "true" || q == "1")
+		} else if reqBody.WaitForReady != nil {
 			wait = *reqBody.WaitForReady
 		}
 		out, err := TriggerGPUWarmup(r.Context(), wait)
-		if err != nil {
+		if err != nil && wait {
 			w.WriteHeader(http.StatusBadGateway)
 		}
 		_ = json.NewEncoder(w).Encode(out)
@@ -337,6 +404,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if payload.Variables == nil {
 			payload.Variables = make(map[string]interface{})
 		}
+		if _, hasDoc := payload.Variables["document"]; !hasDoc {
+			if ctxVal, ok := payload.Variables["context"]; ok {
+				payload.Variables["document"] = ctxVal
+			}
+		}
+		if _, hasUI := payload.Variables["user_input"]; !hasUI {
+			if txtVal, ok := payload.Variables["text"]; ok {
+				payload.Variables["user_input"] = txtVal
+			}
+		}
 
 		engine := template.NewEngine()
 		var rendered string
@@ -349,10 +426,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		} else {
 			if payload.Template == "" {
 				payload.Template = "support_triage"
-				tmplLabel = "support_triage"
 			}
-			cleanID := strings.TrimSuffix(payload.Template, ".json.tmpl")
-			targetPath := filepath.Join(serveTemplatesDir, cleanID+".json.tmpl")
+			targetPath, resolvedID := resolveTemplateFile(serveTemplatesDir, payload.Template)
+			tmplLabel = resolvedID
 			rendered, err = engine.RenderFile(targetPath, payload.Variables)
 		}
 		if err != nil {
@@ -369,6 +445,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		var images []string
 		if payload.Image != "" {
 			images = append(images, payload.Image)
+		}
+		if payload.ImageURL != "" {
+			images = append(images, payload.ImageURL)
 		}
 		images = append(images, payload.Images...)
 
@@ -396,6 +475,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			Template:       tmplLabel,
 			Answers:        resp.Answers,
 			Diagnostics:    resp.Diagnostics,
+			Decision:       resp,
 			MaxEntropy:     maxEntropy,
 			WallTimeMs:     time.Since(start).Milliseconds(),
 			WarmupAttempts: attempts,

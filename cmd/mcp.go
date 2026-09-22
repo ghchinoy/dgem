@@ -358,8 +358,7 @@ func buildMCPServer() *mcp.Server {
 		if tmplID == "" {
 			tmplID = "support_triage"
 		}
-		cleanID := strings.TrimSuffix(tmplID, ".json.tmpl")
-		targetPath := filepath.Join(serveTemplatesDir, cleanID+".json.tmpl")
+		targetPath, cleanID := resolveTemplateFile(serveTemplatesDir, tmplID)
 
 		engine := template.NewEngine()
 		rendered, err := engine.RenderFile(targetPath, input.Variables)
@@ -417,7 +416,7 @@ func buildMCPServer() *mcp.Server {
 			target = "primary foreground object"
 		}
 		vars := map[string]interface{}{"target": target}
-		targetPath := filepath.Join(serveTemplatesDir, "multimodal", "bbox_single.json.tmpl")
+		targetPath, _ := resolveTemplateFile(serveTemplatesDir, "bbox_localization")
 		engine := template.NewEngine()
 		rendered, err := engine.RenderFile(targetPath, vars)
 		if err != nil {
