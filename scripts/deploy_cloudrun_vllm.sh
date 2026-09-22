@@ -102,7 +102,7 @@ DEPLOY_FLAGS=(
   "--execution-environment" "gen2"
   "--no-allow-unauthenticated"
   "--command=/bin/bash"
-  "--args=^@^-c@sed 's|/dev/shm/dgemma|/tmp/dgemma|g' /app/entrypoint.sh > /tmp/run.sh && chmod +x /tmp/run.sh && exec /tmp/run.sh"
+  "--args=^@^-c@sed -e 's|/dev/shm/dgemma|/tmp/dgemma|g' -e 's|exec vllm serve|while [ ! -f /tmp/dgemma/.ready ]; do sleep 1; done; exec vllm serve|' /entrypoint.sh > /tmp/run.sh && chmod +x /tmp/run.sh && exec /tmp/run.sh"
   "--cpu" "$CPU"
   "--memory" "$MEMORY"
   "--gpu" "1"

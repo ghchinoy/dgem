@@ -52,12 +52,17 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
 
 # 3. Attach dgemma-gpu-sa to the dgemma GPU service (if deployed) and bind invokers
 if gcloud run services describe "${GPU_SERVICE}" --project="${PROJECT}" --region="${REGION}" >/dev/null 2>&1; then
-  echo "-> Updating ${GPU_SERVICE} to run as ${GPU_SA}..."
-  gcloud run services update "${GPU_SERVICE}" \
-    --project="${PROJECT}" \
-    --region="${REGION}" \
-    --service-account="${GPU_SA}" \
-    --quiet
+  CURRENT_GPU_SA=$(gcloud run services describe "${GPU_SERVICE}" --project="${PROJECT}" --region="${REGION}" --format="value(spec.template.spec.serviceAccountName)" 2>/dev/null || true)
+  if [[ "$CURRENT_GPU_SA" != "$GPU_SA" ]]; then
+    echo "-> Updating ${GPU_SERVICE} to run as ${GPU_SA}..."
+    gcloud run services update "${GPU_SERVICE}" \
+      --project="${PROJECT}" \
+      --region="${REGION}" \
+      --service-account="${GPU_SA}" \
+      --quiet
+  else
+    echo "-> ${GPU_SERVICE} already runs as ${GPU_SA} (skipping revision update to preserve warm GPU)."
+  fi
 
   echo "-> Granting roles/run.invoker on ${GPU_SERVICE} to ${GATEWAY_SA} and group:${ALLOW_GROUP}..."
   gcloud run services add-iam-policy-binding "${GPU_SERVICE}" \
@@ -84,12 +89,17 @@ gcloud projects add-iam-policy-binding "${PROJECT}" \
   --quiet >/dev/null || true
 
 if gcloud run services describe "${GATEWAY_SERVICE}" --project="${PROJECT}" --region="${REGION}" >/dev/null 2>&1; then
-  echo "-> Updating ${GATEWAY_SERVICE} to run as ${GATEWAY_SA}..."
-  gcloud run services update "${GATEWAY_SERVICE}" \
-    --project="${PROJECT}" \
-    --region="${REGION}" \
-    --service-account="${GATEWAY_SA}" \
-    --quiet
+  CURRENT_GW_SA=$(gcloud run services describe "${GATEWAY_SERVICE}" --project="${PROJECT}" --region="${REGION}" --format="value(spec.template.spec.serviceAccountName)" 2>/dev/null || true)
+  if [[ "$CURRENT_GW_SA" != "$GATEWAY_SA" ]]; then
+    echo "-> Updating ${GATEWAY_SERVICE} to run as ${GATEWAY_SA}..."
+    gcloud run services update "${GATEWAY_SERVICE}" \
+      --project="${PROJECT}" \
+      --region="${REGION}" \
+      --service-account="${GATEWAY_SA}" \
+      --quiet
+  else
+    echo "-> ${GATEWAY_SERVICE} already runs as ${GATEWAY_SA} (skipping redundant revision update)."
+  fi
 
   echo "-> Granting roles/run.invoker on ${GATEWAY_SERVICE} to group:${ALLOW_GROUP}..."
   gcloud run services add-iam-policy-binding "${GATEWAY_SERVICE}" \
