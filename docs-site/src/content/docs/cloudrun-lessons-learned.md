@@ -5,7 +5,7 @@ description: Architectural comparison of experimental vLLM deployments on Google
 
 # Lessons Learned: Deploying Experimental vLLM on Google Cloud Run with GPU
 
-This document records the empirical findings, architectural trade-offs, and operational lessons learned while deploying Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), comparing against Taehoon Lee's [**`taeold/djev-run`**](https://github.com/taeold/djev-run) and providing a 100% self-contained, reproducible container build and deployment pipeline.
+This document records the empirical findings, architectural trade-offs, and operational lessons learned while deploying Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), comparing against Daniel Lee's [**`taeold/djev-run`**](https://github.com/taeold/djev-run) and providing a 100% self-contained, reproducible container build and deployment pipeline.
 
 ---
 
@@ -86,7 +86,7 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
 
 ## 5. The Proven Production Pattern: Learning from `taeold/djev-run` & `mmastrac/djev-spark`
 
-A working, hardened deployment pattern for DiffusionGemma on Google Cloud Run with GPUs was proved by Google Cloud engineer Taehoon Lee in [**`taeold/djev-run`**](https://github.com/taeold/djev-run), building on Matt Mastracci's [**`mmastrac/djev-spark`**](https://github.com/mmastrac/djev-spark).
+A working, hardened deployment pattern for DiffusionGemma on Google Cloud Run with GPUs was proved by Google Cloud engineer Daniel Lee in [**`taeold/djev-run`**](https://github.com/taeold/djev-run), building on Matt Mastracci's [**`mmastrac/djev-spark`**](https://github.com/mmastrac/djev-spark).
 
 ### The Container Lineage & Why Our Initial Overlay Failed
 Tracing the source code across repositories reveals why our initial attempt diverged while `djev-spark` succeeded:
