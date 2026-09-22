@@ -93,17 +93,55 @@ if gcloud run services describe "${GATEWAY_SERVICE}" --project="${PROJECT}" --re
     --quiet >/dev/null
 fi
 
-# 5. Grant roles/iap.httpsResourceAccessor to group:${ALLOW_GROUP} so Cloud Run IAP allows group members
-echo "-> Granting roles/iap.httpsResourceAccessor to group:${ALLOW_GROUP}..."
+# 5. Configure Cloud Run Direct IAP on dgemma-gateway (Browser Sign-In + Programmatic CLI Access)
+echo "-> Granting roles/iap.httpsResourceAccessor on ${GATEWAY_SERVICE} to group:${ALLOW_GROUP}..."
 gcloud projects add-iam-policy-binding "${PROJECT}" \
   --member="group:${ALLOW_GROUP}" \
   --role="roles/iap.httpsResourceAccessor" \
   --condition=None \
   --quiet >/dev/null
 
+gcloud iap web add-iam-policy-binding \
+  --project="${PROJECT}" \
+  --resource-type=cloud-run \
+  --region="${REGION}" \
+  --service="${GATEWAY_SERVICE}" \
+  --member="group:${ALLOW_GROUP}" \
+  --role="roles/iap.httpsResourceAccessor" \
+  --quiet >/dev/null
+
+gcloud iap web add-iam-policy-binding \
+  --project="${PROJECT}" \
+  --resource-type=cloud-run \
+  --region="${REGION}" \
+  --service="${GATEWAY_SERVICE}" \
+  --member="serviceAccount:${GATEWAY_SA}" \
+  --role="roles/iap.httpsResourceAccessor" \
+  --quiet >/dev/null
+
+# Allow gcloud CLI (32555940559.apps.googleusercontent.com) and custom IAP clients to authenticate programmatically through IAP
+IAP_SETTINGS_TMP="$(mktemp)"
+cat <<EOF >"${IAP_SETTINGS_TMP}"
+accessSettings:
+  oauthSettings:
+    programmaticClients:
+      - 32555940559.apps.googleusercontent.com
+EOF
+if [ -n "${IAP_CLIENT_ID:-}" ]; then
+  echo "      - ${IAP_CLIENT_ID}" >>"${IAP_SETTINGS_TMP}"
+fi
+echo "-> Configuring IAP programmaticClients (enabling --gcp-auth / gcloud auth print-identity-token through IAP)..."
+gcloud iap settings set "${IAP_SETTINGS_TMP}" \
+  --project="${PROJECT}" \
+  --resource-type=cloud-run \
+  --region="${REGION}" \
+  --service="${GATEWAY_SERVICE}" \
+  --quiet >/dev/null
+rm -f "${IAP_SETTINGS_TMP}"
+
 echo "================================================================================"
 echo " ✅ Zero-Trust IAM & IAP Setup Complete!"
 echo "    • ${GPU_SERVICE} runs as:     ${GPU_SA} (read-only on gs://${BUCKET}, IAP OFF)"
 echo "    • ${GATEWAY_SERVICE} runs as: ${GATEWAY_SA} (invoker on ${GPU_SERVICE}, IAP ON)"
-echo "    • Authorized Group:           group:${ALLOW_GROUP} (run.invoker + iap.httpsResourceAccessor)"
+echo "    • Authorized Group:           group:${ALLOW_GROUP} (run.invoker + iap.httpsResourceAccessor + CLI programmaticClients)"
 echo "================================================================================"
