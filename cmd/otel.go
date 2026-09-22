@@ -77,6 +77,9 @@ type gatewaySpanProcessor struct {
 func (p *gatewaySpanProcessor) OnStart(parent context.Context, s sdktrace.ReadWriteSpan) {}
 
 func (p *gatewaySpanProcessor) OnEnd(s sdktrace.ReadOnlySpan) {
+	if strings.HasPrefix(s.Name(), "google.devtools.cloudtrace") {
+		return
+	}
 	sc := s.SpanContext()
 	traceID := sc.TraceID().String()
 	spanID := sc.SpanID().String()
