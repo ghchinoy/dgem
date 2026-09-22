@@ -4,7 +4,8 @@ COPY studio/package.json studio/package-lock.json* studio/tsconfig.json studio/v
 COPY studio/src ./src
 RUN npm install --no-audit --no-fund && npm run build
 
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
+ENV GOTOOLCHAIN=auto
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
