@@ -49,8 +49,9 @@ export default defineConfig({
         {
           label: 'Experiments & Research Log',
           items: [
-            { label: 'Experiment Ledger (EXP-01 – EXP-08)', slug: 'experiments' },
+            { label: 'Experiment Ledger (EXP-01 – EXP-10)', slug: 'experiments' },
             { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
+            { label: 'Listwise Diffusion Reranking (EXP-10)', slug: 'experiments/exp-10-listwise-diffusion-reranking' },
           ],
         },
         {

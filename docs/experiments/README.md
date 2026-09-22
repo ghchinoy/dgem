@@ -1,6 +1,6 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-09)"
-description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, and Next-Horizon Cascades."
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-10)"
+description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, and Next-Horizon Cascades."
 ---
 
 # DiffusionGemma (`dgem`) Experiment Ledger
@@ -27,13 +27,14 @@ flowchart LR
 | :--- | :--- | :--- |
 | [`templates/`](../../templates/) | **Executable Decision Policies** (`choice` & `score` slots, `depends_on` / `ask_if` DAGs) | `.json.tmpl` |
 | [`templates/calibration/`](../../templates/calibration/) | **Public Dataset Calibration & Guardrail Policies** (`AgentDrift`, `ChaosNLI`, `LLM-AggreFact`, `prompt-injections`) | `.json.tmpl` |
-| [`benchmarks/*.jsonl`](../../benchmarks/) | **Evaluation Datasets** (`eval_dataset.jsonl`, `calibration_suite.jsonl`, `banking77_26.jsonl`, `clinc150_26.jsonl`, `tn_*.jsonl`) | `.jsonl` |
+| [`templates/rerank/`](../../templates/rerank/) | **Listwise & Pointwise Neural Reranking + RAG Security Policies** (`EXP-10`) | `.json.tmpl` |
+| [`benchmarks/*.jsonl`](../../benchmarks/) | **Evaluation Datasets** (`eval_dataset.jsonl`, `calibration_suite.jsonl`, `rerank_suite.jsonl`, `banking77_26.jsonl`, `clinc150_26.jsonl`, `tn_*.jsonl`) | `.jsonl` |
 | [`benchmarks/results_*.json`](../../benchmarks/) | **Immutable Telemetry Receipts** (`logprobs`, slot probabilities $p_i$, Shannon entropy $H$, wall latency) | `.json` |
 | [`docs/experiments/`](./) | **Experiment Ledger & Architectural Deep-Dives** | `.md` |
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-09`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-10`)
 
 ### Part A — Completed Empirical Studies
 
@@ -47,9 +48,9 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-09`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-10`)
 
-Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**.
+Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**, and `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](./exp-10-listwise-diffusion-reranking.md)**.
 
 | ID | Experiment Title | Core Hypothesis | Target Datasets & Templates | Target CLI Flag / Feature | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -57,6 +58,7 @@ Detailed architectural specifications, mathematical formulations, and empirical 
 | **`EXP-07`** | **Conditional Policy DAGs (`depends_on` & `ask_if`)** | Multi-stage conditional templates prune irrelevant downstream branches when upstream gate slots resolve negative, cutting slot density and eliminating contradictory sub-slot classifications. | [`templates/secops_conditional_dag.json.tmpl`](../../templates/secops_conditional_dag.json.tmpl) | Native `structured_server.py` DAG execution (`depends_on`, `ask_if`) | 🧪 Template Ready ([Spec](./exp-05-roadmap-cascades-and-dags.md#exp-07-stateful--hierarchical-policy-dags-depends_on--ask_if)) |
 | **`EXP-08`** | **Multimodal Vision & Document Policy Readout (`SigLIP`)** | Because DiffusionGemma inherits Gemma 4's `SigLIP` vision encoder (`896×896` patches), bidirectional slot readout can classify receipts, UI screenshots, and PDF invoices in a single forward pass (`~500 ms`). | Receipt & UI compliance image suite | `dgem decide --image <path>` | 🔬 Planned ([Spec](./exp-05-roadmap-cascades-and-dags.md#exp-08-multimodal-vision--document-policy-readout)) |
 | **`EXP-09`** | **Single-Pass Spatial Grounding, Softmax-Expectation Sub-Bin Regression & Per-Edge Occlusion Entropy** | Predicting a 2D bounding box `[ymin, xmin, ymax, xmax]` as 4 parallel 21-bin (`00..100`) slots in `think=0` (`reads=1`): (1) On live Cloud Run `dgemma` (`SigLIP` enabled), Softmax Expectation ($\hat{c}_m = \sum_k v_k p_{m,k}$) improves `mIoU` from `0.2898` to `0.3773` (`+8.75%` absolute / `+30.2%` relative, `Acc@0.5` `0%` $\rightarrow$ `18.2%`; up to `+50.4%` IoU on narrow stemware in `008.png` and `0.9866` vs `0.7997` simulated), (2) Per-edge normalized entropy ($\tilde{H}_m = H_m / \ln 21$) spikes `1.37×` on occluded box edges (`0.6810` vs `0.4970` live; `2.86×` simulated), and (3) `DETR`-style parallel object query slots prevent duplicate collapse via bidirectional self-attention. | [`templates/multimodal/bbox_localization.json.tmpl`](../../templates/multimodal/bbox_localization.json.tmpl)<br>[`templates/multimodal/bbox_multi_object_detr.json.tmpl`](../../templates/multimodal/bbox_multi_object_detr.json.tmpl)<br>[`templates/multimodal/bbox_multi_object_set.json.tmpl`](../../templates/multimodal/bbox_multi_object_set.json.tmpl)<br>[`benchmarks/bbox_suite.jsonl`](../../benchmarks/bbox_suite.jsonl) | `dgem bench-bbox --annotate`<br>[`results_bbox_cloudrun.json`](../../benchmarks/results_bbox_cloudrun.json)<br>[`results_bbox_simulated.json`](../../benchmarks/results_bbox_simulated.json) | ✅ Completed |
+| **`EXP-10`** | **Listwise Diffusion Canvas Reranking, Softmax Expectation & RAG Poison Quarantine** | Evaluate 10 candidate passages (`doc_01`..`doc_10`) + 2 RAG security/abstention gates (`answer_present`, `poisoned_passage`) simultaneously in 1 forward pass (`12` slots, `~138 ms` effective/passage on Cloud Run 1× L4). Continuous Softmax Expectation ($\hat{r}_i = \sum_{g=0}^3 g \cdot p_{i,g}$) cuts Exact Tie Rate from `70.0%` (discrete `argmax`) to **`0.0%`**, lifting **`nDCG@10` from `0.8416` to `0.9265` (`+8.49 pts`)** and **`MRR@10` from `0.7407` to `0.9444` (`+20.37 pts`)**, with **`100.0%` `NevIR` negation accuracy**, **`+0.7533` `FollowIR p-MRR` policy steerability**, and **`100.0%` prompt-injection quarantine**. | [`templates/rerank/listwise_decision_rerank.json.tmpl`](../../templates/rerank/listwise_decision_rerank.json.tmpl)<br>[`templates/rerank/pointwise_rerank.json.tmpl`](../../templates/rerank/pointwise_rerank.json.tmpl)<br>[`benchmarks/rerank_suite.jsonl`](../../benchmarks/rerank_suite.jsonl) | `dgem bench-rerank`<br>[`results_rerank_cloudrun.json`](../../benchmarks/results_rerank_cloudrun.json) | ✅ Completed ([Analysis](./exp-10-listwise-diffusion-reranking.md)) |
 
 ---
 

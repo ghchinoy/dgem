@@ -1,0 +1,72 @@
+{
+  "experiment": "EXP-10-Listwise-Diffusion-Reranking",
+  "execution_mode": "LIVE DGEM CLOUD RUN L4 EXECUTION (--endpoint https://dgemma-lihc3g7fva-uc.a.run.app/v1)",
+  "mean_wall_latency_ms": 1454.3,
+  "dataset_path": "benchmarks/rerank_suite.jsonl",
+  "template_path": "templates/rerank/listwise_decision_rerank.json.tmpl",
+  "total_queries": 30,
+  "candidates_per_query": 10,
+  "total_query_passage_pairs": 300,
+  "summary_metrics": {
+    "1_bi_encoder": {
+      "label": "Stage-1 Bi-Encoder Baseline (Dot Product)",
+      "nDCG@3": 0.5826,
+      "nDCG@5": 0.7104,
+      "nDCG@10": 0.7581,
+      "MRR@10": 0.7006,
+      "MAP@10": 0.6024,
+      "Spearman_rho": 0.6994,
+      "Exact_Tie_Rate_pct": 0.0,
+      "S1_NevIR_Pairwise_Acc_pct": 0.0,
+      "S3_HotpotQA_Recall@2_pct": 50.0,
+      "S4_FollowIR_p_MRR": 0.0,
+      "S5_Poison_Quarantine_pct": 0.0,
+      "S5_Abstention_Acc_pct": 40.0
+    },
+    "2_pointwise_rerank": {
+      "label": "Pointwise Cross-Encoder (Isolated Scalar s(q, d_i))",
+      "nDCG@3": 0.9138,
+      "nDCG@5": 0.9209,
+      "nDCG@10": 0.9527,
+      "MRR@10": 0.963,
+      "MAP@10": 0.9074,
+      "Spearman_rho": 0.8622,
+      "Exact_Tie_Rate_pct": 2.7,
+      "S1_NevIR_Pairwise_Acc_pct": 100.0,
+      "S3_HotpotQA_Recall@2_pct": 64.3,
+      "S4_FollowIR_p_MRR": 0.8333,
+      "S5_Poison_Quarantine_pct": 0.0,
+      "S5_Abstention_Acc_pct": 40.0
+    },
+    "3_dgem_listwise_argmax": {
+      "label": "dgem Listwise Canvas (Discrete Mode Argmax 0..3)",
+      "nDCG@3": 0.7925,
+      "nDCG@5": 0.8214,
+      "nDCG@10": 0.8416,
+      "MRR@10": 0.7407,
+      "MAP@10": 0.7311,
+      "Spearman_rho": 0.7437,
+      "Exact_Tie_Rate_pct": 70.0,
+      "S1_NevIR_Pairwise_Acc_pct": 80.0,
+      "S3_HotpotQA_Recall@2_pct": 50.0,
+      "S4_FollowIR_p_MRR": 0.7267,
+      "S5_Poison_Quarantine_pct": 100.0,
+      "S5_Abstention_Acc_pct": 60.0
+    },
+    "4_dgem_listwise_expectation": {
+      "label": "dgem Listwise Decision Canvas (Continuous Expectation r_hat_i + Gates)",
+      "nDCG@3": 0.8595,
+      "nDCG@5": 0.9067,
+      "nDCG@10": 0.9265,
+      "MRR@10": 0.9444,
+      "MAP@10": 0.799,
+      "Spearman_rho": 0.7228,
+      "Exact_Tie_Rate_pct": 0.0,
+      "S1_NevIR_Pairwise_Acc_pct": 100.0,
+      "S3_HotpotQA_Recall@2_pct": 50.0,
+      "S4_FollowIR_p_MRR": 0.7533,
+      "S5_Poison_Quarantine_pct": 100.0,
+      "S5_Abstention_Acc_pct": 60.0
+    }
+  }
+}

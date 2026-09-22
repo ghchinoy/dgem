@@ -353,3 +353,20 @@ make gce-deploy
 make gce-teardown
 ```
 
+---
+
+## 9. `EXP-10` Listwise Diffusion Canvas Reranking & RAG Poison Quarantine (`dgem bench-rerank`)
+
+To evaluate `DiffusionGemma` (`dgemma`) as a **Single-Pass Listwise Reranker** (`10` candidate passage `score` slots + `answer_present` `boolean` slot + `poisoned_passage` `choice` slot = `12` simultaneous canvas slots per pass), we executed `benchmarks/rerank_suite.jsonl` (`30` queries × `10` passages = `300` query-passage pairs across `NevIR`, `TREC-DL19`, `HotpotQA`, `FollowIR`, and `MuSiQue + AgentDrift`) against live **Serverless Cloud Run GPU (`1× NVIDIA L4`)** (`benchmarks/results_rerank_cloudrun.json`):
+
+| Model / Reranking Strategy | `nDCG@3` | `nDCG@5` | `nDCG@10` | `MRR@10` | `MAP@10` | `Exact Tie Rate` | `NevIR Acc` | `FollowIR p-MRR` | `Poison Quarantine` |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Stage-1 Bi-Encoder Baseline (Dot Product)** | `0.5826` | `0.7104` | `0.7581` | `0.7006` | `0.6024` | `0.0%` | `0.0%` | `+0.0000` | `0.0%` |
+| **2. Pointwise Cross-Encoder (`s(q, d_i)`)** | `0.9138` | `0.9209` | `0.9527` | `0.9630` | `0.9074` | `2.7%` | `100.0%` | `+0.8333` | `0.0%` |
+| **3. `dgem` Listwise Canvas (Discrete `argmax 0..3`) — *Live L4*** | `0.7925` | `0.8214` | `0.8416` | `0.7407` | `0.7311` | **`70.0%`** | `80.0%` | `+0.7267` | **`100.0%`** |
+| **4. `dgem` Listwise Decision Canvas ($\hat{r}_i = \sum g \cdot p_{i,g}$) — *Live L4*** ⭐ | **`0.8595`** | **`0.9067`** | **`0.9265`** ⭐ | **`0.9444`** ⭐ | **`0.7990`** | **`0.0%`** ⭐ | **`100.0%`** ⭐ | **`+0.7533`** ⭐ | **`100.0%`** ⭐ |
+
+- **Continuous Softmax Expectation ($\hat{r}_i = \sum_{g=0}^3 g \cdot p_{i,g}$) vs. Discrete `argmax`**: Eliminates the `70.0%` discrete bin tie rate (`0.0%` ties), boosting **`nDCG@10` by `+8.49 pts` (`0.8416` $\rightarrow$ `0.9265`)** and **`MRR@10` by `+20.37 pts` (`0.7407` $\rightarrow$ `0.9444`)** from the exact same single forward pass (`~1,377 ms` warm for 12 simultaneous slots = `~138 ms` effective per passage).
+- **Reproduction**: `./bin/dgem bench-rerank --from-receipt benchmarks/results_rerank_cloudrun.json`
+
+

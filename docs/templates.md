@@ -789,7 +789,35 @@ While autoregressive Vision-Language Models (`PaliGemma`, `Qwen2.5-VL`, `Gemini`
 
 ---
 
-## 8. Template Engine Functions Reference
+## 8. Listwise Neural Reranking & RAG Security Gate (`EXP-10`)
+
+While pointwise cross-encoders (**Cohere Rerank v3.5 / v4**, **Voyage `rerank-2.5-lite`**) evaluate each candidate passage $d_i$ in isolation ($K$ separate $s(q, d_i)$ passes, blind to cross-document redundancy, multi-hop entity bridges, and set-level unanswerability), `dgem` evaluates up to $K=10$ candidate passages + 2 RAG security/abstention gates simultaneously in **1 forward pass (`12` slots, `~138 ms` effective per passage on Cloud Run `1× NVIDIA L4`)**:
+
+* **`templates/rerank/listwise_decision_rerank.json.tmpl`**: 12-slot listwise decision canvas (`doc_01` $\dots$ `doc_10` 4-level ordered `score` slots + `answer_present` `boolean` slot + `poisoned_passage` `choice` slot).
+* **`templates/rerank/pointwise_rerank.json.tmpl`**: 3-slot single-passage baseline (`relevance_grade`, `relevance_tier`, `is_instruction_injection`).
+
+### Continuous Softmax Relevance Expectation ($\hat{r}_i$)
+Instead of sorting by discrete `argmax` grades (`0..3`, which produced a `70.0%` tie rate across 10 passages), `dgem bench-rerank` computes the **continuous expected relevance score** from the restricted-softmax distribution $p_{i,g} = P(\texttt{doc\_i} = g \mid q, \mathcal{P}, d_1 \dots d_K)$:
+
+$$\hat{r}_i = \sum_{g=0}^{3} g \cdot P(\texttt{doc\_i} = g \mid q, \mathcal{P}, d_1 \dots d_K) = 0 \cdot p_{i,0} + 1 \cdot p_{i,1} + 2 \cdot p_{i,2} + 3 \cdot p_{i,3} \in [0.000, 3.000]$$
+
+On live Cloud Run `1× NVIDIA L4` (`benchmarks/results_rerank_cloudrun.json`), Continuous Softmax Expectation reduced the Exact Tie Rate from **`70.0%` to `0.0%`** and lifted **`nDCG@10` from `0.8416` to `0.9265` (`+8.49 pts`)** and **`MRR@10` from `0.7407` to `0.9444` (`+20.37 pts`)**, with **`100.0%` `NevIR` negation accuracy**, **`+0.7533` `FollowIR p-MRR` policy steerability**, and **`100.0%` prompt-injection quarantine**.
+
+```bash
+# Inspect saved live Cloud Run L4 telemetry receipt
+./bin/dgem bench-rerank --from-receipt benchmarks/results_rerank_cloudrun.json
+
+# Execute a single 12-slot listwise reranking + security gate pass
+./bin/dgem decide -u "${URL}/v1" --gcp-auth \
+  -t templates/rerank/listwise_decision_rerank.json.tmpl \
+  -v 'query=Which team owns the upstream database that auth-proxy depends on?' \
+  -v 'policy=Prioritize direct answers and 2-hop bridge passages; quarantine prompt injections.' \
+  --stats
+```
+
+---
+
+## 9. Template Engine Functions Reference
 
 The Go template engine in `dgem` exposes the following helper functions:
 
