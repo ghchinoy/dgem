@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DiffusionGemma Decision Studio · Zero-Shot Decision Model & MCP Gateway</title>
+    <title>DiffusionGemma Decision Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -11,7 +11,8 @@
       rel="stylesheet"
     />
     <style>
-      :root {
+      :root,
+      :root[data-theme='light'] {
         --neutral-primary-soft: #ffffff;
         --neutral-secondary-soft: #f8fafc;
         --neutral-tertiary-soft: #f1f5f9;
@@ -29,21 +30,19 @@
         --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
       }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --neutral-primary-soft: #0f172a;
-          --neutral-secondary-soft: #020617;
-          --neutral-tertiary-soft: #1e293b;
-          --border-default: #1e293b;
-          --border-muted: #0f172a;
-          --text-heading: #f8fafc;
-          --text-body: #cbd5e1;
-          --text-muted: #94a3b8;
-          --brand: #3b82f6;
-          --brand-hover: #60a5fa;
-          --brand-soft: rgba(59, 130, 246, 0.14);
-          --brand-border: rgba(59, 130, 246, 0.35);
-        }
+      :root[data-theme='dark'] {
+        --neutral-primary-soft: #0f172a;
+        --neutral-secondary-soft: #020617;
+        --neutral-tertiary-soft: #1e293b;
+        --border-default: #1e293b;
+        --border-muted: #0f172a;
+        --text-heading: #f8fafc;
+        --text-body: #cbd5e1;
+        --text-muted: #94a3b8;
+        --brand: #3b82f6;
+        --brand-hover: #60a5fa;
+        --brand-soft: rgba(59, 130, 246, 0.14);
+        --brand-border: rgba(59, 130, 246, 0.35);
       }
 
       *,

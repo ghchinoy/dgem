@@ -1,5 +1,8 @@
 import { LitElement, html, css, svg } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
+import './components/dgem-nav-rail.js';
+import './components/dgem-about-modal.js';
+import type { StudioTab, ThemePreference } from './components/dgem-nav-rail.js';
 import type {
   TemplateEntry,
   GPUHealthStatus,
@@ -157,7 +160,11 @@ const MCP_TOOLS: MCPToolSpec[] = [
 
 @customElement('dgem-studio')
 export class DgemStudio extends LitElement {
-  @state() private activeTab: 'studio' | 'catalog' | 'mcp' = 'studio';
+  @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'light';
+  @state() private themePref: ThemePreference = 'auto';
+  @state() private aboutOpen = false;
+
+  @state() private activeTab: StudioTab = 'studio';
   @state() private templates: TemplateEntry[] = [];
   @state() private selectedTemplateName = 'support_triage';
   @state() private variableValues: Record<string, string> = {
@@ -195,11 +202,23 @@ export class DgemStudio extends LitElement {
     :host {
       display: block;
       min-height: 100vh;
-      background: var(--neutral-secondary-soft, #f8fafc);
-      color: var(--text-body, #334155);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
-      /* Deterministic Slot Accent Palette (va-0..5) from DESIGN.md */
+      /* Isolated Light Mode Tokens */
+      --neutral-primary-soft: #ffffff;
+      --neutral-secondary-soft: #f8fafc;
+      --neutral-tertiary-soft: #f1f5f9;
+      --border-default: #e2e8f0;
+      --border-muted: #f1f5f9;
+      --text-heading: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --brand: #1447e6;
+      --brand-hover: #1d4ed8;
+      --brand-soft: #eff6ff;
+      --brand-border: #bfdbfe;
+
+      /* Deterministic Slot Accent Palette (va-0..5) */
       --va-0-text: #1d4ed8;
       --va-0-bg: #eff6ff;
       --va-0-border: #bfdbfe;
@@ -218,28 +237,61 @@ export class DgemStudio extends LitElement {
       --va-5-text: #0e7490;
       --va-5-bg: #ecfeff;
       --va-5-border: #a5f3fc;
+
+      background: var(--neutral-secondary-soft);
+      color: var(--text-body);
     }
 
-    @media (prefers-color-scheme: dark) {
-      :host {
-        --va-0-text: #93c5fd;
-        --va-0-bg: rgba(59, 130, 246, 0.14);
-        --va-0-border: rgba(59, 130, 246, 0.35);
-        --va-1-text: #c4b5fd;
-        --va-1-bg: rgba(139, 92, 246, 0.14);
-        --va-1-border: rgba(139, 92, 246, 0.35);
-        --va-2-text: #6ee7b7;
-        --va-2-bg: rgba(16, 185, 129, 0.14);
-        --va-2-border: rgba(16, 185, 129, 0.35);
-        --va-3-text: #fcd34d;
-        --va-3-bg: rgba(245, 158, 11, 0.14);
-        --va-3-border: rgba(245, 158, 11, 0.35);
-        --va-4-text: #f9a8d4;
-        --va-4-bg: rgba(236, 72, 153, 0.14);
-        --va-4-border: rgba(236, 72, 153, 0.35);
-        --va-5-text: #67e8f9;
-        --va-5-bg: rgba(6, 182, 212, 0.14);
-        --va-5-border: rgba(6, 182, 212, 0.35);
+    :host([resolvedTheme='dark']) {
+      --neutral-primary-soft: #0f172a;
+      --neutral-secondary-soft: #020617;
+      --neutral-tertiary-soft: #1e293b;
+      --border-default: #1e293b;
+      --border-muted: #0f172a;
+      --text-heading: #f8fafc;
+      --text-body: #cbd5e1;
+      --text-muted: #94a3b8;
+      --brand: #3b82f6;
+      --brand-hover: #60a5fa;
+      --brand-soft: rgba(59, 130, 246, 0.14);
+      --brand-border: rgba(59, 130, 246, 0.35);
+
+      --va-0-text: #93c5fd;
+      --va-0-bg: rgba(59, 130, 246, 0.14);
+      --va-0-border: rgba(59, 130, 246, 0.35);
+      --va-1-text: #c4b5fd;
+      --va-1-bg: rgba(139, 92, 246, 0.14);
+      --va-1-border: rgba(139, 92, 246, 0.35);
+      --va-2-text: #6ee7b7;
+      --va-2-bg: rgba(16, 185, 129, 0.14);
+      --va-2-border: rgba(16, 185, 129, 0.35);
+      --va-3-text: #fcd34d;
+      --va-3-bg: rgba(245, 158, 11, 0.14);
+      --va-3-border: rgba(245, 158, 11, 0.35);
+      --va-4-text: #f9a8d4;
+      --va-4-bg: rgba(236, 72, 153, 0.14);
+      --va-4-border: rgba(236, 72, 153, 0.35);
+      --va-5-text: #67e8f9;
+      --va-5-bg: rgba(6, 182, 212, 0.14);
+      --va-5-border: rgba(6, 182, 212, 0.35);
+    }
+
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      align-items: stretch;
+    }
+
+    .app-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 768px) {
+      .app-shell {
+        flex-direction: column;
       }
     }
 
@@ -827,7 +879,27 @@ export class DgemStudio extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    this.initTheme();
     this.loadInitialData();
+  }
+
+  private initTheme() {
+    const saved = (localStorage.getItem('dgem-theme') as ThemePreference) || 'auto';
+    this.applyTheme(saved);
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    mq.addEventListener('change', () => {
+      if (this.themePref === 'auto') {
+        this.applyTheme('auto');
+      }
+    });
+  }
+
+  private applyTheme(pref: ThemePreference) {
+    this.themePref = pref;
+    localStorage.setItem('dgem-theme', pref);
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    this.resolvedTheme = pref === 'auto' ? (systemDark ? 'dark' : 'light') : pref;
+    document.documentElement.setAttribute('data-theme', this.resolvedTheme);
   }
 
   private async loadInitialData() {
@@ -1209,44 +1281,11 @@ export class DgemStudio extends LitElement {
           <div class="brand-row">
             <div class="brand-mark">dG</div>
             <div>
-              <div class="brand-title">
-                DiffusionGemma Decision Studio
-                <span class="pill tabular">vLLM + SigLIP · O(1) Readout</span>
-              </div>
+              <div class="brand-title">DiffusionGemma Decision Studio</div>
               <div class="brand-subtitle">
-                Zero-Shot Decision Model · Policy-as-Template · HTTP API & Model Context Protocol (MCP) Server
+                Zero-Shot Decision Model · Policy-as-Template · HTTP API &amp; Model Context Protocol (MCP) Server
               </div>
             </div>
-          </div>
-
-          <div class="segmented" role="tablist" aria-label="Workspace navigation">
-            <button
-              class="seg"
-              role="tab"
-              aria-selected=${this.activeTab === 'studio' ? 'true' : 'false'}
-              @click=${() => (this.activeTab = 'studio')}
-            >
-              <span class="material-symbols-outlined">tune</span>
-              Decision Studio
-            </button>
-            <button
-              class="seg"
-              role="tab"
-              aria-selected=${this.activeTab === 'catalog' ? 'true' : 'false'}
-              @click=${() => (this.activeTab = 'catalog')}
-            >
-              <span class="material-symbols-outlined">inventory_2</span>
-              Policy Catalog & Cascade (${this.templates.length || 24})
-            </button>
-            <button
-              class="seg"
-              role="tab"
-              aria-selected=${this.activeTab === 'mcp' ? 'true' : 'false'}
-              @click=${() => (this.activeTab = 'mcp')}
-            >
-              <span class="material-symbols-outlined">hub</span>
-              API & MCP Service (6 Tools)
-            </button>
           </div>
 
           <div class="status-cluster">
@@ -1258,11 +1297,6 @@ export class DgemStudio extends LitElement {
                     (${this.gpuStatus.probe_latency_ms}ms)
                   </span>`
                 : null}
-            </span>
-
-            <span class="pill tabular" title="Cloud Run GPU Hardware">
-              <span class="material-symbols-outlined">memory</span>
-              RTX Pro 6000 · 48GB
             </span>
 
             <button
@@ -1281,6 +1315,14 @@ export class DgemStudio extends LitElement {
               title="Refresh live GPU & health telemetry"
             >
               <span class="material-symbols-outlined">refresh</span>
+            </button>
+
+            <button
+              class="btn btn--sm"
+              @click=${() => (this.aboutOpen = true)}
+              title="About this app, GPU hardware & architecture"
+            >
+              <span class="material-symbols-outlined">info</span>
             </button>
 
             ${this.authMe?.email
@@ -2075,14 +2117,33 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 
   render() {
     return html`
-      ${this.renderHeader()}
-      <main>
-        ${this.activeTab === 'studio'
-          ? this.renderStudioTab()
-          : this.activeTab === 'catalog'
-            ? this.renderCatalogTab()
-            : this.renderMcpTab()}
-      </main>
+      <div class="app-shell">
+        <dgem-nav-rail
+          .activeTab=${this.activeTab}
+          .policyCount=${this.templates.length || 26}
+          .themePref=${this.themePref}
+          .resolvedTheme=${this.resolvedTheme}
+          @tab-change=${(e: CustomEvent<StudioTab>) => (this.activeTab = e.detail)}
+          @theme-change=${(e: CustomEvent<ThemePreference>) => this.applyTheme(e.detail)}
+          @open-about=${() => (this.aboutOpen = true)}
+        ></dgem-nav-rail>
+        <div class="app-main">
+          ${this.renderHeader()}
+          <main>
+            ${this.activeTab === 'studio'
+              ? this.renderStudioTab()
+              : this.activeTab === 'catalog'
+                ? this.renderCatalogTab()
+                : this.renderMcpTab()}
+          </main>
+        </div>
+      </div>
+      <dgem-about-modal
+        .open=${this.aboutOpen}
+        .resolvedTheme=${this.resolvedTheme}
+        .policyCount=${this.templates.length || 26}
+        @close-about=${() => (this.aboutOpen = false)}
+      ></dgem-about-modal>
     `;
   }
 }
