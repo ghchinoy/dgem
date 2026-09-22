@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/ghchinoy/dgem/pkg/client"
 	"github.com/ghchinoy/dgem/pkg/template"
+	"github.com/ghchinoy/dgem/studio"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,15 +26,16 @@ var (
 	servePort          int
 	serveHost          string
 	serveTemplatesDir  string
+	serveUIDir         string
 	serveWakeupTimeout time.Duration
 )
 
 var serveCmd = &cobra.Command{
 	Use:     "serve",
 	GroupID: "core",
-	Short:   "Run the dgem HTTP API Gateway, Cold-Start Orchestrator, and Web Policy Playground",
-	Long: `serve launches a lightweight HTTP gateway and interactive Web Playground in front of a
-DiffusionGemma (dgemma) GPU backend.
+	Short:   "Run the dgem HTTP API Gateway, Cold-Start Orchestrator, and Lit Web Studio",
+	Long: `serve launches a lightweight HTTP gateway and interactive Lit WebComponents Studio
+in front of a DiffusionGemma (dgemma) GPU backend.
 
 It enables colleagues to execute zero-shot multi-slot decisions via browser UI or simple
 REST JSON calls (POST /api/decide/{template}) without installing the dgem CLI or managing
@@ -52,6 +55,7 @@ func init() {
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 8080, "HTTP port to listen on (overrides PORT env var if specified)")
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host interface to bind")
 	serveCmd.Flags().StringVar(&serveTemplatesDir, "templates-dir", "./templates", "Directory containing .json.tmpl policy definitions")
+	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 6*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 
 	RootCmd.AddCommand(serveCmd)
@@ -439,347 +443,45 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 	})
 
-	// 6. Interactive Web Playground UI at GET /
+	// 6. Serve Lit WebComponents Studio (from --ui-dir on disk if available, else embedded studio/dist)
+	var uiFS fs.FS
+	uiSource := "embedded studio/dist"
+	if info, err := os.Stat(filepath.Join(serveUIDir, "index.html")); err == nil && !info.IsDir() {
+		uiFS = os.DirFS(serveUIDir)
+		uiSource = serveUIDir
+	} else {
+		embedded, err := studio.DistFS()
+		if err != nil {
+			return fmt.Errorf("failed to load embedded studio/dist: %w", err)
+		}
+		uiFS = embedded
+	}
+	fileServer := http.FileServer(http.FS(uiFS))
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
+		cleanPath := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
+		if cleanPath == "" || cleanPath == "." {
+			cleanPath = "index.html"
+		}
+		if f, err := uiFS.Open(cleanPath); err == nil {
+			_ = f.Close()
+			fileServer.ServeHTTP(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(playgroundHTML))
+		// SPA fallback to index.html for client-side routes
+		if indexBytes, err := fs.ReadFile(uiFS, "index.html"); err == nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write(indexBytes)
+			return
+		}
+		http.NotFound(w, r)
 	})
 
 	addr := fmt.Sprintf("%s:%d", serveHost, servePort)
-	fmt.Printf("🚀 dgem HTTP Gateway & Policy Playground listening on http://%s\n", addr)
+	fmt.Printf("🚀 dgem HTTP Gateway & Lit Web Studio listening on http://%s\n", addr)
 	fmt.Printf("   • Upstream GPU Engine: %s (gcp-auth=%v, iap-client-id=%q)\n",
 		viper.GetString("url"), viper.GetBool("gcp_auth"), viper.GetString("iap_client_id"))
 	fmt.Printf("   • Templates Catalog:   %s\n", serveTemplatesDir)
+	fmt.Printf("   • Studio Assets:       %s\n", uiSource)
 	return http.ListenAndServe(addr, mux)
 }
-
-const playgroundHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>DiffusionGemma (dgem) — Decision Studio & Policy Gateway</title>
-<style>
-  :root {
-    --bg: #0b0f17;
-    --panel: #131b2e;
-    --panel-alt: #19233c;
-    --border: #263457;
-    --text: #e8eefb;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --pass: #22c55e;
-    --warn: #f59e0b;
-    --fail: #ef4444;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.5;
-  }
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--border);
-  }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .brand h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
-  .badge {
-    font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 600;
-    background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.35);
-  }
-  .status-pill {
-    display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px;
-    border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--border);
-  }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-  .dot.ok { background: var(--pass); box-shadow: 0 0 8px var(--pass); }
-  .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
-  main {
-    max-width: 1400px; margin: 0 auto; padding: 22px;
-    display: grid; grid-template-columns: 1fr 1.15fr; gap: 22px;
-  }
-  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
-  .card {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
-  }
-  .card h2 { margin: 0 0 12px 0; font-size: 15px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
-  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 12px 0 5px; }
-  select, input[type="text"], textarea {
-    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: inherit;
-  }
-  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
-  button.primary {
-    margin-top: 16px; width: 100%; padding: 11px 16px; border: none; border-radius: 8px;
-    background: linear-gradient(135deg, #0284c7, #38bdf8); color: #041019;
-    font-weight: 700; font-size: 14px; cursor: pointer;
-  }
-  button.primary:disabled { opacity: 0.6; cursor: wait; }
-  .slot-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-  .slot-table th, .slot-table td {
-    text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border);
-  }
-  .slot-table th { color: var(--muted); font-size: 11px; text-transform: uppercase; }
-  .entropy-pill {
-    display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 12px;
-  }
-  .entropy-low { background: rgba(34, 197, 94, 0.16); color: #4ade80; }
-  .entropy-mid { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
-  .entropy-high { background: rgba(239, 68, 68, 0.16); color: #f87171; }
-  pre {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px; overflow-x: auto; font-size: 12px; color: #cbd5e1;
-  }
-  .canvas-wrap { position: relative; display: inline-block; max-width: 100%; margin-top: 10px; }
-  .canvas-wrap img { max-width: 100%; border-radius: 8px; display: block; }
-  .canvas-wrap svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-</style>
-</head>
-<body>
-<header>
-  <div class="brand">
-    <h1>DiffusionGemma Decision Studio</h1>
-    <span class="badge">O(1) Discrete Diffusion Readout</span>
-    <span class="badge">REST &amp; IAP Gateway</span>
-  </div>
-  <div class="status-pill" id="statusPill">
-    <span class="dot" id="statusDot"></span>
-    <span id="statusText">Checking GPU status...</span>
-  </div>
-</header>
-
-<main>
-  <div class="card">
-    <h2>1. Select Policy Template (.json.tmpl)</h2>
-    <label for="tmplSelect">Policy Catalog</label>
-    <select id="tmplSelect"></select>
-
-    <div id="varsContainer"></div>
-
-    <div id="imageSection" style="display:none;">
-      <label for="imageInput">Attach Image (PNG/JPEG for Multimodal SigLIP BBox Readout)</label>
-      <input type="file" id="imageInput" accept="image/*"/>
-    </div>
-
-    <details style="margin-top:14px;">
-      <summary style="cursor:pointer; font-size:12px; color:var(--muted);">View / Edit Raw .json.tmpl Policy Source</summary>
-      <textarea id="rawTemplate" rows="10" style="margin-top:8px;"></textarea>
-    </details>
-
-    <button class="primary" id="runBtn" onclick="runDecision()">⚡ Execute Joint Decision Readout</button>
-    <div id="timerMsg" style="margin-top:8px; font-size:12px; color:var(--warn); display:none;"></div>
-  </div>
-
-  <div class="card">
-    <h2>2. Joint Slot Decisions &amp; Epistemic Shannon Entropy (H)</h2>
-    <div id="resultsArea">
-      <p style="color:var(--muted); font-size:13px;">Select a policy on the left and click <b>Execute Joint Decision Readout</b>. If the Cloud Run RTX Pro 6000 GPU is scaled to zero, this gateway will automatically wake it and hold the request until vLLM completes warmup.</p>
-    </div>
-
-    <div id="bboxPreview" class="canvas-wrap" style="display:none;">
-      <img id="previewImg" src="" alt="Uploaded preview"/>
-      <svg id="bboxSvg" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg>
-    </div>
-
-    <h2 style="margin-top:22px;">3. Zero-CLI cURL &amp; dgem Snippet</h2>
-    <pre id="curlSnippet">Loading catalog...</pre>
-  </div>
-</main>
-
-<script>
-let catalog = [];
-let uploadedDataURI = "";
-
-async function init() {
-  checkStatus();
-  const res = await fetch('/api/templates');
-  const data = await res.json();
-  catalog = data.templates || [];
-  const sel = document.getElementById('tmplSelect');
-  sel.innerHTML = '';
-  catalog.forEach((t, idx) => {
-    const opt = document.createElement('option');
-    opt.value = idx;
-    opt.textContent = '[' + t.category + '] ' + t.id;
-    if (t.id === 'support_triage') opt.selected = true;
-    sel.appendChild(opt);
-  });
-  sel.onchange = renderSelectedTemplate;
-  renderSelectedTemplate();
-
-  document.getElementById('imageInput').addEventListener('change', (ev) => {
-    const f = ev.target.files[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      uploadedDataURI = reader.result;
-      document.getElementById('previewImg').src = uploadedDataURI;
-      document.getElementById('bboxPreview').style.display = 'inline-block';
-    };
-    reader.readAsDataURL(f);
-  });
-}
-
-async function checkStatus() {
-  try {
-    const res = await fetch('/api/status');
-    const st = await res.json();
-    const dot = document.getElementById('statusDot');
-    const txt = document.getElementById('statusText');
-    if (st.reachable) {
-      dot.className = 'dot ok';
-      txt.textContent = 'GPU Container Reachable (' + st.upstream_url + ')';
-    } else {
-      dot.className = 'dot warn';
-      txt.textContent = 'Idle / Scaled-to-Zero (Auto-wakes on first request)';
-    }
-  } catch (e) {}
-}
-
-function renderSelectedTemplate() {
-  const idx = document.getElementById('tmplSelect').value;
-  const t = catalog[idx];
-  if (!t) return;
-  document.getElementById('rawTemplate').value = t.raw_template;
-  document.getElementById('imageSection').style.display = t.multimodal ? 'block' : 'none';
-
-  const container = document.getElementById('varsContainer');
-  container.innerHTML = '';
-  (t.variables || []).forEach(v => {
-    const lbl = document.createElement('label');
-    lbl.textContent = 'Variable: {{ .' + v + ' }}';
-    const inp = document.createElement('textarea');
-    inp.rows = 2;
-    inp.dataset.varName = v;
-    inp.value = (t.sample_vars && t.sample_vars[v]) || '';
-    inp.oninput = updateSnippet;
-    container.appendChild(lbl);
-    container.appendChild(inp);
-  });
-  updateSnippet();
-}
-
-function collectVars() {
-  const vars = {};
-  document.querySelectorAll('#varsContainer textarea').forEach(el => {
-    vars[el.dataset.varName] = el.value;
-  });
-  return vars;
-}
-
-function updateSnippet() {
-  const idx = document.getElementById('tmplSelect').value;
-  const t = catalog[idx];
-  if (!t) return;
-  const body = JSON.stringify({ variables: collectVars() }, null, 2);
-  const origin = window.location.origin;
-  document.getElementById('curlSnippet').textContent =
-    '# Option A: Direct REST API call (No dgem CLI needed)\n' +
-    'curl -s "' + origin + '/api/decide/' + t.id + '" \\\n' +
-    '  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \\\n' +
-    '  -H "Content-Type: application/json" \\\n' +
-    '  -d \'' + body + '\' | jq .\n\n' +
-    '# Option B: Using dgem CLI against this gateway\n' +
-    './bin/dgem decide -u "' + origin + '/v1" --gcp-auth -t templates/' + t.id + '.json.tmpl -s';
-}
-
-async function runDecision() {
-  const idx = document.getElementById('tmplSelect').value;
-  const t = catalog[idx];
-  const btn = document.getElementById('runBtn');
-  const timerMsg = document.getElementById('timerMsg');
-  btn.disabled = true;
-  const start = Date.now();
-  timerMsg.style.display = 'block';
-  const interval = setInterval(() => {
-    const sec = Math.floor((Date.now() - start) / 1000);
-    timerMsg.textContent = '⏳ Evaluating (' + sec + 's elapsed)... If waking from 0 GPU instances, cold-start takes ~3.5-4.5 minutes.';
-  }, 1000);
-
-  try {
-    const payload = {
-      template: t.id,
-      custom_template: document.getElementById('rawTemplate').value,
-      variables: collectVars(),
-      image: uploadedDataURI || undefined
-    };
-    const res = await fetch('/api/decide', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const out = await res.json();
-    clearInterval(interval);
-    timerMsg.style.display = 'none';
-    btn.disabled = false;
-    checkStatus();
-    if (!res.ok) {
-      document.getElementById('resultsArea').innerHTML = '<pre style="color:var(--fail);">' + JSON.stringify(out, null, 2) + '</pre>';
-      return;
-    }
-    renderResults(out);
-  } catch (err) {
-    clearInterval(interval);
-    timerMsg.style.display = 'none';
-    btn.disabled = false;
-    document.getElementById('resultsArea').innerHTML = '<pre style="color:var(--fail);">' + err.message + '</pre>';
-  }
-}
-
-function renderResults(out) {
-  const answers = out.answers || {};
-  const qDiag = (out.diagnostics && out.diagnostics.questions) || {};
-  let html = '<div style="display:flex; gap:14px; font-size:12px; color:var(--muted); margin-bottom:10px;">' +
-    '<span>⏱️ Latency: <b style="color:var(--text)">' + out.wall_time_ms + ' ms</b></span>' +
-    '<span>📊 Max Entropy (H): <b style="color:var(--text)">' + (out.max_entropy || 0).toFixed(4) + ' nats</b></span>' +
-    '<span>🔄 Warmup Attempts: <b style="color:var(--text)">' + out.warmup_attempts + '</b></span>' +
-    '</div>';
-
-  html += '<table class="slot-table"><thead><tr><th>Slot</th><th>Decision Value</th><th>Confidence (P)</th><th>Shannon Entropy (H)</th></tr></thead><tbody>';
-  Object.keys(answers).sort().forEach(k => {
-    const a = answers[k];
-    const d = qDiag[k] || {};
-    const val = a.label !== undefined && a.label !== "" ? a.label : (a.value !== undefined ? a.value : a.choice);
-    const conf = ((a.confidence || 0) * 100).toFixed(1) + '%';
-    const ent = a.entropy !== undefined && a.entropy > 0 ? a.entropy : (d.entropy !== undefined ? d.entropy : 0);
-    let entClass = 'entropy-low';
-    if (ent >= 0.35) entClass = 'entropy-high';
-    else if (ent >= 0.15) entClass = 'entropy-mid';
-
-    html += '<tr>' +
-      '<td><b>' + k + '</b></td>' +
-      '<td style="color:var(--accent); font-weight:600;">' + JSON.stringify(val) + '</td>' +
-      '<td>' + conf + '</td>' +
-      '<td><span class="entropy-pill ' + entClass + '">' + ent.toFixed(4) + ' nats</span></td>' +
-      '</tr>';
-  });
-  html += '</tbody></table>';
-  document.getElementById('resultsArea').innerHTML = html;
-
-  // Render SVG bounding box if ymin/xmin/ymax/xmax present
-  const svg = document.getElementById('bboxSvg');
-  svg.innerHTML = '';
-  const parseCoord = (v) => {
-    if (v === undefined || v === null) return null;
-    const m = String(v).match(/(\d+)/);
-    return m ? parseInt(m[1], 10) : null;
-  };
-  const getVal = (obj) => obj ? (obj.label || obj.value || obj.choice) : null;
-  const ymin = parseCoord(getVal(answers.ymin));
-  const xmin = parseCoord(getVal(answers.xmin));
-  const ymax = parseCoord(getVal(answers.ymax));
-  const xmax = parseCoord(getVal(answers.xmax));
-  if (ymin !== null && xmin !== null && ymax !== null && xmax !== null) {
-    svg.innerHTML = '<rect x="' + xmin + '" y="' + ymin + '" width="' + (xmax - xmin) + '" height="' + (ymax - ymin) +
-      '" fill="rgba(56,189,248,0.18)" stroke="#38bdf8" stroke-width="8"/>';
-  }
-}
-
-init();
-</script>
-</body>
-</html>`

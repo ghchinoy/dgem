@@ -34,11 +34,17 @@ if [ -z "${UPSTREAM_URL}" ]; then
 fi
 echo "-> Discovered Upstream GPU Service: ${UPSTREAM_URL}"
 
-# Stage minimal build context (Go source + templates) for fast ~20s Cloud Build
+# Stage minimal build context (Go source + studio Lit app + templates) for fast ~20s Cloud Build
 TMP_CTX="$(mktemp -d)"
 trap 'rm -rf "${TMP_CTX}"' EXIT
 cp go.mod go.sum main.go "${TMP_CTX}/"
 cp -R cmd pkg templates "${TMP_CTX}/"
+mkdir -p "${TMP_CTX}/studio"
+cp studio/package*.json studio/tsconfig.json studio/vite.config.ts studio/index.html studio/embed.go "${TMP_CTX}/studio/"
+cp -R studio/src "${TMP_CTX}/studio/"
+if [ -d "studio/dist" ]; then
+  cp -R studio/dist "${TMP_CTX}/studio/"
+fi
 cp deploy/gateway/Dockerfile "${TMP_CTX}/Dockerfile"
 
 echo "-> Building ${IMAGE} via Cloud Build..."

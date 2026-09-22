@@ -60,6 +60,12 @@ docs-build: ## Build the Astro Starlight documentation site
 docs-dev: ## Launch local development server for the documentation site
 	pnpm run --dir docs-site dev
 
+studio-build: ## Build the Lit + Vite Decision Studio WebComponents bundle (studio/dist)
+	npm --prefix studio run build
+
+studio-dev: ## Launch Vite HMR dev server for Decision Studio (proxies /api to 127.0.0.1:8080)
+	npm --prefix studio run dev
+
 cloudrun-build: ## Build and push the self-contained Cloud Run container image to Artifact Registry
 	./scripts/build_cloudrun_image.sh
 
