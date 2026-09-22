@@ -76,6 +76,13 @@ if gcloud run services describe "${GPU_SERVICE}" --project="${PROJECT}" --region
 fi
 
 # 4. Attach dgemma-gateway-sa to dgemma-gateway and bind group:aaie-decision-model@google.com
+echo "-> Granting roles/cloudtrace.agent on project ${PROJECT} to ${GATEWAY_SA} for OpenTelemetry export..."
+gcloud projects add-iam-policy-binding "${PROJECT}" \
+  --member="serviceAccount:${GATEWAY_SA}" \
+  --role="roles/cloudtrace.agent" \
+  --condition=None \
+  --quiet >/dev/null || true
+
 if gcloud run services describe "${GATEWAY_SERVICE}" --project="${PROJECT}" --region="${REGION}" >/dev/null 2>&1; then
   echo "-> Updating ${GATEWAY_SERVICE} to run as ${GATEWAY_SA}..."
   gcloud run services update "${GATEWAY_SERVICE}" \

@@ -20,6 +20,8 @@ import (
 	"github.com/ghchinoy/dgem/studio"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var (
@@ -87,15 +89,19 @@ type GatewayDecideRequest struct {
 
 // GatewayDecideResponse is returned by POST /api/decide.
 type GatewayDecideResponse struct {
-	Template       string                             `json:"template"`
-	Answers        map[string]client.QuestionAnswer   `json:"answers"`
-	Diagnostics    client.Diagnostics                 `json:"diagnostics"`
-	Decision       *client.StructuredDecisionResponse `json:"decision,omitempty"`
-	MaxEntropy     float64                            `json:"max_entropy"`
-	WallTimeMs     int64                              `json:"wall_time_ms"`
-	WarmupAttempts int                                `json:"warmup_attempts"`
-	Model          string                             `json:"model"`
-	UpstreamURL    string                             `json:"upstream_url"`
+	Template        string                             `json:"template"`
+	Answers         map[string]client.QuestionAnswer   `json:"answers"`
+	Diagnostics     client.Diagnostics                 `json:"diagnostics"`
+	Decision        *client.StructuredDecisionResponse `json:"decision,omitempty"`
+	MaxEntropy      float64                            `json:"max_entropy"`
+	WallTimeMs      int64                              `json:"wall_time_ms"`
+	GpuForwardMs    int64                              `json:"gpu_forward_ms"`
+	ColdStartWaitMs int64                              `json:"cold_start_wait_ms"`
+	WarmupAttempts  int                                `json:"warmup_attempts"`
+	Model           string                             `json:"model"`
+	UpstreamURL     string                             `json:"upstream_url"`
+	TraceID         string                             `json:"trace_id,omitempty"`
+	TraceSpans      []TraceSpanRecord                  `json:"trace_spans,omitempty"`
 }
 
 var varRegex = regexp.MustCompile(`\{\{\s*(?:default\s+"[^"]*"\s+)?\.([a-zA-Z0-9_]+)`)
@@ -257,18 +263,61 @@ func isColdStartRetryable(err error) bool {
 }
 
 func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent string, images []string) (*client.StructuredDecisionResponse, *client.RequestStats, int, error) {
+	ctx, orchSpan := gatewayTracer().Start(ctx, "dgem.gpu.orchestrate")
+	defer orchSpan.End()
+	orchSpan.SetAttributes(
+		attribute.String("dgem.upstream_url", viper.GetString("url")),
+		attribute.String("dgem.model", viper.GetString("model")),
+		attribute.Int("dgem.image_count", len(images)),
+	)
+
 	deadline := time.Now().Add(serveWakeupTimeout)
+	orchStart := time.Now()
 	attempts := 0
 	for {
 		attempts++
+		attemptStart := time.Now()
+		attemptCtx, attemptSpan := gatewayTracer().Start(ctx, "dgem.gpu.forward_pass")
+		attemptSpan.SetAttributes(attribute.Int("dgem.attempt", attempts))
+
 		c := GetClient()
-		reqCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
+		reqCtx, cancel := context.WithTimeout(attemptCtx, 90*time.Second)
 		resp, stats, err := c.Decide(reqCtx, schemaContent, stateContent, images...)
 		cancel()
+
+		attemptMs := time.Since(attemptStart).Milliseconds()
+		attemptSpan.SetAttributes(attribute.Int64("dgem.gpu.forward_ms", attemptMs))
+
 		if err == nil {
+			coldWaitMs := time.Since(orchStart).Milliseconds() - attemptMs
+			if coldWaitMs < 0 {
+				coldWaitMs = 0
+			}
+			attemptSpan.SetAttributes(
+				attribute.Float64("dgem.gpu.prefill_ms", resp.Diagnostics.Timing.PrefillMs),
+				attribute.Float64("dgem.gpu.denoise_ms", resp.Diagnostics.Timing.DenoiseMs),
+				attribute.Int("dgem.gpu.reads", resp.Diagnostics.Timing.Reads),
+				attribute.Int("dgem.gpu.steps", resp.Diagnostics.Steps),
+				attribute.Int("dgem.gpu.prompt_tokens", stats.PromptTokens),
+			)
+			attemptSpan.SetStatus(codes.Ok, "dgemma forward pass succeeded")
+			attemptSpan.End()
+
+			orchSpan.SetAttributes(
+				attribute.Int("dgem.warmup_attempts", attempts),
+				attribute.Int64("dgem.gpu.forward_ms", attemptMs),
+				attribute.Int64("dgem.gpu.cold_start_wait_ms", coldWaitMs),
+			)
+			orchSpan.SetStatus(codes.Ok, "ok")
 			return resp, stats, attempts, nil
 		}
+
+		attemptSpan.SetStatus(codes.Error, err.Error())
+		attemptSpan.SetAttributes(attribute.String("dgem.error", err.Error()))
+		attemptSpan.End()
+
 		if !isColdStartRetryable(err) || time.Now().After(deadline) || ctx.Err() != nil {
+			orchSpan.SetStatus(codes.Error, err.Error())
 			return nil, nil, attempts, err
 		}
 		time.Sleep(6 * time.Second)
@@ -288,6 +337,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 		viper.Set("gcp_auth", true)
 	}
 
+	shutdownTracer := initGatewayTracer(context.Background())
+	defer func() {
+		_ = shutdownTracer(context.Background())
+	}()
+
 	mux := http.NewServeMux()
 
 	// 1. Health check endpoint for Cloud Run / Load Balancer probes
@@ -297,6 +351,25 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"status":       "ok",
 			"service":      "dgem-gateway",
 			"upstream_url": viper.GetString("url"),
+		})
+	})
+
+	// 1b. Recent OpenTelemetry Spans & Waterfall Inspector (GET /api/traces)
+	mux.HandleFunc("/api/traces", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if traceID := strings.TrimSpace(r.URL.Query().Get("trace_id")); traceID != "" {
+			spans := getTraceSpansByTraceID(traceID)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"trace_id": traceID,
+				"count":    len(spans),
+				"spans":    spans,
+			})
+			return
+		}
+		spans := getRecentTraces(60)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"count": len(spans),
+			"spans": spans,
 		})
 	})
 
@@ -390,8 +463,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 			return
 		}
 
+		parentCtx := extractTraceContextFromRequest(r)
+		ctx, rootSpan := gatewayTracer().Start(parentCtx, "dgem.gateway.decide")
+		traceID := rootSpan.SpanContext().TraceID().String()
+		if traceID != "" {
+			w.Header().Set("X-Dgem-Trace-Id", traceID)
+		}
+
 		var payload GatewayDecideRequest
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			rootSpan.SetStatus(codes.Error, err.Error())
+			rootSpan.End()
 			http.Error(w, fmt.Sprintf(`{"error": "invalid JSON body: %s"}`, err.Error()), http.StatusBadRequest)
 			return
 		}
@@ -415,6 +497,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		_, renderSpan := gatewayTracer().Start(ctx, "dgem.template.render")
 		engine := template.NewEngine()
 		var rendered string
 		var err error
@@ -429,15 +512,26 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 			targetPath, resolvedID := resolveTemplateFile(serveTemplatesDir, payload.Template)
 			tmplLabel = resolvedID
+			renderSpan.SetAttributes(
+				attribute.String("dgem.template.id", resolvedID),
+				attribute.String("dgem.template.path", targetPath),
+			)
 			rendered, err = engine.RenderFile(targetPath, payload.Variables)
 		}
 		if err != nil {
+			renderSpan.SetStatus(codes.Error, err.Error())
+			renderSpan.End()
+			rootSpan.SetStatus(codes.Error, err.Error())
+			rootSpan.End()
 			http.Error(w, fmt.Sprintf(`{"error": "template render failed: %s"}`, err.Error()), http.StatusBadRequest)
 			return
 		}
 
 		schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, payload.Variables)
+		renderSpan.End()
 		if err != nil {
+			rootSpan.SetStatus(codes.Error, err.Error())
+			rootSpan.End()
 			http.Error(w, fmt.Sprintf(`{"error": "failed to parse rendered template: %s"}`, err.Error()), http.StatusBadRequest)
 			return
 		}
@@ -451,9 +545,18 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		images = append(images, payload.Images...)
 
+		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
+		rootSpan.SetAttributes(
+			attribute.String("dgem.template", tmplLabel),
+			attribute.String("dgem.user", userEmail),
+			attribute.Bool("dgem.multimodal", len(images) > 0),
+		)
+
 		start := time.Now()
-		resp, stats, attempts, err := executeDecideWithWarmup(r.Context(), schemaContent, stateContent, images)
+		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, images)
 		if err != nil {
+			rootSpan.SetStatus(codes.Error, err.Error())
+			rootSpan.End()
 			http.Error(w, fmt.Sprintf(`{"error": "upstream decision failed after %d attempt(s): %s"}`, attempts, err.Error()), http.StatusBadGateway)
 			return
 		}
@@ -471,16 +574,40 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		wallTimeMs := time.Since(start).Milliseconds()
+		gpuForwardMs := stats.WallTime.Milliseconds()
+		if gpuForwardMs <= 0 && resp.Diagnostics.Timing.TotalMs > 0 {
+			gpuForwardMs = int64(resp.Diagnostics.Timing.TotalMs)
+		}
+		coldWaitMs := wallTimeMs - gpuForwardMs
+		if coldWaitMs < 0 {
+			coldWaitMs = 0
+		}
+
+		rootSpan.SetAttributes(
+			attribute.Int64("dgem.total_wall_ms", wallTimeMs),
+			attribute.Int64("dgem.gpu.forward_ms", gpuForwardMs),
+			attribute.Int64("dgem.gpu.cold_start_wait_ms", coldWaitMs),
+			attribute.Int("dgem.warmup_attempts", attempts),
+			attribute.Float64("dgem.max_entropy", maxEntropy),
+		)
+		rootSpan.SetStatus(codes.Ok, "ok")
+		rootSpan.End()
+
 		out := GatewayDecideResponse{
-			Template:       tmplLabel,
-			Answers:        resp.Answers,
-			Diagnostics:    resp.Diagnostics,
-			Decision:       resp,
-			MaxEntropy:     maxEntropy,
-			WallTimeMs:     time.Since(start).Milliseconds(),
-			WarmupAttempts: attempts,
-			Model:          stats.Model,
-			UpstreamURL:    viper.GetString("url"),
+			Template:        tmplLabel,
+			Answers:         resp.Answers,
+			Diagnostics:     resp.Diagnostics,
+			Decision:        resp,
+			MaxEntropy:      maxEntropy,
+			WallTimeMs:      wallTimeMs,
+			GpuForwardMs:    gpuForwardMs,
+			ColdStartWaitMs: coldWaitMs,
+			WarmupAttempts:  attempts,
+			Model:           stats.Model,
+			UpstreamURL:     viper.GetString("url"),
+			TraceID:         traceID,
+			TraceSpans:      getTraceSpansByTraceID(traceID),
 		}
 		_ = json.NewEncoder(w).Encode(out)
 	}
@@ -493,8 +620,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 			http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 			return
 		}
+		parentCtx := extractTraceContextFromRequest(r)
+		ctx, proxySpan := gatewayTracer().Start(parentCtx, "dgem.gateway.proxy")
+		defer proxySpan.End()
+		if tid := proxySpan.SpanContext().TraceID().String(); tid != "" {
+			w.Header().Set("X-Dgem-Trace-Id", tid)
+		}
+
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
+			proxySpan.SetStatus(codes.Error, err.Error())
 			http.Error(w, `{"error": "failed to read request body"}`, http.StatusBadRequest)
 			return
 		}
@@ -507,12 +642,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		deadline := time.Now().Add(serveWakeupTimeout)
 		for attempt := 1; ; attempt++ {
-			req, err := http.NewRequestWithContext(r.Context(), "POST", targetURL, bytes.NewReader(bodyBytes))
+			attemptCtx, attemptSpan := gatewayTracer().Start(ctx, "dgem.gpu.proxy_forward")
+			attemptSpan.SetAttributes(attribute.Int("dgem.attempt", attempt))
+			req, err := http.NewRequestWithContext(attemptCtx, "POST", targetURL, bytes.NewReader(bodyBytes))
 			if err != nil {
+				attemptSpan.End()
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			req.Header.Set("Content-Type", "application/json")
+			injectTraceContextToRequest(attemptCtx, req)
 			if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
 				if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), targetURL); tok != "" {
 					req.Header.Set("Authorization", "Bearer "+tok)
@@ -526,18 +665,25 @@ func runServe(cmd *cobra.Command, args []string) error {
 			if err == nil {
 				respBody, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
+				attemptSpan.SetAttributes(attribute.Int("http.status_code", resp.StatusCode))
 				if resp.StatusCode >= 500 && strings.Contains(string(respBody), "ConnectionRefusedError") && time.Now().Before(deadline) {
+					attemptSpan.SetStatus(codes.Error, "cold_start_connection_refused")
+					attemptSpan.End()
 					time.Sleep(6 * time.Second)
 					continue
 				}
 				if resp.StatusCode == http.StatusOK {
+					attemptSpan.SetStatus(codes.Ok, "ok")
 					MarkGPUWarm()
 				}
+				attemptSpan.End()
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(resp.StatusCode)
 				_, _ = w.Write(respBody)
 				return
 			}
+			attemptSpan.SetStatus(codes.Error, err.Error())
+			attemptSpan.End()
 			if time.Now().After(deadline) || r.Context().Err() != nil {
 				http.Error(w, fmt.Sprintf(`{"error": "upstream unreachable: %s"}`, err.Error()), http.StatusBadGateway)
 				return

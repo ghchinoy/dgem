@@ -3,12 +3,17 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Client communicates with the local or remote diffgemma server.
@@ -60,6 +65,13 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 		return nil, nil, fmt.Errorf("failed to create http request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(httpReq.Header))
+	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
+		spanBytes := sc.SpanID()
+		spanDec := binary.BigEndian.Uint64(spanBytes[:])
+		httpReq.Header.Set("X-Cloud-Trace-Context", fmt.Sprintf("%s/%d;o=1", sc.TraceID().String(), spanDec))
+	}
 
 	if c.AuthToken != "" {
 		token := c.AuthToken

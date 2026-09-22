@@ -1623,6 +1623,51 @@ export class DgemStudio extends LitElement {
                   </div>
                 `}
 
+            ${rawRes?.trace_spans && Array.isArray(rawRes.trace_spans) && rawRes.trace_spans.length > 0
+              ? html`
+                  <div
+                    style="margin-top:1.1rem;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--border-default);background:var(--neutral-secondary-soft)"
+                  >
+                    <div
+                      style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;gap:0.5rem"
+                    >
+                      <span style="font-size:0.78rem;font-weight:700;color:var(--text-heading);display:flex;align-items:center;gap:0.4rem">
+                        <span class="material-symbols-outlined">timeline</span>
+                        OpenTelemetry Request &amp; GPU Model Span Waterfall
+                      </span>
+                      <span class="field-var-badge tabular">
+                        trace_id: ${rawRes.trace_id || 'local'} · GPU Forward:
+                        ${rawRes.gpu_forward_ms ?? Math.round(wallMs)} ms · Cold-Start Wait:
+                        ${rawRes.cold_start_wait_ms ?? 0} ms
+                      </span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:0.4rem">
+                      ${rawRes.trace_spans.map((sp: any) => {
+                        const pct = Math.max(
+                          3,
+                          Math.min(100, Math.round(((sp.duration_ms || 0) / Math.max(1, wallMs)) * 100))
+                        );
+                        return html`
+                          <div
+                            style="display:grid;grid-template-columns:190px 1fr 85px;align-items:center;gap:0.6rem;font-size:0.73rem"
+                          >
+                            <span class="tabular" style="font-weight:600;color:var(--text-heading)">
+                              ${sp.name}
+                            </span>
+                            <div class="conf-bar-track">
+                              <div class="conf-bar-fill" style="width:${pct}%"></div>
+                            </div>
+                            <span class="tabular" style="text-align:right;color:var(--text-muted)">
+                              ${Number(sp.duration_ms || 0).toFixed(2)} ms
+                            </span>
+                          </div>
+                        `;
+                      })}
+                    </div>
+                  </div>
+                `
+              : null}
+
             ${this.showRawDrawer
               ? html`
                   <div style="margin-top:1.1rem">
