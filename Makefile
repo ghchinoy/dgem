@@ -81,6 +81,9 @@ gateway-deploy: ## Deploy lightweight Go HTTP API & Web Studio Gateway (dgemma-g
 cloudrun-iam: ## Configure least-privilege Service Accounts (dgemma-gpu-sa, dgemma-gateway-sa) and Google Group IAM/IAP bindings
 	./scripts/setup_cloudrun_iam.sh
 
+cloudrun-dashboard: ## Provision Cloud Logging log-based metrics and Google Cloud Monitoring Operational Dashboard
+	./scripts/setup_cloud_monitoring.sh
+
 cloudrun-teardown: ## Delete Cloud Run dgemma GPU service to eliminate any cloud resource footprint
 	gcloud run services delete dgemma --region=$${GCP_REGION:-us-central1} --quiet
 

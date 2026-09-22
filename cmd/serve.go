@@ -413,6 +413,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"container_reachable":     st.ContainerReachable,
 			"warmup_in_progress":      st.WarmupInProgress,
 			"warmup_elapsed_seconds":  st.WarmupElapsedSeconds,
+			"warmup_phase":            st.WarmupPhase,
+			"warmup_phase_label":      st.WarmupPhaseLabel,
+			"warmup_bytes_staged_gb":  st.WarmupBytesStagedGB,
+			"ewma_wake_seconds":       st.EWMAWakeSeconds,
 			"seconds_since_last_read": st.SecondsSinceLastRead,
 			"idle_remaining_seconds":  st.IdleRemainingSeconds,
 			"last_readout_ms":         st.LastReadoutMs,
@@ -427,6 +431,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"detail":                  st.Detail,
 			"message":                 st.Detail,
 		})
+	})
+
+	// 3b. Warmup Telemetry & EWMA Right-Sizing Endpoint (GET /api/warmup/stats)
+	mux.HandleFunc("/api/warmup/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(GetWarmupTelemetryStats())
 	})
 
 	// 4. Explicit GPU Warmup Endpoint (POST /api/warmup)
@@ -446,7 +456,15 @@ func runServe(cmd *cobra.Command, args []string) error {
 		} else if reqBody.WaitForReady != nil {
 			wait = *reqBody.WaitForReady
 		}
-		out, err := TriggerGPUWarmup(r.Context(), wait)
+		surface := strings.TrimSpace(r.Header.Get("X-DGem-Surface"))
+		if surface == "" {
+			if strings.Contains(r.Header.Get("Referer"), "http") {
+				surface = "web_studio_wake"
+			} else {
+				surface = "api_warmup"
+			}
+		}
+		out, err := TriggerGPUWarmupWithSource(r.Context(), wait, surface)
 		if err != nil && wait {
 			w.WriteHeader(http.StatusBadGateway)
 		}
@@ -568,7 +586,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 		images = append(images, payload.Images...)
 
 		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
+		surface := strings.TrimSpace(r.Header.Get("X-DGem-Surface"))
+		if surface == "" {
+			if strings.Contains(r.Header.Get("Referer"), "http") {
+				surface = "web_studio"
+			} else {
+				surface = "rest_api"
+			}
+		}
 		rootSpan.SetAttributes(
+			attribute.String("dgem.surface", surface),
 			attribute.String("dgem.template", tmplLabel),
 			attribute.String("dgem.user", userEmail),
 			attribute.Bool("dgem.multimodal", len(images) > 0),
@@ -604,11 +631,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if coldWaitMs < 0 {
 			coldWaitMs = 0
 		}
+		reads := resp.Diagnostics.Timing.Reads
+		if reads <= 0 {
+			reads = 1
+		}
 
 		rootSpan.SetAttributes(
 			attribute.Int64("dgem.total_wall_ms", wallTimeMs),
 			attribute.Int64("dgem.gpu.forward_ms", gpuForwardMs),
 			attribute.Int64("dgem.gpu.cold_start_wait_ms", coldWaitMs),
+			attribute.Int("dgem.gpu.reads", reads),
 			attribute.Int("dgem.warmup_attempts", attempts),
 			attribute.Float64("dgem.max_entropy", maxEntropy),
 		)

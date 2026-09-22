@@ -1072,7 +1072,10 @@ export class DgemStudio extends LitElement {
         };
       }
       // Trigger async single-flight warmup on the gateway in parallel
-      fetch('/api/warmup?wait=false', { method: 'POST' })
+      fetch('/api/warmup?wait=false', {
+        method: 'POST',
+        headers: { 'X-DGem-Surface': 'web_studio_auto_wake' },
+      })
         .then(() => this.fetchGPUStatus())
         .catch(() => {});
     }
@@ -1086,7 +1089,10 @@ export class DgemStudio extends LitElement {
       }
       const resp = await fetch(`/api/decide/${encodeURIComponent(this.selectedTemplateName)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-DGem-Surface': 'web_studio',
+        },
         body: JSON.stringify(payload),
       });
       const rawText = await resp.text();
@@ -1356,6 +1362,8 @@ export class DgemStudio extends LitElement {
     const isWarm = state === 'warm_and_ready';
     const isWarming = state === 'warming_up' || this.warmingUp;
     const elapsedSec = this.gpuStatus?.warmup_elapsed_seconds || 0;
+    const ewmaWakeSec = this.gpuStatus?.ewma_wake_seconds || 122;
+    const phaseLabel = this.gpuStatus?.warmup_phase_label || '';
     const lastReadoutMs = this.gpuStatus?.last_readout_ms || 0;
     const idleRemSec = this.gpuStatus?.idle_remaining_seconds || 0;
     const idleMinsLeft = Math.max(1, Math.ceil(idleRemSec / 60));
@@ -1364,14 +1372,14 @@ export class DgemStudio extends LitElement {
     const stateLabel = isWarm
       ? 'GPU Warm & Ready'
       : isWarming
-        ? 'GPU Warming Up...'
+        ? phaseLabel || 'GPU Warming Up...'
         : 'GPU Scaled-to-Zero (Standby)';
 
     const subDetail = isWarm
       ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
       : isWarming
-        ? `(${elapsedSec}s / ~210s)`
-        : '($0/hr idle)';
+        ? `(${elapsedSec}s / ~${ewmaWakeSec}s EWMA)`
+        : `($0/hr idle · ~${ewmaWakeSec}s wake)`;
 
     return html`
       <header>
@@ -1381,7 +1389,7 @@ export class DgemStudio extends LitElement {
             <div>
               <div class="brand-title">DiffusionGemma Decision Studio</div>
               <div class="brand-subtitle">
-                Zero-Shot Decision Model · Policy-as-Template · HTTP API &amp; Model Context Protocol (MCP) Server
+                Zero-Shot Decision Model · Policy-as-Template
               </div>
             </div>
           </div>

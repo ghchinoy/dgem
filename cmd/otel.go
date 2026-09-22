@@ -121,6 +121,61 @@ func (p *gatewaySpanProcessor) OnEnd(s sdktrace.ReadOnlySpan) {
 		"duration_ms": durMs,
 		"attributes":  attrs,
 	}
+	if s.Name() == "dgem.gateway.decide" {
+		logEntry["event_type"] = "dgem.decision.completed"
+		if v, ok := attrs["dgem.surface"]; ok {
+			logEntry["dgem_surface"] = v
+		} else {
+			logEntry["dgem_surface"] = "rest_api"
+		}
+		if v, ok := attrs["dgem.template"]; ok {
+			logEntry["dgem_template"] = v
+		}
+		if v, ok := attrs["dgem.user"]; ok {
+			logEntry["dgem_user"] = v
+		}
+		if v, ok := attrs["dgem.multimodal"]; ok {
+			logEntry["dgem_multimodal"] = v
+		}
+		if v, ok := attrs["dgem.max_entropy"]; ok {
+			logEntry["dgem_max_entropy"] = v
+		}
+		if v, ok := attrs["dgem.gpu.reads"]; ok {
+			logEntry["dgem_gpu_reads"] = v
+		}
+		if v, ok := attrs["dgem.total_wall_ms"]; ok {
+			logEntry["dgem_total_wall_ms"] = v
+		}
+		if v, ok := attrs["dgem.gpu.forward_ms"]; ok {
+			logEntry["dgem_gpu_forward_ms"] = v
+		}
+		if v, ok := attrs["dgem.gpu.cold_start_wait_ms"]; ok {
+			logEntry["dgem_cold_start_wait_ms"] = v
+		}
+	} else if s.Name() == "dgem.gpu.warmup_lifecycle" {
+		logEntry["event_type"] = "dgem.warmup.completed"
+		if v, ok := attrs["dgem.warmup.trigger"]; ok {
+			logEntry["dgem_warmup_trigger"] = v
+		}
+		if v, ok := attrs["dgem.warmup.total_ms"]; ok {
+			logEntry["dgem_warmup_total_ms"] = v
+		}
+		if v, ok := attrs["dgem.warmup.stage1_activator_ms"]; ok {
+			logEntry["dgem_warmup_stage1_ms"] = v
+		}
+		if v, ok := attrs["dgem.warmup.stage2_tmpfs_ms"]; ok {
+			logEntry["dgem_warmup_stage2_ms"] = v
+		}
+		if v, ok := attrs["dgem.warmup.stage3_vllm_siglip_ms"]; ok {
+			logEntry["dgem_warmup_stage3_ms"] = v
+		}
+		if v, ok := attrs["dgem.warmup.stage4_triton_jit_ms"]; ok {
+			logEntry["dgem_warmup_stage4_ms"] = v
+		}
+		if v, ok := attrs["dgem.warmup.ewma_wake_seconds"]; ok {
+			logEntry["dgem_warmup_ewma_seconds"] = v
+		}
+	}
 	if p.projectID != "" && sc.TraceID().IsValid() {
 		logEntry["logging.googleapis.com/trace"] = fmt.Sprintf("projects/%s/traces/%s", p.projectID, traceID)
 		logEntry["logging.googleapis.com/spanId"] = spanID

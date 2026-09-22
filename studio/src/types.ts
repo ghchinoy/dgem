@@ -18,6 +18,10 @@ export interface GPUHealthStatus {
   probe_latency_ms: number;
   warmup_in_progress?: boolean;
   warmup_elapsed_seconds?: number;
+  warmup_phase?: string;
+  warmup_phase_label?: string;
+  warmup_bytes_staged_gb?: number;
+  ewma_wake_seconds?: number;
   seconds_since_last_read?: number;
   idle_remaining_seconds?: number;
   last_readout_ms?: number;

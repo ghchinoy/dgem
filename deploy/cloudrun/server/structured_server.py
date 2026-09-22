@@ -836,7 +836,28 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            return self._json(200, {"status": "ok"})
+            info = {"status": "ok", "vllm_ready": False, "phase": "loading_vllm_siglip", "bytes_staged_gb": 0.0}
+            try:
+                if os.path.exists("/tmp/dgemma/warmup_state.json"):
+                    with open("/tmp/dgemma/warmup_state.json", "r") as wf:
+                        info.update(json.load(wf))
+                if os.path.isdir("/tmp/dgemma"):
+                    total_b = sum(
+                        os.path.getsize(os.path.join("/tmp/dgemma", fn))
+                        for fn in os.listdir("/tmp/dgemma")
+                        if fn.endswith(".safetensors")
+                    )
+                    info["bytes_staged_gb"] = round(total_b / (1024**3), 2)
+            except Exception:
+                pass
+            try:
+                with urllib.request.urlopen(ARGS.upstream.rstrip("/") + "/health", timeout=0.4) as r:
+                    if r.status == 200:
+                        info["vllm_ready"] = True
+                        info["phase"] = "ready"
+            except Exception:
+                pass
+            return self._json(200, info)
         if self.path in PAGES and TEST_PAGE:
             body = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), PAGES[self.path]), "rb").read()
             self.send_response(200)

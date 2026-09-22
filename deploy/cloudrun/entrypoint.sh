@@ -17,18 +17,53 @@ if [ -f "$JIT_CACHE_ARCHIVE" ]; then
   tar -xzf "$JIT_CACHE_ARCHIVE" -C /root/ || true
 fi
 
+# Record container boot and warmup stage telemetry in /tmp/dgemma/warmup_state.json
+mkdir -p /tmp/dgemma
+BOOT_TS="$(date +%s.%N)"
+printf '{"phase":"mounting_gcs","boot_ts":%s}\n' "$BOOT_TS" > /tmp/dgemma/warmup_state.json
+
 # On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /tmp/dgemma (in-memory rootfs tmpfs)
 if [ "${COPY_TO_SHM:-0}" = "1" ] && [ -d "/mnt/gcs/dgemma" ] && [ -f "/mnt/gcs/dgemma/config.json" ]; then
-  echo "[init] Staging weights into /tmp/dgemma RAM disk (xargs -P 8)..."
-  mkdir -p /tmp/dgemma
+  echo "[init] Staging weights into /tmp/dgemma RAM disk (16-stream parallel range copy)..."
+  STAGE_START_TS="$(date +%s.%N)"
+  printf '{"phase":"staging_tmpfs","boot_ts":%s,"stage_start_ts":%s}\n' "$BOOT_TS" "$STAGE_START_TS" > /tmp/dgemma/warmup_state.json
   find /mnt/gcs/dgemma -maxdepth 1 -type f ! -name "*.safetensors" | xargs -I {} cp -f {} /tmp/dgemma/
   (
     set -e
-    find /mnt/gcs/dgemma -maxdepth 1 -type f -name "*.safetensors" | xargs -P 8 -I {} cp -f {} /tmp/dgemma/
+    python3 -c '
+import glob, os, time
+from concurrent.futures import ThreadPoolExecutor
+src_files = sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors"))
+chunk = 32 * 1024 * 1024
+tasks = []
+for sf in src_files:
+    df = os.path.join("/tmp/dgemma", os.path.basename(sf))
+    sz = os.path.getsize(sf)
+    with open(df, "wb") as f:
+        f.truncate(sz)
+    for off in range(0, sz, chunk):
+        tasks.append((sf, df, off, min(chunk, sz - off)))
+def copy_range(t):
+    sf, df, off, length = t
+    fd_in = os.open(sf, os.O_RDONLY)
+    fd_out = os.open(df, os.O_WRONLY)
+    try:
+        data = os.pread(fd_in, length, off)
+        os.pwrite(fd_out, data, off)
+    finally:
+        os.close(fd_in)
+        os.close(fd_out)
+with ThreadPoolExecutor(max_workers=16) as ex:
+    list(ex.map(copy_range, tasks))
+'
+    STAGE_END_TS="$(date +%s.%N)"
+    printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s}\n' "$BOOT_TS" "$STAGE_START_TS" "$STAGE_END_TS" > /tmp/dgemma/warmup_state.json
     touch /tmp/dgemma/.ready
-    echo "[init] Safetensors copy to /tmp/dgemma complete"
+    echo "[init] Safetensors copy to /tmp/dgemma complete (stage_end_ts=$STAGE_END_TS)"
   ) &
   MODEL="/tmp/dgemma"
+else
+  printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s}\n' "$BOOT_TS" "$BOOT_TS" "$BOOT_TS" > /tmp/dgemma/warmup_state.json
 fi
 
 echo "[init] Starting structured_server proxy on port $PORT (upstream: http://127.0.0.1:8000)..."
