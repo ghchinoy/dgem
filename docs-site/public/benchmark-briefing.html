@@ -101,10 +101,25 @@
   }
 
   /* toc */
-  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 42px; }
-  nav.toc a { font-size: 12.5px; padding: 7px 14px; border: var(--border); border-radius: 999px; color: var(--g700); background: var(--paper); text-decoration: none; display: inline-flex; gap: 7px; align-items: center; font-weight: 500; }
+  nav.toc {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 18px 0 36px;
+    padding: 10px 0;
+    background: rgba(250, 249, 245, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--g200);
+  }
+  nav.toc a { font-size: 12.5px; padding: 7px 14px; border: var(--border); border-radius: 999px; color: var(--g700); background: var(--paper); text-decoration: none; display: inline-flex; gap: 7px; align-items: center; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
   nav.toc a .n { font-family: var(--mono); font-size: 10px; color: var(--clay-deep); font-weight: 700; }
-  nav.toc a:hover { border-color: var(--slate); color: var(--slate); }
+  nav.toc a:hover { border-color: var(--slate); color: var(--slate); transform: translateY(-1px); }
+  nav.toc a.active { background: var(--slate); border-color: var(--slate); color: var(--ivory); }
+  nav.toc a.active .n { color: var(--clay); }
 
   /* summary strip */
   .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 56px; }
@@ -118,7 +133,7 @@
   .cell.olive { border-left: 4px solid var(--olive); }
 
   /* sections & grids */
-  section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  section { margin-bottom: 64px; scroll-margin-top: 76px; }
   .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
   .sec-head .num { font-family: var(--mono); font-size: 12px; font-weight: 700; background: var(--oat); color: var(--slate); padding: 3px 9px; border-radius: 8px; }
   .sec-head h2 { font-family: var(--serif); font-weight: 500; font-size: 28px; color: var(--slate); letter-spacing: -0.01em; }
@@ -757,36 +772,36 @@
         For non-ML stakeholders, think of <strong><code>DiffusionGemma</code> as a high-speed judge that reads an entire page of checkboxes at once</strong>, and <strong><code>dgem</code> as the ballot designer, digital scale, and traffic controller</strong> wrapping that judge in five strict steps:
       </p>
       <div class="grid3" style="grid-template-columns:repeat(5,minmax(0,1fr));gap:0.65rem">
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
-          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--clay);text-transform:uppercase">Step 1 &middot; Pre-Pass (0.1 ms)</div>
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--clay-deep);text-transform:uppercase">Step 1 &middot; Pre-Pass (0.1 ms)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Ballot Design &amp; Mirroring</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             <code>dgem</code> prints the ballot twice on the same canvas: once forward (<code>A..D</code>) and once reversed (<code>D..A</code>), or splits wide lists (&gt;26) into brackets.
           </p>
         </div>
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
           <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--slate);text-transform:uppercase">Step 2 &middot; GPU Pass (~125 ms)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Diffusion Snapshot Read</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             <code>DiffusionGemma</code> evaluates all forward and mirrored slots simultaneously in <strong>one bidirectional GPU pass</strong> and emits raw letter scores.
           </p>
         </div>
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
-          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive);text-transform:uppercase">Step 3 &middot; Post-Pass 1 (0.1 ms)</div>
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive-deep);text-transform:uppercase">Step 3 &middot; Post-Pass 1 (0.1 ms)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Tare the Scale (Null-Prior)</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             <code>dgem</code> subtracts the model's built-in <code>Box A</code> habit (<span class="math"><i>p</i><sub>0</sub></span> = 49%&ndash;88% on blank input), cutting Brier error by up to <strong>90.2%</strong>.
           </p>
         </div>
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
-          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive);text-transform:uppercase">Step 4 &middot; Post-Pass 2 (0.1 ms)</div>
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive-deep);text-transform:uppercase">Step 4 &middot; Post-Pass 2 (0.1 ms)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Mirror Merge &amp; Temp Dial</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             <code>dgem</code> compares the forward &amp; reversed ballots (<code>Mirror TVD</code>) and applies the Humility Dial (<span class="math"><i>T</i><sup>*</sup> = 1.25&ndash;1.35</span>) so 95% confidence = 95% accuracy.
           </p>
         </div>
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
-          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--amber);text-transform:uppercase">Step 5 &middot; Post-Pass 3 (Gate)</div>
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--clay-deep);text-transform:uppercase">Step 5 &middot; Post-Pass 3 (Gate)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Fast-Exit or Escalate</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             If both ballots agree (<span class="math"><i>H&#771;</i> &lt; 0.16</span>), <code>dgem</code> returns immediately (<strong>72% of traffic</strong>); if they clash, it escalates to Gemini (<strong>98.0% accuracy</strong>).
@@ -796,76 +811,73 @@
     </div>
 
     <!-- VISUAL MASTER BENCHMARK DELTA TABLE: SHANNON-ONLY VS LATEST DGEM IDC -->
-    <div class="table-wrap" style="margin-top:1.1rem">
-      <div class="table-cap">
-        <span>Table 6B &middot; Public Benchmark Delta: &ldquo;Shannon-Only&rdquo; <code>dgem</code> vs. Latest <code>dgem IDC</code></span>
-        <span class="src">Live GPU Receipts &middot; JevBench v1.3.1, 50-Case Calibration Suite &amp; jev-decision-index</span>
-      </div>
-      <table>
+    <h3>Public Benchmark Delta: &ldquo;Shannon-Only&rdquo; <code>dgem</code> vs. Latest <code>dgem IDC</code></h3>
+    <div class="tscroll">
+      <table class="t">
         <thead>
           <tr>
             <th>Public Benchmark &amp; Metric</th>
-            <th class="num">Shannon-Only <code>dgem</code><br><span style="font-weight:400;font-size:0.65rem;color:var(--g500)">(Raw Single-Ballot Entropy)</span></th>
-            <th class="num">Latest <code>dgem IDC</code><br><span style="font-weight:400;font-size:0.65rem;color:var(--olive)">(Dual-Mirror + Null-Prior + <span class="math"><i>T</i><sup>*</sup></span>)</span></th>
+            <th class="num">Shannon-Only <code>dgem</code></th>
+            <th class="num">Latest <code>dgem IDC</code></th>
             <th class="num">Measured Improvement</th>
             <th>Why It Changed (Plain English)</th>
           </tr>
         </thead>
         <tbody>
-          <tr class="hi">
-            <td><strong>JevBench 4-Axis Composite</strong> <span class="badge b-olive">0&ndash;100</span></td>
+          <tr class="highlight">
+            <td><strong>JevBench 4-Axis Composite (0&ndash;100)</strong></td>
             <td class="num">75.59</td>
-            <td class="num" style="color:var(--olive);font-weight:700">78.84</td>
-            <td class="num" style="color:var(--olive);font-weight:700">+3.25 pts</td>
+            <td class="num best">78.84</td>
+            <td class="num best">+3.25 pts</td>
             <td>All 4 axes improve simultaneously with <strong>0 ms</strong> extra GPU passes</td>
           </tr>
           <tr>
             <td><strong>50-Case Guardrail Raw Accuracy</strong></td>
-            <td class="num">88.0% <span style="color:var(--g500);font-size:0.7rem">(44/50)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">90.0% <span style="font-size:0.7rem">(45/50)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">+2.0%</td>
-            <td>Subtracting <code>Box A</code> habit rescues borderline false positives</td>
+            <td class="num">88.0% (44/50)</td>
+            <td class="num best">90.0% (45/50)</td>
+            <td class="num best">+2.0%</td>
+            <td>Subtracting <code>Box A</code> habit rescues borderline false positives (Toxicity <code>83.3% &rarr; 100%</code>)</td>
           </tr>
           <tr>
             <td><strong>Chance-Corrected Intelligence</strong></td>
-            <td class="num">82.33%</td>
-            <td class="num" style="color:var(--olive);font-weight:700">85.33%</td>
-            <td class="num" style="color:var(--olive);font-weight:700">+3.00%</td>
+            <td class="num">82.90</td>
+            <td class="num best">85.95</td>
+            <td class="num best">+3.05 pts</td>
             <td>Stronger gain on multi-choice (<span class="math"><i>K</i> = 3, 4</span>) items where <code>Box A</code> bias was <span class="math">3&times;</span> chance</td>
           </tr>
-          <tr class="hi">
+          <tr class="highlight">
             <td><strong>Accuracy on <code>&gt;90%</code>-Confidence Predictions</strong></td>
-            <td class="num">95.2% <span style="color:var(--amber);font-size:0.7rem">(2 wrong)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">100.0% <span style="font-size:0.7rem">(31/31)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">Zero false-conf.</td>
+            <td class="num bad">94.4% (34/36)</td>
+            <td class="num best">100.0% (31/31)</td>
+            <td class="num best">Zero false-conf.</td>
             <td>Every single prediction where <code>dgem IDC</code> claims <code>&gt;90%</code> confidence is <strong>100% correct</strong></td>
           </tr>
           <tr>
-            <td><strong>Calibration Axis Score</strong> <span class="badge b-navy">0&ndash;100</span></td>
-            <td class="num">75.94</td>
-            <td class="num" style="color:var(--olive);font-weight:700">88.18</td>
-            <td class="num" style="color:var(--olive);font-weight:700">+12.24 pts</td>
-            <td>10-Bin ECE drops <strong>-56.2%</strong> (<span class="math">0.0745 &rarr; 0.0326</span>); Brier drops <strong>-16.6%</strong> (<span class="math">0.2054 &rarr; 0.1714</span>)</td>
+            <td><strong>Calibration Axis Score (0&ndash;100)</strong></td>
+            <td class="num">82.67 (0.0745 ECE)</td>
+            <td class="num best">88.18 (0.0326 ECE)</td>
+            <td class="num best">+5.51 pts (-56.2% ECE)</td>
+            <td>10-Bin ECE drops <strong>&minus;56.2%</strong> (<span class="math">0.0745 &rarr; 0.0326</span>); Brier drops <strong>&minus;22.4%</strong> (<span class="math">0.1925 &rarr; 0.1493</span>)</td>
           </tr>
           <tr>
             <td><strong><code>jev-decision-index</code> ECE &amp; Brier</strong></td>
-            <td class="num">0.0389 / 0.0442</td>
-            <td class="num" style="color:var(--olive);font-weight:700">0.0332 / 0.0427</td>
-            <td class="num" style="color:var(--olive);font-weight:700">-14.7% ECE</td>
-            <td><code>--null-prior-debias</code> preserves <strong>96.0%</strong> accuracy while tightening calibration error</td>
+            <td class="num">0.0371 / 0.0184</td>
+            <td class="num best">0.0332 / 0.0179</td>
+            <td class="num best">&minus;10.5% ECE</td>
+            <td><code>--null-prior-debias</code> preserves <strong>98.89</strong> Headline Index while tightening calibration error</td>
           </tr>
           <tr>
             <td><strong><code>ChaosNLI</code> Ambiguity Signal (<code>Mirror TVD</code>)</strong></td>
-            <td class="num">0.0000 <span style="color:var(--g500);font-size:0.7rem">(blind)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">0.3741 <span style="font-size:0.7rem">(66.8&times;)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">66.8&times; separator</td>
+            <td class="num">0.0000 (blind)</td>
+            <td class="num best">0.3741 (66.8&times;)</td>
+            <td class="num best">66.8&times; separator</td>
             <td>Clean items show <code>0.0056</code> Mirror TVD; human-contested items spike to <code>0.3741</code></td>
           </tr>
-          <tr class="hi">
+          <tr class="highlight">
             <td><strong>End-to-End Cascade Accuracy</strong> (<code>dgemma &rarr; Gemini</code>)</td>
-            <td class="num">94.0% <span style="color:var(--g500);font-size:0.7rem">(raw <span class="math"><i>H</i></span>)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">98.0% <span style="font-size:0.7rem">(49/50)</span></td>
-            <td class="num" style="color:var(--olive);font-weight:700">+4.0% (-67% errors)</td>
+            <td class="num">94.0% (raw <span class="math"><i>H</i></span>)</td>
+            <td class="num best">98.0% (49/50)</td>
+            <td class="num best">+4.0% (&minus;67% errors)</td>
             <td><code>72%</code> resolved at Stage 1 in 1 GPU pass; <code>28%</code> escalated to Gemini at <strong>56% lower cost</strong></td>
           </tr>
         </tbody>
@@ -873,30 +885,30 @@
     </div>
 
     <!-- EXP-14 ROADMAP CALLOUT: COLLEAGUE QUESTIONS (DENNIS, SKANDER, TAYLOR) -->
-    <div style="margin-top:1.1rem;background:#fff;border:1px solid var(--g300);border-top:3px solid var(--navy);border-radius:6px;padding:1.1rem 1.3rem">
+    <div class="panel" style="margin-top:1.1rem;border-left:4px solid var(--clay)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.65rem">
-        <div style="font-family:var(--mono);font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--navy)">
+        <div style="font-family:var(--mono);font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--clay-deep)">
           Next Up &middot; EXP-14 Invariant Decision Calibration Suite (<code>dgem bench-invariance</code>) &mdash; Addressing Team Review Questions
         </div>
-        <span class="badge b-navy">Spec Ready in <code>scratch/exp_14_idc_plan.md</code></span>
+        <span class="pill clay">Spec Ready in <code>scratch/exp_14_idc_plan.md</code></span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.85rem">
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.75rem">
-          <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--olive);text-transform:uppercase">1 &middot; Dennis (Option Shuffle &amp; Question Variation)</div>
+      <div class="grid3" style="margin:0">
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.85rem">
+          <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--olive-deep);text-transform:uppercase">1 &middot; Dennis (Option Shuffle &amp; Question Variation)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Solved Today (<span class="math"><i>O</i>(1)</span> Dual-Mirror + 97.2% Paraphrase)</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            <code>--dual-mirror</code> + <code>--null-prior-debias</code> already tests forward and reversed option orders in one GPU pass (<code>0.0%</code> reversal flip rate, <code>-90.2%</code> Brier error). <strong>EXP-14A</strong> adds <code>--multi-perm 4</code> cyclic shifts + 5 question stems per item.
+            <code>--dual-mirror</code> + <code>--null-prior-debias</code> already tests forward and reversed option orders in one GPU pass (<code>0.0%</code> reversal flip rate, <code>&minus;90.2%</code> Brier error). <strong>EXP-14A</strong> adds <code>--multi-perm 4</code> cyclic shifts + 5 question stems per item.
           </p>
         </div>
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.75rem">
-          <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--navy);text-transform:uppercase">2 &middot; Skander (Lexical Rewording &amp; 2&ndash;3 Token Options)</div>
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.85rem">
+          <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--slate);text-transform:uppercase">2 &middot; Skander (Lexical Rewording &amp; 2&ndash;3 Token Options)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Architectural Decoupling (Codebook Projection)</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             Because <code>dgem</code> separates <strong>multi-token label text</strong> (rendered in the prompt context where full bidirectional attention reads every token) from the <strong>single-token <code>[A-Z]</code> readout slot</strong>, 1-token vs. 3-token labels never suffer length bias. <strong>EXP-14B</strong> proves 1-token vs. 3-token vs. 8-token label invariance (&lt; 0.015 ECE delta).
           </p>
         </div>
-        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.75rem">
-          <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--amber);text-transform:uppercase">3 &middot; Taylor (Omitted Variables &amp; Base-Rate Priors)</div>
+        <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.85rem">
+          <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--clay-deep);text-transform:uppercase">3 &middot; Taylor (Omitted Variables &amp; Base-Rate Priors)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Two-Part Answer: Epistemic Uncertainty vs. Base-Rate Shift</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
             <strong>Mechanism 1 (Missing Metadata):</strong> Dual-slot sufficiency check (<code>context_sufficiency = missing_sender_metadata</code>) routes under-specified prompts to enrich context instead of guessing. <strong>Mechanism 2 (Known Channel Prior <span class="math">&pi;<sub><i>e</i></sub></span>):</strong> Bayes Prior Odds Shift (<span class="math">log <i>p&#771;</i> = log <i>p</i> &minus; &alpha; log <i>p</i><sub>0</sub> + log(&pi;<sub><i>e</i></sub> / &pi;<sub>train</sub>)</span>) adapts calibration across 85%-spam vs. 0.5%-spam domains with zero prompt edits (<strong>EXP-14C</strong>).
@@ -1040,6 +1052,38 @@ dgem is our zero-shot Decision Model serving, calibration, and policy-routing en
         btn.style.borderColor = '';
       }, 2400);
     });
+  }
+
+  // Universal TOC smooth-scroll handler (fixes WebView/iframe previewers blocking bare #fragment anchor jumps)
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href').slice(1);
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        document.querySelectorAll('nav.toc a').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try { history.replaceState(null, '', '#' + targetId); } catch (_) {}
+      }
+    });
+  });
+
+  // Highlight active TOC pill as user scrolls
+  if ('IntersectionObserver' in window) {
+    const sections = document.querySelectorAll('section[id^="s"]');
+    const tocLinks = document.querySelectorAll('nav.toc a[href^="#"]');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          tocLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+    sections.forEach(sec => observer.observe(sec));
   }
 </script>
 </body>
