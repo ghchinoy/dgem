@@ -19,51 +19,128 @@ fi
 
 # Record container boot and warmup stage telemetry in /tmp/dgemma/warmup_state.json
 mkdir -p /tmp/dgemma
-BOOT_TS="$(date +%s.%N)"
-printf '{"phase":"mounting_gcs","boot_ts":%s}\n' "$BOOT_TS" > /tmp/dgemma/warmup_state.json
+export BOOT_TS="$(date +%s.%N)"
+export GCS_BUCKET="${GCS_BUCKET:-dgem-weights-genai-blackbelt-fishfooding}"
+printf '{"phase":"mounting_gcs","boot_ts":%s,"bytes_staged_gb":0.0}\n' "$BOOT_TS" > /tmp/dgemma/warmup_state.json
 
-# On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /tmp/dgemma (in-memory rootfs tmpfs)
+# On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /tmp/dgemma via 64-stream Direct GCS HTTPS Range API overlapped with vLLM initialization
 if [ "${COPY_TO_SHM:-0}" = "1" ] && [ -d "/mnt/gcs/dgemma" ] && [ -f "/mnt/gcs/dgemma/config.json" ]; then
-  echo "[init] Staging weights into /tmp/dgemma RAM disk (16-stream parallel range copy)..."
+  echo "[init] Overlapping 64-stream GCS HTTPS Range staging (/tmp/dgemma) with vLLM + CUDA initialization..."
   STAGE_START_TS="$(date +%s.%N)"
-  printf '{"phase":"staging_tmpfs","boot_ts":%s,"stage_start_ts":%s}\n' "$BOOT_TS" "$STAGE_START_TS" > /tmp/dgemma/warmup_state.json
+  export STAGE_START_TS
+  printf '{"phase":"staging_tmpfs","boot_ts":%s,"stage_start_ts":%s,"bytes_staged_gb":0.0}\n' "$BOOT_TS" "$STAGE_START_TS" > /tmp/dgemma/warmup_state.json
   find /mnt/gcs/dgemma -maxdepth 1 -type f ! -name "*.safetensors" | xargs -I {} cp -f {} /tmp/dgemma/
-  (
-    set -e
-    python3 -c '
-import glob, os, time
-from concurrent.futures import ThreadPoolExecutor
-src_files = sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors"))
-chunk = 32 * 1024 * 1024
-tasks = []
-for sf in src_files:
+
+  # Pre-allocate /tmp/dgemma/*.safetensors with exact sizes synchronously so vLLM sees 17.53 GiB immediately
+  python3 -c '
+import glob, os
+for sf in sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors")):
     df = os.path.join("/tmp/dgemma", os.path.basename(sf))
     sz = os.path.getsize(sf)
     with open(df, "wb") as f:
         f.truncate(sz)
+'
+
+  # Install sitecustomize.py hook so vLLM initializes Python/Torch/CUDA/NCCL in parallel and only waits at safetensors.safe_open
+  cat << 'EOF' > /tmp/sitecustomize.py
+import os, time
+try:
+    import safetensors
+    _orig_safe_open = safetensors.safe_open
+    def _waiting_safe_open(filename, *args, **kwargs):
+        if str(filename).startswith("/tmp/dgemma") and not os.path.exists("/tmp/dgemma/.ready"):
+            print(f"[init] vLLM reached safetensors.safe_open({filename}); waiting for /tmp/dgemma/.ready...", flush=True)
+            while not os.path.exists("/tmp/dgemma/.ready"):
+                time.sleep(0.2)
+            print("[init] /tmp/dgemma/.ready confirmed! Proceeding with zero-copy mmap weight load.", flush=True)
+        return _orig_safe_open(filename, *args, **kwargs)
+    safetensors.safe_open = _waiting_safe_open
+except Exception:
+    pass
+EOF
+  export PYTHONPATH="/tmp:${PYTHONPATH:-}"
+
+  (
+    set -e
+    python3 -c '
+import glob, json, os, time, urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+req = urllib.request.Request(
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+    headers={"Metadata-Flavor": "Google"}
+)
+with urllib.request.urlopen(req, timeout=5) as r:
+    token = json.loads(r.read().decode())["access_token"]
+
+bucket = os.environ.get("GCS_BUCKET", "dgem-weights-genai-blackbelt-fishfooding")
+src_files = sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors"))
+chunk = 64 * 1024 * 1024
+tasks = []
+for sf in src_files:
+    bn = os.path.basename(sf)
+    df = os.path.join("/tmp/dgemma", bn)
+    sz = os.path.getsize(sf)
     for off in range(0, sz, chunk):
-        tasks.append((sf, df, off, min(chunk, sz - off)))
-def copy_range(t):
-    sf, df, off, length = t
-    fd_in = os.open(sf, os.O_RDONLY)
-    fd_out = os.open(df, os.O_WRONLY)
-    try:
-        data = os.pread(fd_in, length, off)
-        os.pwrite(fd_out, data, off)
-    finally:
-        os.close(fd_in)
-        os.close(fd_out)
-with ThreadPoolExecutor(max_workers=16) as ex:
-    list(ex.map(copy_range, tasks))
+        tasks.append((bucket, token, bn, df, off, min(chunk, sz - off)))
+
+def download_range(t):
+    bucket, token, bn, df, off, length = t
+    end = off + length - 1
+    url = f"https://storage.googleapis.com/{bucket}/dgemma/{bn}"
+    for attempt in range(4):
+        try:
+            rreq = urllib.request.Request(url, headers={
+                "Authorization": f"Bearer {token}",
+                "Range": f"bytes={off}-{end}"
+            })
+            with urllib.request.urlopen(rreq, timeout=45) as resp:
+                data = resp.read()
+            fd_out = os.open(df, os.O_WRONLY)
+            try:
+                os.pwrite(fd_out, data, off)
+            finally:
+                os.close(fd_out)
+            return len(data)
+        except Exception:
+            if attempt == 3:
+                raise
+            time.sleep(0.5 * (attempt + 1))
+
+t0 = float(os.environ.get("STAGE_START_TS", time.time()))
+boot_ts = float(os.environ.get("BOOT_TS", t0))
+staged = 0
+last_write = 0.0
+with ThreadPoolExecutor(max_workers=64) as ex:
+    futs = [ex.submit(download_range, t) for t in tasks]
+    for fut in as_completed(futs):
+        staged += fut.result()
+        now = time.time()
+        if now - last_write >= 0.5 or staged >= 18800000000:
+            last_write = now
+            gb = round(staged / (1024**3), 2)
+            try:
+                with open("/tmp/dgemma/warmup_state.json.tmp", "w") as wf:
+                    json.dump({
+                        "phase": "staging_tmpfs",
+                        "boot_ts": boot_ts,
+                        "stage_start_ts": t0,
+                        "bytes_staged_gb": gb
+                    }, wf)
+                os.replace("/tmp/dgemma/warmup_state.json.tmp", "/tmp/dgemma/warmup_state.json")
+            except Exception:
+                pass
+dt = time.time() - t0
+print(f"[init] 64-stream GCS HTTPS range copy of {round(staged/(1024**3),2)} GiB to /tmp/dgemma completed in {dt:.2f}s", flush=True)
 '
     STAGE_END_TS="$(date +%s.%N)"
-    printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s}\n' "$BOOT_TS" "$STAGE_START_TS" "$STAGE_END_TS" > /tmp/dgemma/warmup_state.json
+    printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s,"bytes_staged_gb":17.53}\n' "$BOOT_TS" "$STAGE_START_TS" "$STAGE_END_TS" > /tmp/dgemma/warmup_state.json
     touch /tmp/dgemma/.ready
     echo "[init] Safetensors copy to /tmp/dgemma complete (stage_end_ts=$STAGE_END_TS)"
   ) &
   MODEL="/tmp/dgemma"
 else
-  printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s}\n' "$BOOT_TS" "$BOOT_TS" "$BOOT_TS" > /tmp/dgemma/warmup_state.json
+  printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s,"bytes_staged_gb":17.53}\n' "$BOOT_TS" "$BOOT_TS" "$BOOT_TS" > /tmp/dgemma/warmup_state.json
 fi
 
 echo "[init] Starting structured_server proxy on port $PORT (upstream: http://127.0.0.1:8000)..."
@@ -90,20 +167,26 @@ if [ -n "$EXTRA_ARGS" ]; then
 fi
 
 if [ "${COPY_TO_SHM:-0}" = "1" ] && [ "$MODEL" = "/tmp/dgemma" ]; then
-  echo "[init] Waiting for /tmp/dgemma/.ready before launching vLLM..."
-  while [ ! -f /tmp/dgemma/.ready ]; do
-    sleep 1
-  done
-  echo "[init] /tmp/dgemma/.ready confirmed."
+  # Note: vLLM starts immediately and overlaps its ~65s Python/Torch/CUDA/NCCL init with /tmp/dgemma staging via /tmp/sitecustomize.py!
+  # Reclaim 17.53 GiB tmpfs RAM as soon as vLLM moves weights to GPU VRAM
+  (
+    while ! python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1)' >/dev/null 2>&1; do
+      sleep 2
+    done
+    rm -f /tmp/dgemma/*.safetensors
+    printf '{"phase":"ready","bytes_staged_gb":17.53,"vllm_ready":true}\n' > /tmp/dgemma/warmup_state.json
+    echo "[init] Reclaimed 17.53 GiB /tmp/dgemma RAM after vLLM GPU initialization."
+  ) &
+else
+  VLLM_EXTRA_ARGS+=(--safetensors-load-strategy prefetch)
 fi
 
-echo "[init] Launching vLLM engine core on port 8000..."
+echo "[init] Launching vLLM engine core on port 8000 (overlapped with /tmp/dgemma staging)..."
 exec vllm serve "$MODEL" \
   --host 127.0.0.1 \
   --port 8000 \
   --served-model-name dgemma \
   --trust-remote-code \
-  --safetensors-load-strategy prefetch \
   --max-num-seqs "${MAX_SEQS:-32}" \
   --max-model-len "${MAX_MODEL_LEN:-4096}" \
   --attention-backend "${ATTN:-TRITON_ATTN}" \

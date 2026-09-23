@@ -120,21 +120,66 @@ func GetWarmupTelemetryStats() WarmupTelemetryStats {
 	}
 }
 
-func inferWarmupPhaseAndLabel(elapsedSec int, ewmaSec int, phaseHint string, bytesStaged float64) (string, string) {
-	p1Sec := int(ewmaStage1Ms / 1000)
-	p2Sec := p1Sec + int(ewmaStage2Ms/1000)
-	p3Sec := p2Sec + int(ewmaStage3Ms/1000)
-
-	if phaseHint == "mounting_gcs" || elapsedSec <= p1Sec {
-		return "phase_1_activator", "Stage 1/4: Cloud Run Activator & GCSFuse Mount"
+func pollUpstreamWarmupHealth(baseURL string) (string, float64, bool) {
+	healthURL := strings.TrimSuffix(strings.TrimSuffix(baseURL, "/"), "/v1") + "/health"
+	req, err := http.NewRequest("GET", healthURL, nil)
+	if err != nil {
+		return "", 0, false
 	}
-	if phaseHint == "staging_tmpfs" || elapsedSec <= p2Sec {
+	if tok := FetchGCPIdentityToken("", baseURL); tok != "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+	hc := &http.Client{Timeout: 1500 * time.Millisecond}
+	resp, err := hc.Do(req)
+	if err != nil {
+		return "", 0, false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", 0, false
+	}
+	var payload struct {
+		Phase         string  `json:"phase"`
+		BytesStagedGB float64 `json:"bytes_staged_gb"`
+		VLLMReady     bool    `json:"vllm_ready"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return "", 0, true
+	}
+	return payload.Phase, payload.BytesStagedGB, true
+}
+
+func inferWarmupPhaseAndLabel(elapsedSec int, ewmaSec int, phaseHint string, bytesStaged float64) (string, string) {
+	// 1. If dgemma /health explicitly returned a sub-stage, honor it directly
+	switch phaseHint {
+	case "mounting_gcs":
+		return "phase_1_activator", "Stage 1/4: Cloud Run Activator & GCSFuse Mount"
+	case "staging_tmpfs":
 		if bytesStaged > 0 {
 			return "phase_2_tmpfs_stage", fmt.Sprintf("Stage 2/4: Staging 17.53 GiB to /tmp RAM (%.1f GiB staged)", bytesStaged)
 		}
 		return "phase_2_tmpfs_stage", "Stage 2/4: Staging 17.53 GiB NVFP4 Weights to /tmp RAM"
+	case "loading_vllm_siglip":
+		return "phase_3_vllm_siglip", "Stage 3/4: Loading vLLM EngineCore (5.6s) + SigLIP Vision Tower"
+	case "ready":
+		return "phase_4_triton_jit", "Stage 4/4: First Decision Readout & Triton Kernel JIT"
 	}
-	if phaseHint == "loading_vllm_siglip" || elapsedSec <= p3Sec {
+
+	// 2. Time-based progression fallback when /health hasn't reported a phase key yet
+	p1Sec := int(ewmaStage1Ms / 1000)
+	if p1Sec < 8 {
+		p1Sec = 8
+	}
+	p2Sec := p1Sec + int(ewmaStage2Ms/1000)
+	p3Sec := p2Sec + int(ewmaStage3Ms/1000)
+
+	if elapsedSec <= p1Sec {
+		return "phase_1_activator", "Stage 1/4: Cloud Run Activator & GCSFuse Mount"
+	}
+	if elapsedSec <= p2Sec {
+		return "phase_2_tmpfs_stage", "Stage 2/4: Staging 17.53 GiB NVFP4 Weights to /tmp RAM"
+	}
+	if elapsedSec <= p3Sec {
 		return "phase_3_vllm_siglip", "Stage 3/4: Loading vLLM EngineCore (5.6s) + SigLIP Vision Tower"
 	}
 	return "phase_4_triton_jit", "Stage 4/4: First Decision Readout & Triton Kernel JIT"
@@ -362,7 +407,7 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 		warmupDoneCh = make(chan struct{})
 		warmupLastAttempts = 0
 		warmupLastErr = nil
-		currentWarmupPhase = "mounting_gcs"
+		currentWarmupPhase = ""
 		currentBytesStagedGB = 0.0
 		waitCh = warmupDoneCh
 		startedAt = warmupStartedAt
@@ -372,6 +417,30 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 		go func(doneCh chan struct{}, src string) {
 			bgCtx, cancel := context.WithTimeout(context.Background(), serveWakeupTimeout)
 			defer cancel()
+
+			// Poll upstream /health every 3s to capture live sub-stage and bytes_staged_gb
+			go func() {
+				ticker := time.NewTicker(3 * time.Second)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-bgCtx.Done():
+						return
+					case <-ticker.C:
+						ph, stagedGB, ok := pollUpstreamWarmupHealth(viper.GetString("url"))
+						if ok {
+							gpuStateMu.Lock()
+							if ph != "" {
+								currentWarmupPhase = ph
+							}
+							if stagedGB > 0 {
+								currentBytesStagedGB = stagedGB
+							}
+							gpuStateMu.Unlock()
+						}
+					}
+				}
+			}()
 
 			_, warmSpan := gatewayTracer().Start(bgCtx, "dgem.gpu.warmup_lifecycle")
 			warmSpan.SetAttributes(attribute.String("dgem.warmup.trigger", src))

@@ -94,6 +94,10 @@ if [[ -n "${HF_TOKEN:-}" ]]; then
   ENV_VARS="${ENV_VARS},HF_TOKEN=${HF_TOKEN}"
 fi
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENTRYPOINT_B64="$(base64 < "${REPO_ROOT}/deploy/cloudrun/entrypoint.sh" | tr -d '\n')"
+BOOT_CMD="echo '${ENTRYPOINT_B64}' | base64 -d > /tmp/run.sh && python3 -c 'import json,os; p=\"/opt/dgemma/structured_server.py\"; s=open(p).read(); old=\"return self._json(200, {\\\"status\\\": \\\"ok\\\"})\"; new=\"st={}\\n            try:\\n                if os.path.exists(\\\"/tmp/dgemma/warmup_state.json\\\"): st=json.load(open(\\\"/tmp/dgemma/warmup_state.json\\\"))\\n            except Exception: pass\\n            return self._json(200, {**st, \\\"status\\\": \\\"ok\\\"})\"; open(p,\"w\").write(s.replace(old,new))' && chmod +x /tmp/run.sh && exec /tmp/run.sh"
+
 DEPLOY_FLAGS=(
   "--project" "$PROJECT_ID"
   "--region" "$REGION"
@@ -102,7 +106,7 @@ DEPLOY_FLAGS=(
   "--execution-environment" "gen2"
   "--no-allow-unauthenticated"
   "--command=/bin/bash"
-  "--args=^@^-c@sed -e 's|/dev/shm/dgemma|/tmp/dgemma|g' -e 's|exec vllm serve|while [ ! -f /tmp/dgemma/.ready ]; do sleep 1; done; exec vllm serve|' /entrypoint.sh > /tmp/run.sh && chmod +x /tmp/run.sh && exec /tmp/run.sh"
+  "--args=^@^-c@${BOOT_CMD}"
   "--cpu" "$CPU"
   "--memory" "$MEMORY"
   "--gpu" "1"
