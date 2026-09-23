@@ -756,23 +756,44 @@ export class DgemBatchRunner extends LitElement {
           } else {
             const payload = await res.json();
             const answers = payload.answers || {};
-            const serverMs = payload.gpu_forward_ms || payload.diagnostics?.server_denoise_ms || rttMs;
+            const timing = payload.diagnostics?.timing || {};
+            const serverMs =
+              timing.total_ms ||
+              timing.denoise_ms ||
+              payload.gpu_forward_ms ||
+              payload.diagnostics?.server_denoise_ms ||
+              rttMs;
             const qDiags = payload.diagnostics?.questions || {};
 
             this.rows = this.rows.map((r) => {
               if (r.item.id !== item.id) return r;
               const slotAns = answers[r.slot.question];
-              const rawVal = slotAns?.value !== undefined ? slotAns.value : slotAns?.choice;
+              const rawVal =
+                slotAns?.value !== undefined
+                  ? slotAns.value
+                  : slotAns?.choice !== undefined && slotAns?.choice !== ''
+                    ? slotAns.choice
+                    : slotAns?.level !== undefined && slotAns?.level !== ''
+                      ? slotAns.level
+                      : slotAns?.label;
               const predStr = this.normalizeAnswer(rawVal);
               const matched = this.isMatch(predStr, r.slot.expected);
               const conf = typeof slotAns?.confidence === 'number' ? slotAns.confidence : 0;
               const qDiag = qDiags[r.slot.question];
-              const ent =
-                typeof qDiag?.entropy === 'number'
-                  ? qDiag.entropy
-                  : typeof payload.max_entropy === 'number'
-                    ? payload.max_entropy
+              let ent =
+                typeof slotAns?.entropy === 'number' && slotAns.entropy > 0
+                  ? slotAns.entropy
+                  : typeof qDiag?.entropy === 'number' && qDiag.entropy > 0
+                    ? qDiag.entropy
                     : 0;
+              if (ent === 0 && slotAns?.probabilities && typeof slotAns.probabilities === 'object') {
+                for (const p of Object.values(slotAns.probabilities)) {
+                  const prob = Number(p);
+                  if (prob > 1e-12) {
+                    ent -= prob * Math.log(prob);
+                  }
+                }
+              }
 
               return {
                 ...r,

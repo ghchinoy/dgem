@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 )
 
 // BatchExpectedSlot describes a single ground-truth question slot within a batch evaluation item.
@@ -41,12 +42,19 @@ type BatchPresetSuite struct {
 
 func makeBinaryGuardrailTemplate(stateExpr, instructions, slotName string) string {
 	obj := map[string]interface{}{
-		"state": stateExpr,
-		"questions": map[string]interface{}{
-			slotName: map[string]interface{}{
-				"type":         "bool",
-				"instructions": instructions,
+		"schema": map[string]interface{}{
+			"instructions": instructions,
+			"questions": []map[string]interface{}{
+				{
+					"id":           slotName,
+					"type":         "boolean",
+					"instructions": instructions,
+				},
 			},
+			"samples": "auto",
+		},
+		"state": map[string]interface{}{
+			"input": stateExpr,
 		},
 	}
 	b, _ := json.MarshalIndent(obj, "", "  ")
@@ -54,14 +62,33 @@ func makeBinaryGuardrailTemplate(stateExpr, instructions, slotName string) strin
 }
 
 func makeChoiceTemplate(stateExpr, instructions, slotName string, criteria map[string]string) string {
+	keys := make([]string, 0, len(criteria))
+	for k := range criteria {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	options := make([]map[string]string, 0, len(keys))
+	for _, k := range keys {
+		options = append(options, map[string]string{
+			"name":        k,
+			"description": criteria[k],
+		})
+	}
 	obj := map[string]interface{}{
-		"state": stateExpr,
-		"questions": map[string]interface{}{
-			slotName: map[string]interface{}{
-				"type":         "choice",
-				"instructions": instructions,
-				"criteria":     criteria,
+		"schema": map[string]interface{}{
+			"instructions": instructions,
+			"questions": []map[string]interface{}{
+				{
+					"id":           slotName,
+					"type":         "choice",
+					"instructions": instructions,
+					"options":      options,
+				},
 			},
+			"samples": "auto",
+		},
+		"state": map[string]interface{}{
+			"input": stateExpr,
 		},
 	}
 	b, _ := json.MarshalIndent(obj, "", "  ")

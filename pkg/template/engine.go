@@ -136,6 +136,16 @@ func ParseStructuredPayload(rendered string, fallbackState map[string]interface{
 				stateMap["context"] = ctxVal
 				delete(rawObj, "context")
 			}
+			if stVal, ok := rawObj["state"]; ok {
+				if stMap, isMap := stVal.(map[string]interface{}); isMap {
+					for k, v := range stMap {
+						stateMap[k] = v
+					}
+				} else {
+					stateMap["input"] = stVal
+				}
+				delete(rawObj, "state")
+			}
 			normalizeSchemaMap(rawObj)
 			schemaBytes, _ := json.Marshal(rawObj)
 			stateBytes, _ := json.Marshal(stateMap)
@@ -166,6 +176,18 @@ func normalizeSchemaJSON(schemaStr string) string {
 }
 
 func normalizeSchemaMap(m map[string]interface{}) {
+	if qMap, isMap := m["questions"].(map[string]interface{}); isMap {
+		qList := make([]interface{}, 0, len(qMap))
+		for k, v := range qMap {
+			if qObj, ok := v.(map[string]interface{}); ok {
+				if _, hasID := qObj["id"]; !hasID {
+					qObj["id"] = k
+				}
+				qList = append(qList, qObj)
+			}
+		}
+		m["questions"] = qList
+	}
 	rawQs, ok := m["questions"].([]interface{})
 	if !ok {
 		return
@@ -174,6 +196,12 @@ func normalizeSchemaMap(m map[string]interface{}) {
 		q, ok := item.(map[string]interface{})
 		if !ok {
 			continue
+		}
+		// 0. Normalize "bool" / "noul" -> "boolean"
+		if tStr, ok := q["type"].(string); ok {
+			if tStr == "bool" || tStr == "noul" {
+				q["type"] = "boolean"
+			}
 		}
 		// 1. "name" -> "id"
 		if _, hasID := q["id"]; !hasID {
@@ -192,11 +220,14 @@ func normalizeSchemaMap(m map[string]interface{}) {
 				delete(q, "prompt")
 			}
 		}
-		// 3. "choices" -> "options"
+		// 3. "choices" or "criteria" -> "options"
 		if _, hasOpts := q["options"]; !hasOpts {
 			if chVal, hasChoices := q["choices"]; hasChoices {
 				q["options"] = chVal
 				delete(q, "choices")
+			} else if critVal, hasCrit := q["criteria"]; hasCrit {
+				q["options"] = critVal
+				delete(q, "criteria")
 			}
 		}
 		// 4. Dictionary "options": {"yes": "desc"} -> [{"name": "yes", "description": "desc"}]
