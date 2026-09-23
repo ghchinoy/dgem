@@ -6,22 +6,23 @@
   <title>dgem (DiffusionGemma) — Executive Benchmark Briefing: JevBench v1.3.1 & jev-decision-index</title>
   <style>
     :root {
-      --bg: #0b0f19;
-      --surface: #111827;
-      --surface-elevated: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
+      --bg: #070b12;
+      --surface: #111927;
+      --surface-elevated: #1b263b;
+      --border: #3b4d6b;
+      --text: #ffffff;
+      --text-secondary: #e2e8f0;
+      --muted: #cbd5e1;
       --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.14);
-      --pass: #22c55e;
-      --pass-bg: rgba(34, 197, 94, 0.12);
-      --warn: #f59e0b;
-      --warn-bg: rgba(245, 158, 11, 0.12);
-      --fail: #ef4444;
-      --fail-bg: rgba(239, 68, 68, 0.12);
-      --purple: #c084fc;
-      --purple-bg: rgba(192, 132, 252, 0.12);
+      --accent-glow: rgba(56, 189, 248, 0.18);
+      --pass: #4ade80;
+      --pass-bg: rgba(74, 222, 128, 0.15);
+      --warn: #fbbf24;
+      --warn-bg: rgba(251, 191, 36, 0.15);
+      --fail: #f87171;
+      --fail-bg: rgba(248, 113, 113, 0.15);
+      --purple: #d8b4fe;
+      --purple-bg: rgba(216, 180, 254, 0.15);
       --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
       --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
     }
@@ -36,7 +37,27 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-sans);
-      line-height: 1.55;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 1px 6px;
+      border-radius: 5px;
+    }
+
+    h1 code, h2 code, h3 code {
+      font-size: 0.95em;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.16);
+      padding: 2px 8px;
+      border-radius: 6px;
     }
 
     .container {
@@ -47,7 +68,7 @@
 
     /* Header */
     .hero {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.11) 0%, rgba(192, 132, 252, 0.08) 100%);
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.14) 0%, rgba(192, 132, 252, 0.1) 100%);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 28px 32px;
@@ -67,9 +88,9 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--accent);
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.4);
       padding: 4px 12px;
       border-radius: 999px;
       margin-bottom: 12px;
@@ -80,21 +101,22 @@
       font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.02em;
+      color: #ffffff;
     }
 
     .hero p {
       margin: 0;
-      color: var(--muted);
+      color: var(--text-secondary);
       max-width: 820px;
-      font-size: 15px;
+      font-size: 15.5px;
     }
 
     .btn-copy {
       background: var(--accent);
-      color: #090d16;
+      color: #060a12;
       border: none;
       border-radius: 10px;
-      padding: 11px 18px;
+      padding: 12px 18px;
       font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
@@ -103,6 +125,7 @@
       gap: 8px;
       transition: all 0.15s ease;
       white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
     }
 
     .btn-copy:hover {
@@ -113,37 +136,67 @@
     /* KPI Strip */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
       gap: 16px;
       margin-bottom: 28px;
     }
 
     .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #172236 0%, #111927 100%);
+      border: 1px solid #3b4d6b;
+      border-top: 3px solid var(--accent);
       border-radius: 12px;
-      padding: 18px 20px;
+      padding: 20px 22px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .kpi-card.kpi-green {
+      border-top-color: var(--pass);
+    }
+
+    .kpi-card.kpi-purple {
+      border-top-color: var(--purple);
     }
 
     .kpi-label {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 12.5px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      margin-bottom: 6px;
+      letter-spacing: 0.06em;
+      color: #e2e8f0;
+      margin-bottom: 8px;
     }
 
     .kpi-value {
-      font-size: 26px;
+      font-size: 30px;
       font-weight: 800;
       font-family: var(--font-mono);
-      margin-bottom: 4px;
+      margin-bottom: 8px;
+      line-height: 1.15;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .kpi-unit {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 2px 8px;
+      border-radius: 6px;
     }
 
     .kpi-sub {
-      font-size: 12.5px;
-      color: var(--muted);
+      font-size: 13.5px;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    .kpi-sub strong {
+      color: #ffffff;
+      font-weight: 700;
     }
 
     /* Architecture Pillars */
@@ -343,24 +396,24 @@
 
     <!-- TOP KPI STRIP -->
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card kpi-green">
         <div class="kpi-label">JevBench v1.3.1 Composite (EXP-11)</div>
-        <div class="kpi-value text-pass">76.79 <span style="font-size:14px;color:var(--muted)">/ 100</span></div>
+        <div class="kpi-value text-pass">76.79 <span class="kpi-unit">/ 100</span></div>
         <div class="kpi-sub"><strong>88.18</strong> Calibration Score · <strong>0.0326</strong> 10-Bin ECE (<code>-56.2%</code> error via <code>T*=1.35</code>)</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Entropy-Gated Cascade (EXP-05 / 11)</div>
-        <div class="kpi-value text-accent">98.0% <span style="font-size:14px;color:var(--muted)">Acc</span></div>
+        <div class="kpi-value text-accent">98.0% <span class="kpi-unit">Acc</span></div>
         <div class="kpi-sub"><code>dgemma</code> handles <strong>72%</strong> in 1 pass; escalates <strong>28%</strong> to Gemini Flash (<strong>-56% cost</strong>)</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card kpi-green">
         <div class="kpi-label">Decision Index Ablation (EXP-12)</div>
-        <div class="kpi-value text-pass">98.89 <span style="font-size:14px;color:var(--muted)">vs 76.67</span></div>
+        <div class="kpi-value text-pass">98.89 <span class="kpi-unit">vs 76.67</span></div>
         <div class="kpi-sub"><strong>100.0%</strong> Structural Coverage (<code>+22.22 pts</code> over naive 26-opt / 10-slot engines)</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card kpi-purple">
         <div class="kpi-label">HF Leaderboard Standing (72.6k Hub)</div>
-        <div class="kpi-value" style="color:var(--purple)">#2 → #1 <span style="font-size:14px;color:var(--muted)">Open</span></div>
+        <div class="kpi-value" style="color:var(--purple)">#2 → #1 <span class="kpi-unit">Open</span></div>
         <div class="kpi-sub">Raw <code>diffusiongemma</code> is <strong>55.56</strong> (<code>0.18</code> pts behind #1 <code>Jevfire</code>); <code>dgem</code> closes the gap</div>
       </div>
     </div>
@@ -374,7 +427,7 @@
       <div class="pillars">
         <div class="pillar">
           <h3>① O(1) Parallel Canvas Readout</h3>
-          <p>
+          <p style="color:#e2e8f0">
             Instead of generating tokens left-to-right ($O(N)$), <code>dgem</code> places multiple <code>[MASK]</code> slots on DiffusionGemma's bidirectional canvas and resolves <strong>up to 8–12 orthogonal decision fields in a single ~150–400ms forward pass</strong>.
           </p>
         </div>
