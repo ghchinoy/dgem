@@ -42,20 +42,24 @@
     }
 
     code {
+      display: inline;
       font-family: var(--font-mono);
-      font-size: 0.9em;
-      font-weight: 600;
-      color: #7dd3fc;
-      background: rgba(56, 189, 248, 0.14);
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-size: 0.92em;
+      font-weight: 700;
+      color: #ffffff;
+      background: #1e3a5f;
+      border: 1px solid #38bdf8;
       padding: 1px 6px;
       border-radius: 5px;
     }
 
-    h1 code, h2 code, h3 code {
+    h1 code, h2 code, h3 code, .section-title code {
+      display: inline;
       font-size: 0.95em;
-      color: #38bdf8;
-      background: rgba(56, 189, 248, 0.16);
+      font-weight: 800;
+      color: #ffffff;
+      background: #0284c7;
+      border: 1px solid #7dd3fc;
       padding: 2px 8px;
       border-radius: 6px;
     }
@@ -68,8 +72,8 @@
 
     /* Header */
     .hero {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.14) 0%, rgba(192, 132, 252, 0.1) 100%);
-      border: 1px solid var(--border);
+      background: linear-gradient(135deg, #16243d 0%, #1a1836 100%);
+      border: 1px solid #475569;
       border-radius: 16px;
       padding: 28px 32px;
       margin-bottom: 28px;
@@ -88,9 +92,9 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #7dd3fc;
-      background: rgba(56, 189, 248, 0.16);
-      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #ffffff;
+      background: #0369a1;
+      border: 1px solid #38bdf8;
       padding: 4px 12px;
       border-radius: 999px;
       margin-bottom: 12px;
@@ -106,7 +110,7 @@
 
     .hero p {
       margin: 0;
-      color: var(--text-secondary);
+      color: #f1f5f9;
       max-width: 820px;
       font-size: 15.5px;
     }
@@ -143,7 +147,7 @@
 
     .kpi-card {
       background: linear-gradient(180deg, #172236 0%, #111927 100%);
-      border: 1px solid #3b4d6b;
+      border: 1px solid #475569;
       border-top: 3px solid var(--accent);
       border-radius: 12px;
       padding: 20px 22px;
@@ -163,7 +167,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #e2e8f0;
+      color: #f1f5f9;
       margin-bottom: 8px;
     }
 
@@ -181,16 +185,16 @@
     .kpi-unit {
       font-size: 15px;
       font-weight: 700;
-      color: #e2e8f0;
-      background: rgba(255, 255, 255, 0.09);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      background: #1e293b;
+      border: 1px solid #64748b;
       padding: 2px 8px;
       border-radius: 6px;
     }
 
     .kpi-sub {
       font-size: 13.5px;
-      color: #e2e8f0;
+      color: #f1f5f9;
       line-height: 1.5;
     }
 
@@ -202,7 +206,7 @@
     /* Architecture Pillars */
     .section {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid #475569;
       border-radius: 14px;
       padding: 26px 28px;
       margin-bottom: 26px;
@@ -215,49 +219,49 @@
       align-items: center;
       gap: 12px;
       margin-bottom: 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      border-bottom: 1px solid #334155;
       padding-bottom: 14px;
     }
 
     .section-title {
       margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      font-size: 21px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.35;
+      display: block;
     }
 
     .badge {
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 700;
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 999px;
       font-family: var(--font-mono);
     }
 
     .badge-blue {
-      background: var(--accent-glow);
-      color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.35);
+      background: #0369a1;
+      color: #ffffff;
+      border: 1px solid #38bdf8;
     }
 
     .badge-green {
-      background: var(--pass-bg);
-      color: var(--pass);
-      border: 1px solid rgba(34, 197, 94, 0.35);
+      background: #15803d;
+      color: #ffffff;
+      border: 1px solid #4ade80;
     }
 
     .badge-purple {
-      background: var(--purple-bg);
-      color: var(--purple);
-      border: 1px solid rgba(192, 132, 252, 0.35);
+      background: #6b21a8;
+      color: #ffffff;
+      border: 1px solid #c084fc;
     }
 
     .badge-warn {
-      background: var(--warn-bg);
-      color: var(--warn);
-      border: 1px solid rgba(245, 158, 11, 0.35);
+      background: #b45309;
+      color: #ffffff;
+      border: 1px solid #fbbf24;
     }
 
     .pillars {
@@ -267,67 +271,82 @@
     }
 
     .pillar {
-      background: var(--surface-elevated);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #1a2436;
+      border: 1px solid #475569;
       border-radius: 10px;
-      padding: 16px 18px;
+      padding: 18px 20px;
     }
 
     .pillar h3 {
       margin: 0 0 8px;
-      font-size: 15px;
-      color: var(--accent);
+      font-size: 16px;
+      font-weight: 700;
+      color: #7dd3fc;
     }
 
     .pillar p {
       margin: 0;
-      font-size: 13.5px;
-      color: var(--muted);
+      font-size: 14px;
+      color: #f1f5f9;
+      line-height: 1.55;
     }
 
     /* Tables */
     .table-wrap {
       overflow-x: auto;
       margin-top: 14px;
+      border: 1px solid #334155;
+      border-radius: 10px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13.5px;
+      font-size: 14px;
+      color: #f8fafc;
     }
 
     th, td {
-      padding: 11px 13px;
+      padding: 12px 14px;
       text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      border-bottom: 1px solid #334155;
+      color: #f8fafc;
+    }
+
+    td strong {
+      color: #ffffff;
+      font-weight: 700;
     }
 
     th {
-      font-size: 11.5px;
+      font-size: 12.5px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--muted);
-      background: rgba(255, 255, 255, 0.02);
+      color: #ffffff;
+      background: #1e293b;
+      border-bottom: 2px solid #475569;
     }
 
     tr.highlight-row {
-      background: rgba(34, 197, 94, 0.08);
-      border-left: 3px solid var(--pass);
+      background: rgba(34, 197, 94, 0.14);
+      border-left: 4px solid var(--pass);
     }
 
     tr.warn-row {
-      background: rgba(245, 158, 11, 0.06);
+      background: rgba(245, 158, 11, 0.12);
+      border-left: 4px solid var(--warn);
     }
 
     .mono {
       font-family: var(--font-mono);
+      color: #ffffff;
     }
 
-    .text-pass { color: var(--pass); font-weight: 700; }
-    .text-warn { color: var(--warn); font-weight: 700; }
-    .text-fail { color: var(--fail); font-weight: 700; }
-    .text-accent { color: var(--accent); font-weight: 700; }
+    .text-pass { color: #4ade80; font-weight: 800; }
+    .text-warn { color: #fbbf24; font-weight: 800; }
+    .text-fail { color: #f87171; font-weight: 800; }
+    .text-accent { color: #38bdf8; font-weight: 800; }
 
     /* Two-column layout */
     .two-col {
@@ -427,20 +446,20 @@
       <div class="pillars">
         <div class="pillar">
           <h3>① O(1) Parallel Canvas Readout</h3>
-          <p style="color:#e2e8f0">
-            Instead of generating tokens left-to-right ($O(N)$), <code>dgem</code> places multiple <code>[MASK]</code> slots on DiffusionGemma's bidirectional canvas and resolves <strong>up to 8–12 orthogonal decision fields in a single ~150–400ms forward pass</strong>.
+          <p>
+            Instead of generating tokens left-to-right (<code>O(N)</code>), <code>dgem</code> places multiple <code>[MASK]</code> slots on DiffusionGemma's bidirectional canvas and resolves <strong>up to 8–12 orthogonal decision fields in a single ~150–400ms forward pass</strong>.
           </p>
         </div>
         <div class="pillar">
-          <h3>② Exact Shannon Entropy Gate ($H$)</h3>
+          <h3>② Exact Shannon Entropy Gate (H)</h3>
           <p>
-            Every decision slot emits an exact restricted-softmax probability distribution and <strong>Shannon entropy ($H = -\sum p_k \ln p_k$)</strong>. Low-entropy cases exit immediately; high-entropy edge cases escalate to <strong>Gemini</strong> (the "Triage Nurse vs. Specialist" pattern).
+            Every decision slot emits an exact restricted-softmax probability distribution and <strong>Shannon entropy (<code>H = -∑ pₖ ln pₖ</code>)</strong>. Low-entropy cases exit immediately; high-entropy edge cases escalate to <strong>Gemini</strong> (the "Triage Nurse vs. Specialist" pattern).
           </p>
         </div>
         <div class="pillar">
           <h3>③ Wide-Canvas &amp; Multi-Slot Adapter</h3>
           <p>
-            Standard diffusion servers fail on <strong>$K &gt; 26$ options</strong> (<code>[A-Z]</code> token limit) or <strong>$M &gt; 10$ slots</strong>. <code>dgem</code> adds <strong>2-Stage Bracket Tournament Routing</strong> ($K \le 255$) + <strong>Multi-Slot Batching</strong> + <strong>Slot Temperature Scaling ($T^*$)</strong>.
+            Standard diffusion servers fail on <strong>K &gt; 26 options</strong> (<code>[A-Z]</code> token limit) or <strong>M &gt; 10 slots</strong>. <code>dgem</code> adds <strong>2-Stage Bracket Tournament Routing</strong> (<code>K ≤ 255</code>) + <strong>Multi-Slot Batching</strong> + <strong>Slot Temperature Scaling (<code>T*</code>)</strong>.
           </p>
         </div>
       </div>
@@ -474,12 +493,12 @@
             </tr>
             <tr>
               <td><strong>Request Geometry</strong></td>
-              <td>1 question per request, $\le 6$ options (fits inside any naive 26-option slot)</td>
+              <td>1 question per request, <strong>≤ 6 options</strong> (fits inside any naive 26-option slot)</td>
               <td>Up to <strong>32 questions/request</strong> (<code>BRIGHT</code>, <code>ToolRet</code>, <code>ContractNLI</code>) and up to <strong>151 options/question</strong> (<code>POP909-CL</code>, <code>CLINC150</code>, <code>BANKING77</code>)</td>
             </tr>
             <tr>
               <td><strong>Headline Metric</strong></td>
-              <td><strong>4-Axis Geometric Mean</strong>: $(\text{Intelligence} \times \text{Calibration} \times \text{Speed} \times \text{Cost})^{1/4}$</td>
+              <td><strong>4-Axis Geometric Mean</strong>: <code>(Intelligence × Calibration × Speed × Cost)^¼</code></td>
               <td><strong>5-Area Coverage-Adjusted Index (<code>0–100</code>)</strong>: Any capacity error (<code>HTTP 422</code>) scores <strong><code>0.0</code></strong></td>
             </tr>
             <tr class="highlight-row">
@@ -499,8 +518,8 @@
           <h2 class="section-title">3A. <code>JevBench v1.3.1</code> &amp; Cascade Results</h2>
           <span class="badge badge-green">EXP-05 &amp; EXP-11</span>
         </div>
-        <p style="font-size:13.5px;color:var(--muted);margin-top:0">
-          Evaluated on Cloud Run GPU (`dgemma`). Post-hoc Slot Temperature Scaling (<code>T* = 1.35</code>) cuts 10-Bin ECE by <strong>56.2%</strong> while preserving 100% of <code>argmax</code> answers:
+        <p style="font-size:14px;color:#f1f5f9;margin-top:0">
+          Evaluated on Cloud Run GPU (<code>dgemma</code>). Post-hoc Slot Temperature Scaling (<code>T* = 1.35</code>) cuts 10-Bin ECE by <strong>56.2%</strong> while preserving 100% of <code>argmax</code> answers:
         </p>
         <div class="table-wrap">
           <table>
@@ -553,7 +572,7 @@
           <h2 class="section-title">3B. <code>jev-decision-index</code> Capacity Ablation</h2>
           <span class="badge badge-green">EXP-12 Cloud Run L4</span>
         </div>
-        <p style="font-size:13.5px;color:var(--muted);margin-top:0">
+        <p style="font-size:14px;color:#f1f5f9;margin-top:0">
           Across our 22-benchmark 5-Area + Wide-Option suite on Cloud Run GPU, naive <code>open-jev</code> engines reject 6 benchmarks (<code>HTTP 422</code> = <code>0.0</code> score), whereas <code>dgem</code> achieves <strong>100% coverage</strong>:
         </p>
         <div class="table-wrap">
@@ -580,13 +599,13 @@
                 <td class="mono text-pass"><strong>+22.22 pts</strong></td>
               </tr>
               <tr>
-                <td><strong>Multi-Slot Canvas (<code>M &gt; 10</code> slots)</strong><br><span style="font-size:11.5px;color:var(--muted)">ContractNLI, BRIGHT, ToolRet</span></td>
+                <td><strong>Multi-Slot Canvas (<code>M &gt; 10</code> slots)</strong><br><span style="font-size:12px;color:#cbd5e1">ContractNLI, BRIGHT, ToolRet</span></td>
                 <td class="mono text-fail">0.00% (HTTP 422)</td>
                 <td class="mono text-pass"><strong>94.29% (~301ms)</strong></td>
                 <td class="mono text-pass"><strong>+94.29%</strong></td>
               </tr>
               <tr>
-                <td><strong>Wide-Option Tournament (<code>K &gt; 26</code>)</strong><br><span style="font-size:11.5px;color:var(--muted)">API-Bank, BANKING77, CLINC150</span></td>
+                <td><strong>Wide-Option Tournament (<code>K &gt; 26</code>)</strong><br><span style="font-size:12px;color:#cbd5e1">API-Bank, BANKING77, CLINC150</span></td>
                 <td class="mono text-fail">0.00% (HTTP 422)</td>
                 <td class="mono text-pass"><strong>100.00% (~336ms)</strong></td>
                 <td class="mono text-pass"><strong>+100.00%</strong></td>
@@ -611,7 +630,7 @@
         <h2 class="section-title">4. Official <code>multimodalart/jev-decision-index</code> Leaderboard Context (72,590 Cases)</h2>
         <span class="badge badge-warn">Live HF Space Telemetry Analysis</span>
       </div>
-      <p style="font-size:14px;color:var(--muted);margin-top:0">
+      <p style="font-size:14.5px;color:#f1f5f9;margin-top:0">
         Inspecting the live Hugging Face leaderboard JSON (<code>data/index.json</code>) reveals that raw <strong>DiffusionGemma (<code>55.56</code>) is already #2 among all 31 open models</strong>—trailing #1 <code>Jevfire</code> (<code>55.74</code>) by just <strong><code>0.18</code> points</strong>. More importantly, the telemetry pinpoints <strong>three exact serving flaws</strong> in existing leaderboard submissions that <code>dgem</code> fixes:
       </p>
       <div class="table-wrap">
