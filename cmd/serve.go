@@ -487,6 +487,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		})
 	})
 
+	// 5b. Curated Batch Benchmark Suites API
+	mux.HandleFunc("/api/batch/presets", handleGetBatchPresets)
+
 	// 6. Simplified REST Decision API: POST /api/decide and POST /api/decide/{template}
 	decideHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

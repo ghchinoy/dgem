@@ -51,6 +51,7 @@ echo "-> Building ${IMAGE} via Cloud Build..."
 gcloud builds submit "${TMP_CTX}" \
   --project="${PROJECT}" \
   --tag="${IMAGE}" \
+  --suppress-logs \
   --quiet
 
 GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"

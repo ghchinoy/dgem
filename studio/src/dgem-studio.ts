@@ -5,6 +5,7 @@ import './components/dgem-about-modal.js';
 import './components/dgem-preset-selector.js';
 import './components/dgem-policy-composer.js';
 import './components/dgem-concept-visualizer.js';
+import './components/dgem-batch-runner.js';
 import type { StudioTab, ThemePreference } from './components/dgem-nav-rail.js';
 import type {
   TemplateEntry,
@@ -2254,22 +2255,45 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
           <main>
             ${this.activeTab === 'studio'
               ? this.renderStudioTab()
-              : this.activeTab === 'concepts'
+              : this.activeTab === 'batch'
                 ? html`
-                    <dgem-concept-visualizer
+                    <dgem-batch-runner
                       .resolvedTheme=${this.resolvedTheme}
-                      @open-preset-from-visualizer=${(e: CustomEvent<string>) => {
-                        const found = PRESETS.find((p) => p.id === e.detail);
-                        if (found) {
-                          this.selectPreset(found);
+                      @batch-started=${() => this.fetchGPUStatus()}
+                      @batch-completed=${() => this.fetchGPUStatus()}
+                      @inspect-batch-item=${(e: CustomEvent<any>) => {
+                        const d = e.detail || {};
+                        if (d.template) {
+                          this.selectTemplateByName(d.template);
+                        }
+                        if (d.variables) {
+                          const strVars: Record<string, string> = {};
+                          for (const [k, v] of Object.entries(d.variables)) {
+                            strVars[k] = String(v ?? '');
+                          }
+                          this.variableValues = strVars;
                         }
                         this.activeTab = 'studio';
+                        setTimeout(() => this.runDecision(), 50);
                       }}
-                    ></dgem-concept-visualizer>
+                    ></dgem-batch-runner>
                   `
-                : this.activeTab === 'catalog'
-                  ? this.renderCatalogTab()
-                  : this.renderMcpTab()}
+                : this.activeTab === 'concepts'
+                  ? html`
+                      <dgem-concept-visualizer
+                        .resolvedTheme=${this.resolvedTheme}
+                        @open-preset-from-visualizer=${(e: CustomEvent<string>) => {
+                          const found = PRESETS.find((p) => p.id === e.detail);
+                          if (found) {
+                            this.selectPreset(found);
+                          }
+                          this.activeTab = 'studio';
+                        }}
+                      ></dgem-concept-visualizer>
+                    `
+                  : this.activeTab === 'catalog'
+                    ? this.renderCatalogTab()
+                    : this.renderMcpTab()}
           </main>
         </div>
       </div>

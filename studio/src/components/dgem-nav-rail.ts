@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-export type StudioTab = 'studio' | 'concepts' | 'catalog' | 'mcp';
+export type StudioTab = 'studio' | 'batch' | 'concepts' | 'catalog' | 'mcp';
 export type ThemePreference = 'auto' | 'light' | 'dark';
 
 @customElement('dgem-nav-rail')
@@ -218,6 +218,16 @@ export class DgemNavRail extends LitElement {
         >
           <span class="material-symbols-outlined">tune</span>
           <span class="nav-label">Decision Studio</span>
+        </button>
+
+        <button
+          class="nav-btn"
+          aria-current=${this.activeTab === 'batch' ? 'page' : 'false'}
+          @click=${() => this.selectTab('batch')}
+          title="Live Batch Evaluation & Streaming Benchmark Table"
+        >
+          <span class="material-symbols-outlined">dynamic_feed</span>
+          <span class="nav-label">Batch Eval</span>
         </button>
 
         <button

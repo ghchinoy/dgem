@@ -235,6 +235,35 @@ var keepaliveOnce sync.Once
 func startGPUKeepaliveLoop() {
 	keepaliveOnce.Do(func() {
 		go func() {
+			// On gateway startup, probe upstream /health once with a 3s timeout: if the GPU container
+			// is already warm ("phase":"ready" / "vllm_ready":true), sync gateway state immediately.
+			upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
+			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
+			if upstreamBase != "" {
+				healthURL := upstreamBase + "/health"
+				if req, err := http.NewRequest("GET", healthURL, nil); err == nil {
+					if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
+						if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), healthURL); tok != "" {
+							req.Header.Set("Authorization", "Bearer "+tok)
+						}
+					} else if tok := viper.GetString("token"); tok != "" {
+						req.Header.Set("Authorization", "Bearer "+tok)
+					}
+					hc := &http.Client{Timeout: 4 * time.Second}
+					if resp, err := hc.Do(req); err == nil {
+						var st struct {
+							Phase     string `json:"phase"`
+							VLLMReady bool   `json:"vllm_ready"`
+						}
+						_ = json.NewDecoder(resp.Body).Decode(&st)
+						resp.Body.Close()
+						if st.VLLMReady || st.Phase == "ready" {
+							MarkGPUWarm()
+						}
+					}
+				}
+			}
+
 			ticker := time.NewTicker(4 * time.Minute)
 			defer ticker.Stop()
 			for range ticker.C {
