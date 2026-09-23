@@ -31,30 +31,34 @@ if [ "${COPY_TO_SHM:-0}" = "1" ] && [ -d "/mnt/gcs/dgemma" ] && [ -f "/mnt/gcs/d
   printf '{"phase":"staging_tmpfs","boot_ts":%s,"stage_start_ts":%s,"bytes_staged_gb":0.0}\n' "$BOOT_TS" "$STAGE_START_TS" > /tmp/dgemma/warmup_state.json
   find /mnt/gcs/dgemma -maxdepth 1 -type f ! -name "*.safetensors" | xargs -I {} cp -f {} /tmp/dgemma/
 
-  # Pre-allocate /tmp/dgemma/*.safetensors with exact sizes synchronously so vLLM sees 17.53 GiB immediately
+  # Pre-copy first 4 MB (containing the complete safetensors JSON header) and truncate to exact size synchronously (<0.2s)
+  # so VllmConfig header validation at t=38s succeeds immediately while tensor bodies stream in parallel
   python3 -c '
 import glob, os
+HDR_BYTES = 4 * 1024 * 1024
 for sf in sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors")):
     df = os.path.join("/tmp/dgemma", os.path.basename(sf))
     sz = os.path.getsize(sf)
-    with open(df, "wb") as f:
-        f.truncate(sz)
+    with open(sf, "rb") as f_in, open(df, "wb") as f_out:
+        f_out.write(f_in.read(min(HDR_BYTES, sz)))
+        f_out.truncate(sz)
 '
 
-  # Install sitecustomize.py hook so vLLM initializes Python/Torch/CUDA/NCCL in parallel and only waits at safetensors.safe_open
+  # Install sitecustomize.py hook on DefaultModelLoader.load_weights so vLLM runs all Python/Torch/Config/CUDA/NCCL init
+  # in parallel and only waits right before copying tensor weights into GPU VRAM (t ~ 65s)
   cat << 'EOF' > /tmp/sitecustomize.py
 import os, time
 try:
-    import safetensors
-    _orig_safe_open = safetensors.safe_open
-    def _waiting_safe_open(filename, *args, **kwargs):
-        if str(filename).startswith("/tmp/dgemma") and not os.path.exists("/tmp/dgemma/.ready"):
-            print(f"[init] vLLM reached safetensors.safe_open({filename}); waiting for /tmp/dgemma/.ready...", flush=True)
+    from vllm.model_executor.model_loader.default_loader import DefaultModelLoader
+    _orig_load_weights = DefaultModelLoader.load_weights
+    def _waiting_load_weights(self, model, model_config):
+        if str(getattr(model_config, "model", "")).startswith("/tmp/dgemma") and not os.path.exists("/tmp/dgemma/.ready"):
+            print("[init] EngineCore reached DefaultModelLoader.load_weights; waiting for /tmp/dgemma/.ready...", flush=True)
             while not os.path.exists("/tmp/dgemma/.ready"):
                 time.sleep(0.2)
-            print("[init] /tmp/dgemma/.ready confirmed! Proceeding with zero-copy mmap weight load.", flush=True)
-        return _orig_safe_open(filename, *args, **kwargs)
-    safetensors.safe_open = _waiting_safe_open
+            print("[init] /tmp/dgemma/.ready confirmed! Loading 17.53 GiB weights via zero-copy mmap...", flush=True)
+        return _orig_load_weights(self, model, model_config)
+    DefaultModelLoader.load_weights = _waiting_load_weights
 except Exception:
     pass
 EOF
@@ -75,13 +79,17 @@ with urllib.request.urlopen(req, timeout=5) as r:
 
 bucket = os.environ.get("GCS_BUCKET", "dgem-weights-genai-blackbelt-fishfooding")
 src_files = sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors"))
+hdr = 4 * 1024 * 1024
 chunk = 64 * 1024 * 1024
 tasks = []
+pre_staged = 0
 for sf in src_files:
     bn = os.path.basename(sf)
     df = os.path.join("/tmp/dgemma", bn)
     sz = os.path.getsize(sf)
-    for off in range(0, sz, chunk):
+    start_off = min(hdr, sz)
+    pre_staged += start_off
+    for off in range(start_off, sz, chunk):
         tasks.append((bucket, token, bn, df, off, min(chunk, sz - off)))
 
 def download_range(t):
@@ -109,7 +117,7 @@ def download_range(t):
 
 t0 = float(os.environ.get("STAGE_START_TS", time.time()))
 boot_ts = float(os.environ.get("BOOT_TS", t0))
-staged = 0
+staged = pre_staged
 last_write = 0.0
 with ThreadPoolExecutor(max_workers=64) as ex:
     futs = [ex.submit(download_range, t) for t in tasks]
