@@ -24,10 +24,10 @@ In real products, **70%+ of incoming requests are obvious** (e.g., *"Our API is 
 Instead of sending 100% of your traffic to a slow, expensive frontier reasoning model—or letting a fast model guess blindly on ambiguous edge cases—`dgem` uses an **Entropy Gate**:
 
 ```mermaid
-flowchart LR
-    IN["Incoming Request / Ticket\n(100% of Production Traffic)"] --> S1["Stage 1: dgem + DiffusionGemma\nSingle Forward Pass (~450–712 ms)\nComputes Answer + Uncertainty (nats)"]
-    S1 -->|"Low Uncertainty (H < 0.35 nats)\n72% of Traffic (Clear Signal)"| FAST["✅ Fast Auto-Route\nDone in ~450 ms · $0 Frontier Cost"]
-    S1 -->|"High Uncertainty (H ≥ 0.35 nats)\n28% of Traffic (Mixed / Borderline)"| ESC["⚠️ Auto-Escalate to Frontier Model\n(e.g., Gemini 3.8 Flash)\nwith Stage-1 Odds Attached (75% Tech / 23% Billing)\n➔ 98.0% Combined System Accuracy"]
+flowchart TD
+    IN["📥 Incoming Request / Ticket\n(100% of Production Traffic)"] --> S1["⚡ Stage 1: dgem + DiffusionGemma\nSingle Forward Pass (~450–712 ms)\nComputes Answer + Uncertainty (nats)"]
+    S1 -->|"🟢 Low Uncertainty (H < 0.35 nats)\n72% of Traffic (Clear Signal)"| FAST["✅ Fast Auto-Route\nDone in ~450 ms · $0 Frontier LLM Cost"]
+    S1 -->|"🟠 High Uncertainty (H ≥ 0.35 nats)\n28% of Traffic (Mixed / Borderline)"| ESC["⚠️ Auto-Escalate to Frontier Model (Gemini 3.8 Flash)\nwith Stage-1 Odds Attached (75% Tech / 23% Billing)\n➔ 98.0% Combined System Accuracy"]
 ```
 
 * **When the signal is clear (`H < 0.35 nats`)**: `DiffusionGemma` is 98%+ confident. The request takes the **Green Fast Lane** (`72%` of traffic), finishing in sub-second latency at a fraction of LLM cost.
