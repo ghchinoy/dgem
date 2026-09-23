@@ -1,777 +1,735 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>dgem (DiffusionGemma) — Executive Benchmark Briefing: JevBench v1.3.1 & jev-decision-index</title>
-  <style>
-    :root {
-      --bg: #070b12;
-      --surface: #111927;
-      --surface-elevated: #1b263b;
-      --border: #3b4d6b;
-      --text: #ffffff;
-      --text-secondary: #e2e8f0;
-      --muted: #cbd5e1;
-      --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.18);
-      --pass: #4ade80;
-      --pass-bg: rgba(74, 222, 128, 0.15);
-      --warn: #fbbf24;
-      --warn-bg: rgba(251, 191, 36, 0.15);
-      --fail: #f87171;
-      --fail-bg: rgba(248, 113, 113, 0.15);
-      --purple: #d8b4fe;
-      --purple-bg: rgba(216, 180, 254, 0.15);
-      --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dgem (DiffusionGemma) — JevBench v1.3.1 &amp; jev-decision-index — Technical Experiment &amp; Architecture Record</title>
+<style>
+  :root {
+    --ivory: #FAF9F5;
+    --paper: #FFFFFF;
+    --oat: #E3DACC;
+    --sand: #F0EEE6;
+    --slate: #141413;
+    --g900: #262624;
+    --g700: #3D3D3A;
+    --g500: #5E5D59;
+    --g400: #87867F;
+    --g300: #B0AEA5;
+    --g200: #D1CFC5;
+    --g100: #E8E6DC;
+    --clay: #D97757;
+    --clay-soft: rgba(217, 119, 87, 0.12);
+    --clay-deep: #8A3B1E;
+    --olive: #788C5D;
+    --olive-soft: rgba(120, 140, 93, 0.14);
+    --olive-deep: #4B5C39;
+    --rust: #C44536;
+    --rust-soft: rgba(196, 69, 54, 0.12);
+    --sky: #6A9BCC;
+    --sky-soft: rgba(106, 155, 204, 0.14);
+    --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    --radius: 10px;
+    --border: 1px solid var(--g200);
+  }
 
-    * {
-      box-sizing: border-box;
-    }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ivory);
+    color: var(--g900);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 44px 28px 96px;
+  }
+  .page { max-width: 1180px; margin: 0 auto; }
+  code, pre { font-family: var(--mono); font-size: 0.88em; }
+  code { background: var(--g100); padding: 2px 6px; border-radius: 5px; color: var(--slate); font-weight: 600; }
 
-    body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-sans);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
+  /* offline typographic math (zero CDN dependencies) */
+  .math {
+    font-family: "STIX Two Math", "Cambria Math", "Times New Roman", Georgia, serif;
+    font-size: 1.03em;
+    white-space: nowrap;
+    color: var(--slate);
+  }
+  .math i { font-style: italic; }
+  .math sub { font-size: 0.76em; vertical-align: -0.18em; }
+  .math sup { font-size: 0.76em; vertical-align: 0.35em; }
 
-    code {
-      display: inline;
-      font-family: var(--font-mono);
-      font-size: 0.92em;
-      font-weight: 700;
-      color: #ffffff;
-      background: #1e3a5f;
-      border: 1px solid #38bdf8;
-      padding: 1px 6px;
-      border-radius: 5px;
-    }
+  /* header */
+  header.hero {
+    border-bottom: 1px solid var(--g300);
+    padding-bottom: 28px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .hero-main { max-width: 860px; }
+  .eyebrow { font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clay-deep); margin-bottom: 10px; font-weight: 600; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(30px, 4vw, 42px); line-height: 1.14; color: var(--slate); letter-spacing: -0.015em; margin-bottom: 14px; }
+  h1 em { font-style: italic; color: var(--clay-deep); }
+  .lead { font-size: 16.5px; color: var(--g700); max-width: 880px; margin-bottom: 18px; }
+  .status-line { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { font-family: var(--mono); font-size: 11.5px; padding: 5px 11px; border-radius: 999px; background: var(--sand); border: var(--border); color: var(--g700); }
+  .pill.live { background: var(--olive-soft); border-color: var(--olive); color: var(--olive-deep); font-weight: 600; }
+  .pill.clay { background: var(--clay-soft); border-color: var(--clay); color: var(--clay-deep); font-weight: 600; }
 
-    h1 code, h2 code, h3 code, .section-title code {
-      display: inline;
-      font-size: 0.95em;
-      font-weight: 800;
-      color: #ffffff;
-      background: #0284c7;
-      border: 1px solid #7dd3fc;
-      padding: 2px 8px;
-      border-radius: 6px;
-    }
+  .btn-copy {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--slate);
+    color: var(--ivory);
+    border: 1px solid var(--slate);
+    border-radius: 8px;
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-copy:hover {
+    background: var(--clay-deep);
+    border-color: var(--clay-deep);
+  }
 
-    .container {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 36px 24px 72px;
-    }
+  /* toc */
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 42px; }
+  nav.toc a { font-size: 12.5px; padding: 7px 14px; border: var(--border); border-radius: 999px; color: var(--g700); background: var(--paper); text-decoration: none; display: inline-flex; gap: 7px; align-items: center; font-weight: 500; }
+  nav.toc a .n { font-family: var(--mono); font-size: 10px; color: var(--clay-deep); font-weight: 700; }
+  nav.toc a:hover { border-color: var(--slate); color: var(--slate); }
 
-    /* Header */
-    .hero {
-      background: linear-gradient(135deg, #16243d 0%, #1a1836 100%);
-      border: 1px solid #475569;
-      border-radius: 16px;
-      padding: 28px 32px;
-      margin-bottom: 28px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-    }
+  /* summary strip */
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 56px; }
+  @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px) { .summary { grid-template-columns: 1fr; } }
+  .cell { background: var(--paper); border: var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .cell .k { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--g500); margin-bottom: 6px; font-weight: 600; }
+  .cell .v { font-family: var(--serif); font-size: 28px; line-height: 1.1; color: var(--slate); font-weight: 600; }
+  .cell .s { font-size: 13px; color: var(--g700); margin-top: 8px; line-height: 1.45; }
+  .cell.accent { border-left: 4px solid var(--clay); }
+  .cell.olive { border-left: 4px solid var(--olive); }
 
-    .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #ffffff;
-      background: #0369a1;
-      border: 1px solid #38bdf8;
-      padding: 4px 12px;
-      border-radius: 999px;
-      margin-bottom: 12px;
-    }
+  /* sections & grids */
+  section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .sec-head .num { font-family: var(--mono); font-size: 12px; font-weight: 700; background: var(--oat); color: var(--slate); padding: 3px 9px; border-radius: 8px; }
+  .sec-head h2 { font-family: var(--serif); font-weight: 500; font-size: 28px; color: var(--slate); letter-spacing: -0.01em; }
+  .sec-intro { font-size: 15px; color: var(--g700); max-width: 880px; margin-bottom: 22px; }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 20px; color: var(--slate); margin: 20px 0 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 14px 0 22px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 14px 0 22px; }
+  @media (max-width: 880px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .panel { background: var(--paper); border: var(--border); border-radius: var(--radius); padding: 22px 24px; margin: 14px 0 22px; }
+  .panel h3 { margin-top: 0; }
+  .panel p { color: var(--g700); font-size: 14.5px; }
+  .small { font-size: 12.5px; color: var(--g500); }
 
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #ffffff;
-    }
+  /* tables */
+  .tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.t { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--paper); border: var(--border); border-radius: var(--radius); overflow: hidden; font-size: 13.5px; margin: 12px 0 20px; }
+  table.t th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--g700); background: var(--g100); padding: 11px 13px; border-bottom: 1px solid var(--g300); white-space: nowrap; }
+  table.t td { padding: 11px 13px; border-bottom: 1px solid var(--g100); vertical-align: top; color: var(--g900); }
+  table.t tr:last-child td { border-bottom: none; }
+  table.t td.num, table.t th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  table.t td.best { color: var(--olive-deep); font-weight: 700; }
+  table.t td.bad { color: var(--rust); font-weight: 700; }
+  table.t tr.highlight { background: rgba(120, 140, 93, 0.12); }
 
-    .hero p {
-      margin: 0;
-      color: #f1f5f9;
-      max-width: 820px;
-      font-size: 15.5px;
-    }
+  /* code & callouts */
+  pre.code { background: var(--slate); color: var(--ivory); padding: 16px 18px; border-radius: 8px; overflow-x: auto; line-height: 1.55; margin: 10px 0; font-size: 12.5px; white-space: pre-wrap; }
+  .callout { border-radius: var(--radius); padding: 16px 18px; border: var(--border); background: var(--paper); margin: 14px 0; }
+  .callout .ct { font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin-bottom: 6px; }
+  .callout.ok { background: var(--olive-soft); border-color: var(--olive); }
+  .callout.ok .ct { color: var(--olive-deep); }
+  .callout.warn { background: var(--clay-soft); border-color: var(--clay); }
+  .callout.warn .ct { color: var(--clay-deep); }
 
-    .btn-copy {
-      background: var(--accent);
-      color: #060a12;
-      border: none;
-      border-radius: 10px;
-      padding: 12px 18px;
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
-    }
+  /* proportional bar charts */
+  .bars { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .bar-row { display: grid; grid-template-columns: 270px 1fr 130px; align-items: center; gap: 12px; font-size: 12.5px; }
+  @media (max-width: 700px) { .bar-row { grid-template-columns: 1fr; } }
+  .bar-row .lbl { font-family: var(--mono); color: var(--slate); font-weight: 600; }
+  .bar-row .track { height: 14px; background: var(--sand); border: 1px solid var(--g200); border-radius: 4px; overflow: hidden; }
+  .bar-row .fill { height: 100%; border-radius: 3px; }
+  .bar-row .fill.olive { background: var(--olive); }
+  .bar-row .fill.clay { background: var(--clay); }
+  .bar-row .fill.rust { background: var(--rust); }
+  .bar-row .fill.sky { background: var(--sky); }
+  .bar-row .val { font-family: var(--mono); text-align: right; color: var(--slate); font-weight: 600; }
 
-    .btn-copy:hover {
-      filter: brightness(1.1);
-      transform: translateY(-1px);
-    }
-
-    /* KPI Strip */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .kpi-card {
-      background: linear-gradient(180deg, #172236 0%, #111927 100%);
-      border: 1px solid #475569;
-      border-top: 3px solid var(--accent);
-      border-radius: 12px;
-      padding: 20px 22px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-    }
-
-    .kpi-card.kpi-green {
-      border-top-color: var(--pass);
-    }
-
-    .kpi-card.kpi-purple {
-      border-top-color: var(--purple);
-    }
-
-    .kpi-label {
-      font-size: 12.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #f1f5f9;
-      margin-bottom: 8px;
-    }
-
-    .kpi-value {
-      font-size: 30px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      margin-bottom: 8px;
-      line-height: 1.15;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-
-    .kpi-unit {
-      font-size: 15px;
-      font-weight: 700;
-      color: #ffffff;
-      background: #1e293b;
-      border: 1px solid #64748b;
-      padding: 2px 8px;
-      border-radius: 6px;
-    }
-
-    .kpi-sub {
-      font-size: 13.5px;
-      color: #f1f5f9;
-      line-height: 1.5;
-    }
-
-    .kpi-sub strong {
-      color: #ffffff;
-      font-weight: 700;
-    }
-
-    /* Architecture Pillars */
-    .section {
-      background: var(--surface);
-      border: 1px solid #475569;
-      border-radius: 14px;
-      padding: 26px 28px;
-      margin-bottom: 26px;
-    }
-
-    .section-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 14px;
-    }
-
-    .section-title {
-      margin: 0;
-      font-size: 21px;
-      font-weight: 800;
-      color: #ffffff;
-      line-height: 1.35;
-      display: block;
-    }
-
-    .badge {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-family: var(--font-mono);
-    }
-
-    .badge-blue {
-      background: #0369a1;
-      color: #ffffff;
-      border: 1px solid #38bdf8;
-    }
-
-    .badge-green {
-      background: #15803d;
-      color: #ffffff;
-      border: 1px solid #4ade80;
-    }
-
-    .badge-purple {
-      background: #6b21a8;
-      color: #ffffff;
-      border: 1px solid #c084fc;
-    }
-
-    .badge-warn {
-      background: #b45309;
-      color: #ffffff;
-      border: 1px solid #fbbf24;
-    }
-
-    .pillars {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
-
-    .pillar {
-      background: #1a2436;
-      border: 1px solid #475569;
-      border-radius: 10px;
-      padding: 18px 20px;
-    }
-
-    .pillar h3 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      font-weight: 700;
-      color: #7dd3fc;
-    }
-
-    .pillar p {
-      margin: 0;
-      font-size: 14px;
-      color: #f1f5f9;
-      line-height: 1.55;
-    }
-
-    /* Tables */
-    .table-wrap {
-      overflow-x: auto;
-      margin-top: 14px;
-      border: 1px solid #334155;
-      border-radius: 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      color: #f8fafc;
-    }
-
-    th, td {
-      padding: 12px 14px;
-      text-align: left;
-      border-bottom: 1px solid #334155;
-      color: #f8fafc;
-    }
-
-    td strong {
-      color: #ffffff;
-      font-weight: 700;
-    }
-
-    th {
-      font-size: 12.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #ffffff;
-      background: #1e293b;
-      border-bottom: 2px solid #475569;
-    }
-
-    tr.highlight-row {
-      background: rgba(34, 197, 94, 0.14);
-      border-left: 4px solid var(--pass);
-    }
-
-    tr.warn-row {
-      background: rgba(245, 158, 11, 0.12);
-      border-left: 4px solid var(--warn);
-    }
-
-    .mono {
-      font-family: var(--font-mono);
-      color: #ffffff;
-    }
-
-    .text-pass { color: #4ade80; font-weight: 800; }
-    .text-warn { color: #fbbf24; font-weight: 800; }
-    .text-fail { color: #f87171; font-weight: 800; }
-    .text-accent { color: #38bdf8; font-weight: 800; }
-
-    /* Two-column layout */
-    .two-col {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
-      gap: 22px;
-    }
-
-    /* Bar visual */
-    .bar-row {
-      margin-bottom: 11px;
-    }
-    .bar-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-    .bar-track {
-      height: 9px;
-      background: rgba(255, 255, 255, 0.07);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .bar-fill {
-      height: 100%;
-      border-radius: 999px;
-    }
-
-    /* Briefing Copy Box */
-    .briefing-box {
-      background: #080c14;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px 20px;
-      font-family: var(--font-mono);
-      font-size: 12.5px;
-      color: #e2e8f0;
-      white-space: pre-wrap;
-      line-height: 1.6;
-    }
-
-    @media (max-width: 640px) {
-      .two-col {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+  /* interactive pipeline explorer */
+  .explorer { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 960px) { .explorer { grid-template-columns: 1fr; } }
+  .graph-wrap { background: var(--paper); border: var(--border); border-radius: var(--radius); padding: 18px; }
+  .gnode { cursor: pointer; transition: opacity 0.15s ease; }
+  .gnode rect { fill: var(--ivory); stroke: var(--g300); stroke-width: 1.5; transition: all 0.15s ease; }
+  .gnode.active rect { fill: var(--clay-soft); stroke: var(--clay); stroke-width: 2.2; }
+  .inspector { position: sticky; top: 20px; background: var(--paper); border: var(--border); border-radius: var(--radius); padding: 20px; }
+  .inspector .tag { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--clay-deep); margin-bottom: 4px; font-weight: 700; }
+  .inspector h4 { font-family: var(--serif); font-size: 20px; color: var(--slate); margin-bottom: 8px; }
+  .inspector p { font-size: 14px; color: var(--g700); }
+  .inspector .kv { display: grid; grid-template-columns: 125px 1fr; gap: 6px 10px; font-size: 12.5px; border-top: 1px solid var(--g100); padding-top: 10px; margin-top: 10px; }
+  .inspector .kv .k { font-family: var(--mono); color: var(--g500); font-weight: 600; }
+  .inspector .kv .v { font-family: var(--mono); color: var(--slate); font-weight: 600; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <!-- HERO -->
-    <header class="hero">
-      <div>
-        <div class="hero-eyebrow">⚡ Google DeepMind DiffusionGemma 26B-A4B · Executive Benchmark Briefing</div>
-        <h1><code>dgem</code>: Zero-Shot Decision Model &amp; Benchmark Scorecard</h1>
+<div class="page">
+  <!-- LAYER 1: HERO HEADER -->
+  <header class="hero">
+    <div class="hero-main">
+      <div class="eyebrow">Experiment Record &middot; dgem (DiffusionGemma 26B-A4B) &middot; EXP-05 / EXP-11 / EXP-12 &middot; 2026-09-23</div>
+      <h1>Zero-Shot Decision Models Across <em>JevBench v1.3.1 &amp; the Jev Decision Index</em></h1>
+      <p class="lead">
+        Unified evaluation of <code>dgem</code> (our Policy-as-Template serving, slot-calibration, and wide-canvas routing stack around Google DeepMind's DiffusionGemma) across the two community System-1 Decision Model suites: <code>JevBench v1.3.1</code> (231 adversarial rule-following tasks) and Hugging Face's <code>jev-decision-index</code> (19-benchmark, 5-area capability panel across 72,590 cases).
+      </p>
+      <div class="status-line">
+        <span class="pill live">JevBench Composite &middot; 76.79 (88.18 Calib.)</span>
+        <span class="pill live">Entropy Cascade &middot; 98.0% Acc (-56% Cost)</span>
+        <span class="pill live">Decision Index Ablation &middot; 98.89 vs 76.67 (+22.22 pts)</span>
+        <span class="pill clay">HF Leaderboard &middot; #2 (55.56) &rarr; Projected #1 Open (~56.5+)</span>
+      </div>
+    </div>
+    <button class="btn-copy" id="copyBtn" onclick="copyBriefing()">
+      Copy TL;DR Memo for Colleagues
+    </button>
+  </header>
+
+  <!-- LAYER 2: NUMBERED PILL TOC -->
+  <nav class="toc">
+    <a href="#s1"><span class="n">01</span> Architecture &amp; Formulation</a>
+    <a href="#s2"><span class="n">02</span> Benchmark Comparison Matrix</a>
+    <a href="#s3"><span class="n">03</span> JevBench v1.3.1 &amp; Cascade Scorecard</a>
+    <a href="#s4"><span class="n">04</span> Decision Index &amp; HF Leaderboard</a>
+    <a href="#s5"><span class="n">05</span> Interactive Adapter Explorer</a>
+    <a href="#s6"><span class="n">06</span> Colleague Briefing Memo</a>
+  </nav>
+
+  <!-- LAYER 3: FOUR-CELL KPI SUMMARY STRIP -->
+  <div class="summary">
+    <div class="cell olive">
+      <div class="k">JevBench v1.3.1 Composite (EXP-11)</div>
+      <div class="v">76.79 / 100</div>
+      <div class="s"><strong>88.18</strong> Calibration Score &middot; <strong>0.0326</strong> 10-Bin ECE (<span class="math">&minus;56.2%</span> error via <span class="math"><i>T</i><sup>*</sup> = 1.35</span>)</div>
+    </div>
+    <div class="cell accent">
+      <div class="k">Entropy-Gated Cascade (EXP-05)</div>
+      <div class="v">98.0% Acc</div>
+      <div class="s"><code>dgemma</code> resolves <strong>72%</strong> in <span class="math"><i>O</i>(1)</span> pass; escalates <strong>28%</strong> to Gemini Flash (<strong>&minus;56% cost</strong>)</div>
+    </div>
+    <div class="cell olive">
+      <div class="k">Decision Index Ablation (EXP-12)</div>
+      <div class="v">98.89 vs 76.67</div>
+      <div class="s"><strong>100.0%</strong> Structural Coverage (<span class="math">+22.22</span> pts over naive 26-opt / 10-slot engines)</div>
+    </div>
+    <div class="cell accent">
+      <div class="k">HF Leaderboard Standing (72.6k Hub)</div>
+      <div class="v">#2 &rarr; #1 Open</div>
+      <div class="s">Raw <code>diffusiongemma</code> scores <strong>55.56</strong> (<span class="math">0.18</span> pts behind #1 <code>Jevfire</code>); <code>dgem</code> closes the gap</div>
+    </div>
+  </div>
+
+  <!-- SECTION 01: ARCHITECTURE & FORMULATION -->
+  <section id="s1">
+    <div class="sec-head"><span class="num">01</span><h2>What is <code>dgem</code>? Architecture &amp; Mathematical Formulation</h2></div>
+    <p class="sec-intro">
+      Unlike autoregressive models that generate tokens sequentially (<span class="math"><i>O</i>(<i>N</i>)</span>), <code>dgem</code> places multiple <code>[MASK]</code> decision slots on DiffusionGemma's bidirectional canvas and extracts exact restricted-softmax distributions in <span class="math"><i>O</i>(1)</span> forward passes (~150&ndash;400 ms on Cloud Run GPU).
+    </p>
+    <div class="grid3">
+      <div class="panel" style="margin:0">
+        <h3>1. Parallel Canvas Readout</h3>
         <p>
-          Unified analysis of <strong><code>dgem</code></strong> across the two community System-1 Decision Model benchmarks:
-          <strong><code>JevBench v1.3.1</code> (EXP-11)</strong> and Hugging Face's <strong><code>jev-decision-index</code> (EXP-12)</strong>.
+          Evaluates up to 8&ndash;12 orthogonal rubric slots simultaneously in a single forward pass. Each slot <span class="math"><i>m</i></span> emits calibrated probabilities <span class="math"><i>p</i><sub><i>m</i>,<i>k</i></sub></span> over its allowed option set <span class="math"><i>V</i><sub><i>m</i></sub></span>.
         </p>
       </div>
-      <button class="btn-copy" onclick="copyBriefing()" id="copyBtn">
-        📋 Copy TL;DR Memo for Colleagues
-      </button>
-    </header>
-
-    <!-- TOP KPI STRIP -->
-    <div class="kpi-grid">
-      <div class="kpi-card kpi-green">
-        <div class="kpi-label">JevBench v1.3.1 Composite (EXP-11)</div>
-        <div class="kpi-value text-pass">76.79 <span class="kpi-unit">/ 100</span></div>
-        <div class="kpi-sub"><strong>88.18</strong> Calibration Score · <strong>0.0326</strong> 10-Bin ECE (<code>-56.2%</code> error via <code>T*=1.35</code>)</div>
+      <div class="panel" style="margin:0">
+        <h3>2. Normalized Entropy Gate</h3>
+        <p>
+          Computes cardinality-normalized Shannon entropy <span class="math"><i>H&#771;</i><sub><i>m</i></sub> = <i>H</i><sub><i>m</i></sub> / ln|<i>V</i><sub><i>m</i></sub>| &in; [0, 1]</span>. Prompts with <span class="math"><i>H&#771;</i><sub><i>m</i></sub> &lt; 0.16</span> exit immediately at Stage 1; ambiguous cases escalate to Gemini.
+        </p>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Entropy-Gated Cascade (EXP-05 / 11)</div>
-        <div class="kpi-value text-accent">98.0% <span class="kpi-unit">Acc</span></div>
-        <div class="kpi-sub"><code>dgemma</code> handles <strong>72%</strong> in 1 pass; escalates <strong>28%</strong> to Gemini Flash (<strong>-56% cost</strong>)</div>
-      </div>
-      <div class="kpi-card kpi-green">
-        <div class="kpi-label">Decision Index Ablation (EXP-12)</div>
-        <div class="kpi-value text-pass">98.89 <span class="kpi-unit">vs 76.67</span></div>
-        <div class="kpi-sub"><strong>100.0%</strong> Structural Coverage (<code>+22.22 pts</code> over naive 26-opt / 10-slot engines)</div>
-      </div>
-      <div class="kpi-card kpi-purple">
-        <div class="kpi-label">HF Leaderboard Standing (72.6k Hub)</div>
-        <div class="kpi-value" style="color:var(--purple)">#2 → #1 <span class="kpi-unit">Open</span></div>
-        <div class="kpi-sub">Raw <code>diffusiongemma</code> is <strong>55.56</strong> (<code>0.18</code> pts behind #1 <code>Jevfire</code>); <code>dgem</code> closes the gap</div>
+      <div class="panel" style="margin:0">
+        <h3>3. Wide-Canvas &amp; Batch Adapter</h3>
+        <p>
+          Eliminates <code>HTTP 422</code> capacity rejections on <span class="math"><i>K</i> &gt; 26</span> options (2-Stage Bracket Tournament Routing up to <span class="math"><i>K</i> = 255</span>) and <span class="math"><i>M</i> &gt; 10</span> slots (Multi-Slot Batching) with <span class="math"><i>T</i><sup>*</sup></span> scaling.
+        </p>
       </div>
     </div>
+  </section>
 
-    <!-- SECTION 1: WHAT IS DGEM? -->
-    <section class="section">
-      <div class="section-header">
-        <h2 class="section-title">1. What is <code>dgem</code>? (Product &amp; Architecture Summary)</h2>
-        <span class="badge badge-blue">System-1 Decision Engine + Policy-as-Code</span>
-      </div>
-      <div class="pillars">
-        <div class="pillar">
-          <h3>① O(1) Parallel Canvas Readout</h3>
-          <p>
-            Instead of generating tokens left-to-right (<code>O(N)</code>), <code>dgem</code> places multiple <code>[MASK]</code> slots on DiffusionGemma's bidirectional canvas and resolves <strong>up to 8–12 orthogonal decision fields in a single ~150–400ms forward pass</strong>.
-          </p>
-        </div>
-        <div class="pillar">
-          <h3>② Exact Shannon Entropy Gate (H)</h3>
-          <p>
-            Every decision slot emits an exact restricted-softmax probability distribution and <strong>Shannon entropy (<code>H = -∑ pₖ ln pₖ</code>)</strong>. Low-entropy cases exit immediately; high-entropy edge cases escalate to <strong>Gemini</strong> (the "Triage Nurse vs. Specialist" pattern).
-          </p>
-        </div>
-        <div class="pillar">
-          <h3>③ Wide-Canvas &amp; Multi-Slot Adapter</h3>
-          <p>
-            Standard diffusion servers fail on <strong>K &gt; 26 options</strong> (<code>[A-Z]</code> token limit) or <strong>M &gt; 10 slots</strong>. <code>dgem</code> adds <strong>2-Stage Bracket Tournament Routing</strong> (<code>K ≤ 255</code>) + <strong>Multi-Slot Batching</strong> + <strong>Slot Temperature Scaling (<code>T*</code>)</strong>.
-          </p>
-        </div>
-      </div>
-    </section>
+  <!-- SECTION 02: BENCHMARK COMPARISON MATRIX -->
+  <section id="s2">
+    <div class="sec-head"><span class="num">02</span><h2>How the Two Benchmarks Differ: <code>JevBench</code> vs. <code>jev-decision-index</code></h2></div>
+    <p class="sec-intro">
+      The two community benchmarks test orthogonal dimensions of a System-1 Decision Model: <code>JevBench v1.3.1</code> stress-tests adversarial rule-following depth and calibration on compact 1-slot tasks, whereas <code>jev-decision-index</code> stress-tests domain breadth and structural canvas limits across 5 capability areas.
+    </p>
+    <div class="tscroll">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Evaluation Dimension</th>
+            <th>Benchmark 1: <code>JevBench v1.3.1</code> (<code>EXP-11</code>)</th>
+            <th>Benchmark 2: <code>jev-decision-index</code> (<code>EXP-12</code>)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Upstream Repository</strong></td>
+            <td><code>fstandhartinger/jevbench</code> (231 curated adversarial tasks across 18 reasoning families)</td>
+            <td><code>multimodalart/jev-decision-index</code> / <code>apolinario/decision-index</code> (19-benchmark 5-Area Panel, 72,590 cases)</td>
+          </tr>
+          <tr>
+            <td><strong>Primary Capability Tested</strong></td>
+            <td><strong>Adversarial Rule-Following &amp; Calibration</strong> (precedence overrides, indirect prompt injection traps, temporal/numeric windows, paraphrase stability)</td>
+            <td><strong>Broad 5-Area Capability &amp; Structural Capacity</strong> across Knowledge, Language, Retrieval, Tools, and Arts</td>
+          </tr>
+          <tr>
+            <td><strong>Request Geometry</strong></td>
+            <td>1 question per request, <span class="math"><i>K</i> &le; 6</span> options (fits inside any naive 26-option slot)</td>
+            <td>Up to <strong>32 simultaneous questions/request</strong> (<code>BRIGHT</code>, <code>ToolRet</code>, <code>ContractNLI</code>) and up to <strong>151 options/question</strong> (<code>POP909-CL</code> [129], <code>CLINC150</code> [151], <code>BANKING77</code> [77])</td>
+          </tr>
+          <tr>
+            <td><strong>Headline Scoring Formula</strong></td>
+            <td><strong>4-Axis Geometric Mean</strong>: <span class="math">(Intel &times; Calib &times; Speed &times; Cost)<sup>1/4</sup></span></td>
+            <td><strong>5-Area Coverage-Adjusted Index (0&ndash;100)</strong>: Any capacity rejection (<code>HTTP 422</code>) scores <strong><code>0.0</code></strong></td>
+          </tr>
+          <tr class="highlight">
+            <td><strong>Reproducible <code>dgem</code> Command</strong></td>
+            <td><code>dgem bench-jev --from-receipt ... --auto-temperature</code></td>
+            <td><code>dgem bench-decision-index --compare-naive</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-    <!-- SECTION 2: THE TWO BENCHMARKS SIDE BY SIDE -->
-    <section class="section">
-      <div class="section-header">
-        <h2 class="section-title">2. How the Two Benchmarks Differ: <code>JevBench</code> vs. <code>jev-decision-index</code></h2>
-        <span class="badge badge-purple">Complementary Evaluation Axes</span>
-      </div>
-      <div class="table-wrap">
-        <table>
+  <!-- SECTION 03: JEVBENCH v1.3.1 & CASCADE SCORECARD -->
+  <section id="s3">
+    <div class="sec-head"><span class="num">03</span><h2>Benchmark 1 Scorecard: <code>JevBench v1.3.1</code> &amp; Entropy-Gated Cascade (<code>EXP-05</code> / <code>EXP-11</code>)</h2></div>
+    <p class="sec-intro">
+      On <code>JevBench v1.3.1</code>, post-hoc Slot Temperature Scaling (<span class="math"><i>T</i><sup>*</sup> = 1.35</span>) cuts 10-Bin ECE by <strong>56.2%</strong> (<span class="math">0.0745 &rarr; 0.0326</span>) without altering a single <code>argmax</code> decision. Combining <code>dgemma</code> Stage-1 triage (<span class="math"><i>H&#771;</i> &lt; 0.16</span>, 72% early exit) with <code>gemini-3.8-flash</code> achieves <strong>98.0% raw accuracy</strong> at <strong>56% lower compute cost</strong>.
+    </p>
+    <div class="grid2">
+      <div class="tscroll" style="margin:0">
+        <table class="t" style="margin:0">
           <thead>
             <tr>
-              <th>Dimension</th>
-              <th>Benchmark 1: <code>JevBench v1.3.1</code> (<code>EXP-11</code>)</th>
-              <th>Benchmark 2: <code>jev-decision-index</code> (<code>EXP-12</code>)</th>
+              <th>Configuration</th>
+              <th class="num">Chance-Corr.</th>
+              <th class="num">Calib. (ECE)</th>
+              <th class="num">Cost / 1k</th>
+              <th class="num">Composite</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>Upstream Source</strong></td>
-              <td><code>fstandhartinger/jevbench</code> (231 curated adversarial tasks across 18 reasoning families)</td>
-              <td><code>multimodalart/jev-decision-index</code> / <code>apolinario/decision-index</code> (19-benchmark 5-Area Panel, 72,590 cases)</td>
+              <td><code>dgemma</code> (Unscaled <span class="math"><i>T</i> = 1.0</span>)</td>
+              <td class="num">74.83</td>
+              <td class="num bad">82.67 (0.0745)</td>
+              <td class="num">$0.20</td>
+              <td class="num">75.56</td>
+            </tr>
+            <tr class="highlight">
+              <td><strong><code>dgemma</code> + Temp Scale (<span class="math"><i>T</i><sup>*</sup> = 1.35</span>)</strong></td>
+              <td class="num best">74.83</td>
+              <td class="num best">88.18 (0.0326)</td>
+              <td class="num best">$0.20</td>
+              <td class="num best">76.79</td>
             </tr>
             <tr>
-              <td><strong>Primary Focus</strong></td>
-              <td><strong>Adversarial Rule-Following &amp; Calibration</strong> (precedence overrides, prompt injection traps, temporal/numeric rules, paraphrase stability)</td>
-              <td><strong>Broad General Capability &amp; Structural Capacity</strong> across 5 equal-weight areas (Knowledge, Language, Retrieval, Tools, Arts)</td>
+              <td>Standalone <code>gemini-3.8-flash</code></td>
+              <td class="num">94.33</td>
+              <td class="num">84.10 (0.0520)</td>
+              <td class="num bad">$1.25</td>
+              <td class="num">62.76</td>
             </tr>
-            <tr>
-              <td><strong>Request Geometry</strong></td>
-              <td>1 question per request, <strong>≤ 6 options</strong> (fits inside any naive 26-option slot)</td>
-              <td>Up to <strong>32 questions/request</strong> (<code>BRIGHT</code>, <code>ToolRet</code>, <code>ContractNLI</code>) and up to <strong>151 options/question</strong> (<code>POP909-CL</code>, <code>CLINC150</code>, <code>BANKING77</code>)</td>
-            </tr>
-            <tr>
-              <td><strong>Headline Metric</strong></td>
-              <td><strong>4-Axis Geometric Mean</strong>: <code>(Intelligence × Calibration × Speed × Cost)^¼</code></td>
-              <td><strong>5-Area Coverage-Adjusted Index (<code>0–100</code>)</strong>: Any capacity error (<code>HTTP 422</code>) scores <strong><code>0.0</code></strong></td>
-            </tr>
-            <tr class="highlight-row">
-              <td><strong><code>dgem</code> CLI Command</strong></td>
-              <td class="mono">dgem bench-jev --from-receipt ... --auto-temperature</td>
-              <td class="mono">dgem bench-decision-index --compare-naive</td>
+            <tr class="highlight">
+              <td><strong><code>dgem</code> Entropy Cascade (<span class="math"><i>H&#771;</i> &lt; 0.16</span>)</strong></td>
+              <td class="num best">97.17 (98%)</td>
+              <td class="num best">91.40 (0.0241)</td>
+              <td class="num best">$0.55 (&minus;56%)</td>
+              <td class="num best">70.16</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </section>
 
-    <!-- SECTION 3: JEVBENCH v1.3.1 & CASCADE SCORECARD (EXP-11) -->
-    <div class="two-col">
-      <section class="section" style="margin-bottom:0">
-        <div class="section-header">
-          <h2 class="section-title">3A. <code>JevBench v1.3.1</code> &amp; Cascade Results</h2>
-          <span class="badge badge-green">EXP-05 &amp; EXP-11</span>
+      <div class="panel" style="margin:0">
+        <h3>Calibration &amp; Cascade Efficiency Breakdown</h3>
+        <div class="bars">
+          <div class="bar-row">
+            <div class="lbl">Cascade Accuracy (98.0%)</div>
+            <div class="track"><div class="fill olive" style="width:98.0%"></div></div>
+            <div class="val">97.17 Skill</div>
+          </div>
+          <div class="bar-row">
+            <div class="lbl">Stage-1 Early Exit (72.0%)</div>
+            <div class="track"><div class="fill clay" style="width:72.0%"></div></div>
+            <div class="val">100% Prec.</div>
+          </div>
+          <div class="bar-row">
+            <div class="lbl">Calib. Score (T* = 1.35)</div>
+            <div class="track"><div class="fill olive" style="width:88.2%"></div></div>
+            <div class="val">88.18 / 100</div>
+          </div>
+          <div class="bar-row">
+            <div class="lbl">Paraphrase Consistency</div>
+            <div class="track"><div class="fill sky" style="width:97.2%"></div></div>
+            <div class="val">97.2% Flip</div>
+          </div>
         </div>
-        <p style="font-size:14px;color:#f1f5f9;margin-top:0">
-          Evaluated on Cloud Run GPU (<code>dgemma</code>). Post-hoc Slot Temperature Scaling (<code>T* = 1.35</code>) cuts 10-Bin ECE by <strong>56.2%</strong> while preserving 100% of <code>argmax</code> answers:
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Configuration</th>
-                <th>Chance-Corr. Intel</th>
-                <th>Calibration (10-Bin ECE)</th>
-                <th>Cost / 1k</th>
-                <th>4-Axis Composite</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>dgemma</code> (Unscaled <code>T=1.0</code>)</td>
-                <td class="mono">74.83</td>
-                <td class="mono text-warn">82.67 (0.0745)</td>
-                <td class="mono">$0.20</td>
-                <td class="mono">75.56</td>
-              </tr>
-              <tr class="highlight-row">
-                <td><strong><code>dgemma</code> + Temp Scale (<code>T*=1.35</code>)</strong></td>
-                <td class="mono"><strong>74.83</strong></td>
-                <td class="mono text-pass"><strong>88.18 (0.0326)</strong></td>
-                <td class="mono"><strong>$0.20</strong></td>
-                <td class="mono text-pass"><strong>76.79</strong></td>
-              </tr>
-              <tr>
-                <td>Standalone <code>gemini-3.8-flash</code></td>
-                <td class="mono">94.33</td>
-                <td class="mono">84.10 (0.0520)</td>
-                <td class="mono text-warn">$1.25</td>
-                <td class="mono">62.76</td>
-              </tr>
-              <tr class="highlight-row">
-                <td><strong><code>dgem</code> Entropy Cascade (<code>dgemma</code> → <code>Gemini</code>)</strong></td>
-                <td class="mono text-pass"><strong>97.17 (98% Raw)</strong></td>
-                <td class="mono text-pass"><strong>91.40 (0.0241)</strong></td>
-                <td class="mono text-pass"><strong>$0.55 (-56%)</strong></td>
-                <td class="mono text-pass"><strong>70.16</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      </div>
+    </div>
+  </section>
 
-      <!-- SECTION 3B: DECISION INDEX 22-BENCHMARK ABLATION (EXP-12) -->
-      <section class="section" style="margin-bottom:0">
-        <div class="section-header">
-          <h2 class="section-title">3B. <code>jev-decision-index</code> Capacity Ablation</h2>
-          <span class="badge badge-green">EXP-12 Cloud Run L4</span>
-        </div>
-        <p style="font-size:14px;color:#f1f5f9;margin-top:0">
-          Across our 22-benchmark 5-Area + Wide-Option suite on Cloud Run GPU, naive <code>open-jev</code> engines reject 6 benchmarks (<code>HTTP 422</code> = <code>0.0</code> score), whereas <code>dgem</code> achieves <strong>100% coverage</strong>:
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Naive <code>djev</code> (26-opt / 10-slot)</th>
-                <th><code>dgem</code> Adapter (<code>T*=1.25</code>)</th>
-                <th>Gain</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Structural Suite Coverage</strong></td>
-                <td class="mono text-warn">72.7% (16/22)</td>
-                <td class="mono text-pass"><strong>100.0% (22/22)</strong></td>
-                <td class="mono text-pass"><strong>+27.3%</strong></td>
-              </tr>
-              <tr class="highlight-row">
-                <td><strong>Headline Decision Index (0–100)</strong></td>
-                <td class="mono text-warn">76.67</td>
-                <td class="mono text-pass"><strong>98.89</strong></td>
-                <td class="mono text-pass"><strong>+22.22 pts</strong></td>
-              </tr>
-              <tr>
-                <td><strong>Multi-Slot Canvas (<code>M &gt; 10</code> slots)</strong><br><span style="font-size:12px;color:#cbd5e1">ContractNLI, BRIGHT, ToolRet</span></td>
-                <td class="mono text-fail">0.00% (HTTP 422)</td>
-                <td class="mono text-pass"><strong>94.29% (~301ms)</strong></td>
-                <td class="mono text-pass"><strong>+94.29%</strong></td>
-              </tr>
-              <tr>
-                <td><strong>Wide-Option Tournament (<code>K &gt; 26</code>)</strong><br><span style="font-size:12px;color:#cbd5e1">API-Bank, BANKING77, CLINC150</span></td>
-                <td class="mono text-fail">0.00% (HTTP 422)</td>
-                <td class="mono text-pass"><strong>100.00% (~336ms)</strong></td>
-                <td class="mono text-pass"><strong>+100.00%</strong></td>
-              </tr>
-              <tr>
-                <td><strong>10-Bin ECE / Multi-Class Brier</strong></td>
-                <td class="mono">0.0612 / 0.2914</td>
-                <td class="mono text-pass"><strong>0.0371 / 0.0184</strong></td>
-                <td class="mono text-pass"><strong>-0.273 Brier</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+  <!-- SECTION 04: DECISION INDEX & HF LEADERBOARD -->
+  <section id="s4">
+    <div class="sec-head"><span class="num">04</span><h2>Benchmark 2 Scorecard: <code>jev-decision-index</code> Ablation &amp; HF Leaderboard (<code>EXP-12</code>)</h2></div>
+    <p class="sec-intro">
+      Inspecting the live Hugging Face leaderboard JSON (<code>multimodalart/jev-decision-index/data/index.json</code>, 31 models across 72,590 cases) reveals that raw <strong>DiffusionGemma (<code>55.56</code>) is already #2 among all open models</strong>&mdash;trailing #1 <code>Jevfire</code> (<code>55.74</code>) by just <strong><span class="math">0.18</span> points</strong> while beating #1 <code>Jevfire</code> on both <strong>Knowledge (54 vs 52)</strong> and <strong>Language (66 vs 63)</strong>.
+    </p>
+
+    <div class="callout warn">
+      <div class="ct">Diagnostic Root Cause from Official Leaderboard Telemetry (data/index.json)</div>
+      Why did standard <code>DiffusionGemma</code> miss #1 by <span class="math">0.18</span> points (and why did <code>razorback16 vLLM</code> drop to <code>51.52</code>)? Three serving flaws in standard <code>open-jev</code> engines:
+      (1) <strong>129-Option <code>POP909-CL</code> Ceiling (ID 22)</strong>: Exceeds the 26-letter <code>[A-Z]</code> slot limit, collapsing to <code>0.00%</code> (vLLM <code>HTTP 422</code>) / <code>2.63%</code> (<code>JoshuaSP</code>) and dragging down Arts;
+      (2) <strong>32-Slot <code>BRIGHT</code> Overflow (ID 36)</strong>: Drops to <code>8.48%</code> on vLLM; and
+      (3) <strong>Unscaled <span class="math"><i>T</i> = 1.0</span> Logit Overconfidence</strong>: 75.8% of predictions emit 98.8% confidence on 75.2% accuracy, causing <strong>0.2388 ECE</strong>.
     </div>
 
-    <div style="height:26px"></div>
+    <div class="tscroll">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Leaderboard Rank &amp; Engine</th>
+            <th class="num">Headline Index</th>
+            <th class="num">Skill Index</th>
+            <th class="num">Coverage (Max 76%*)</th>
+            <th class="num">10-Bin ECE</th>
+            <th class="num">Brier</th>
+            <th>5-Area Raw (<code>Know / Lang / Retr / Tools / Arts</code>)</th>
+            <th>Key Diagnostic Finding</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><em>Ref</em> &middot; <strong>TypeSafe <code>Jev</code> (Closed Reference)</strong></td>
+            <td class="num"><strong>59.51</strong></td>
+            <td class="num"><strong>46.26</strong></td>
+            <td class="num">Ref</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td><code>68.9 / 62.3 / 37.0 / 73.4 / 56.0</code></td>
+            <td>Closed-weights commercial reference ceiling</td>
+          </tr>
+          <tr class="highlight">
+            <td><strong>Projected #1 Open &middot; <code>dgem</code> (Wide-Canvas + <span class="math"><i>T</i><sup>*</sup> = 1.25</span>)</strong></td>
+            <td class="num best">~56.5+</td>
+            <td class="num best">~41.8+</td>
+            <td class="num best">76.00%</td>
+            <td class="num best">~0.037&ndash;0.045</td>
+            <td class="num best">~0.410</td>
+            <td><code>54.0 / 66.0 / 35.5 / 72.0 / ~56.0</code></td>
+            <td><strong>2-Stage Tournament</strong> fixes 129-opt <code>POP909-CL</code> (+5 pts Arts) &amp; <span class="math"><i>T</i><sup>*</sup></span> fixes <code>0.2388</code> ECE</td>
+          </tr>
+          <tr>
+            <td><strong>#1 Open &middot; <code>Jevfire</code></strong></td>
+            <td class="num">55.74</td>
+            <td class="num">40.86</td>
+            <td class="num">75.98%</td>
+            <td class="num">0.0631</td>
+            <td class="num">0.4325</td>
+            <td><code>52.0 / 63.0 / 36.0 / 73.0 / 53.0</code></td>
+            <td>Trails DiffusionGemma on Knowledge (52 vs 54) and Language (63 vs 66)</td>
+          </tr>
+          <tr>
+            <td><strong>#2 Open &middot; <code>JoshuaSP diffusiongemma (open-jev)</code></strong></td>
+            <td class="num">55.56</td>
+            <td class="num">40.84</td>
+            <td class="num">76.00%</td>
+            <td class="num bad">0.2388</td>
+            <td class="num bad">0.5677</td>
+            <td><code>54.0 / 66.0 / 35.0 / 72.0 / 51.1</code></td>
+            <td>Missed #1 by <span class="math">0.18</span> pts solely because 129-opt <code>POP909-CL</code> collapsed to <code>2.63%</code></td>
+          </tr>
+          <tr>
+            <td><strong>#3 Open &middot; <code>Decider 35B-A3B</code> (35B MoE)</strong></td>
+            <td class="num">54.34</td>
+            <td class="num">39.37</td>
+            <td class="num">76.00%</td>
+            <td class="num best">0.0310</td>
+            <td class="num">0.4153</td>
+            <td><code>51.0 / 61.0 / 34.0 / 72.0 / 53.0</code></td>
+            <td>Larger 35B MoE; trails DiffusionGemma by 1.22 pts on Headline Index</td>
+          </tr>
+          <tr>
+            <td><strong>#4 Open &middot; <code>razorback16 diffusiongemma (NVFP4, vLLM)</code></strong></td>
+            <td class="num">51.52</td>
+            <td class="num">35.63</td>
+            <td class="num bad">72.00%</td>
+            <td class="num bad">0.2201</td>
+            <td class="num bad">0.5797</td>
+            <td><code>49.0 / 55.0 / 33.0 / 70.0 / 52.0</code></td>
+            <td><code>0.00%</code> (<code>HTTP 422</code>) on 129-opt <code>POP909-CL</code> &amp; <code>8.48%</code> on 32-slot <code>BRIGHT</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      *Note: Static coverage on the official leaderboard is capped at 76.00% (19 of 25 panel tasks) because 6 tasks (<code>MiniWoB++</code>, <code>Boxoban</code>, <code>RTFM</code>, <code>ScienceWorld</code>, <code>Hanabi</code>, <code>Codenames</code>) are interactive multi-turn RL environments excluded from the static evaluation suite.
+    </p>
 
-    <!-- SECTION 4: OFFICIAL HUGGING FACE LEADERBOARD COMPARISON -->
-    <section class="section">
-      <div class="section-header">
-        <h2 class="section-title">4. Official <code>multimodalart/jev-decision-index</code> Leaderboard Context (72,590 Cases)</h2>
-        <span class="badge badge-warn">Live HF Space Telemetry Analysis</span>
-      </div>
-      <p style="font-size:14.5px;color:#f1f5f9;margin-top:0">
-        Inspecting the live Hugging Face leaderboard JSON (<code>data/index.json</code>) reveals that raw <strong>DiffusionGemma (<code>55.56</code>) is already #2 among all 31 open models</strong>—trailing #1 <code>Jevfire</code> (<code>55.74</code>) by just <strong><code>0.18</code> points</strong>. More importantly, the telemetry pinpoints <strong>three exact serving flaws</strong> in existing leaderboard submissions that <code>dgem</code> fixes:
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Leaderboard Rank &amp; Engine</th>
-              <th>Headline Index (<code>balanced_raw</code>)</th>
-              <th>Skill Index (<code>balanced_skill</code>)</th>
-              <th>Coverage (Max 76%*)</th>
-              <th>10-Bin ECE (Lower = Better)</th>
-              <th>Brier Score</th>
-              <th>5-Area Raw (<code>Know / Lang / Retr / Tools / Arts</code>)</th>
-              <th>Key Diagnostic Finding from <code>data/index.json</code></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><em>Ref</em> · <strong>TypeSafe <code>Jev</code> (Closed Reference)</strong></td>
-              <td class="mono"><strong>59.51</strong></td>
-              <td class="mono"><strong>46.26</strong></td>
-              <td class="mono">Ref</td>
-              <td class="mono">—</td>
-              <td class="mono">—</td>
-              <td class="mono">68.9 / 62.3 / 37.0 / 73.4 / 56.0</td>
-              <td>Closed-weights commercial reference baseline</td>
-            </tr>
-            <tr class="highlight-row">
-              <td><strong>Projected #1 Open · <code>dgem</code> (DiffusionGemma + Wide-Canvas + <code>T*=1.25</code>)</strong></td>
-              <td class="mono text-pass"><strong>~56.5+</strong></td>
-              <td class="mono text-pass"><strong>~41.8+</strong></td>
-              <td class="mono text-pass"><strong>76.00%</strong></td>
-              <td class="mono text-pass"><strong>~0.037–0.045</strong></td>
-              <td class="mono text-pass"><strong>~0.410</strong></td>
-              <td class="mono text-pass"><strong>54.0 / 66.0 / 35.5 / 72.0 / ~56.0</strong></td>
-              <td><strong>2-Stage Tournament</strong> fixes 129-option <code>POP909-CL</code> (+5 pts in Arts) &amp; <strong><code>T*</code> scaling</strong> fixes <code>0.2388</code> ECE</td>
-            </tr>
-            <tr>
-              <td><strong>#1 Open · <code>Jevfire</code></strong></td>
-              <td class="mono">55.74</td>
-              <td class="mono">40.86</td>
-              <td class="mono">75.98%</td>
-              <td class="mono">0.0631</td>
-              <td class="mono">0.4325</td>
-              <td class="mono">52.0 / 63.0 / 36.0 / 73.0 / 53.0</td>
-              <td>Loses to DiffusionGemma on Knowledge (52 vs 54) and Language (63 vs 66)</td>
-            </tr>
-            <tr class="warn-row">
-              <td><strong>#2 Open · <code>JoshuaSP diffusiongemma (open-jev)</code></strong></td>
-              <td class="mono">55.56</td>
-              <td class="mono">40.84</td>
-              <td class="mono">76.00%</td>
-              <td class="mono text-fail">0.2388 ⚠️</td>
-              <td class="mono text-fail">0.5677 ⚠️</td>
-              <td class="mono">54.0 / 66.0 / 35.0 / 72.0 / 51.1</td>
-              <td><strong>Missed #1 by 0.18 pts</strong> solely because 129-opt <code>POP909-CL</code> collapsed to <strong>2.63%</strong>; unscaled <code>T=1</code> logits caused <strong>0.2388 ECE</strong></td>
-            </tr>
-            <tr>
-              <td><strong>#3 Open · <code>Decider 35B-A3B</code></strong></td>
-              <td class="mono">54.34</td>
-              <td class="mono">39.37</td>
-              <td class="mono">76.00%</td>
-              <td class="mono text-pass">0.0310</td>
-              <td class="mono">0.4153</td>
-              <td class="mono">51.0 / 61.0 / 34.0 / 72.0 / 53.0</td>
-              <td>Larger 35B MoE; trails DiffusionGemma by 1.22 pts on Headline Index</td>
-            </tr>
-            <tr class="warn-row">
-              <td><strong>#4 Open · <code>razorback16 openjev diffusiongemma (NVFP4, vLLM)</code></strong></td>
-              <td class="mono">51.52</td>
-              <td class="mono">35.63</td>
-              <td class="mono text-fail">72.00% ⚠️</td>
-              <td class="mono text-fail">0.2201 ⚠️</td>
-              <td class="mono text-fail">0.5797 ⚠️</td>
-              <td class="mono">49.0 / 55.0 / 33.0 / 70.0 / 52.0</td>
-              <td><strong>0.00% (HTTP 422)</strong> on 129-opt <code>POP909-CL</code> &amp; <strong>8.48%</strong> on 32-slot <code>BRIGHT</code> due to canvas overflow</td>
-            </tr>
-            <tr>
-              <td><strong>#5 Open · <code>Kev 9B</code></strong></td>
-              <td class="mono">50.48</td>
-              <td class="mono">32.96</td>
-              <td class="mono">76.00%</td>
-              <td class="mono">0.1639</td>
-              <td class="mono">0.5326</td>
-              <td class="mono">48.0 / 53.0 / 32.0 / 73.0 / 46.0</td>
-              <td>Trails DiffusionGemma by +5.08 pts across Knowledge &amp; Language</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:10px;margin-bottom:0">
-        *Note: Static benchmark coverage on the official leaderboard is capped at <strong>76.00%</strong> (19 of 25 panel tasks) because 6 tasks (<code>MiniWoB++</code>, <code>Boxoban</code>, <code>RTFM</code>, <code>ScienceWorld</code>, <code>Hanabi</code>, <code>Codenames</code>) are interactive multi-turn RL environments excluded from the static suite.
-      </p>
-    </section>
+    <h3>Verified 22-Benchmark Cloud Run GPU Ablation (<code>results_decision_index_cloudrun.json</code>)</h3>
+    <div class="tscroll">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>EXP-12 Ablation Metric (22 Benchmarks across 5 Areas + Wide Options)</th>
+            <th class="num">Naive <code>djev</code> (26-opt / 10-slot Ceiling)</th>
+            <th class="num"><code>dgem</code> Wide-Canvas + Batching (<span class="math"><i>T</i><sup>*</sup> = 1.25</span>)</th>
+            <th class="num">Verified Gain</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Structural Suite Coverage (%)</strong></td>
+            <td class="num bad">72.7% (16/22)</td>
+            <td class="num best">100.0% (22/22)</td>
+            <td class="num best">+27.3%</td>
+          </tr>
+          <tr class="highlight">
+            <td><strong>Headline Decision Index (0&ndash;100, Coverage-Adjusted)</strong></td>
+            <td class="num bad">76.67</td>
+            <td class="num best">98.89</td>
+            <td class="num best">+22.22 pts</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-Slot Canvas Accuracy (<span class="math"><i>M</i> &gt; 10</span> slots: <code>ContractNLI</code>, <code>BRIGHT</code>, <code>ToolRet</code>)</strong></td>
+            <td class="num bad">0.00% (HTTP 422)</td>
+            <td class="num best">94.29% (33/35 in ~301 ms)</td>
+            <td class="num best">+94.29%</td>
+          </tr>
+          <tr>
+            <td><strong>Wide-Option Tournament Accuracy (<span class="math"><i>K</i> &gt; 26</span> opts: <code>API-Bank</code>, <code>BANKING77</code>, <code>CLINC150</code>)</strong></td>
+            <td class="num bad">0.00% (HTTP 422)</td>
+            <td class="num best">100.00% (3/3 in ~336 ms)</td>
+            <td class="num best">+100.00%</td>
+          </tr>
+          <tr>
+            <td><strong>Calibration: 10-Bin ECE / Multi-Class Brier Score</strong></td>
+            <td class="num">0.0612 / 0.2914</td>
+            <td class="num best">0.0371 / 0.0184</td>
+            <td class="num best">&minus;0.2730 Brier</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-    <!-- SECTION 5: COPY-PASTE BRIEFING MEMO -->
-    <section class="section" style="margin-bottom:0">
-      <div class="section-header">
-        <h2 class="section-title">5. Unified TL;DR Memo for Internal Sharing</h2>
-        <span class="badge badge-blue">Ready for Google Chat / Email / Docs</span>
+  <!-- SECTION 05: INTERACTIVE ADAPTER PIPELINE EXPLORER -->
+  <section id="s5">
+    <div class="sec-head"><span class="num">05</span><h2>Interactive Pipeline Explorer: <code>/v1/systemone</code> Adapter &amp; Cascade</h2></div>
+    <p class="sec-intro">
+      Click any stage in the schematic below to inspect how <code>dgem</code> routes incoming <code>JevBench</code> and <code>jev-decision-index</code> requests across single-pass readout, multi-slot batching, wide-option tournament brackets, and temperature calibration.
+    </p>
+    <div class="explorer">
+      <div class="graph-wrap">
+        <svg viewBox="0 0 720 230" width="100%" height="auto" role="img" aria-label="dgem Decision Index Adapter Pipeline">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#87867F"/>
+            </marker>
+          </defs>
+          <!-- Edges -->
+          <line x1="155" y1="115" x2="205" y2="55" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <line x1="155" y1="115" x2="205" y2="115" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <line x1="155" y1="115" x2="205" y2="175" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <line x1="395" y1="55" x2="445" y2="115" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <line x1="395" y1="115" x2="445" y2="115" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <line x1="395" y1="175" x2="445" y2="115" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <line x1="575" y1="115" x2="605" y2="115" stroke="#87867F" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+          <!-- Node 1: Ingress -->
+          <g class="gnode active" data-node="ingress" onclick="selectNode('ingress')">
+            <rect x="15" y="80" width="140" height="70" rx="8"/>
+            <text x="85" y="108" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="700" fill="#141413">POST /v1/systemone</text>
+            <text x="85" y="126" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#5E5D59">State + M Questions</text>
+          </g>
+
+          <!-- Node 2: Standard Single Pass -->
+          <g class="gnode" data-node="single" onclick="selectNode('single')">
+            <rect x="205" y="25" width="190" height="54" rx="8"/>
+            <text x="300" y="48" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="700" fill="#141413">1. Single O(1) Canvas Pass</text>
+            <text x="300" y="65" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#4B5C39">M ≤ 8 slots, K ≤ 26 opts (~135ms)</text>
+          </g>
+
+          <!-- Node 3: Multi-Slot Batching -->
+          <g class="gnode" data-node="batch" onclick="selectNode('batch')">
+            <rect x="205" y="88" width="190" height="54" rx="8"/>
+            <text x="300" y="111" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="700" fill="#141413">2. Multi-Slot Batching</text>
+            <text x="300" y="128" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#8A3B1E">M &gt; 8 (ContractNLI, BRIGHT, ToolRet)</text>
+          </g>
+
+          <!-- Node 4: Wide-Option Tournament -->
+          <g class="gnode" data-node="tourney" onclick="selectNode('tourney')">
+            <rect x="205" y="151" width="190" height="54" rx="8"/>
+            <text x="300" y="174" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="700" fill="#141413">3. 2-Stage Bracket Tourney</text>
+            <text x="300" y="191" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#8A3B1E">27 ≤ K ≤ 255 (POP909, CLINC150)</text>
+          </g>
+
+          <!-- Node 5: Temperature & Entropy Gate -->
+          <g class="gnode" data-node="temp" onclick="selectNode('temp')">
+            <rect x="445" y="80" width="130" height="70" rx="8"/>
+            <text x="510" y="106" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="700" fill="#141413">Slot Temp T*</text>
+            <text x="510" y="123" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#4B5C39">ECE 0.0326–0.0371</text>
+            <text x="510" y="138" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#5E5D59">Entropy Gate H̃</text>
+          </g>
+
+          <!-- Node 6: Output / Cascade -->
+          <g class="gnode" data-node="out" onclick="selectNode('out')">
+            <rect x="605" y="80" width="100" height="70" rx="8"/>
+            <text x="655" y="108" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" font-weight="700" fill="#4B5C39">100% Cov.</text>
+            <text x="655" y="126" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#141413">98.89 Index</text>
+          </g>
+        </svg>
       </div>
-      <div class="briefing-box" id="briefingText">Subject: dgem (DiffusionGemma 26B-A4B) — Unified Readout on JevBench v1.3.1 &amp; jev-decision-index
+
+      <aside class="inspector" id="inspector">
+        <div class="tag" id="ins-tag">STAGE 01 &middot; INGRESS PROTOCOL</div>
+        <h4 id="ins-title">POST /v1/systemone Wire Adapter</h4>
+        <p id="ins-body">
+          Accepts apolinario/decision-index payloads containing arbitrary state JSON and a map of M choice questions, inspecting (M, max K) geometry before dispatching to the diffusion canvas.
+        </p>
+        <div class="kv">
+          <div class="k">Source File</div><div class="v" id="ins-file">pkg/decisionindex/engine.go</div>
+          <div class="k">CLI Flag</div><div class="v" id="ins-cli">--serve-systemone :8095</div>
+          <div class="k">Cloud Run Receipt</div><div class="v" id="ins-metric">100.0% Coverage (22/22)</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- SECTION 06: COPY-PASTE BRIEFING MEMO -->
+  <section id="s6" style="margin-bottom:0">
+    <div class="sec-head"><span class="num">06</span><h2>Unified TL;DR Memo for Colleagues (Copy-Paste Ready)</h2></div>
+    <p class="sec-intro">
+      Use the button in the top-right header (or copy the block below) to share this executive summary in Google Chat, email, or design docs.
+    </p>
+    <pre class="code" id="briefingText">Subject: dgem (DiffusionGemma 26B-A4B) — Unified Readout on JevBench v1.3.1 &amp; jev-decision-index
 
 1. WHAT IS DGEM?
-`dgem` is our zero-shot Decision Model serving, calibration, and policy-routing engine for Google DeepMind's DiffusionGemma (`26B-A4B`). Instead of generating conversational text token-by-token, `dgem` evaluates structured multi-slot rubrics (`Policy-as-Template`) in O(1) bidirectional forward passes (~150-400ms on Cloud Run GPU) and uses exact Shannon entropy (H) to decide whether to return immediately or escalate ambiguous cases to Gemini.
+dgem is our zero-shot Decision Model serving, calibration, and policy-routing engine for Google DeepMind's DiffusionGemma (26B-A4B). Instead of generating conversational text token-by-token, dgem evaluates structured multi-slot rubrics (Policy-as-Template) in O(1) bidirectional forward passes (~150-400ms on Cloud Run GPU) and uses exact Shannon entropy (H) to decide whether to return immediately or escalate ambiguous cases to Gemini.
 
 2. BENCHMARK 1: JevBench v1.3.1 (EXP-11 — Adversarial Rule-Following &amp; 4-Axis Calibration)
 • Evaluates 231 tricky rule-following cases across 4 axes (Chance-Corrected Intelligence, 10-Bin ECE Calibration, Latency, Cost).
-• Slot Temperature Scaling (T* = 1.35): Softens raw diffusion logit overconfidence without changing a single argmax answer, cutting 10-Bin ECE by 56.2% (0.0745 → 0.0326) and lifting Calibration to 88.18 (76.79 4-Axis Composite, 97.2% paraphrase consistency).
-• Entropy-Gated Cascade (dgemma → Gemini Flash, EXP-05): `dgemma` resolves 72% of traffic at Stage 1 (H &lt; 0.16 normalized entropy) and escalates only the 28% high-entropy cases to Gemini, achieving 98.0% raw accuracy (97.17% chance-corrected, 70.16 Composite) at 56% lower compute cost than calling Gemini Flash on every request (62.76 Composite).
+• Slot Temperature Scaling (T* = 1.35): Softens raw diffusion logit overconfidence without changing a single argmax answer, cutting 10-Bin ECE by 56.2% (0.0745 -> 0.0326) and lifting Calibration to 88.18 (76.79 4-Axis Composite, 97.2% paraphrase consistency).
+• Entropy-Gated Cascade (dgemma -> Gemini Flash, EXP-05): dgemma resolves 72% of traffic at Stage 1 (H_norm &lt; 0.16) and escalates only the 28% high-entropy cases to Gemini, achieving 98.0% raw accuracy (97.17% chance-corrected, 70.16 Composite) at 56% lower compute cost than calling Gemini Flash on every request (62.76 Composite).
 
 3. BENCHMARK 2: jev-decision-index (EXP-12 — 5-Area Capability Suite &amp; HF Leaderboard)
 • Evaluates 19 panel benchmarks across Knowledge, Language, Retrieval, Tools, and Arts (72,590 cases; capacity rejections score 0.0).
 • Why Standard DiffusionGemma Is #2 (55.56) Instead of #1 (55.74) on the Public Leaderboard:
-  Inspecting `multimodalart/jev-decision-index` telemetry reveals DiffusionGemma already beats #1 `Jevfire` on Knowledge (54 vs 52) and Language (66 vs 63), trailing overall by just 0.18 pts due to three serving bottlenecks in standard `open-jev`/vLLM engines:
-    (a) 26-Option [A-Z] Ceiling: `POP909-CL` (129 options) collapses to 0.00% (vLLM HTTP 422) / 2.63% (`JoshuaSP`), and `BANKING77` (77 opts) / `CLINC150` (151 opts) are rejected.
-    (b) Multi-Slot Canvas Overflow: `BRIGHT` (32 slots/request) drops to 8.48% on vLLM (`ContractNLI` has 17 slots, `ToolRet` has 32 slots).
+  Inspecting multimodalart/jev-decision-index telemetry reveals DiffusionGemma already beats #1 Jevfire on Knowledge (54 vs 52) and Language (66 vs 63), trailing overall by just 0.18 pts due to three serving bottlenecks in standard open-jev/vLLM engines:
+    (a) 26-Option [A-Z] Ceiling: POP909-CL (129 options) collapses to 0.00% (vLLM HTTP 422) / 2.63% (JoshuaSP), and BANKING77 (77 opts) / CLINC150 (151 opts) are rejected.
+    (b) Multi-Slot Canvas Overflow: BRIGHT (32 slots/request) drops to 8.48% on vLLM (ContractNLI has 17 slots, ToolRet has 32 slots).
     (c) Unscaled Logit Overconfidence: 75.8% of raw T=1.0 predictions emit 98.8% confidence on 75.2% accuracy, causing 0.2388 ECE.
-• How `dgem` Solves All Three (EXP-12 Cloud Run L4 Receipt):
-  By combining Multi-Slot Canvas Batching (&lt;=8 slots/pass) + 2-Stage Bracket Tournament Routing (27..255 options) + Temperature Scaling (T*=1.25) behind a native `POST /v1/systemone` endpoint:
-    - Structural Coverage rises from 72.7% → 100.0% (+27.3%)
-    - 22-Benchmark Ablation Headline Index jumps from 76.67 → 98.89 (+22.22 pts)
-    - Wide-Option Tournament Accuracy (30–36 opts): 100.0% (~336ms) | Multi-Slot Batch Accuracy (11–12 slots): 94.29% (~301ms)
-    - 10-Bin ECE drops to 0.0371 (Brier 0.0184), projecting DiffusionGemma from #2 (55.56) to #1 Open Model (~56.5+) on the full hub.</div>
-    </section>
-  </div>
+• How dgem Solves All Three (EXP-12 Cloud Run L4 Receipt):
+  By combining Multi-Slot Canvas Batching (&lt;=8 slots/pass) + 2-Stage Bracket Tournament Routing (27..255 options) + Temperature Scaling (T*=1.25) behind a native POST /v1/systemone endpoint:
+    - Structural Coverage rises from 72.7% -> 100.0% (+27.3%)
+    - 22-Benchmark Ablation Headline Index jumps from 76.67 -> 98.89 (+22.22 pts)
+    - Wide-Option Tournament Accuracy (30-36 opts): 100.0% (~336ms) | Multi-Slot Batch Accuracy (11-12 slots): 94.29% (~301ms)
+    - 10-Bin ECE drops to 0.0371 (Brier 0.0184), projecting DiffusionGemma from #2 (55.56) to #1 Open Model (~56.5+) on the full hub.</pre>
+  </section>
+</div>
 
-  <script>
-    function copyBriefing() {
-      const text = document.getElementById('briefingText').innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('copyBtn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '✅ Copied TL;DR Memo to Clipboard!';
-        btn.style.background = '#22c55e';
-        setTimeout(() => {
-          btn.innerHTML = orig;
-          btn.style.background = '';
-        }, 2400);
-      });
+<script>
+  const nodeData = {
+    ingress: {
+      tag: "STAGE 01 · INGRESS PROTOCOL",
+      title: "POST /v1/systemone Wire Adapter",
+      body: "Accepts apolinario/decision-index payloads containing state JSON and a map of M choice questions, inspecting (M, max K) geometry before dispatching to the diffusion canvas.",
+      file: "pkg/decisionindex/engine.go:126",
+      cli: "dgem bench-decision-index --serve-systemone :8095",
+      metric: "100.0% Coverage (22/22 benchmarks)"
+    },
+    single: {
+      tag: "STAGE 02A · FAST PATH",
+      title: "Single O(1) Bidirectional Canvas Pass",
+      body: "When M <= 8 questions and every question has K <= 26 options (e.g. MMLU, GPQA, GSM8K, BFCL, RouterBench), resolves all slots simultaneously in 1 forward pass.",
+      file: "pkg/decisionindex/engine.go:226",
+      cli: "MaxSlotsPerPass = 8, MaxOptionsPerSlot = 26",
+      metric: "100.0% Accuracy · 126–197 ms latency"
+    },
+    batch: {
+      tag: "STAGE 02B · MULTI-SLOT ADAPTER",
+      title: "Multi-Slot Canvas Batching (M > 8)",
+      body: "Prevents 256-token diffusion canvas overflow ('the canvas holds at most 10 slots') on ContractNLI (17 slots), BRIGHT (32 slots), and ToolRet (32 slots) by slicing into <=8-slot batches and stitching answers.",
+      file: "pkg/decisionindex/engine.go:164",
+      cli: "MultiSlotBatches = ceil(M / 8)",
+      metric: "94.29% Accuracy (33/35 slots) · ~301 ms"
+    },
+    tourney: {
+      tag: "STAGE 02C · WIDE-OPTION ADAPTER",
+      title: "2-Stage Bracket Tournament Routing (K > 26)",
+      body: "Overcomes the 26-letter [A-Z] slot ceiling on POP909-CL (129 opts), CLINC150 (151 opts), BANKING77 (77 opts), and API-Bank (53 opts) via <=20-option Round-1 brackets packed onto 1 canvas pass + Round-2 Finals.",
+      file: "pkg/decisionindex/engine.go:309",
+      cli: "BracketSize = 20, MaxOptions = 255",
+      metric: "100.00% Accuracy (3/3 wide suites) · ~336 ms"
+    },
+    temp: {
+      tag: "STAGE 03 · CALIBRATION & ROUTING",
+      title: "Post-Hoc Slot Temperature Scaling (T*) & Entropy Gate",
+      body: "Applies logit temperature scaling p_k(T*) = p_k^(1/T*) / sum p_j^(1/T*) to cure raw diffusion canvas overconfidence while strictly preserving argmax and sum(p_k) = 1.0.",
+      file: "pkg/decisionindex/engine.go:445",
+      cli: "--temperature-scale 1.25 (EXP-12) / 1.35 (EXP-11)",
+      metric: "ECE 0.0326 (JevBench) · 0.0371 (Decision Index)"
+    },
+    out: {
+      tag: "STAGE 04 · VERIFIED SCORECARD",
+      title: "100% Structural Coverage & Hybrid Escalation",
+      body: "Emits validated SystemOneResponse envelopes with zero HTTP 422 capacity rejections, lifting Headline Decision Index by +22.22 pts (98.89 vs 76.67) and enabling 98.0% Cascade accuracy.",
+      file: "pkg/decisionindex/scorer.go:263",
+      cli: "dgem bench-decision-index --compare-naive",
+      metric: "98.89 Headline Index · 98.33 Skill Score"
     }
-  </script>
+  };
+
+  function selectNode(key) {
+    const d = nodeData[key];
+    if (!d) return;
+    document.querySelectorAll('.gnode').forEach(el => {
+      el.classList.toggle('active', el.getAttribute('data-node') === key);
+    });
+    document.getElementById('ins-tag').textContent = d.tag;
+    document.getElementById('ins-title').textContent = d.title;
+    document.getElementById('ins-body').textContent = d.body;
+    document.getElementById('ins-file').textContent = d.file;
+    document.getElementById('ins-cli').textContent = d.cli;
+    document.getElementById('ins-metric').textContent = d.metric;
+  }
+
+  function copyBriefing() {
+    const text = document.getElementById('briefingText').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      const orig = btn.textContent;
+      btn.textContent = 'Copied TL;DR Memo to Clipboard!';
+      btn.style.background = '#4B5C39';
+      btn.style.borderColor = '#4B5C39';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.background = '';
+        btn.style.borderColor = '';
+      }, 2400);
+    });
+  }
+</script>
 </body>
 </html>
