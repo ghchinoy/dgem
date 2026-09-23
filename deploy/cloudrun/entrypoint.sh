@@ -9,9 +9,10 @@ DISABLE_MM="${DISABLE_MM:-1}"
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-fork}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
-# Vertex AI Online Prediction passes AIP_STORAGE_URI (e.g. gs://dgem-weights-.../dgemma) instead of a Cloud Run FUSE mount
-if [ ! -d "$MODEL" ] && [ -n "${AIP_STORAGE_URI:-}" ]; then
-  echo "[init] Vertex AI AIP_STORAGE_URI detected ($AIP_STORAGE_URI); staging weights to /tmp/dgemma..."
+# Vertex AI Online Prediction passes AIP_STORAGE_URI (or has no /mnt/gcs/dgemma FUSE mount)
+if [ ! -d "$MODEL" ]; then
+  export AIP_STORAGE_URI="${AIP_STORAGE_URI:-gs://dgem-weights-genai-blackbelt-fishfooding/dgemma}"
+  echo "[init] No local FUSE mount at $MODEL; staging weights from $AIP_STORAGE_URI to /tmp/dgemma..."
   mkdir -p /tmp/dgemma
   python3 -c '
 import json, os, urllib.request
