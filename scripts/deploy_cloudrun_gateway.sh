@@ -54,8 +54,9 @@ gcloud builds submit "${TMP_CTX}" \
   --quiet
 
 GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"
+VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-4217256562927861760}"
 
-echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL})..."
+echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID})..."
 gcloud run deploy "${GATEWAY_SERVICE}" \
   --project="${PROJECT}" \
   --region="${REGION}" \
@@ -69,8 +70,15 @@ gcloud run deploy "${GATEWAY_SERVICE}" \
   --concurrency=80 \
   --timeout=600 \
   --no-allow-unauthenticated \
-  --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1,DGEM_GPU_IDLE_TTL=${GPU_IDLE_TTL}" \
+  --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1,DGEM_GPU_IDLE_TTL=${GPU_IDLE_TTL},DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID}" \
   --quiet
+
+# Ensure Gateway SA has Vertex AI User role to query/invoke Dedicated Endpoint 4217256562927861760
+gcloud projects add-iam-policy-binding "${PROJECT}" \
+  --member="serviceAccount:${GATEWAY_SA}" \
+  --role="roles/aiplatform.user" \
+  --condition=None \
+  --quiet >/dev/null 2>&1 || true
 
 # Run Zero-Trust IAM & IAP bindings for dgemma-gpu-sa, dgemma-gateway-sa, and group:${ALLOW_GROUP}
 GCP_PROJECT="${PROJECT}" GCP_REGION="${REGION}" ALLOW_GROUP="${ALLOW_GROUP}" ./scripts/setup_cloudrun_iam.sh

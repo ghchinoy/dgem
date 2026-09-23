@@ -133,6 +133,11 @@ func FetchGCPAccessToken() string {
 	}
 
 	if token == "" {
+		if out, err := exec.Command("gcloud", "auth", "application-default", "print-access-token").Output(); err == nil {
+			token = strings.TrimSpace(string(out))
+		}
+	}
+	if token == "" {
 		if out, err := exec.Command("gcloud", "auth", "print-access-token").Output(); err == nil {
 			token = strings.TrimSpace(string(out))
 		}

@@ -66,7 +66,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
-	serveCmd.Flags().StringVar(&serveVertexURL, "vertex-url", "", "Optional Vertex AI Endpoint :rawPredict URL or Endpoint ID (env: DGEM_VERTEX_URL)")
+	serveCmd.Flags().StringVar(&serveVertexURL, "vertex-url", "4217256562927861760", "Vertex AI Dedicated Endpoint /invoke/* URL or Endpoint ID (env: DGEM_VERTEX_URL)")
 	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "cloudrun", "Default upstream inference backend: 'cloudrun' or 'vertex' (env: DGEM_DEFAULT_BACKEND)")
 
 	RootCmd.AddCommand(serveCmd)
@@ -330,6 +330,120 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 	return client.NormalizeVertexEndpointURL(v), nil
 }
 
+const (
+	defaultVertexEndpointID = "4217256562927861760"
+	defaultVertexModelID    = "2976360933959401472"
+)
+
+type vertexEndpointLiveStatus struct {
+	EndpointID     string `json:"endpoint_id"`
+	ModelID        string `json:"model_id"`
+	DisplayName    string `json:"display_name"`
+	State          string `json:"state"` // "deployed", "deploying", "quiesced"
+	ReplicaCount   int    `json:"replica_count"`
+	DeployedModel  string `json:"deployed_model_id,omitempty"`
+	MachineType    string `json:"machine_type,omitempty"`
+	Message        string `json:"message"`
+}
+
+func extractEndpointIDFromURL(raw string) string {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return defaultVertexEndpointID
+	}
+	if idx := strings.Index(v, "/endpoints/"); idx != -1 {
+		rest := v[idx+len("/endpoints/"):]
+		for i, ch := range rest {
+			if ch == '/' || ch == ':' || ch == '?' {
+				return rest[:i]
+			}
+		}
+		return rest
+	}
+	if !strings.Contains(v, "/") && !strings.Contains(v, ".") {
+		return v
+	}
+	return defaultVertexEndpointID
+}
+
+func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertexEndpointLiveStatus {
+	epID := extractEndpointIDFromURL(rawVertexURL)
+	st := vertexEndpointLiveStatus{
+		EndpointID:  epID,
+		ModelID:     defaultVertexModelID,
+		DisplayName: "dgemma-dedicated",
+		State:       "quiesced",
+		Message:     fmt.Sprintf("Quiesced at 0 GPU replicas ($0.00/hr idle) on Endpoint %s", epID),
+	}
+	tok := FetchGCPAccessToken()
+	if tok == "" {
+		return st
+	}
+	apiURL := fmt.Sprintf("https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/endpoints/%s", epID)
+	reqCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return st
+	}
+	req.Header.Set("Authorization", "Bearer "+tok)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return st
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return st
+	}
+	var epData struct {
+		DisplayName    string `json:"displayName"`
+		DeployedModels []struct {
+			ID                 string `json:"id"`
+			DisplayName        string `json:"displayName"`
+			DedicatedResources struct {
+				MachineSpec struct {
+					MachineType     string `json:"machineType"`
+					AcceleratorType string `json:"acceleratorType"`
+				} `json:"machineSpec"`
+			} `json:"dedicatedResources"`
+		} `json:"deployedModels"`
+	}
+	if json.NewDecoder(resp.Body).Decode(&epData) == nil {
+		if epData.DisplayName != "" {
+			st.DisplayName = epData.DisplayName
+		}
+		st.ReplicaCount = len(epData.DeployedModels)
+		if st.ReplicaCount > 0 {
+			st.State = "deployed"
+			st.DeployedModel = epData.DeployedModels[0].ID
+			st.MachineType = epData.DeployedModels[0].DedicatedResources.MachineSpec.MachineType
+			if st.MachineType == "" {
+				st.MachineType = "g2-standard-8 (NVIDIA L4)"
+			}
+			st.Message = fmt.Sprintf("Active & Ready (%d replica · %s · /invoke/*)", st.ReplicaCount, st.MachineType)
+			return st
+		}
+	}
+	// Check if a deployModel LRO operation is currently running on this endpoint
+	opsURL := fmt.Sprintf("https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/operations?filter=done=false")
+	if opReq, err := http.NewRequestWithContext(reqCtx, http.MethodGet, opsURL, nil); err == nil {
+		opReq.Header.Set("Authorization", "Bearer "+tok)
+		if opResp, err := http.DefaultClient.Do(opReq); err == nil {
+			defer opResp.Body.Close()
+			var opsData struct {
+				Operations []struct {
+					Name string `json:"name"`
+				} `json:"operations"`
+			}
+			if json.NewDecoder(opResp.Body).Decode(&opsData) == nil && len(opsData.Operations) > 0 {
+				st.State = "deploying"
+				st.Message = "Provisioning NVIDIA L4 GPU replica on Vertex AI (~12–15 min total)..."
+			}
+		}
+	}
+	return st
+}
+
 // resolveBackendTarget determines whether a request should route to "cloudrun" or "vertex"
 // based on headers (X-DGem-Backend, X-DGem-Vertex-Url), payload overrides, or server default.
 func resolveBackendTarget(r *http.Request, payloadBackend, payloadVertexURL string) (string, string, error) {
@@ -361,11 +475,18 @@ func resolveBackendTarget(r *http.Request, payloadBackend, payloadVertexURL stri
 			rawVx = strings.TrimSpace(defVertexURL)
 		}
 		if rawVx == "" {
-			return "vertex", "", fmt.Errorf("backend 'vertex' requested, but no Vertex AI Endpoint URL or ID is configured (pass X-DGem-Vertex-Url header, configure via Settings, or set DGEM_VERTEX_URL)")
+			rawVx = defaultVertexEndpointID
 		}
 		normURL, err := expandAndValidateVertexURL(rawVx)
 		if err != nil {
 			return "vertex", "", err
+		}
+		vStatus := inspectVertexEndpointState(r.Context(), normURL)
+		if vStatus.State == "quiesced" {
+			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently quiesced at 0 GPU replicas ($0.00/hr zero-idle-cost state). Open the Backend Target menu in the top header and click 'Provision Vertex GPU (1x L4)' to attach a GPU replica, or switch to 'Cloud Run GPU' which is warm & ready right now.", vStatus.DisplayName, vStatus.EndpointID)
+		}
+		if vStatus.State == "deploying" {
+			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently provisioning an NVIDIA L4 replica (vLLM + 17.53 GiB weights staging in progress, ~12–15 min total). Use 'Cloud Run GPU' while Vertex AI finishes deploying.", vStatus.DisplayName, vStatus.EndpointID)
 		}
 		return "vertex", normURL, nil
 	}
@@ -526,17 +647,109 @@ func runServe(cmd *cobra.Command, args []string) error {
 		defB := serveDefaultBackend
 		vxURL := serveVertexURL
 		backendConfigMu.RUnlock()
+		if vxURL == "" {
+			vxURL, _ = expandAndValidateVertexURL(defaultVertexEndpointID)
+		}
 		proj := detectGCPProjectID()
 		if proj == "" {
 			proj = "genai-blackbelt-fishfooding"
 		}
+		vSt := inspectVertexEndpointState(r.Context(), vxURL)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"default_backend":   defB,
 			"cloudrun_url":      viper.GetString("url"),
 			"vertex_url":        vxURL,
 			"vertex_configured": vxURL != "",
+			"vertex_status":     vSt,
 			"project_id":        proj,
 			"region":            "us-central1",
+		})
+	})
+
+	// 1a. Vertex AI Dedicated Endpoint Provision & Teardown API
+	mux.HandleFunc("/api/vertex/deploy", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "use POST"})
+			return
+		}
+		tok := FetchGCPAccessToken()
+		if tok == "" {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to acquire GCP access token"})
+			return
+		}
+		backendConfigMu.RLock()
+		vxURL := serveVertexURL
+		backendConfigMu.RUnlock()
+		epID := extractEndpointIDFromURL(vxURL)
+		deployURL := fmt.Sprintf("https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/endpoints/%s:deployModel", epID)
+		payload := fmt.Sprintf(`{
+  "deployedModel": {
+    "model": "projects/882920967572/locations/us-central1/models/%s",
+    "displayName": "dgemma-invoke-l4",
+    "serviceAccount": "dgemma-gpu-sa@genai-blackbelt-fishfooding.iam.gserviceaccount.com",
+    "dedicatedResources": {
+      "machineSpec": {
+        "machineType": "g2-standard-8",
+        "acceleratorType": "NVIDIA_L4",
+        "acceleratorCount": 1
+      },
+      "minReplicaCount": 1,
+      "maxReplicaCount": 1
+    }
+  },
+  "trafficSplit": { "0": 100 }
+}`, defaultVertexModelID)
+		req, _ := http.NewRequestWithContext(r.Context(), http.MethodPost, deployURL, strings.NewReader(payload))
+		req.Header.Set("Authorization", "Bearer "+tok)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+		var opRes map[string]interface{}
+		_ = json.NewDecoder(resp.Body).Decode(&opRes)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":      "deploying",
+			"endpoint_id": epID,
+			"model_id":    defaultVertexModelID,
+			"operation":   opRes,
+			"message":     "Started provisioning NVIDIA L4 replica (g2-standard-8) on Vertex AI Dedicated Endpoint " + epID,
+		})
+	})
+
+	mux.HandleFunc("/api/vertex/teardown", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "use POST"})
+			return
+		}
+		tok := FetchGCPAccessToken()
+		backendConfigMu.RLock()
+		vxURL := serveVertexURL
+		backendConfigMu.RUnlock()
+		epID := extractEndpointIDFromURL(vxURL)
+		vSt := inspectVertexEndpointState(r.Context(), vxURL)
+		if vSt.DeployedModel != "" {
+			undeployURL := fmt.Sprintf("https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/endpoints/%s:undeployModel", epID)
+			payload := fmt.Sprintf(`{"deployedModelId": %q}`, vSt.DeployedModel)
+			req, _ := http.NewRequestWithContext(r.Context(), http.MethodPost, undeployURL, strings.NewReader(payload))
+			req.Header.Set("Authorization", "Bearer "+tok)
+			req.Header.Set("Content-Type", "application/json")
+			if resp, err := http.DefaultClient.Do(req); err == nil {
+				resp.Body.Close()
+			}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":      "quiesced",
+			"endpoint_id": epID,
+			"message":     "Undeployed GPU replica from Vertex AI Dedicated Endpoint " + epID + " ($0.00/hr idle cost)",
 		})
 	})
 
