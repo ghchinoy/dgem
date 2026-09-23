@@ -1,6 +1,8 @@
 # dgem — DiffusionGemma as a Zero-Shot Decision Model
 
-**`dgem`** is a declarative **Policy-as-Template** engine, **Lit WebComponents Decision Studio (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `/mcp`)**, **HTTP Gateway REST API**, and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **Local Apple Silicon (macOS Metal)**, **Serverless Cloud Run GPU (`NVIDIA L4` & `NVIDIA RTX Pro 6000`)**, and **Google Compute Engine (`L4` / `2× A100`)** deployments.
+**`dgem`** is a declarative **Policy-as-Template** engine and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **Local Apple Silicon (macOS Metal)**, **Serverless Cloud Run GPU (`NVIDIA L4` & `NVIDIA RTX Pro 6000`)**, and **Google Compute Engine (`L4` / `2× A100`)** deployments.
+
+There's also a web app **Decision Studio** (via `dgem serve`), **Model Context Protocol (`MCP`) Server** via (`dgem mcp` & `/mcp`), and **HTTP Gateway REST API** to facilicate usage.
 
 ---
 
