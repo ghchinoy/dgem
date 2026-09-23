@@ -24,15 +24,24 @@ Historically, production engineering teams had to choose between two extremes fo
 2. **Autoregressive Generative LLMs (Gemini / GPT-4 / Gemma 4)**: Zero-shot flexible, but **architecturally mismatched for discrete decisions**—paying $O(T_{\text{output}})$ serial token generation latency (`2–17s`), vulnerable to markdown/JSON syntax drift, and lacking calibrated distribution entropy over the decision space.
 
 **DiffusionGemma introduces a third architectural category: the Zero-Shot Decision Model.**
-Instead of generating text left-to-right, `dgem` compiles declarative `.json.tmpl` templates into a **pre-allocated discrete diffusion canvas** (`32–256` tokens) with full bidirectional attention. Boolean gates, `[A-Z]` categorical choices, and ordinal rubrics are resolved simultaneously in a **single forward pass (`~450–700 ms`)**, returning both **100% schema-guaranteed decisions** and **calibrated epistemic Shannon entropy ($H = -\sum p_k \ln p_k$)** that rises **8.0×** when human annotators disagree (`ChaosNLI`).
+Instead of generating text left-to-right, `dgem` compiles declarative `.json.tmpl` templates into a **pre-allocated discrete diffusion canvas** (`32–256` tokens) with full bidirectional attention. Boolean gates, `[A-Z]` categorical choices, and ordinal rubrics are resolved simultaneously in a **single forward pass (`~125–450 ms`)**, returning **100% schema-guaranteed decisions**.
+
+### Confidence Beyond Shannon: `dgem Invariant Decision Calibration (IDC)`
+
+See **[Confidence Beyond Shannon: Invariant Decision Calibration (`docs/confidence-beyond-shannon.md`)](docs/confidence-beyond-shannon.md)** for the full architectural explainer:
+
+While raw single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises **8.0×** when human annotators disagree (`ChaosNLI`), relying on raw token entropy alone suffers from **Ballot-Order (`Box A`) Primacy Bias** ($p_0 = 88.3\%$ on 2-way, $78.3\%$ on 3-way, $49.3\%$ on 4-way blank prompts) and **unscaled diffusion logit overconfidence**. **`dgem Invariant Decision Calibration (IDC)`** wraps `DiffusionGemma`'s `125 ms` snapshot in a zero-overhead calibration pipeline:
+1. **Null-Prior De-Biasing ("Tare the Scale", `--null-prior-debias`, `EXP-13B`)**: Divides out the model's content-free `Box A` bias in logit space, cutting Multi-Class Brier error by **90.2%** (`0.0173` $\rightarrow$ `0.0017`) and making **`>90%`-confidence decisions `100.0%` accurate (`31/31`)** on our 50-case calibration suite (`78.84` JevBench Composite).
+2. **$O(1)$ Dual-Mirror Canvas (`--dual-mirror`, `EXP-13C`)**: Evaluates forward (`A..D`) and reversed (`D..A`) option orderings simultaneously on the **same bidirectional diffusion canvas (`0 ms` extra latency)**, eliminating option-reversal answer flipping (`0.0%` flip rate) and exposing live `Mirror TVD` (`66.8×` spike on `ChaosNLI`) to catch hidden toss-ups.
+3. **Slot Temperature Scaling ($T^* = 1.25\text{–}1.35$, `EXP-11`) & Wide-Canvas Bracket Routing (`EXP-12`)**: Cuts 10-Bin Expected Calibration Error (`ECE`) by **56.2%–86.1%** (`0.0326` on `JevBench`, `0.0332` on `jev-decision-index`) and lifts structural coverage to **100.0% (`98.89` Headline Decision Index)** across up to 255 options and 32+ simultaneous slots.
 
 | Architectural Dimension | Discrete Diffusion Decision Model (`dgem`) | Discriminative Encoder (DeBERTa-v3 / Llama-Guard) | Autoregressive LLM (Gemini / Gemma 4) | Compiled Rulebook (`ecotone` C++ WFST) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Policy Adaptability** | **Zero-Shot Policy-as-Template** (edit `.json.tmpl` in seconds) | Requires labeled dataset & weight retraining per label change | Zero-shot prompt engineering | Manual grammar authoring & compilation |
-| **Inference Latency** | **425 – 712 ms** (1-pass Metal / **458.9 ms** Cloud Run L4) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
+| **Inference Latency** | **125 – 458 ms** (1-pass Cloud Run GPU / Metal) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
 | **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 12 joint slots take same pass) | $O(M_{\text{heads}})$ separate classifiers per attribute | **$O(T_{\text{output}})$ linear penalty** (serial token loop) | $O(N_{\text{chars}})$ graph traversal |
 | **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single forward pass | Independent static classification heads | Unidirectional causal bias (`left -> right`) | Local sliding window (1–3 tokens) |
-| **Epistemic Calibration ($H$)** | **Monotonic with human disagreement** (**8.0×** $H$ spike on `ChaosNLI`) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
+| **Epistemic Calibration (`IDC`)** | **Null-Prior + Dual-Mirror + $T^*$** (`0.0326` ECE, `0%` reversal flip, **8.0×** $H$ on `ChaosNLI`) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
 | **Guardrail & Policy Accuracy** | **100%** `AgentDrift` hijack, **100%** Prompt Injection, **100%** RAG Grounding | Narrow single-task scope (512–8k context) | High accuracy at 15–25× higher latency | **36.7%** on semiotic polysemy traps |
 
 ---
