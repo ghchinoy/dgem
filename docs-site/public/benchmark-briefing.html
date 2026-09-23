@@ -817,7 +817,23 @@ dgem is our zero-shot Decision Model serving, calibration, and policy-routing en
 • Why Single-Pass Entropy Isn't Enough: Content-free null probes reveal a strong structural prior toward Slot 'A' (88.3% on K=2, 78.3% on K=3, 49.3% on K=4). When a human-ambiguous ChaosNLI option lands in Slot 'A', single-pass normalized entropy collapses (H_norm = 0.007-0.031 &lt; 0.16), risking a False Early Exit even though reordering options flips the answer 50% of the time (Cyclic JSD jumps 157.8x).
 • Two Zero-Overhead Fixes in dgem (dgem bench-permutation):
   1) Null-Prior De-Biasing (13B): Dividing out p_0(k) in logit space cuts Multi-Class Brier Score by 90.2% (0.0173 -> 0.0017).
-  2) O(1) Dual-Mirror Canvas (13C): Placing decision_fwd [o_1..o_K] and decision_rev [o_K..o_1] on the SAME bidirectional diffusion canvas runs in 125.0 ms (0 ms latency overhead vs 129.0 ms 1-slot), guarantees 0.0% reversal flip rate, and exposes live Mirror TVD (66.8x spike on ChaosNLI) to trigger Stage-2 escalation whenever single-pass entropy is fooled by positional bias.</pre>
+  2) O(1) Dual-Mirror Canvas (13C): Placing decision_fwd [o_1..o_K] and decision_rev [o_K..o_1] on the SAME bidirectional diffusion canvas runs in 125.0 ms (0 ms latency overhead vs 129.0 ms 1-slot), guarantees 0.0% reversal flip rate, and exposes live Mirror TVD (66.8x spike on ChaosNLI) to trigger Stage-2 escalation whenever single-pass entropy is fooled by positional bias.
+
+5. TL;DR PUBLIC BENCHMARK DELTA: "SHANNON-ONLY DGEM" vs. "LATEST CALIBRATED DGEM"
+• Public Calibration &amp; Guardrail Suite (50 Cases, JevBench v1.3.1 4-Axis Scoring):
+  - Raw Accuracy:               88.0% (44/50)  ->  90.0% (45/50) [+2.0% gain; Toxicity 83.3% -> 100.0%]
+  - Chance-Corrected Skill:     82.90          ->  85.95         [+3.05 pts]
+  - Multi-Class Brier Error:    0.1925         ->  0.1493        [-22.4% probability error]
+  - 10-Bin ECE Calibration:     0.0745         ->  0.0326        [-56.2% calibration error]
+  - High-Confidence (&gt;90%) Win: 94.4% (34/36)  ->  100.0% (31/31)[Zero false-confident errors!]
+  - JevBench 4-Axis Composite:  75.59          ->  78.84         [+3.25 pts overall]
+• Hugging Face jev-decision-index (22-Benchmark 5-Area Capability Suite):
+  - Structural Suite Coverage:  72.7% (16/22)  ->  100.0% (22/22)[+27.3%; zero HTTP 422 crashes]
+  - Headline Decision Index:    76.67          ->  98.89         [+22.22 pts; projects #2 -> #1 Open Model on HF]
+  - 10-Bin ECE Calibration:     0.2388 (raw)   ->  0.0332        [-86.1% vs raw open-jev / -10.5% via Null-Prior]
+• ChaosNLI &amp; Option-Order Stress Suite (EXP-13):
+  - Ambiguous Option Flip Rate: 50.0% (2/4)    ->  0.0% (0/4)    [Exact Reversal Invariance in 125ms]
+  - Permutation Brier Error:    0.0173         ->  0.0017        [-90.2% via Null-Prior De-Biasing]</pre>
   </section>
 </div>
 
