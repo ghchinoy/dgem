@@ -741,6 +741,7 @@ export class DgemBatchRunner extends LitElement {
             headers: {
               'Content-Type': 'application/json',
               'X-DGem-Surface': 'web_studio_batch',
+              'X-DGem-Template': item.template || `batch/${item.domain || suite.id}`,
             },
             body: JSON.stringify(body),
           });

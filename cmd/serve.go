@@ -550,6 +550,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		if strings.TrimSpace(payload.CustomTemplate) != "" {
 			tmplLabel = "custom_inline"
+			if hdrTmpl := strings.TrimSpace(r.Header.Get("X-DGem-Template")); hdrTmpl != "" {
+				tmplLabel = hdrTmpl
+			}
 			rendered, err = engine.RenderString("custom.json.tmpl", payload.CustomTemplate, payload.Variables)
 		} else {
 			if payload.Template == "" {
