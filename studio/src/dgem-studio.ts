@@ -2057,48 +2057,188 @@ export class DgemStudio extends LitElement {
                 `}
 
             ${rawRes?.trace_spans && Array.isArray(rawRes.trace_spans) && rawRes.trace_spans.length > 0
-              ? html`
-                  <div
-                    style="margin-top:1.1rem;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--border-default);background:var(--neutral-secondary-soft)"
-                  >
+              ? (() => {
+                  const spans = rawRes.trace_spans as any[];
+                  const validStarts = spans
+                    .map((s) => (s.start_time ? Date.parse(s.start_time) : 0))
+                    .filter((t) => t > 0);
+                  const minStartMs = validStarts.length > 0 ? Math.min(...validStarts) : 0;
+                  const totalScaleMs = Math.max(
+                    1,
+                    wallMs,
+                    ...spans.map((s) => {
+                      const off =
+                        typeof s.offset_ms === 'number'
+                          ? s.offset_ms
+                          : s.start_time && minStartMs > 0
+                          ? Math.max(0, Date.parse(s.start_time) - minStartMs)
+                          : 0;
+                      return off + Number(s.duration_ms || 0);
+                    })
+                  );
+                  const prefillMs = diag?.timing?.prefill_ms;
+                  const denoiseMs = diag?.timing?.denoise_ms;
+
+                  return html`
                     <div
-                      style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;gap:0.5rem"
+                      style="margin-top:1.1rem;padding:0.9rem 1rem;border-radius:8px;border:1px solid var(--border-default);background:var(--neutral-secondary-soft)"
                     >
-                      <span style="font-size:0.78rem;font-weight:700;color:var(--text-heading);display:flex;align-items:center;gap:0.4rem">
-                        <span class="material-symbols-outlined">timeline</span>
-                        OpenTelemetry Request &amp; GPU Model Span Waterfall
-                      </span>
-                      <span class="field-var-badge tabular">
-                        trace_id: ${rawRes.trace_id || 'local'} · GPU Forward:
-                        ${rawRes.gpu_forward_ms ?? Math.round(wallMs)} ms · Cold-Start Wait:
-                        ${rawRes.cold_start_wait_ms ?? 0} ms
-                      </span>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:0.4rem">
-                      ${rawRes.trace_spans.map((sp: any) => {
-                        const pct = Math.max(
-                          3,
-                          Math.min(100, Math.round(((sp.duration_ms || 0) / Math.max(1, wallMs)) * 100))
-                        );
-                        return html`
-                          <div
-                            style="display:grid;grid-template-columns:190px 1fr 85px;align-items:center;gap:0.6rem;font-size:0.73rem"
-                          >
-                            <span class="tabular" style="font-weight:600;color:var(--text-heading)">
-                              ${sp.name}
-                            </span>
-                            <div class="conf-bar-track">
-                              <div class="conf-bar-fill" style="width:${pct}%"></div>
+                      <div
+                        style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.55rem;flex-wrap:wrap;gap:0.5rem"
+                      >
+                        <span
+                          style="font-size:0.78rem;font-weight:700;color:var(--text-heading);display:flex;align-items:center;gap:0.4rem"
+                        >
+                          <span class="material-symbols-outlined">timeline</span>
+                          OpenTelemetry Request &amp; GPU Model Span Waterfall (Gantt Timeline)
+                        </span>
+                        <span class="field-var-badge tabular">
+                          trace_id: ${rawRes.trace_id || 'local'} · Total: ${Math.round(totalScaleMs)} ms · GPU
+                          Forward: ${rawRes.gpu_forward_ms ?? Math.round(wallMs)} ms${typeof prefillMs ===
+                            'number' && prefillMs > 0
+                            ? ` (Prefill: ${prefillMs.toFixed(1)} ms · Denoise: ${(denoiseMs || 0).toFixed(
+                                1
+                              )} ms)`
+                            : ''}
+                          · Cold-Start Wait: ${rawRes.cold_start_wait_ms ?? 0} ms
+                        </span>
+                      </div>
+
+                      <div
+                        style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.65rem;font-size:0.68rem;color:var(--text-muted)"
+                      >
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
+                            style="width:10px;height:6px;border-radius:2px;border:1px dashed var(--border-strong);background:rgba(148,163,184,0.18);display:inline-block"
+                          ></span>
+                          Parent Wrapper (Inclusive)
+                        </span>
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
+                            style="width:10px;height:6px;border-radius:2px;background:#14b8a6;display:inline-block"
+                          ></span>
+                          Template Render
+                        </span>
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
+                            style="width:10px;height:6px;border-radius:2px;background:#64748b;display:inline-block"
+                          ></span>
+                          Network &amp; Auth
+                        </span>
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
+                            style="width:10px;height:6px;border-radius:2px;background:#3b82f6;display:inline-block"
+                          ></span>
+                          GPU Prefill (Prompt / SigLIP)
+                        </span>
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
+                            style="width:10px;height:6px;border-radius:2px;background:#a855f7;display:inline-block"
+                          ></span>
+                          GPU Canvas Denoise
+                        </span>
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
+                            style="width:10px;height:6px;border-radius:2px;background:#f59e0b;display:inline-block"
+                          ></span>
+                          Cold-Start Backoff
+                        </span>
+                      </div>
+
+                      <div style="display:flex;flex-direction:column;gap:0.38rem">
+                        ${spans.map((sp: any) => {
+                          const durMs = Number(sp.duration_ms || 0);
+                          const offsetMs =
+                            typeof sp.offset_ms === 'number'
+                              ? sp.offset_ms
+                              : sp.start_time && minStartMs > 0
+                              ? Math.max(0, Date.parse(sp.start_time) - minStartMs)
+                              : 0;
+                          const depth =
+                            typeof sp.depth === 'number'
+                              ? sp.depth
+                              : sp.name === 'dgem.gateway.decide'
+                              ? 0
+                              : sp.name === 'dgem.template.render' || sp.name === 'dgem.gpu.orchestrate'
+                              ? 1
+                              : sp.name === 'dgem.gpu.forward_pass' ||
+                                sp.name === 'dgem.gpu.cold_start_backoff'
+                              ? 2
+                              : 3;
+
+                          const isWrapper =
+                            sp.name === 'dgem.gateway.decide' ||
+                            sp.name === 'dgem.gpu.orchestrate' ||
+                            sp.name === 'dgem.gpu.forward_pass';
+
+                          const leftPct = Math.max(0, Math.min(97.5, (offsetMs / totalScaleMs) * 100));
+                          const rawWidthPct = (durMs / totalScaleMs) * 100;
+                          const widthPct = Math.max(1.8, Math.min(100 - leftPct, rawWidthPct));
+
+                          let barColor = 'var(--brand-default, #8b5cf6)';
+                          if (sp.status === 'Error') {
+                            barColor = '#ef4444';
+                          } else if (sp.name === 'dgem.template.render') {
+                            barColor = '#14b8a6';
+                          } else if (sp.name === 'dgem.gpu.cold_start_backoff') {
+                            barColor = '#f59e0b';
+                          } else if (sp.name === 'dgem.gpu.network_and_auth') {
+                            barColor = '#64748b';
+                          } else if (sp.name === 'dgem.gpu.prefill') {
+                            barColor = '#3b82f6';
+                          } else if (sp.name === 'dgem.gpu.denoise') {
+                            barColor = '#a855f7';
+                          }
+
+                          const indentPx = depth * 12;
+                          const treePrefix = depth > 0 ? '└─ ' : '';
+                          const shortLabel = sp.name.replace(/^dgem\./, '');
+
+                          return html`
+                            <div
+                              style="display:grid;grid-template-columns:235px 1fr 135px;align-items:center;gap:0.6rem;font-size:0.72rem"
+                              title="${sp.name} · start: +${offsetMs.toFixed(2)} ms · duration: ${durMs.toFixed(
+                                2
+                              )} ms · status: ${sp.status || 'Ok'}"
+                            >
+                              <span
+                                class="tabular"
+                                style="padding-left:${indentPx}px;font-weight:${isWrapper
+                                  ? '600'
+                                  : '500'};color:${isWrapper
+                                  ? 'var(--text-muted)'
+                                  : 'var(--text-heading)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                              >
+                                <span style="opacity:0.55">${treePrefix}</span>${shortLabel}
+                              </span>
+                              <div
+                                class="conf-bar-track"
+                                style="position:relative;height:10px;background:rgba(148,163,184,0.12);overflow:hidden;border-radius:4px"
+                              >
+                                <div
+                                  style="position:absolute;top:${isWrapper ? '1px' : '0'};bottom:${isWrapper
+                                    ? '1px'
+                                    : '0'};left:${leftPct.toFixed(2)}%;width:${widthPct.toFixed(
+                                    2
+                                  )}%;border-radius:3px;${isWrapper
+                                    ? 'background:rgba(148,163,184,0.22);border:1px dashed rgba(148,163,184,0.65);'
+                                    : `background:${barColor};`}"
+                                ></div>
+                              </div>
+                              <span
+                                class="tabular"
+                                style="text-align:right;color:var(--text-muted);font-size:0.69rem"
+                              >
+                                <span style="opacity:0.65">+${offsetMs.toFixed(1)}ms ·</span>
+                                <strong style="color:var(--text-heading)">${durMs.toFixed(2)} ms</strong>
+                              </span>
                             </div>
-                            <span class="tabular" style="text-align:right;color:var(--text-muted)">
-                              ${Number(sp.duration_ms || 0).toFixed(2)} ms
-                            </span>
-                          </div>
-                        `;
-                      })}
+                          `;
+                        })}
+                      </div>
                     </div>
-                  </div>
-                `
+                  `;
+                })()
               : null}
 
             ${this.showRawDrawer

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,7 +35,9 @@ type TraceSpanRecord struct {
 	Name         string                 `json:"name"`
 	StartTime    string                 `json:"start_time"`
 	EndTime      string                 `json:"end_time"`
+	OffsetMs     float64                `json:"offset_ms"`
 	DurationMs   float64                `json:"duration_ms"`
+	Depth        int                    `json:"depth"`
 	Status       string                 `json:"status"`
 	Attributes   map[string]interface{} `json:"attributes,omitempty"`
 }
@@ -153,6 +156,15 @@ func (p *gatewaySpanProcessor) OnEnd(s sdktrace.ReadOnlySpan) {
 		}
 		if v, ok := attrs["dgem.gpu.forward_ms"]; ok {
 			logEntry["dgem_gpu_forward_ms"] = v
+		}
+		if v, ok := attrs["dgem.gpu.prefill_ms"]; ok {
+			logEntry["dgem_gpu_prefill_ms"] = v
+		}
+		if v, ok := attrs["dgem.gpu.denoise_ms"]; ok {
+			logEntry["dgem_gpu_denoise_ms"] = v
+		}
+		if v, ok := attrs["dgem.gpu.network_ms"]; ok {
+			logEntry["dgem_gpu_network_ms"] = v
 		}
 		if v, ok := attrs["dgem.gpu.cold_start_wait_ms"]; ok {
 			logEntry["dgem_cold_start_wait_ms"] = v
@@ -287,20 +299,89 @@ func injectTraceContextToRequest(ctx context.Context, req *http.Request) {
 	}
 }
 
-// getTraceSpansByTraceID returns all recorded spans for a specific TraceID in chronological order.
+// getTraceSpansByTraceID returns all recorded spans for a specific TraceID in top-down hierarchical
+// and chronological waterfall order, enriched with Depth and OffsetMs relative to the trace root.
 func getTraceSpansByTraceID(traceID string) []TraceSpanRecord {
 	if traceID == "" {
 		return nil
 	}
 	traceRingMu.Lock()
-	defer traceRingMu.Unlock()
-	var out []TraceSpanRecord
+	var raw []TraceSpanRecord
 	for _, s := range traceRing {
 		if s.TraceID == traceID {
-			out = append(out, s)
+			raw = append(raw, s)
 		}
 	}
-	return out
+	traceRingMu.Unlock()
+
+	if len(raw) == 0 {
+		return nil
+	}
+
+	parsedStart := make(map[string]time.Time, len(raw))
+	byID := make(map[string]TraceSpanRecord, len(raw))
+	var minStart time.Time
+	for i, s := range raw {
+		t, err := time.Parse(time.RFC3339Nano, s.StartTime)
+		if err != nil {
+			t = time.Now()
+		}
+		parsedStart[s.SpanID] = t
+		if i == 0 || t.Before(minStart) {
+			minStart = t
+		}
+		byID[s.SpanID] = s
+	}
+
+	childrenMap := make(map[string][]TraceSpanRecord)
+	var roots []TraceSpanRecord
+	for _, s := range raw {
+		if s.ParentSpanID != "" {
+			if _, exists := byID[s.ParentSpanID]; exists {
+				childrenMap[s.ParentSpanID] = append(childrenMap[s.ParentSpanID], s)
+				continue
+			}
+		}
+		roots = append(roots, s)
+	}
+
+	sortSpans := func(slice []TraceSpanRecord) {
+		sort.SliceStable(slice, func(i, j int) bool {
+			ti := parsedStart[slice[i].SpanID]
+			tj := parsedStart[slice[j].SpanID]
+			if !ti.Equal(tj) {
+				return ti.Before(tj)
+			}
+			return slice[i].DurationMs > slice[j].DurationMs
+		})
+	}
+
+	sortSpans(roots)
+	for k := range childrenMap {
+		sortSpans(childrenMap[k])
+	}
+
+	var ordered []TraceSpanRecord
+	var walk func(sp TraceSpanRecord, depth int)
+	walk = func(sp TraceSpanRecord, depth int) {
+		sp.Depth = depth
+		if st, ok := parsedStart[sp.SpanID]; ok && !minStart.IsZero() {
+			off := float64(st.Sub(minStart).Microseconds()) / 1000.0
+			if off < 0 {
+				off = 0
+			}
+			sp.OffsetMs = off
+		}
+		ordered = append(ordered, sp)
+		for _, child := range childrenMap[sp.SpanID] {
+			walk(child, depth+1)
+		}
+	}
+
+	for _, r := range roots {
+		walk(r, 0)
+	}
+	return ordered
 }
 
 // getRecentTraces returns the most recent N spans from the ring buffer.

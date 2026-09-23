@@ -110,6 +110,60 @@ labelExtractors:
 EOF
 upsert_log_metric "dgem_gpu_forward_ms" "${TMP_DIR}/dgem_gpu_forward_ms.yaml"
 
+# 3b. Distribution Metric: dgem_gpu_prefill_ms (GPU prompt + SigLIP prefill duration in ms)
+cat > "${TMP_DIR}/dgem_gpu_prefill_ms.yaml" <<'EOF'
+description: "vLLM GPU prompt and SigLIP vision prefill duration (ms) for DiffusionGemma decision policies"
+filter: 'resource.type="cloud_run_revision" AND jsonPayload.span_name="dgem.gateway.decide" AND jsonPayload.dgem_gpu_prefill_ms > 0'
+valueExtractor: 'EXTRACT(jsonPayload.dgem_gpu_prefill_ms)'
+bucketOptions:
+  exponentialBuckets:
+    numFiniteBuckets: 30
+    growthFactor: 1.3
+    scale: 10.0
+metricDescriptor:
+  metricKind: DELTA
+  valueType: DISTRIBUTION
+  unit: "ms"
+  labels:
+    - key: template
+      valueType: STRING
+      description: "Decision policy template name"
+    - key: surface
+      valueType: STRING
+      description: "Access surface"
+labelExtractors:
+  template: 'EXTRACT(jsonPayload.dgem_template)'
+  surface: 'EXTRACT(jsonPayload.dgem_surface)'
+EOF
+upsert_log_metric "dgem_gpu_prefill_ms" "${TMP_DIR}/dgem_gpu_prefill_ms.yaml"
+
+# 3c. Distribution Metric: dgem_gpu_denoise_ms (Bidirectional diffusion canvas denoising duration in ms)
+cat > "${TMP_DIR}/dgem_gpu_denoise_ms.yaml" <<'EOF'
+description: "vLLM bidirectional diffusion canvas denoising duration (ms) for DiffusionGemma decision policies"
+filter: 'resource.type="cloud_run_revision" AND jsonPayload.span_name="dgem.gateway.decide" AND jsonPayload.dgem_gpu_denoise_ms > 0'
+valueExtractor: 'EXTRACT(jsonPayload.dgem_gpu_denoise_ms)'
+bucketOptions:
+  exponentialBuckets:
+    numFiniteBuckets: 30
+    growthFactor: 1.3
+    scale: 15.0
+metricDescriptor:
+  metricKind: DELTA
+  valueType: DISTRIBUTION
+  unit: "ms"
+  labels:
+    - key: template
+      valueType: STRING
+      description: "Decision policy template name"
+    - key: surface
+      valueType: STRING
+      description: "Access surface"
+labelExtractors:
+  template: 'EXTRACT(jsonPayload.dgem_template)'
+  surface: 'EXTRACT(jsonPayload.dgem_surface)'
+EOF
+upsert_log_metric "dgem_gpu_denoise_ms" "${TMP_DIR}/dgem_gpu_denoise_ms.yaml"
+
 # 4. Distribution Metric: dgem_warmup_total_ms (Cold-start GPU warmup duration in ms)
 cat > "${TMP_DIR}/dgem_warmup_total_ms.yaml" <<'EOF'
 description: "Total GPU cold-start warmup duration (ms) for right-sizing scale-from-zero"
