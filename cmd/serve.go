@@ -30,6 +30,7 @@ var (
 	serveTemplatesDir  string
 	serveUIDir         string
 	serveWakeupTimeout time.Duration
+	serveGPUIdleTTL    time.Duration
 )
 
 var serveCmd = &cobra.Command{
@@ -59,6 +60,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serveTemplatesDir, "templates-dir", "./templates", "Directory containing .json.tmpl policy definitions")
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
+	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
 
 	RootCmd.AddCommand(serveCmd)
 }
@@ -795,10 +797,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 		mux.ServeHTTP(w, r)
 	})
 
+	startGPUKeepaliveLoop()
+
 	addr := fmt.Sprintf("%s:%d", serveHost, servePort)
 	fmt.Printf("🚀 dgem HTTP Gateway, Lit Studio & MCP Server listening on http://%s\n", addr)
 	fmt.Printf("   • Upstream GPU Engine: %s (gcp-auth=%v, iap-client-id=%q)\n",
 		viper.GetString("url"), viper.GetBool("gcp_auth"), viper.GetString("iap_client_id"))
+	fmt.Printf("   • GPU Idle TTL:        %s (keepalive heartbeat active while warm)\n", getGPUIdleWindow())
 	fmt.Printf("   • MCP Endpoint:        http://%s/mcp (Streamable HTTP) | 'dgem mcp' (stdio)\n", addr)
 	fmt.Printf("   • Templates Catalog:   %s\n", serveTemplatesDir)
 	fmt.Printf("   • Studio Assets:       %s\n", uiSource)

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -207,13 +209,79 @@ func init() {
 	RootCmd.AddCommand(mcpCmd)
 }
 
+// getGPUIdleWindow returns the configured GPU time-to-idle duration from DGEM_GPU_IDLE_TTL,
+// GPU_IDLE_TTL, or the --gpu-idle-ttl CLI flag (defaulting to 3 hours).
+func getGPUIdleWindow() time.Duration {
+	for _, k := range []string{"DGEM_GPU_IDLE_TTL", "GPU_IDLE_TTL"} {
+		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
+			if d, err := time.ParseDuration(v); err == nil && d > 0 {
+				return d
+			}
+		}
+	}
+	if serveGPUIdleTTL > 0 {
+		return serveGPUIdleTTL
+	}
+	return 3 * time.Hour
+}
+
+var keepaliveOnce sync.Once
+
+// startGPUKeepaliveLoop sends a lightweight authenticated GET /health heartbeat to the upstream
+// Cloud Run GPU service every 4 minutes ONLY while time.Since(lastWarmTimestamp) < getGPUIdleWindow().
+// This prevents Cloud Run's underlying 15-minute container idle reaper from terminating the warm
+// GPU before the configured DGEM_GPU_IDLE_TTL (e.g. 3h) expires, while allowing it to scale to 0
+// immediately once the idle TTL elapses.
+func startGPUKeepaliveLoop() {
+	keepaliveOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(4 * time.Minute)
+			defer ticker.Stop()
+			for range ticker.C {
+				idleWindow := getGPUIdleWindow()
+				gpuStateMu.RLock()
+				lastWarm := lastWarmTimestamp
+				warming := warmupInProgress
+				gpuStateMu.RUnlock()
+
+				if warming || lastWarm.IsZero() || time.Since(lastWarm) >= idleWindow {
+					continue
+				}
+
+				upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
+				upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
+				if upstreamBase == "" {
+					continue
+				}
+				healthURL := upstreamBase + "/health"
+				req, err := http.NewRequest("GET", healthURL, nil)
+				if err != nil {
+					continue
+				}
+				if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
+					if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), healthURL); tok != "" {
+						req.Header.Set("Authorization", "Bearer "+tok)
+					}
+				} else if tok := viper.GetString("token"); tok != "" {
+					req.Header.Set("Authorization", "Bearer "+tok)
+				}
+				hc := &http.Client{Timeout: 8 * time.Second}
+				if resp, err := hc.Do(req); err == nil {
+					_, _ = io.Copy(io.Discard, resp.Body)
+					resp.Body.Close()
+				}
+			}
+		}()
+	})
+}
+
 // NotifyColdStartWarmup ensures that if a decision request arrives while the GPU is scaled to zero,
 // the global status coordinator immediately starts the single-flight background warmup worker
 // (just as if "Wake GPU" had been pressed) and guarantees warmupInProgress is cleared on completion or timeout.
 func NotifyColdStartWarmup() {
+	idleWindow := getGPUIdleWindow()
 	gpuStateMu.RLock()
-	const cloudRunIdleWindow = 15 * time.Minute
-	isWarm := !lastWarmTimestamp.IsZero() && time.Since(lastWarmTimestamp) < cloudRunIdleWindow
+	isWarm := !lastWarmTimestamp.IsZero() && time.Since(lastWarmTimestamp) < idleWindow
 	alreadyWarming := warmupInProgress
 	gpuStateMu.RUnlock()
 
@@ -257,6 +325,7 @@ type HealthAndGPUStatusOutput struct {
 	EWMAWakeSeconds       int     `json:"ewma_wake_seconds"`
 	SecondsSinceLastRead  int     `json:"seconds_since_last_read,omitempty"`
 	IdleRemainingSeconds  int     `json:"idle_remaining_seconds,omitempty"`
+	IdleTTLSeconds        int     `json:"idle_ttl_seconds,omitempty"`
 	LastReadoutMs         int64   `json:"last_readout_ms,omitempty"`
 	EstimatedWakeSeconds  int     `json:"estimated_wake_seconds"`
 	UpstreamURL           string  `json:"upstream_url"`
@@ -269,7 +338,7 @@ type HealthAndGPUStatusOutput struct {
 
 // CheckHealthAndGPUStatus inspects both the gateway and the upstream Cloud Run GPU service
 // WITHOUT sending unsolicited HTTP probes when idle (which would otherwise trigger Cloud Run's
-// scale-from-zero activator or reset its 15-minute idle scale-down timer).
+// scale-from-zero activator or reset its idle scale-down timer).
 func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPUStatusOutput {
 	gpuStateMu.Lock()
 	// Safety expiry: never allow warmupInProgress to stay stuck past serveWakeupTimeout (10m)
@@ -293,6 +362,7 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 	gpuStateMu.Unlock()
 
 	catalog, _ := discoverTemplates(serveTemplatesDir)
+	idleWindow := getGPUIdleWindow()
 
 	out := HealthAndGPUStatusOutput{
 		GatewayHealthy:       true,
@@ -305,6 +375,7 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 		LastReadoutMs:        lastReadMs,
 		EWMAWakeSeconds:      ewmaSec,
 		EstimatedWakeSeconds: ewmaSec,
+		IdleTTLSeconds:       int(idleWindow.Seconds()),
 	}
 
 	if warming {
@@ -324,10 +395,9 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 		return out
 	}
 
-	const cloudRunIdleWindow = 15 * time.Minute
-	if !lastWarm.IsZero() && time.Since(lastWarm) < cloudRunIdleWindow {
+	if !lastWarm.IsZero() && time.Since(lastWarm) < idleWindow {
 		sinceSec := int(time.Since(lastWarm).Seconds())
-		remSec := int(cloudRunIdleWindow.Seconds()) - sinceSec
+		remSec := int(idleWindow.Seconds()) - sinceSec
 		out.GPUAvailable = true
 		out.ContainerReachable = true
 		out.GPUState = "warm_and_ready"
@@ -335,15 +405,15 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 		out.IdleRemainingSeconds = remSec
 		out.EstimatedWakeSeconds = 0
 		if lastReadMs > 0 {
-			out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %dms, %ds ago; %dm%ds until Cloud Run scale-to-zero).", lastReadMs, sinceSec, remSec/60, remSec%60)
+			out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %dms, %ds ago; %dm%ds remaining in %s idle TTL).", lastReadMs, sinceSec, remSec/60, remSec%60, idleWindow)
 		} else {
-			out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %ds ago; %dm%ds until Cloud Run scale-to-zero).", sinceSec, remSec/60, remSec%60)
+			out.Detail = fmt.Sprintf("vLLM EngineCore is warm and ready (last readout %ds ago; %dm%ds remaining in %s idle TTL).", sinceSec, remSec/60, remSec%60, idleWindow)
 		}
 		return out
 	}
 
 	out.GPUState = "scaled_to_zero"
-	out.Detail = fmt.Sprintf("GPU service is scaled to 0 instances ($0.00/hr idle; ~%ds EWMA wake). Click 'Wake GPU' or execute any decision to wake automatically.", ewmaSec)
+	out.Detail = fmt.Sprintf("GPU service is scaled to 0 instances ($0.00/hr idle; ~%ds EWMA wake, %s idle TTL once warm). Click 'Wake GPU' or execute any decision to wake automatically.", ewmaSec, idleWindow)
 	return out
 }
 

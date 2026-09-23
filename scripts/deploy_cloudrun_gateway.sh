@@ -53,7 +53,9 @@ gcloud builds submit "${TMP_CTX}" \
   --tag="${IMAGE}" \
   --quiet
 
-echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE}..."
+GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"
+
+echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL})..."
 gcloud run deploy "${GATEWAY_SERVICE}" \
   --project="${PROJECT}" \
   --region="${REGION}" \
@@ -61,12 +63,13 @@ gcloud run deploy "${GATEWAY_SERVICE}" \
   --service-account="${GATEWAY_SA}" \
   --cpu=1 \
   --memory=512Mi \
-  --min-instances=0 \
+  --min-instances=1 \
+  --no-cpu-throttling \
   --max-instances=10 \
   --concurrency=80 \
   --timeout=600 \
   --no-allow-unauthenticated \
-  --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1" \
+  --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1,DGEM_GPU_IDLE_TTL=${GPU_IDLE_TTL}" \
   --quiet
 
 # Run Zero-Trust IAM & IAP bindings for dgemma-gpu-sa, dgemma-gateway-sa, and group:${ALLOW_GROUP}
