@@ -1,0 +1,2913 @@
+{
+  "timestamp": "2026-09-23T13:54:50Z",
+  "endpoint": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1",
+  "model": "diffgemma-26b-a4b-it-q4",
+  "dgem_wide_canvas_report": {
+    "suite_edition": "release-v1-panel",
+    "engine_mode": "dgem-wide-canvas+batching",
+    "temperature_scale": 1.25,
+    "total_requests": 22,
+    "supported_requests": 22,
+    "coverage_pct": 100,
+    "total_fields": 54,
+    "total_forward_passes": 28,
+    "headline_decision_index": 98.88888888888889,
+    "supported_decision_index": 98.88888888888889,
+    "skill_decision_index": 98.33341666250021,
+    "wide_option_accuracy": 100,
+    "multi_slot_canvas_accuracy": 94.28571428571429,
+    "ece_10bin": 0.03712162453016205,
+    "mean_brier": 0.01843249336962514,
+    "p50_latency_ms": 155,
+    "areas": [
+      {
+        "area_id": "knowledge",
+        "label": "Knowledge \u0026 Reasoning",
+        "benchmark_count": 6,
+        "coverage_pct": 100,
+        "plain_score": 100,
+        "supported_score": 100,
+        "skill_score": 100,
+        "benchmarks": [
+          {
+            "catalog_id": 1,
+            "dataset": "MMLU",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.0005709003089734387,
+            "mean_entropy": 0.1165168166191971,
+            "mean_normalized_entropy": 0.08404911675834222,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 2,
+            "dataset": "GPQA Diamond",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.013312154787041064,
+            "mean_entropy": 0.3398350351002314,
+            "mean_normalized_entropy": 0.24513915992971533,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 3,
+            "dataset": "GSM8K",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 20,
+            "skill_score": 100,
+            "mean_brier": 0.000008961113514103532,
+            "mean_entropy": 0.02096207149324644,
+            "mean_normalized_entropy": 0.01302446731949018,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 4,
+            "dataset": "ChessBench",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.00000830947889427335,
+            "mean_entropy": 0.019558732675700973,
+            "mean_normalized_entropy": 0.014108643318653361,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 5,
+            "dataset": "CRUXEval",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.07198542115489051,
+            "mean_entropy": 0.5593135934162804,
+            "mean_normalized_entropy": 0.40345947376172686,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 6,
+            "dataset": "CLadder",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 50,
+            "skill_score": 100,
+            "mean_brier": 0.0000022224982118056226,
+            "mean_entropy": 0.008279868960687484,
+            "mean_normalized_entropy": 0.011945325888794288,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "language",
+        "label": "Language Understanding",
+        "benchmark_count": 3,
+        "coverage_pct": 100,
+        "plain_score": 94.44444444444446,
+        "supported_score": 94.44444444444446,
+        "skill_score": 91.66708331250105,
+        "benchmarks": [
+          {
+            "catalog_id": 7,
+            "dataset": "ContractNLI",
+            "area": "language",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 83.33333333333334,
+            "coverage_adj_score": 83.33333333333334,
+            "chance_baseline": 33.33,
+            "skill_score": 75.00124993750315,
+            "mean_brier": 0.19752456201735155,
+            "mean_entropy": 0.09099916339803453,
+            "mean_normalized_entropy": 0.08283100811511616,
+            "mean_passes_per_req": 2
+          },
+          {
+            "catalog_id": 8,
+            "dataset": "iSarcasmEval",
+            "area": "language",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.00001872005052683405,
+            "mean_entropy": 0.027730851457461767,
+            "mean_normalized_entropy": 0.02000358093865429,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 9,
+            "dataset": "VAST",
+            "area": "language",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 33.33,
+            "skill_score": 100,
+            "mean_brier": 0.000014708318161761768,
+            "mean_entropy": 0.021924785013240328,
+            "mean_normalized_entropy": 0.019956799354411553,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "retrieval",
+        "label": "Retrieval \u0026 Classification",
+        "benchmark_count": 2,
+        "coverage_pct": 100,
+        "plain_score": 100,
+        "supported_score": 100,
+        "skill_score": 100,
+        "benchmarks": [
+          {
+            "catalog_id": 10,
+            "dataset": "BRIGHT",
+            "area": "retrieval",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 11.200000000000001,
+            "skill_score": 100,
+            "mean_brier": 9.892609427580504e-8,
+            "mean_entropy": 0.001192869797677578,
+            "mean_normalized_entropy": 0.0017209473415356628,
+            "mean_passes_per_req": 2
+          },
+          {
+            "catalog_id": 11,
+            "dataset": "Amazon ESCI",
+            "area": "retrieval",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 6.01296054122447e-7,
+            "mean_entropy": 0.006237108536950122,
+            "mean_normalized_entropy": 0.00449912277787208,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "tools",
+        "label": "Tools \u0026 Automation",
+        "benchmark_count": 3,
+        "coverage_pct": 100,
+        "plain_score": 100,
+        "supported_score": 100,
+        "skill_score": 100,
+        "benchmarks": [
+          {
+            "catalog_id": 12,
+            "dataset": "BFCL",
+            "area": "tools",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25.919999999999998,
+            "skill_score": 100,
+            "mean_brier": 0.00001558433621974257,
+            "mean_entropy": 0.02540608875276025,
+            "mean_normalized_entropy": 0.018326619125996042,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 13,
+            "dataset": "ToolRet",
+            "area": "tools",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 9.370000000000001,
+            "skill_score": 100,
+            "mean_brier": 0.000003860020408267037,
+            "mean_entropy": 0.006793622889429282,
+            "mean_normalized_entropy": 0.009801126052249375,
+            "mean_passes_per_req": 2
+          },
+          {
+            "catalog_id": 14,
+            "dataset": "RouterBench",
+            "area": "tools",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 9.09,
+            "skill_score": 100,
+            "mean_brier": 0.0000036210004737690234,
+            "mean_entropy": 0.012775767363579814,
+            "mean_normalized_entropy": 0.009215768109493832,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "arts",
+        "label": "Arts \u0026 Human Judgment",
+        "benchmark_count": 5,
+        "coverage_pct": 100,
+        "plain_score": 100,
+        "supported_score": 100,
+        "skill_score": 100,
+        "benchmarks": [
+          {
+            "catalog_id": 15,
+            "dataset": "BPoMP",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.000015797988758685013,
+            "mean_entropy": 0.02533163973690844,
+            "mean_normalized_entropy": 0.018272915513011807,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 16,
+            "dataset": "Humicroedit",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 50,
+            "skill_score": 100,
+            "mean_brier": 0.0020947848328477566,
+            "mean_entropy": 0.14286410135864164,
+            "mean_normalized_entropy": 0.2061093305511705,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 17,
+            "dataset": "POP909-CL",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 12.5,
+            "skill_score": 100,
+            "mean_brier": 0.00024577564480403433,
+            "mean_entropy": 0.07789372442664516,
+            "mean_normalized_entropy": 0.05618844497334625,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 18,
+            "dataset": "cfcolor",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 20,
+            "skill_score": 100,
+            "mean_brier": 0.00006137650882930263,
+            "mean_entropy": 0.04466492657850778,
+            "mean_normalized_entropy": 0.032218934038241415,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 19,
+            "dataset": "Habermas Machine",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.0000052330864558454435,
+            "mean_entropy": 0.013286147836322086,
+            "mean_normalized_entropy": 0.009583929797989752,
+            "mean_passes_per_req": 1
+          }
+        ]
+      }
+    ],
+    "display_benchmarks": [
+      {
+        "catalog_id": 20,
+        "dataset": "API-Bank",
+        "area": "tools",
+        "in_panel": false,
+        "total_cases": 1,
+        "supported_cases": 1,
+        "coverage_pct": 100,
+        "supported_score": 100,
+        "coverage_adj_score": 100,
+        "chance_baseline": 1.8900000000000001,
+        "skill_score": 100,
+        "mean_brier": 0.03448015796165179,
+        "mean_entropy": 0.7839489741179598,
+        "mean_normalized_entropy": 0.23049205504646314,
+        "mean_passes_per_req": 2
+      },
+      {
+        "catalog_id": 21,
+        "dataset": "BANKING77",
+        "area": "retrieval",
+        "in_panel": false,
+        "total_cases": 1,
+        "supported_cases": 1,
+        "coverage_pct": 100,
+        "supported_score": 100,
+        "coverage_adj_score": 100,
+        "chance_baseline": 1.27,
+        "skill_score": 100,
+        "mean_brier": 0.03902818917453516,
+        "mean_entropy": 0.9188056235014976,
+        "mean_normalized_entropy": 0.26511126331330054,
+        "mean_passes_per_req": 2
+      },
+      {
+        "catalog_id": 22,
+        "dataset": "CLINC150+OOS",
+        "area": "retrieval",
+        "in_panel": false,
+        "total_cases": 1,
+        "supported_cases": 1,
+        "coverage_pct": 100,
+        "supported_score": 100,
+        "coverage_adj_score": 100,
+        "chance_baseline": 0.66,
+        "skill_score": 100,
+        "mean_brier": 0.04611381362705512,
+        "mean_entropy": 1.179101032294071,
+        "mean_normalized_entropy": 0.3290344079504332,
+        "mean_passes_per_req": 2
+      }
+    ],
+    "results": [
+      {
+        "id": "di_knowledge_mmlu_01",
+        "catalog_id": 1,
+        "dataset": "MMLU",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.980051593797278,
+        "mean_brier": 0.0005709003089734387,
+        "mean_entropy": 0.1165168166191971,
+        "mean_normalized_entropy": 0.08404911675834222,
+        "forward_passes": 1,
+        "wall_time_ms": 394,
+        "answers": {
+          "answer": {
+            "type": "choice",
+            "choice": "B",
+            "probabilities": {
+              "A": 0.011268063845531013,
+              "B": 0.980051593797278,
+              "C": 0.006379529459851678,
+              "D": 0.002300812897339407
+            },
+            "entropy": 0.1165168166191971,
+            "normalized_entropy": 0.08404911675834222,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "answer": "B"
+        }
+      },
+      {
+        "id": "di_knowledge_gpqa_01",
+        "catalog_id": 2,
+        "dataset": "GPQA Diamond",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.912765278013091,
+        "mean_brier": 0.013312154787041064,
+        "mean_entropy": 0.3398350351002314,
+        "mean_normalized_entropy": 0.24513915992971533,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "answer": {
+            "type": "choice",
+            "choice": "B",
+            "probabilities": {
+              "A": 0.07501058938539862,
+              "B": 0.912765278013091,
+              "C": 0.005421111152704785,
+              "D": 0.006803021448805705
+            },
+            "entropy": 0.3398350351002314,
+            "normalized_entropy": 0.24513915992971533,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "answer": "B"
+        }
+      },
+      {
+        "id": "di_knowledge_gsm8k_01",
+        "catalog_id": 3,
+        "dataset": "GSM8K",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 5,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.997432198107269,
+        "mean_brier": 0.000008961113514103532,
+        "mean_entropy": 0.02096207149324644,
+        "mean_normalized_entropy": 0.01302446731949018,
+        "forward_passes": 1,
+        "wall_time_ms": 394,
+        "answers": {
+          "answer": {
+            "type": "choice",
+            "choice": "opt_30_00",
+            "probabilities": {
+              "opt_15_00": 0.001375710924636446,
+              "opt_30_00": 0.997432198107269,
+              "opt_45_00": 0.00037277722100893595,
+              "opt_60_00": 0.00039688892457508053,
+              "opt_7_50": 0.00042242482251064403
+            },
+            "entropy": 0.02096207149324644,
+            "normalized_entropy": 0.01302446731949018,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "answer": "opt_30_00"
+        }
+      },
+      {
+        "id": "di_knowledge_chessbench_01",
+        "catalog_id": 4,
+        "dataset": "ChessBench",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9975577558740185,
+        "mean_brier": 0.00000830947889427335,
+        "mean_entropy": 0.019558732675700973,
+        "mean_normalized_entropy": 0.014108643318653361,
+        "forward_passes": 1,
+        "wall_time_ms": 139,
+        "answers": {
+          "best_move": {
+            "type": "choice",
+            "choice": "Qxf7#",
+            "probabilities": {
+              "Bxf7+": 0.0009905206678206295,
+              "Qg5": 0.00111958804933045,
+              "Qh6": 0.00033213540883033444,
+              "Qxf7#": 0.9975577558740185
+            },
+            "entropy": 0.019558732675700973,
+            "normalized_entropy": 0.014108643318653361,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "best_move": "Qxf7#"
+        }
+      },
+      {
+        "id": "di_knowledge_cruxeval_01",
+        "catalog_id": 5,
+        "dataset": "CRUXEval",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.8025467848021403,
+        "mean_brier": 0.07198542115489051,
+        "mean_entropy": 0.5593135934162804,
+        "mean_normalized_entropy": 0.40345947376172686,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "output": {
+            "type": "choice",
+            "choice": "B",
+            "probabilities": {
+              "A": 0.18106799263058798,
+              "B": 0.8025467848021403,
+              "C": 0.014429327100394426,
+              "D": 0.001955895466877306
+            },
+            "entropy": 0.5593135934162804,
+            "normalized_entropy": 0.40345947376172686,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "output": "B"
+        }
+      },
+      {
+        "id": "di_knowledge_cladder_01",
+        "catalog_id": 6,
+        "dataset": "CLadder",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 2,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9989458419919658,
+        "mean_brier": 0.0000022224982118056226,
+        "mean_entropy": 0.008279868960687484,
+        "mean_normalized_entropy": 0.011945325888794288,
+        "forward_passes": 1,
+        "wall_time_ms": 132,
+        "answers": {
+          "causal_answer": {
+            "type": "choice",
+            "choice": "yes",
+            "probabilities": {
+              "no": 0.001054158008034358,
+              "yes": 0.9989458419919658
+            },
+            "entropy": 0.008279868960687484,
+            "normalized_entropy": 0.011945325888794288,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "causal_answer": "yes"
+        }
+      },
+      {
+        "id": "di_language_contractnli_12slots",
+        "catalog_id": 7,
+        "dataset": "ContractNLI",
+        "area": "language",
+        "total_fields": 12,
+        "correct_fields": 10,
+        "max_options": 3,
+        "whole_case_exact": false,
+        "field_accuracy": 0.8333333333333334,
+        "supported": true,
+        "mean_confidence": 0.9612203480572347,
+        "mean_brier": 0.19752456201735155,
+        "mean_entropy": 0.09099916339803453,
+        "mean_normalized_entropy": 0.08283100811511616,
+        "forward_passes": 2,
+        "wall_time_ms": 300,
+        "answers": {
+          "clause_01_confidential_marking": {
+            "type": "choice",
+            "choice": "contradiction",
+            "probabilities": {
+              "contradiction": 0.9999669587020894,
+              "entailment": 0.0000051521227881760484,
+              "not_mentioned": 0.00002788917512233491
+            },
+            "entropy": 0.0003882548867592144,
+            "normalized_entropy": 0.00035340482785779765,
+            "passes_used": 1
+          },
+          "clause_02_sharing_employees": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.0000541879698543086,
+              "entailment": 0.9999322121537857,
+              "not_mentioned": 0.000013599876360005892
+            },
+            "entropy": 0.0007524695069147893,
+            "normalized_entropy": 0.0006849272620343956,
+            "passes_used": 1
+          },
+          "clause_03_sharing_affiliates": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.000032841238637547134,
+              "entailment": 0.9999629090800372,
+              "not_mentioned": 0.000004249681325110501
+            },
+            "entropy": 0.0004287003421450027,
+            "normalized_entropy": 0.0003902198678887279,
+            "passes_used": 1
+          },
+          "clause_04_return_or_destroy": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.00005960577171107057,
+              "entailment": 0.9999248281840942,
+              "not_mentioned": 0.000015566044194648
+            },
+            "entropy": 0.0008273221481262268,
+            "normalized_entropy": 0.0007530610722816706,
+            "passes_used": 1
+          },
+          "clause_05_survival_period": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.000045694758963438815,
+              "entailment": 0.9999435312501864,
+              "not_mentioned": 0.000010773990850068955
+            },
+            "entropy": 0.0006363559144761706,
+            "normalized_entropy": 0.0005792361154522035,
+            "passes_used": 1
+          },
+          "clause_06_no_license": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.000039465096569934696,
+              "entailment": 0.9999541228451622,
+              "not_mentioned": 0.000006412058267787062
+            },
+            "entropy": 0.0005227269859659184,
+            "normalized_entropy": 0.00047580660744259536,
+            "passes_used": 1
+          },
+          "clause_07_reverse_engineering": {
+            "type": "choice",
+            "choice": "contradiction",
+            "probabilities": {
+              "contradiction": 0.9999226723638762,
+              "entailment": 0.00003580762145610408,
+              "not_mentioned": 0.000041520014667751174
+            },
+            "entropy": 0.0008628091282927848,
+            "normalized_entropy": 0.0007853627136638002,
+            "passes_used": 1
+          },
+          "clause_08_public_domain_exception": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.00007724530102719988,
+              "entailment": 0.9997956838788641,
+              "not_mentioned": 0.00012707082010876214
+            },
+            "entropy": 0.0020756168614453376,
+            "normalized_entropy": 0.0018893078867356279,
+            "passes_used": 1
+          },
+          "clause_09_compelled_disclosure": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.0004034441132789688,
+              "entailment": 0.9995163658529207,
+              "not_mentioned": 0.00008019003380036372
+            },
+            "entropy": 0.004392904719366711,
+            "normalized_entropy": 0.00399859419440174,
+            "passes_used": 1
+          },
+          "clause_10_non_solicitation": {
+            "type": "choice",
+            "choice": "contradiction",
+            "probabilities": {
+              "contradiction": 0.7218965894730942,
+              "entailment": 0.00008119668711301057,
+              "not_mentioned": 0.27802221383979286
+            },
+            "entropy": 0.5918951623083185,
+            "normalized_entropy": 0.5387661947836903,
+            "passes_used": 1
+          },
+          "clause_11_exclusive_dealing": {
+            "type": "choice",
+            "choice": "contradiction",
+            "probabilities": {
+              "contradiction": 0.8146568467029119,
+              "entailment": 0.00035276067931527605,
+              "not_mentioned": 0.18499039261777286
+            },
+            "entropy": 0.481961766712405,
+            "normalized_entropy": 0.4387005057960038,
+            "passes_used": 1
+          },
+          "clause_12_injunctive_relief": {
+            "type": "choice",
+            "choice": "entailment",
+            "probabilities": {
+              "contradiction": 0.000535246887695642,
+              "entailment": 0.9991714561997925,
+              "not_mentioned": 0.00029329691251199253
+            },
+            "entropy": 0.007245871262198595,
+            "normalized_entropy": 0.006595476253941276,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "clause_01_confidential_marking": "contradiction",
+          "clause_02_sharing_employees": "entailment",
+          "clause_03_sharing_affiliates": "entailment",
+          "clause_04_return_or_destroy": "entailment",
+          "clause_05_survival_period": "entailment",
+          "clause_06_no_license": "entailment",
+          "clause_07_reverse_engineering": "contradiction",
+          "clause_08_public_domain_exception": "entailment",
+          "clause_09_compelled_disclosure": "entailment",
+          "clause_10_non_solicitation": "not_mentioned",
+          "clause_11_exclusive_dealing": "not_mentioned",
+          "clause_12_injunctive_relief": "entailment"
+        }
+      },
+      {
+        "id": "di_language_isarcasm_01",
+        "catalog_id": 8,
+        "dataset": "iSarcasmEval",
+        "area": "language",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9963530636124471,
+        "mean_brier": 0.00001872005052683405,
+        "mean_entropy": 0.027730851457461767,
+        "mean_normalized_entropy": 0.02000358093865429,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "tone": {
+            "type": "choice",
+            "choice": "sarcasm",
+            "probabilities": {
+              "literal_happy": 0.000973484009523276,
+              "neutral_fact": 0.0006664424482067901,
+              "sarcasm": 0.9963530636124471,
+              "understatement": 0.0020070099298228478
+            },
+            "entropy": 0.027730851457461767,
+            "normalized_entropy": 0.02000358093865429,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "tone": "sarcasm"
+        }
+      },
+      {
+        "id": "di_language_vast_01",
+        "catalog_id": 9,
+        "dataset": "VAST",
+        "area": "language",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 3,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9970154246342895,
+        "mean_brier": 0.000014708318161761768,
+        "mean_entropy": 0.021924785013240328,
+        "mean_normalized_entropy": 0.019956799354411553,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "stance": {
+            "type": "choice",
+            "choice": "pro",
+            "probabilities": {
+              "con": 0.0006716833350259672,
+              "neutral": 0.002312892030684562,
+              "pro": 0.9970154246342895
+            },
+            "entropy": 0.021924785013240328,
+            "normalized_entropy": 0.019956799354411553,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "stance": "pro"
+        }
+      },
+      {
+        "id": "di_retrieval_bright_11slots",
+        "catalog_id": 10,
+        "dataset": "BRIGHT",
+        "area": "retrieval",
+        "total_fields": 11,
+        "correct_fields": 11,
+        "max_options": 2,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.999870405743586,
+        "mean_brier": 9.892609427580504e-8,
+        "mean_entropy": 0.001192869797677578,
+        "mean_normalized_entropy": 0.0017209473415356628,
+        "forward_passes": 2,
+        "wall_time_ms": 300,
+        "answers": {
+          "passage_01": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999752332847143,
+              "relevant": 0.000024766715285696277
+            },
+            "entropy": 0.0002874424368869377,
+            "normalized_entropy": 0.0004146917782378239,
+            "passes_used": 1
+          },
+          "passage_02": {
+            "type": "choice",
+            "choice": "relevant",
+            "probabilities": {
+              "not_relevant": 0.00019149896514895613,
+              "relevant": 0.9998085010348511
+            },
+            "entropy": 0.0018308320604296954,
+            "normalized_entropy": 0.0026413323342824447,
+            "passes_used": 1
+          },
+          "passage_03": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999924049375194,
+              "relevant": 0.000007595062480691333
+            },
+            "entropy": 0.00009712572278521627,
+            "normalized_entropy": 0.0001401227986049877,
+            "passes_used": 1
+          },
+          "passage_04": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999877284401187,
+              "relevant": 0.00001227155988137541
+            },
+            "entropy": 0.0001510410592762275,
+            "normalized_entropy": 0.00021790618718842936,
+            "passes_used": 1
+          },
+          "passage_05": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999724541505208,
+              "relevant": 0.000027545849479062584
+            },
+            "entropy": 0.0003167674878853373,
+            "normalized_entropy": 0.0004569988838870309,
+            "passes_used": 1
+          },
+          "passage_06": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999910881466625,
+              "relevant": 0.00000891185333744814
+            },
+            "entropy": 0.00011253998790764688,
+            "normalized_entropy": 0.00016236088245606608,
+            "passes_used": 1
+          },
+          "passage_07": {
+            "type": "choice",
+            "choice": "relevant",
+            "probabilities": {
+              "not_relevant": 0.000634878067688466,
+              "relevant": 0.9993651219323116
+            },
+            "entropy": 0.005308698088835422,
+            "normalized_entropy": 0.007658832406339582,
+            "passes_used": 1
+          },
+          "passage_08": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999770572159825,
+              "relevant": 0.000022942784017506144
+            },
+            "entropy": 0.0002680289738252516,
+            "normalized_entropy": 0.00038668407135224826,
+            "passes_used": 1
+          },
+          "passage_09": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9998809281437993,
+              "relevant": 0.00011907185620082692
+            },
+            "entropy": 0.0011949722701359942,
+            "normalized_entropy": 0.0017239805681250255,
+            "passes_used": 1
+          },
+          "passage_10": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9997190245232848,
+              "relevant": 0.00028097547671530865
+            },
+            "entropy": 0.002578540795606348,
+            "normalized_entropy": 0.0037200480185511607,
+            "passes_used": 1
+          },
+          "passage_11": {
+            "type": "choice",
+            "choice": "not_relevant",
+            "probabilities": {
+              "not_relevant": 0.9999049213696796,
+              "relevant": 0.00009507863032040076
+            },
+            "entropy": 0.0009755788908792824,
+            "normalized_entropy": 0.0014074628278674959,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "passage_01": "not_relevant",
+          "passage_02": "relevant",
+          "passage_03": "not_relevant",
+          "passage_04": "not_relevant",
+          "passage_05": "not_relevant",
+          "passage_06": "not_relevant",
+          "passage_07": "relevant",
+          "passage_08": "not_relevant",
+          "passage_09": "not_relevant",
+          "passage_10": "not_relevant",
+          "passage_11": "not_relevant"
+        }
+      },
+      {
+        "id": "di_retrieval_esci_01",
+        "catalog_id": 11,
+        "dataset": "Amazon ESCI",
+        "area": "retrieval",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9993347881122924,
+        "mean_brier": 6.01296054122447e-7,
+        "mean_entropy": 0.006237108536950122,
+        "mean_normalized_entropy": 0.00449912277787208,
+        "forward_passes": 1,
+        "wall_time_ms": 144,
+        "answers": {
+          "esci_label": {
+            "type": "choice",
+            "choice": "Exact",
+            "probabilities": {
+              "Complement": 0.00030386569010935557,
+              "Exact": 0.9993347881122924,
+              "Irrelevant": 0.00020485267375380172,
+              "Substitute": 0.00015649352384422845
+            },
+            "entropy": 0.006237108536950122,
+            "normalized_entropy": 0.00449912277787208,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "esci_label": "Exact"
+        }
+      },
+      {
+        "id": "di_tools_bfcl_01",
+        "catalog_id": 12,
+        "dataset": "BFCL",
+        "area": "tools",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9966840719444977,
+        "mean_brier": 0.00001558433621974257,
+        "mean_entropy": 0.02540608875276025,
+        "mean_normalized_entropy": 0.018326619125996042,
+        "forward_passes": 1,
+        "wall_time_ms": 126,
+        "answers": {
+          "function_call": {
+            "type": "choice",
+            "choice": "get_equity_quote",
+            "probabilities": {
+              "cancel_subscription": 0.000372497596450969,
+              "execute_wire_transfer": 0.001228495722209099,
+              "get_equity_quote": 0.9966840719444977,
+              "get_weather_forecast": 0.0017149347368420609
+            },
+            "entropy": 0.02540608875276025,
+            "normalized_entropy": 0.018326619125996042,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "function_call": "get_equity_quote"
+        }
+      },
+      {
+        "id": "di_tools_toolret_12slots",
+        "catalog_id": 13,
+        "dataset": "ToolRet",
+        "area": "tools",
+        "total_fields": 12,
+        "correct_fields": 12,
+        "max_options": 2,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9990948732941941,
+        "mean_brier": 0.000003860020408267037,
+        "mean_entropy": 0.006793622889429282,
+        "mean_normalized_entropy": 0.009801126052249375,
+        "forward_passes": 2,
+        "wall_time_ms": 303,
+        "answers": {
+          "tool_candidate_01": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0002452756098313845,
+              "skip": 0.9997547243901687
+            },
+            "entropy": 0.002284253077319413,
+            "normalized_entropy": 0.0032954805867840714,
+            "passes_used": 1
+          },
+          "tool_candidate_02": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0007397816392744889,
+              "skip": 0.9992602183607256
+            },
+            "entropy": 0.006072708804966084,
+            "normalized_entropy": 0.008761066877687313,
+            "passes_used": 1
+          },
+          "tool_candidate_03": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0005123278661921819,
+              "skip": 0.9994876721338077
+            },
+            "entropy": 0.004393872133462844,
+            "normalized_entropy": 0.006339017537247055,
+            "passes_used": 1
+          },
+          "tool_candidate_04": {
+            "type": "choice",
+            "choice": "invoke",
+            "probabilities": {
+              "invoke": 0.9998880914664465,
+              "skip": 0.00011190853355334072
+            },
+            "entropy": 0.001130026938220467,
+            "normalized_entropy": 0.0016302842598416066,
+            "passes_used": 1
+          },
+          "tool_candidate_05": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0001596990817977565,
+              "skip": 0.9998403009182023
+            },
+            "entropy": 0.0015558107166881118,
+            "normalized_entropy": 0.002244560405527843,
+            "passes_used": 1
+          },
+          "tool_candidate_06": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0001944554316416372,
+              "skip": 0.9998055445683585
+            },
+            "entropy": 0.001856117994903218,
+            "normalized_entropy": 0.002677812226551639,
+            "passes_used": 1
+          },
+          "tool_candidate_07": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0004694940365691294,
+              "skip": 0.9995305059634308
+            },
+            "entropy": 0.004067518008340227,
+            "normalized_entropy": 0.0058681880593589985,
+            "passes_used": 1
+          },
+          "tool_candidate_08": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.00043649883338135666,
+              "skip": 0.9995635011666186
+            },
+            "entropy": 0.0038134749274560463,
+            "normalized_entropy": 0.0055016813663952375,
+            "passes_used": 1
+          },
+          "tool_candidate_09": {
+            "type": "choice",
+            "choice": "invoke",
+            "probabilities": {
+              "invoke": 0.9990890113773012,
+              "skip": 0.0009109886226988044
+            },
+            "entropy": 0.007288386810515109,
+            "normalized_entropy": 0.010514919507610677,
+            "passes_used": 1
+          },
+          "tool_candidate_10": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0014132924605034403,
+              "skip": 0.9985867075394966
+            },
+            "entropy": 0.010686082706372826,
+            "normalized_entropy": 0.01541675852701339,
+            "passes_used": 1
+          },
+          "tool_candidate_11": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0016268066882389714,
+              "skip": 0.998373193311761
+            },
+            "entropy": 0.012071430154544923,
+            "normalized_entropy": 0.017415392420399453,
+            "passes_used": 1
+          },
+          "tool_candidate_12": {
+            "type": "choice",
+            "choice": "skip",
+            "probabilities": {
+              "invoke": 0.0040409916659919255,
+              "skip": 0.995959008334008
+            },
+            "entropy": 0.026303792400362118,
+            "normalized_entropy": 0.03794835085257523,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "tool_candidate_01": "skip",
+          "tool_candidate_02": "skip",
+          "tool_candidate_03": "skip",
+          "tool_candidate_04": "invoke",
+          "tool_candidate_05": "skip",
+          "tool_candidate_06": "skip",
+          "tool_candidate_07": "skip",
+          "tool_candidate_08": "skip",
+          "tool_candidate_09": "invoke",
+          "tool_candidate_10": "skip",
+          "tool_candidate_11": "skip",
+          "tool_candidate_12": "skip"
+        }
+      },
+      {
+        "id": "di_tools_routerbench_01",
+        "catalog_id": 14,
+        "dataset": "RouterBench",
+        "area": "tools",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9984548547079153,
+        "mean_brier": 0.0000036210004737690234,
+        "mean_entropy": 0.012775767363579814,
+        "mean_normalized_entropy": 0.009215768109493832,
+        "forward_passes": 1,
+        "wall_time_ms": 128,
+        "answers": {
+          "target_model": {
+            "type": "choice",
+            "choice": "dgemma-vllm-l4",
+            "probabilities": {
+              "claude-3-7-opus": 0.0010143664156165373,
+              "dgemma-vllm-l4": 0.9984548547079153,
+              "gemini-2.5-pro": 0.0004438889720350461,
+              "gpt-4.5-preview": 0.00008688990443308841
+            },
+            "entropy": 0.012775767363579814,
+            "normalized_entropy": 0.009215768109493832,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "target_model": "dgemma-vllm-l4"
+        }
+      },
+      {
+        "id": "di_arts_bpomp_01",
+        "catalog_id": 15,
+        "dataset": "BPoMP",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9966907290766387,
+        "mean_brier": 0.000015797988758685013,
+        "mean_entropy": 0.02533163973690844,
+        "mean_normalized_entropy": 0.018272915513011807,
+        "forward_passes": 1,
+        "wall_time_ms": 143,
+        "answers": {
+          "mood": {
+            "type": "choice",
+            "choice": "melancholic_somber",
+            "probabilities": {
+              "euphoric_festive": 0.0019912551455269147,
+              "melancholic_somber": 0.9966907290766387,
+              "playful_whimsical": 0.0005782772733404549,
+              "triumphant_march": 0.0007397385044939388
+            },
+            "entropy": 0.02533163973690844,
+            "normalized_entropy": 0.018272915513011807,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "mood": "melancholic_somber"
+        }
+      },
+      {
+        "id": "di_arts_humicroedit_01",
+        "catalog_id": 16,
+        "dataset": "Humicroedit",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 2,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9676365574077188,
+        "mean_brier": 0.0020947848328477566,
+        "mean_entropy": 0.14286410135864164,
+        "mean_normalized_entropy": 0.2061093305511705,
+        "forward_passes": 1,
+        "wall_time_ms": 155,
+        "answers": {
+          "funnier_edit": {
+            "type": "choice",
+            "choice": "Edit_A",
+            "probabilities": {
+              "Edit_A": 0.9676365574077188,
+              "Edit_B": 0.03236344259228113
+            },
+            "entropy": 0.14286410135864164,
+            "normalized_entropy": 0.2061093305511705,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "funnier_edit": "Edit_A"
+        }
+      },
+      {
+        "id": "di_arts_pop909_01",
+        "catalog_id": 17,
+        "dataset": "POP909-CL",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9872850867579455,
+        "mean_brier": 0.00024577564480403433,
+        "mean_entropy": 0.07789372442664516,
+        "mean_normalized_entropy": 0.05618844497334625,
+        "forward_passes": 1,
+        "wall_time_ms": 126,
+        "answers": {
+          "section_type": {
+            "type": "choice",
+            "choice": "chorus",
+            "probabilities": {
+              "chorus": 0.9872850867579455,
+              "intro": 0.008236300882013506,
+              "outro_fade": 0.0004728139643216779,
+              "verse": 0.004005798395719191
+            },
+            "entropy": 0.07789372442664516,
+            "normalized_entropy": 0.05618844497334625,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "section_type": "chorus"
+        }
+      },
+      {
+        "id": "di_arts_cfcolor_01",
+        "catalog_id": 18,
+        "dataset": "cfcolor",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9935594420352721,
+        "mean_brier": 0.00006137650882930263,
+        "mean_entropy": 0.04466492657850778,
+        "mean_normalized_entropy": 0.032218934038241415,
+        "forward_passes": 1,
+        "wall_time_ms": 165,
+        "answers": {
+          "palette": {
+            "type": "choice",
+            "choice": "crimson_alert_red",
+            "probabilities": {
+              "baby_sky_blue": 0.00414539019626633,
+              "crimson_alert_red": 0.9935594420352721,
+              "muted_slate_gray": 0.0013445159921890138,
+              "pastel_mint_green": 0.0009506517762725074
+            },
+            "entropy": 0.04466492657850778,
+            "normalized_entropy": 0.032218934038241415,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "palette": "crimson_alert_red"
+        }
+      },
+      {
+        "id": "di_arts_habermas_01",
+        "catalog_id": 19,
+        "dataset": "Habermas Machine",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9982949742648074,
+        "mean_brier": 0.0000052330864558454435,
+        "mean_entropy": 0.013286147836322086,
+        "mean_normalized_entropy": 0.009583929797989752,
+        "forward_passes": 1,
+        "wall_time_ms": 197,
+        "answers": {
+          "consensus_statement": {
+            "type": "choice",
+            "choice": "Statement_1",
+            "probabilities": {
+              "Statement_1": 0.9982949742648074,
+              "Statement_2": 0.0015193930225253312,
+              "Statement_3": 0.00008310066614648415,
+              "Statement_4": 0.0001025320465207124
+            },
+            "entropy": 0.013286147836322086,
+            "normalized_entropy": 0.009583929797989752,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "consensus_statement": "Statement_1"
+        }
+      },
+      {
+        "id": "di_wide_apibank_30opts",
+        "catalog_id": 20,
+        "dataset": "API-Bank",
+        "area": "tools",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 30,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.8297114181143009,
+        "mean_brier": 0.03448015796165179,
+        "mean_entropy": 0.7839489741179598,
+        "mean_normalized_entropy": 0.23049205504646314,
+        "forward_passes": 2,
+        "wall_time_ms": 326,
+        "answers": {
+          "selected_api": {
+            "type": "choice",
+            "choice": "ConvertCurrencyFX_28",
+            "probabilities": {
+              "ConvertCurrencyFX_28": 0.8297114181143009,
+              "api_tool_01": 0.0009350137461421186,
+              "api_tool_02": 0.00009900944459882032,
+              "api_tool_03": 0.0001137156419422554,
+              "api_tool_04": 0.00010612507185861471,
+              "api_tool_05": 0.00006964515826454978,
+              "api_tool_06": 0.00007476967049532452,
+              "api_tool_07": 0.000045184186388375376,
+              "api_tool_08": 0.00001199297705587339,
+              "api_tool_09": 0.0008259101559142718,
+              "api_tool_10": 0.00006485137933397757,
+              "api_tool_11": 0.000045184186388375376,
+              "api_tool_12": 0.0000073151096766986036,
+              "api_tool_13": 0.00004199404689503001,
+              "api_tool_14": 0.0000073151096766986036,
+              "api_tool_15": 0.00001199297705587339,
+              "api_tool_16": 0.00010612507185861471,
+              "api_tool_17": 0.000007447944020431125,
+              "api_tool_18": 0.000023114528745424664,
+              "api_tool_19": 0.000014579318428662784,
+              "api_tool_20": 0.0003176402672233612,
+              "api_tool_21": 0.056070786026213355,
+              "api_tool_22": 0.011532487935484793,
+              "api_tool_23": 0.007647673536836821,
+              "api_tool_24": 0.005254921034736118,
+              "api_tool_25": 0.022620207126381603,
+              "api_tool_26": 0.015499750283777319,
+              "api_tool_27": 0.014765251517926231,
+              "api_tool_29": 0.0338712567740157,
+              "api_tool_30": 0.00009732165836347466
+            },
+            "entropy": 0.7839489741179598,
+            "normalized_entropy": 0.23049205504646314,
+            "passes_used": 2
+          }
+        },
+        "expected": {
+          "selected_api": "ConvertCurrencyFX_28"
+        }
+      },
+      {
+        "id": "di_wide_banking77_32opts",
+        "catalog_id": 21,
+        "dataset": "BANKING77",
+        "area": "retrieval",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 32,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.8153372453577017,
+        "mean_brier": 0.03902818917453516,
+        "mean_entropy": 0.9188056235014976,
+        "mean_normalized_entropy": 0.26511126331330054,
+        "forward_passes": 2,
+        "wall_time_ms": 321,
+        "answers": {
+          "intent": {
+            "type": "choice",
+            "choice": "lost_or_stolen_card",
+            "probabilities": {
+              "banking_intent_01": 0.04334161014888888,
+              "banking_intent_02": 0.0012652181375275716,
+              "banking_intent_03": 0.0006420399459302498,
+              "banking_intent_04": 0.004518596316609833,
+              "banking_intent_05": 0.023186599678458247,
+              "banking_intent_06": 0.0023855915518939835,
+              "banking_intent_07": 0.004963600823876707,
+              "banking_intent_08": 0.0011334698714955938,
+              "banking_intent_09": 0.0005709062358319611,
+              "banking_intent_10": 0.01296360717885212,
+              "banking_intent_11": 0.0032232547557938147,
+              "banking_intent_12": 0.002923475531326537,
+              "banking_intent_13": 0.004461803270870835,
+              "banking_intent_14": 0.04334161014888888,
+              "banking_intent_15": 0.0016566393408300511,
+              "banking_intent_16": 0.0007211317028165264,
+              "banking_intent_17": 0.0022665352877481444,
+              "banking_intent_18": 0.0002580373126517254,
+              "banking_intent_19": 0.00031141630718959864,
+              "banking_intent_20": 0.01850075555900316,
+              "banking_intent_21": 0.0026728622281132174,
+              "banking_intent_22": 0.002013031093731327,
+              "banking_intent_23": 0.00019262987282028343,
+              "banking_intent_24": 0.000370666394024757,
+              "banking_intent_25": 0.0009464489194636841,
+              "banking_intent_26": 0.0004928803465681637,
+              "banking_intent_27": 0.0006503303666450822,
+              "banking_intent_28": 0.0005511892785857853,
+              "banking_intent_30": 0.001050690751430811,
+              "banking_intent_31": 0.0025513231654894983,
+              "banking_intent_32": 0.0005348031189413812,
+              "lost_or_stolen_card": 0.8153372453577017
+            },
+            "entropy": 0.9188056235014976,
+            "normalized_entropy": 0.26511126331330054,
+            "passes_used": 2
+          }
+        },
+        "expected": {
+          "intent": "lost_or_stolen_card"
+        }
+      },
+      {
+        "id": "di_wide_clinc150_36opts",
+        "catalog_id": 22,
+        "dataset": "CLINC150+OOS",
+        "area": "retrieval",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 36,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.790814857963161,
+        "mean_brier": 0.04611381362705512,
+        "mean_entropy": 1.179101032294071,
+        "mean_normalized_entropy": 0.3290344079504332,
+        "forward_passes": 2,
+        "wall_time_ms": 363,
+        "answers": {
+          "intent": {
+            "type": "choice",
+            "choice": "oos_out_of_scope",
+            "probabilities": {
+              "clinc_domain_intent_01": 0.004582257765668602,
+              "clinc_domain_intent_02": 0.0001524427799862779,
+              "clinc_domain_intent_03": 0.009762620489377318,
+              "clinc_domain_intent_04": 0.0069557067939000445,
+              "clinc_domain_intent_05": 0.0022279725133691744,
+              "clinc_domain_intent_06": 0.0010101257562108138,
+              "clinc_domain_intent_07": 0.0039769391127825295,
+              "clinc_domain_intent_08": 0.007973503869796979,
+              "clinc_domain_intent_09": 0.0004252990534123641,
+              "clinc_domain_intent_10": 0.013592869506039457,
+              "clinc_domain_intent_11": 0.011918761731216813,
+              "clinc_domain_intent_12": 0.0039769391127825295,
+              "clinc_domain_intent_13": 0.009128522704050365,
+              "clinc_domain_intent_14": 0.004582257765668602,
+              "clinc_domain_intent_15": 0.013592869506039457,
+              "clinc_domain_intent_16": 0.00008873637785942575,
+              "clinc_domain_intent_17": 0.0034472016285930344,
+              "clinc_domain_intent_18": 0.004916277511799689,
+              "clinc_domain_intent_19": 0.0008654808797978772,
+              "clinc_domain_intent_20": 0.011155354666763045,
+              "clinc_domain_intent_21": 0.005919521674042509,
+              "clinc_domain_intent_22": 0.030582789781053006,
+              "clinc_domain_intent_23": 0.003419334128587725,
+              "clinc_domain_intent_24": 0.0036662388199697063,
+              "clinc_domain_intent_25": 0.005919521674042509,
+              "clinc_domain_intent_26": 0.0051705331197108685,
+              "clinc_domain_intent_27": 0.008255191847419734,
+              "clinc_domain_intent_28": 0.0045105279857064655,
+              "clinc_domain_intent_29": 0.00036461779626231457,
+              "clinc_domain_intent_30": 0.007233849974677214,
+              "clinc_domain_intent_31": 0.008255191847419734,
+              "clinc_domain_intent_32": 0.0051705331197108685,
+              "clinc_domain_intent_34": 0.002971430869957688,
+              "clinc_domain_intent_35": 0.003188030772360717,
+              "clinc_domain_intent_36": 0.0002256891008036867,
+              "oos_out_of_scope": 0.790814857963161
+            },
+            "entropy": 1.179101032294071,
+            "normalized_entropy": 0.3290344079504332,
+            "passes_used": 2
+          }
+        },
+        "expected": {
+          "intent": "oos_out_of_scope"
+        }
+      }
+    ]
+  },
+  "naive_26opt_10slot_report": {
+    "suite_edition": "release-v1-panel",
+    "engine_mode": "naive-djev-26opt-10slot",
+    "temperature_scale": 1,
+    "total_requests": 22,
+    "supported_requests": 16,
+    "coverage_pct": 72.72727272727273,
+    "total_fields": 54,
+    "total_forward_passes": 16,
+    "headline_decision_index": 76.66666666666667,
+    "supported_decision_index": 76.66666666666667,
+    "skill_decision_index": 76.66666666666667,
+    "wide_option_accuracy": 0,
+    "multi_slot_canvas_accuracy": 0,
+    "ece_10bin": 0.02371197217877586,
+    "mean_brier": 0.2767438260183935,
+    "p50_latency_ms": 139,
+    "areas": [
+      {
+        "area_id": "knowledge",
+        "label": "Knowledge \u0026 Reasoning",
+        "benchmark_count": 6,
+        "coverage_pct": 100,
+        "plain_score": 100,
+        "supported_score": 100,
+        "skill_score": 100,
+        "benchmarks": [
+          {
+            "catalog_id": 1,
+            "dataset": "MMLU",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.0005709003089734387,
+            "mean_entropy": 0.1165168166191971,
+            "mean_normalized_entropy": 0.08404911675834222,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 2,
+            "dataset": "GPQA Diamond",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.013312154787041064,
+            "mean_entropy": 0.3398350351002314,
+            "mean_normalized_entropy": 0.24513915992971533,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 3,
+            "dataset": "GSM8K",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 20,
+            "skill_score": 100,
+            "mean_brier": 0.000008961113514103532,
+            "mean_entropy": 0.02096207149324644,
+            "mean_normalized_entropy": 0.01302446731949018,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 4,
+            "dataset": "ChessBench",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.00000830947889427335,
+            "mean_entropy": 0.019558732675700973,
+            "mean_normalized_entropy": 0.014108643318653361,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 5,
+            "dataset": "CRUXEval",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.07198542115489051,
+            "mean_entropy": 0.5593135934162804,
+            "mean_normalized_entropy": 0.40345947376172686,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 6,
+            "dataset": "CLadder",
+            "area": "knowledge",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 50,
+            "skill_score": 100,
+            "mean_brier": 0.0000022224982118056226,
+            "mean_entropy": 0.008279868960687484,
+            "mean_normalized_entropy": 0.011945325888794288,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "language",
+        "label": "Language Understanding",
+        "benchmark_count": 3,
+        "coverage_pct": 66.66666666666667,
+        "plain_score": 66.66666666666667,
+        "supported_score": 66.66666666666667,
+        "skill_score": 66.66666666666667,
+        "benchmarks": [
+          {
+            "catalog_id": 7,
+            "dataset": "ContractNLI",
+            "area": "language",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 0,
+            "coverage_pct": 0,
+            "supported_score": 0,
+            "coverage_adj_score": 0,
+            "chance_baseline": 33.33,
+            "skill_score": 0,
+            "mean_brier": 1,
+            "mean_entropy": 0,
+            "mean_normalized_entropy": 0,
+            "mean_passes_per_req": 0
+          },
+          {
+            "catalog_id": 8,
+            "dataset": "iSarcasmEval",
+            "area": "language",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.00001872005052683405,
+            "mean_entropy": 0.027730851457461767,
+            "mean_normalized_entropy": 0.02000358093865429,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 9,
+            "dataset": "VAST",
+            "area": "language",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 33.33,
+            "skill_score": 100,
+            "mean_brier": 0.000014708318161761768,
+            "mean_entropy": 0.021924785013240328,
+            "mean_normalized_entropy": 0.019956799354411553,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "retrieval",
+        "label": "Retrieval \u0026 Classification",
+        "benchmark_count": 2,
+        "coverage_pct": 50,
+        "plain_score": 50,
+        "supported_score": 50,
+        "skill_score": 50,
+        "benchmarks": [
+          {
+            "catalog_id": 10,
+            "dataset": "BRIGHT",
+            "area": "retrieval",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 0,
+            "coverage_pct": 0,
+            "supported_score": 0,
+            "coverage_adj_score": 0,
+            "chance_baseline": 11.200000000000001,
+            "skill_score": 0,
+            "mean_brier": 1,
+            "mean_entropy": 0,
+            "mean_normalized_entropy": 0,
+            "mean_passes_per_req": 0
+          },
+          {
+            "catalog_id": 11,
+            "dataset": "Amazon ESCI",
+            "area": "retrieval",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 6.01296054122447e-7,
+            "mean_entropy": 0.006237108536950122,
+            "mean_normalized_entropy": 0.00449912277787208,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "tools",
+        "label": "Tools \u0026 Automation",
+        "benchmark_count": 3,
+        "coverage_pct": 66.66666666666667,
+        "plain_score": 66.66666666666667,
+        "supported_score": 66.66666666666667,
+        "skill_score": 66.66666666666667,
+        "benchmarks": [
+          {
+            "catalog_id": 12,
+            "dataset": "BFCL",
+            "area": "tools",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25.919999999999998,
+            "skill_score": 100,
+            "mean_brier": 0.00001558433621974257,
+            "mean_entropy": 0.02540608875276025,
+            "mean_normalized_entropy": 0.018326619125996042,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 13,
+            "dataset": "ToolRet",
+            "area": "tools",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 0,
+            "coverage_pct": 0,
+            "supported_score": 0,
+            "coverage_adj_score": 0,
+            "chance_baseline": 9.370000000000001,
+            "skill_score": 0,
+            "mean_brier": 1,
+            "mean_entropy": 0,
+            "mean_normalized_entropy": 0,
+            "mean_passes_per_req": 0
+          },
+          {
+            "catalog_id": 14,
+            "dataset": "RouterBench",
+            "area": "tools",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 9.09,
+            "skill_score": 100,
+            "mean_brier": 0.0000036210004737690234,
+            "mean_entropy": 0.012775767363579814,
+            "mean_normalized_entropy": 0.009215768109493832,
+            "mean_passes_per_req": 1
+          }
+        ]
+      },
+      {
+        "area_id": "arts",
+        "label": "Arts \u0026 Human Judgment",
+        "benchmark_count": 5,
+        "coverage_pct": 100,
+        "plain_score": 100,
+        "supported_score": 100,
+        "skill_score": 100,
+        "benchmarks": [
+          {
+            "catalog_id": 15,
+            "dataset": "BPoMP",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.000015797988758685013,
+            "mean_entropy": 0.02533163973690844,
+            "mean_normalized_entropy": 0.018272915513011807,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 16,
+            "dataset": "Humicroedit",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 50,
+            "skill_score": 100,
+            "mean_brier": 0.0020947848328477566,
+            "mean_entropy": 0.14286410135864164,
+            "mean_normalized_entropy": 0.2061093305511705,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 17,
+            "dataset": "POP909-CL",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 12.5,
+            "skill_score": 100,
+            "mean_brier": 0.00024577564480403433,
+            "mean_entropy": 0.07789372442664516,
+            "mean_normalized_entropy": 0.05618844497334625,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 18,
+            "dataset": "cfcolor",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 20,
+            "skill_score": 100,
+            "mean_brier": 0.00006137650882930263,
+            "mean_entropy": 0.04466492657850778,
+            "mean_normalized_entropy": 0.032218934038241415,
+            "mean_passes_per_req": 1
+          },
+          {
+            "catalog_id": 19,
+            "dataset": "Habermas Machine",
+            "area": "arts",
+            "in_panel": true,
+            "total_cases": 1,
+            "supported_cases": 1,
+            "coverage_pct": 100,
+            "supported_score": 100,
+            "coverage_adj_score": 100,
+            "chance_baseline": 25,
+            "skill_score": 100,
+            "mean_brier": 0.0000052330864558454435,
+            "mean_entropy": 0.013286147836322086,
+            "mean_normalized_entropy": 0.009583929797989752,
+            "mean_passes_per_req": 1
+          }
+        ]
+      }
+    ],
+    "display_benchmarks": [
+      {
+        "catalog_id": 20,
+        "dataset": "API-Bank",
+        "area": "tools",
+        "in_panel": false,
+        "total_cases": 1,
+        "supported_cases": 0,
+        "coverage_pct": 0,
+        "supported_score": 0,
+        "coverage_adj_score": 0,
+        "chance_baseline": 1.8900000000000001,
+        "skill_score": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "mean_passes_per_req": 0
+      },
+      {
+        "catalog_id": 21,
+        "dataset": "BANKING77",
+        "area": "retrieval",
+        "in_panel": false,
+        "total_cases": 1,
+        "supported_cases": 0,
+        "coverage_pct": 0,
+        "supported_score": 0,
+        "coverage_adj_score": 0,
+        "chance_baseline": 1.27,
+        "skill_score": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "mean_passes_per_req": 0
+      },
+      {
+        "catalog_id": 22,
+        "dataset": "CLINC150+OOS",
+        "area": "retrieval",
+        "in_panel": false,
+        "total_cases": 1,
+        "supported_cases": 0,
+        "coverage_pct": 0,
+        "supported_score": 0,
+        "coverage_adj_score": 0,
+        "chance_baseline": 0.66,
+        "skill_score": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "mean_passes_per_req": 0
+      }
+    ],
+    "results": [
+      {
+        "id": "di_knowledge_mmlu_01",
+        "catalog_id": 1,
+        "dataset": "MMLU",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.980051593797278,
+        "mean_brier": 0.0005709003089734387,
+        "mean_entropy": 0.1165168166191971,
+        "mean_normalized_entropy": 0.08404911675834222,
+        "forward_passes": 1,
+        "wall_time_ms": 394,
+        "answers": {
+          "answer": {
+            "type": "choice",
+            "choice": "B",
+            "probabilities": {
+              "A": 0.011268063845531013,
+              "B": 0.980051593797278,
+              "C": 0.006379529459851678,
+              "D": 0.002300812897339407
+            },
+            "entropy": 0.1165168166191971,
+            "normalized_entropy": 0.08404911675834222,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "answer": "B"
+        }
+      },
+      {
+        "id": "di_knowledge_gpqa_01",
+        "catalog_id": 2,
+        "dataset": "GPQA Diamond",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.912765278013091,
+        "mean_brier": 0.013312154787041064,
+        "mean_entropy": 0.3398350351002314,
+        "mean_normalized_entropy": 0.24513915992971533,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "answer": {
+            "type": "choice",
+            "choice": "B",
+            "probabilities": {
+              "A": 0.07501058938539862,
+              "B": 0.912765278013091,
+              "C": 0.005421111152704785,
+              "D": 0.006803021448805705
+            },
+            "entropy": 0.3398350351002314,
+            "normalized_entropy": 0.24513915992971533,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "answer": "B"
+        }
+      },
+      {
+        "id": "di_knowledge_gsm8k_01",
+        "catalog_id": 3,
+        "dataset": "GSM8K",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 5,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.997432198107269,
+        "mean_brier": 0.000008961113514103532,
+        "mean_entropy": 0.02096207149324644,
+        "mean_normalized_entropy": 0.01302446731949018,
+        "forward_passes": 1,
+        "wall_time_ms": 394,
+        "answers": {
+          "answer": {
+            "type": "choice",
+            "choice": "opt_30_00",
+            "probabilities": {
+              "opt_15_00": 0.001375710924636446,
+              "opt_30_00": 0.997432198107269,
+              "opt_45_00": 0.00037277722100893595,
+              "opt_60_00": 0.00039688892457508053,
+              "opt_7_50": 0.00042242482251064403
+            },
+            "entropy": 0.02096207149324644,
+            "normalized_entropy": 0.01302446731949018,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "answer": "opt_30_00"
+        }
+      },
+      {
+        "id": "di_knowledge_chessbench_01",
+        "catalog_id": 4,
+        "dataset": "ChessBench",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9975577558740185,
+        "mean_brier": 0.00000830947889427335,
+        "mean_entropy": 0.019558732675700973,
+        "mean_normalized_entropy": 0.014108643318653361,
+        "forward_passes": 1,
+        "wall_time_ms": 139,
+        "answers": {
+          "best_move": {
+            "type": "choice",
+            "choice": "Qxf7#",
+            "probabilities": {
+              "Bxf7+": 0.0009905206678206295,
+              "Qg5": 0.00111958804933045,
+              "Qh6": 0.00033213540883033444,
+              "Qxf7#": 0.9975577558740185
+            },
+            "entropy": 0.019558732675700973,
+            "normalized_entropy": 0.014108643318653361,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "best_move": "Qxf7#"
+        }
+      },
+      {
+        "id": "di_knowledge_cruxeval_01",
+        "catalog_id": 5,
+        "dataset": "CRUXEval",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.8025467848021403,
+        "mean_brier": 0.07198542115489051,
+        "mean_entropy": 0.5593135934162804,
+        "mean_normalized_entropy": 0.40345947376172686,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "output": {
+            "type": "choice",
+            "choice": "B",
+            "probabilities": {
+              "A": 0.18106799263058798,
+              "B": 0.8025467848021403,
+              "C": 0.014429327100394426,
+              "D": 0.001955895466877306
+            },
+            "entropy": 0.5593135934162804,
+            "normalized_entropy": 0.40345947376172686,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "output": "B"
+        }
+      },
+      {
+        "id": "di_knowledge_cladder_01",
+        "catalog_id": 6,
+        "dataset": "CLadder",
+        "area": "knowledge",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 2,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9989458419919658,
+        "mean_brier": 0.0000022224982118056226,
+        "mean_entropy": 0.008279868960687484,
+        "mean_normalized_entropy": 0.011945325888794288,
+        "forward_passes": 1,
+        "wall_time_ms": 132,
+        "answers": {
+          "causal_answer": {
+            "type": "choice",
+            "choice": "yes",
+            "probabilities": {
+              "no": 0.001054158008034358,
+              "yes": 0.9989458419919658
+            },
+            "entropy": 0.008279868960687484,
+            "normalized_entropy": 0.011945325888794288,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "causal_answer": "yes"
+        }
+      },
+      {
+        "id": "di_language_contractnli_12slots",
+        "catalog_id": 7,
+        "dataset": "ContractNLI",
+        "area": "language",
+        "total_fields": 12,
+        "correct_fields": 0,
+        "max_options": 3,
+        "whole_case_exact": false,
+        "field_accuracy": 0,
+        "supported": false,
+        "error_msg": "HTTP 422 Unprocessable Entity: capacity exceeded (fields=12, max_options=3)",
+        "mean_confidence": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "forward_passes": 0,
+        "wall_time_ms": 0,
+        "expected": {
+          "clause_01_confidential_marking": "contradiction",
+          "clause_02_sharing_employees": "entailment",
+          "clause_03_sharing_affiliates": "entailment",
+          "clause_04_return_or_destroy": "entailment",
+          "clause_05_survival_period": "entailment",
+          "clause_06_no_license": "entailment",
+          "clause_07_reverse_engineering": "contradiction",
+          "clause_08_public_domain_exception": "entailment",
+          "clause_09_compelled_disclosure": "entailment",
+          "clause_10_non_solicitation": "not_mentioned",
+          "clause_11_exclusive_dealing": "not_mentioned",
+          "clause_12_injunctive_relief": "entailment"
+        }
+      },
+      {
+        "id": "di_language_isarcasm_01",
+        "catalog_id": 8,
+        "dataset": "iSarcasmEval",
+        "area": "language",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9963530636124471,
+        "mean_brier": 0.00001872005052683405,
+        "mean_entropy": 0.027730851457461767,
+        "mean_normalized_entropy": 0.02000358093865429,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "tone": {
+            "type": "choice",
+            "choice": "sarcasm",
+            "probabilities": {
+              "literal_happy": 0.000973484009523276,
+              "neutral_fact": 0.0006664424482067901,
+              "sarcasm": 0.9963530636124471,
+              "understatement": 0.0020070099298228478
+            },
+            "entropy": 0.027730851457461767,
+            "normalized_entropy": 0.02000358093865429,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "tone": "sarcasm"
+        }
+      },
+      {
+        "id": "di_language_vast_01",
+        "catalog_id": 9,
+        "dataset": "VAST",
+        "area": "language",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 3,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9970154246342895,
+        "mean_brier": 0.000014708318161761768,
+        "mean_entropy": 0.021924785013240328,
+        "mean_normalized_entropy": 0.019956799354411553,
+        "forward_passes": 1,
+        "wall_time_ms": 133,
+        "answers": {
+          "stance": {
+            "type": "choice",
+            "choice": "pro",
+            "probabilities": {
+              "con": 0.0006716833350259672,
+              "neutral": 0.002312892030684562,
+              "pro": 0.9970154246342895
+            },
+            "entropy": 0.021924785013240328,
+            "normalized_entropy": 0.019956799354411553,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "stance": "pro"
+        }
+      },
+      {
+        "id": "di_retrieval_bright_11slots",
+        "catalog_id": 10,
+        "dataset": "BRIGHT",
+        "area": "retrieval",
+        "total_fields": 11,
+        "correct_fields": 0,
+        "max_options": 2,
+        "whole_case_exact": false,
+        "field_accuracy": 0,
+        "supported": false,
+        "error_msg": "HTTP 422 Unprocessable Entity: capacity exceeded (fields=11, max_options=2)",
+        "mean_confidence": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "forward_passes": 0,
+        "wall_time_ms": 0,
+        "expected": {
+          "passage_01": "not_relevant",
+          "passage_02": "relevant",
+          "passage_03": "not_relevant",
+          "passage_04": "not_relevant",
+          "passage_05": "not_relevant",
+          "passage_06": "not_relevant",
+          "passage_07": "relevant",
+          "passage_08": "not_relevant",
+          "passage_09": "not_relevant",
+          "passage_10": "not_relevant",
+          "passage_11": "not_relevant"
+        }
+      },
+      {
+        "id": "di_retrieval_esci_01",
+        "catalog_id": 11,
+        "dataset": "Amazon ESCI",
+        "area": "retrieval",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9993347881122924,
+        "mean_brier": 6.01296054122447e-7,
+        "mean_entropy": 0.006237108536950122,
+        "mean_normalized_entropy": 0.00449912277787208,
+        "forward_passes": 1,
+        "wall_time_ms": 144,
+        "answers": {
+          "esci_label": {
+            "type": "choice",
+            "choice": "Exact",
+            "probabilities": {
+              "Complement": 0.00030386569010935557,
+              "Exact": 0.9993347881122924,
+              "Irrelevant": 0.00020485267375380172,
+              "Substitute": 0.00015649352384422845
+            },
+            "entropy": 0.006237108536950122,
+            "normalized_entropy": 0.00449912277787208,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "esci_label": "Exact"
+        }
+      },
+      {
+        "id": "di_tools_bfcl_01",
+        "catalog_id": 12,
+        "dataset": "BFCL",
+        "area": "tools",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9966840719444977,
+        "mean_brier": 0.00001558433621974257,
+        "mean_entropy": 0.02540608875276025,
+        "mean_normalized_entropy": 0.018326619125996042,
+        "forward_passes": 1,
+        "wall_time_ms": 126,
+        "answers": {
+          "function_call": {
+            "type": "choice",
+            "choice": "get_equity_quote",
+            "probabilities": {
+              "cancel_subscription": 0.000372497596450969,
+              "execute_wire_transfer": 0.001228495722209099,
+              "get_equity_quote": 0.9966840719444977,
+              "get_weather_forecast": 0.0017149347368420609
+            },
+            "entropy": 0.02540608875276025,
+            "normalized_entropy": 0.018326619125996042,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "function_call": "get_equity_quote"
+        }
+      },
+      {
+        "id": "di_tools_toolret_12slots",
+        "catalog_id": 13,
+        "dataset": "ToolRet",
+        "area": "tools",
+        "total_fields": 12,
+        "correct_fields": 0,
+        "max_options": 2,
+        "whole_case_exact": false,
+        "field_accuracy": 0,
+        "supported": false,
+        "error_msg": "HTTP 422 Unprocessable Entity: capacity exceeded (fields=12, max_options=2)",
+        "mean_confidence": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "forward_passes": 0,
+        "wall_time_ms": 0,
+        "expected": {
+          "tool_candidate_01": "skip",
+          "tool_candidate_02": "skip",
+          "tool_candidate_03": "skip",
+          "tool_candidate_04": "invoke",
+          "tool_candidate_05": "skip",
+          "tool_candidate_06": "skip",
+          "tool_candidate_07": "skip",
+          "tool_candidate_08": "skip",
+          "tool_candidate_09": "invoke",
+          "tool_candidate_10": "skip",
+          "tool_candidate_11": "skip",
+          "tool_candidate_12": "skip"
+        }
+      },
+      {
+        "id": "di_tools_routerbench_01",
+        "catalog_id": 14,
+        "dataset": "RouterBench",
+        "area": "tools",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9984548547079153,
+        "mean_brier": 0.0000036210004737690234,
+        "mean_entropy": 0.012775767363579814,
+        "mean_normalized_entropy": 0.009215768109493832,
+        "forward_passes": 1,
+        "wall_time_ms": 128,
+        "answers": {
+          "target_model": {
+            "type": "choice",
+            "choice": "dgemma-vllm-l4",
+            "probabilities": {
+              "claude-3-7-opus": 0.0010143664156165373,
+              "dgemma-vllm-l4": 0.9984548547079153,
+              "gemini-2.5-pro": 0.0004438889720350461,
+              "gpt-4.5-preview": 0.00008688990443308841
+            },
+            "entropy": 0.012775767363579814,
+            "normalized_entropy": 0.009215768109493832,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "target_model": "dgemma-vllm-l4"
+        }
+      },
+      {
+        "id": "di_arts_bpomp_01",
+        "catalog_id": 15,
+        "dataset": "BPoMP",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9966907290766387,
+        "mean_brier": 0.000015797988758685013,
+        "mean_entropy": 0.02533163973690844,
+        "mean_normalized_entropy": 0.018272915513011807,
+        "forward_passes": 1,
+        "wall_time_ms": 143,
+        "answers": {
+          "mood": {
+            "type": "choice",
+            "choice": "melancholic_somber",
+            "probabilities": {
+              "euphoric_festive": 0.0019912551455269147,
+              "melancholic_somber": 0.9966907290766387,
+              "playful_whimsical": 0.0005782772733404549,
+              "triumphant_march": 0.0007397385044939388
+            },
+            "entropy": 0.02533163973690844,
+            "normalized_entropy": 0.018272915513011807,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "mood": "melancholic_somber"
+        }
+      },
+      {
+        "id": "di_arts_humicroedit_01",
+        "catalog_id": 16,
+        "dataset": "Humicroedit",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 2,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9676365574077188,
+        "mean_brier": 0.0020947848328477566,
+        "mean_entropy": 0.14286410135864164,
+        "mean_normalized_entropy": 0.2061093305511705,
+        "forward_passes": 1,
+        "wall_time_ms": 155,
+        "answers": {
+          "funnier_edit": {
+            "type": "choice",
+            "choice": "Edit_A",
+            "probabilities": {
+              "Edit_A": 0.9676365574077188,
+              "Edit_B": 0.03236344259228113
+            },
+            "entropy": 0.14286410135864164,
+            "normalized_entropy": 0.2061093305511705,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "funnier_edit": "Edit_A"
+        }
+      },
+      {
+        "id": "di_arts_pop909_01",
+        "catalog_id": 17,
+        "dataset": "POP909-CL",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9872850867579455,
+        "mean_brier": 0.00024577564480403433,
+        "mean_entropy": 0.07789372442664516,
+        "mean_normalized_entropy": 0.05618844497334625,
+        "forward_passes": 1,
+        "wall_time_ms": 126,
+        "answers": {
+          "section_type": {
+            "type": "choice",
+            "choice": "chorus",
+            "probabilities": {
+              "chorus": 0.9872850867579455,
+              "intro": 0.008236300882013506,
+              "outro_fade": 0.0004728139643216779,
+              "verse": 0.004005798395719191
+            },
+            "entropy": 0.07789372442664516,
+            "normalized_entropy": 0.05618844497334625,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "section_type": "chorus"
+        }
+      },
+      {
+        "id": "di_arts_cfcolor_01",
+        "catalog_id": 18,
+        "dataset": "cfcolor",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9935594420352721,
+        "mean_brier": 0.00006137650882930263,
+        "mean_entropy": 0.04466492657850778,
+        "mean_normalized_entropy": 0.032218934038241415,
+        "forward_passes": 1,
+        "wall_time_ms": 165,
+        "answers": {
+          "palette": {
+            "type": "choice",
+            "choice": "crimson_alert_red",
+            "probabilities": {
+              "baby_sky_blue": 0.00414539019626633,
+              "crimson_alert_red": 0.9935594420352721,
+              "muted_slate_gray": 0.0013445159921890138,
+              "pastel_mint_green": 0.0009506517762725074
+            },
+            "entropy": 0.04466492657850778,
+            "normalized_entropy": 0.032218934038241415,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "palette": "crimson_alert_red"
+        }
+      },
+      {
+        "id": "di_arts_habermas_01",
+        "catalog_id": 19,
+        "dataset": "Habermas Machine",
+        "area": "arts",
+        "total_fields": 1,
+        "correct_fields": 1,
+        "max_options": 4,
+        "whole_case_exact": true,
+        "field_accuracy": 1,
+        "supported": true,
+        "mean_confidence": 0.9982949742648074,
+        "mean_brier": 0.0000052330864558454435,
+        "mean_entropy": 0.013286147836322086,
+        "mean_normalized_entropy": 0.009583929797989752,
+        "forward_passes": 1,
+        "wall_time_ms": 197,
+        "answers": {
+          "consensus_statement": {
+            "type": "choice",
+            "choice": "Statement_1",
+            "probabilities": {
+              "Statement_1": 0.9982949742648074,
+              "Statement_2": 0.0015193930225253312,
+              "Statement_3": 0.00008310066614648415,
+              "Statement_4": 0.0001025320465207124
+            },
+            "entropy": 0.013286147836322086,
+            "normalized_entropy": 0.009583929797989752,
+            "passes_used": 1
+          }
+        },
+        "expected": {
+          "consensus_statement": "Statement_1"
+        }
+      },
+      {
+        "id": "di_wide_apibank_30opts",
+        "catalog_id": 20,
+        "dataset": "API-Bank",
+        "area": "tools",
+        "total_fields": 1,
+        "correct_fields": 0,
+        "max_options": 30,
+        "whole_case_exact": false,
+        "field_accuracy": 0,
+        "supported": false,
+        "error_msg": "HTTP 422 Unprocessable Entity: capacity exceeded (fields=1, max_options=30)",
+        "mean_confidence": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "forward_passes": 0,
+        "wall_time_ms": 0,
+        "expected": {
+          "selected_api": "ConvertCurrencyFX_28"
+        }
+      },
+      {
+        "id": "di_wide_banking77_32opts",
+        "catalog_id": 21,
+        "dataset": "BANKING77",
+        "area": "retrieval",
+        "total_fields": 1,
+        "correct_fields": 0,
+        "max_options": 32,
+        "whole_case_exact": false,
+        "field_accuracy": 0,
+        "supported": false,
+        "error_msg": "HTTP 422 Unprocessable Entity: capacity exceeded (fields=1, max_options=32)",
+        "mean_confidence": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "forward_passes": 0,
+        "wall_time_ms": 0,
+        "expected": {
+          "intent": "lost_or_stolen_card"
+        }
+      },
+      {
+        "id": "di_wide_clinc150_36opts",
+        "catalog_id": 22,
+        "dataset": "CLINC150+OOS",
+        "area": "retrieval",
+        "total_fields": 1,
+        "correct_fields": 0,
+        "max_options": 36,
+        "whole_case_exact": false,
+        "field_accuracy": 0,
+        "supported": false,
+        "error_msg": "HTTP 422 Unprocessable Entity: capacity exceeded (fields=1, max_options=36)",
+        "mean_confidence": 0,
+        "mean_brier": 1,
+        "mean_entropy": 0,
+        "mean_normalized_entropy": 0,
+        "forward_passes": 0,
+        "wall_time_ms": 0,
+        "expected": {
+          "intent": "oos_out_of_scope"
+        }
+      }
+    ]
+  },
+  "headline_index_delta": 22.222222222222214,
+  "coverage_pct_delta": 27.272727272727266
+}
