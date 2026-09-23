@@ -320,13 +320,34 @@ def label_id_union(slots):
     return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
 
 
+_upstream_ready = False
+
+
+def _wait_for_upstream(max_wait=150):
+    global _upstream_ready
+    if _upstream_ready:
+        return
+    deadline = time.time() + max_wait
+    url = ARGS.upstream.rstrip("/") + "/health"
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1.5) as r:
+                if r.status == 200:
+                    _upstream_ready = True
+                    return
+        except Exception:
+            time.sleep(1.0)
+
+
 def upstream_chat(body, timeout=600):
+    _wait_for_upstream()
     req = urllib.request.Request(ARGS.upstream.rstrip("/") + "/v1/chat/completions", data=json.dumps(body).encode(),
                                  headers={"content-type": "application/json"})
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
 def upstream_completions(body, timeout=600):
+    _wait_for_upstream()
     req = urllib.request.Request(ARGS.upstream.rstrip("/") + "/v1/completions", data=json.dumps(body).encode(),
                                  headers={"content-type": "application/json"})
     return json.load(urllib.request.urlopen(req, timeout=timeout))

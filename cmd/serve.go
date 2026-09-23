@@ -66,8 +66,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
-	serveCmd.Flags().StringVar(&serveVertexURL, "vertex-url", "4217256562927861760", "Vertex AI Dedicated Endpoint /invoke/* URL or Endpoint ID (env: DGEM_VERTEX_URL)")
-	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "cloudrun", "Default upstream inference backend: 'cloudrun' or 'vertex' (env: DGEM_DEFAULT_BACKEND)")
+	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "vertex_first", "Default upstream inference backend: 'vertex_first' (Vertex primary + Cloud Run failover), 'vertex', or 'cloudrun' (env: DGEM_DEFAULT_BACKEND)")
 
 	RootCmd.AddCommand(serveCmd)
 }
@@ -332,7 +331,7 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 
 const (
 	defaultVertexEndpointID = "4217256562927861760"
-	defaultVertexModelID    = "2976360933959401472"
+	defaultVertexModelID    = "3753231869680812032"
 )
 
 type vertexEndpointLiveStatus struct {
@@ -366,8 +365,28 @@ func extractEndpointIDFromURL(raw string) string {
 	return defaultVertexEndpointID
 }
 
+var (
+	vertexStatusCacheMu      sync.RWMutex
+	vertexStatusCached       vertexEndpointLiveStatus
+	vertexStatusCacheExpires time.Time
+)
+
+func invalidateVertexStatusCache() {
+	vertexStatusCacheMu.Lock()
+	vertexStatusCacheExpires = time.Time{}
+	vertexStatusCacheMu.Unlock()
+}
+
 func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertexEndpointLiveStatus {
 	epID := extractEndpointIDFromURL(rawVertexURL)
+	vertexStatusCacheMu.RLock()
+	if vertexStatusCached.EndpointID == epID && time.Now().Before(vertexStatusCacheExpires) {
+		cached := vertexStatusCached
+		vertexStatusCacheMu.RUnlock()
+		return cached
+	}
+	vertexStatusCacheMu.RUnlock()
+
 	st := vertexEndpointLiveStatus{
 		EndpointID:  epID,
 		ModelID:     defaultVertexModelID,
@@ -379,53 +398,78 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 	if tok == "" {
 		return st
 	}
+
+	// 1. Fast Data-Plane Check (/invoke/health on Dedicated Endpoint DNS takes ~15ms when deployed)
+	healthURL := fmt.Sprintf("https://%s.us-central1-882920967572.prediction.vertexai.goog/v1/projects/genai-blackbelt-fishfooding/locations/us-central1/endpoints/%s/invoke/health", epID, epID)
+	hCtx, hCancel := context.WithTimeout(context.Background(), 2500*time.Millisecond)
+	if hReq, err := http.NewRequestWithContext(hCtx, http.MethodGet, healthURL, nil); err == nil {
+		hReq.Header.Set("Authorization", "Bearer "+tok)
+		if hResp, err := http.DefaultClient.Do(hReq); err == nil {
+			hResp.Body.Close()
+			if hResp.StatusCode == http.StatusOK {
+				hCancel()
+				st.State = "deployed"
+				st.ReplicaCount = 1
+				st.MachineType = "g2-standard-16 (NVIDIA L4)"
+				st.Message = fmt.Sprintf("Active & Ready (1 replica · %s · /invoke/*)", st.MachineType)
+				vertexStatusCacheMu.Lock()
+				vertexStatusCached = st
+				vertexStatusCacheExpires = time.Now().Add(30 * time.Second)
+				vertexStatusCacheMu.Unlock()
+				return st
+			}
+		}
+	}
+	hCancel()
+
+	// 2. Control-Plane Check (endpoints.get & active operations)
 	apiURL := fmt.Sprintf("https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/endpoints/%s", epID)
-	reqCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	reqCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return st
-	}
-	req.Header.Set("Authorization", "Bearer "+tok)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return st
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return st
-	}
-	var epData struct {
-		DisplayName    string `json:"displayName"`
-		DeployedModels []struct {
-			ID                 string `json:"id"`
-			DisplayName        string `json:"displayName"`
-			DedicatedResources struct {
-				MachineSpec struct {
-					MachineType     string `json:"machineType"`
-					AcceleratorType string `json:"acceleratorType"`
-				} `json:"machineSpec"`
-			} `json:"dedicatedResources"`
-		} `json:"deployedModels"`
-	}
-	if json.NewDecoder(resp.Body).Decode(&epData) == nil {
-		if epData.DisplayName != "" {
-			st.DisplayName = epData.DisplayName
-		}
-		st.ReplicaCount = len(epData.DeployedModels)
-		if st.ReplicaCount > 0 {
-			st.State = "deployed"
-			st.DeployedModel = epData.DeployedModels[0].ID
-			st.MachineType = epData.DeployedModels[0].DedicatedResources.MachineSpec.MachineType
-			if st.MachineType == "" {
-				st.MachineType = "g2-standard-8 (NVIDIA L4)"
+	if err == nil {
+		req.Header.Set("Authorization", "Bearer "+tok)
+		if resp, err := http.DefaultClient.Do(req); err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				var epData struct {
+					DisplayName    string `json:"displayName"`
+					DeployedModels []struct {
+						ID                 string `json:"id"`
+						DisplayName        string `json:"displayName"`
+						DedicatedResources struct {
+							MachineSpec struct {
+								MachineType     string `json:"machineType"`
+								AcceleratorType string `json:"acceleratorType"`
+							} `json:"machineSpec"`
+						} `json:"dedicatedResources"`
+					} `json:"deployedModels"`
+				}
+				if json.NewDecoder(resp.Body).Decode(&epData) == nil {
+					if epData.DisplayName != "" {
+						st.DisplayName = epData.DisplayName
+					}
+					st.ReplicaCount = len(epData.DeployedModels)
+					if st.ReplicaCount > 0 {
+						st.State = "deployed"
+						st.DeployedModel = epData.DeployedModels[0].ID
+						st.MachineType = epData.DeployedModels[0].DedicatedResources.MachineSpec.MachineType
+						if st.MachineType == "" {
+							st.MachineType = "g2-standard-16 (NVIDIA L4)"
+						}
+						st.Message = fmt.Sprintf("Active & Ready (%d replica · %s · /invoke/*)", st.ReplicaCount, st.MachineType)
+						vertexStatusCacheMu.Lock()
+						vertexStatusCached = st
+						vertexStatusCacheExpires = time.Now().Add(30 * time.Second)
+						vertexStatusCacheMu.Unlock()
+						return st
+					}
+				}
 			}
-			st.Message = fmt.Sprintf("Active & Ready (%d replica · %s · /invoke/*)", st.ReplicaCount, st.MachineType)
-			return st
 		}
 	}
 	// Check if a deployModel LRO operation is currently running on this endpoint
-	opsURL := fmt.Sprintf("https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/operations?filter=done=false")
+	opsURL := "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/882920967572/locations/us-central1/operations"
 	if opReq, err := http.NewRequestWithContext(reqCtx, http.MethodGet, opsURL, nil); err == nil {
 		opReq.Header.Set("Authorization", "Bearer "+tok)
 		if opResp, err := http.DefaultClient.Do(opReq); err == nil {
@@ -433,65 +477,98 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 			var opsData struct {
 				Operations []struct {
 					Name string `json:"name"`
+					Done bool   `json:"done"`
 				} `json:"operations"`
 			}
-			if json.NewDecoder(opResp.Body).Decode(&opsData) == nil && len(opsData.Operations) > 0 {
-				st.State = "deploying"
-				st.Message = "Provisioning NVIDIA L4 GPU replica on Vertex AI (~12–15 min total)..."
+			if json.NewDecoder(opResp.Body).Decode(&opsData) == nil {
+				for _, op := range opsData.Operations {
+					if !op.Done && strings.Contains(op.Name, "/endpoints/"+epID+"/") {
+						st.State = "deploying"
+						st.Message = "Provisioning NVIDIA L4 GPU replica on Vertex AI (g2-standard-16 · 64 GB RAM · /invoke/*)..."
+						break
+					}
+				}
 			}
 		}
 	}
+	vertexStatusCacheMu.Lock()
+	vertexStatusCached = st
+	vertexStatusCacheExpires = time.Now().Add(10 * time.Second)
+	vertexStatusCacheMu.Unlock()
 	return st
 }
 
-// resolveBackendTarget determines whether a request should route to "cloudrun" or "vertex"
-// based on headers (X-DGem-Backend, X-DGem-Vertex-Url), payload overrides, or server default.
-func resolveBackendTarget(r *http.Request, payloadBackend, payloadVertexURL string) (string, string, error) {
+// resolveBackendTargetFromParams determines whether a request should route to "vertex" or "cloudrun"
+// supporting 3 routing policies:
+// - "vertex_first" (default): routes to Vertex AI Dedicated Endpoint (/invoke/*) when deployed, and automatically fails over to Cloud Run GPU when Vertex is deploying/quiesced.
+// - "vertex" (strict pin): routes strictly to Vertex AI (/invoke/*).
+// - "cloudrun" (strict pin): routes strictly to Serverless Cloud Run GPU.
+func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requestedVertexURL string) (string, string, error) {
 	backendConfigMu.RLock()
 	defBackend := serveDefaultBackend
 	defVertexURL := serveVertexURL
 	backendConfigMu.RUnlock()
 
-	targetBackend := strings.ToLower(strings.TrimSpace(r.Header.Get("X-DGem-Backend")))
-	if targetBackend == "" {
-		targetBackend = strings.ToLower(strings.TrimSpace(payloadBackend))
+	mode := strings.ToLower(strings.TrimSpace(requestedMode))
+	if mode == "" {
+		mode = strings.ToLower(strings.TrimSpace(defBackend))
 	}
-	if targetBackend == "" {
-		targetBackend = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("backend")))
-	}
-	if targetBackend == "" {
-		targetBackend = strings.ToLower(strings.TrimSpace(defBackend))
-	}
-	if targetBackend != "vertex" {
-		targetBackend = "cloudrun"
+	if mode != "vertex" && mode != "cloudrun" && mode != "vertex_first" {
+		mode = "vertex_first"
 	}
 
-	if targetBackend == "vertex" {
-		rawVx := strings.TrimSpace(r.Header.Get("X-DGem-Vertex-Url"))
-		if rawVx == "" {
-			rawVx = strings.TrimSpace(payloadVertexURL)
+	rawVx := strings.TrimSpace(requestedVertexURL)
+	if rawVx == "" {
+		rawVx = strings.TrimSpace(defVertexURL)
+	}
+	if rawVx == "" {
+		rawVx = defaultVertexEndpointID
+	}
+
+	if mode == "vertex_first" {
+		normURL, err := expandAndValidateVertexURL(rawVx)
+		if err == nil {
+			vStatus := inspectVertexEndpointState(ctx, normURL)
+			if vStatus.State == "deployed" {
+				return "vertex", normURL, nil
+			}
 		}
-		if rawVx == "" {
-			rawVx = strings.TrimSpace(defVertexURL)
-		}
-		if rawVx == "" {
-			rawVx = defaultVertexEndpointID
-		}
+		return "cloudrun", viper.GetString("url"), nil
+	}
+
+	if mode == "vertex" {
 		normURL, err := expandAndValidateVertexURL(rawVx)
 		if err != nil {
 			return "vertex", "", err
 		}
-		vStatus := inspectVertexEndpointState(r.Context(), normURL)
+		vStatus := inspectVertexEndpointState(ctx, normURL)
 		if vStatus.State == "quiesced" {
-			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently quiesced at 0 GPU replicas ($0.00/hr zero-idle-cost state). Open the Backend Target menu in the top header and click 'Provision Vertex GPU (1x L4)' to attach a GPU replica, or switch to 'Cloud Run GPU' which is warm & ready right now.", vStatus.DisplayName, vStatus.EndpointID)
+			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently quiesced at 0 GPU replicas ($0.00/hr zero-idle-cost state). Switch to 'Vertex First (Auto-Failover)' or 'Cloud Run GPU', or click 'Provision Vertex GPU (1x L4)' in the Backend Target menu.", vStatus.DisplayName, vStatus.EndpointID)
 		}
 		if vStatus.State == "deploying" {
-			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently provisioning an NVIDIA L4 replica (vLLM + 17.53 GiB weights staging in progress, ~12–15 min total). Use 'Cloud Run GPU' while Vertex AI finishes deploying.", vStatus.DisplayName, vStatus.EndpointID)
+			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently provisioning an NVIDIA L4 replica (g2-standard-16). Switch to 'Vertex First (Auto-Failover)' or 'Cloud Run GPU' while Vertex AI finishes deploying.", vStatus.DisplayName, vStatus.EndpointID)
 		}
 		return "vertex", normURL, nil
 	}
 
 	return "cloudrun", viper.GetString("url"), nil
+}
+
+// resolveBackendTarget determines whether an HTTP request should route to "vertex" or "cloudrun"
+// based on headers (X-DGem-Backend, X-DGem-Vertex-Url), payload overrides, query params, or server default.
+func resolveBackendTarget(r *http.Request, payloadBackend, payloadVertexURL string) (string, string, error) {
+	targetBackend := strings.TrimSpace(r.Header.Get("X-DGem-Backend"))
+	if targetBackend == "" {
+		targetBackend = strings.TrimSpace(payloadBackend)
+	}
+	if targetBackend == "" {
+		targetBackend = strings.TrimSpace(r.URL.Query().Get("backend"))
+	}
+	rawVx := strings.TrimSpace(r.Header.Get("X-DGem-Vertex-Url"))
+	if rawVx == "" {
+		rawVx = strings.TrimSpace(payloadVertexURL)
+	}
+	return resolveBackendTargetFromParams(r.Context(), targetBackend, rawVx)
 }
 
 func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent string, images []string, targetURLOverride ...string) (*client.StructuredDecisionResponse, *client.RequestStats, int, error) {
@@ -635,10 +712,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 				return
 			}
 			backendConfigMu.Lock()
-			if body.DefaultBackend == "vertex" || body.DefaultBackend == "cloudrun" {
+			if body.DefaultBackend == "vertex_first" || body.DefaultBackend == "vertex" || body.DefaultBackend == "cloudrun" {
 				serveDefaultBackend = body.DefaultBackend
 			}
-			if body.VertexURL != "" || body.DefaultBackend == "cloudrun" {
+			if body.VertexURL != "" || body.DefaultBackend == "cloudrun" || body.DefaultBackend == "vertex_first" {
 				serveVertexURL = normVx
 			}
 			backendConfigMu.Unlock()
@@ -688,11 +765,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 		payload := fmt.Sprintf(`{
   "deployedModel": {
     "model": "projects/882920967572/locations/us-central1/models/%s",
-    "displayName": "dgemma-invoke-l4",
+    "displayName": "dgemma-l4-invoke-v2",
     "serviceAccount": "dgemma-gpu-sa@genai-blackbelt-fishfooding.iam.gserviceaccount.com",
     "dedicatedResources": {
       "machineSpec": {
-        "machineType": "g2-standard-8",
+        "machineType": "g2-standard-16",
         "acceleratorType": "NVIDIA_L4",
         "acceleratorCount": 1
       },
@@ -1070,8 +1147,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 	mux.HandleFunc("/api/decide", decideHandler)
 	mux.HandleFunc("/api/decide/", decideHandler)
 
-	// 7. OpenAI / dgem CLI Pass-Through Proxy: POST /v1/chat/completions
-	mux.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
+	// 7. Unified Pass-Through Proxy: POST /v1/systemone, /v1/chat/completions, /v1/raw/chat/completions
+	v1ProxyHandler := func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 			return
@@ -1090,11 +1167,46 @@ func runServe(cmd *cobra.Command, args []string) error {
 			return
 		}
 
-		upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
-		if !strings.HasSuffix(upstreamBase, "/v1") {
-			upstreamBase += "/v1"
+		var bodyMeta struct {
+			Backend   string `json:"backend"`
+			VertexURL string `json:"vertex_url"`
 		}
-		targetURL := upstreamBase + "/chat/completions"
+		_ = json.Unmarshal(bodyBytes, &bodyMeta)
+
+		backendTarget, resolvedURL, bErr := resolveBackendTarget(r, bodyMeta.Backend, bodyMeta.VertexURL)
+		if bErr != nil {
+			proxySpan.SetStatus(codes.Error, bErr.Error())
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": map[string]string{
+					"message": bErr.Error(),
+					"type":    "backend_unavailable",
+				},
+			})
+			return
+		}
+
+		reqPath := r.URL.Path // e.g. "/v1/systemone", "/v1/chat/completions", "/v1/raw/chat/completions"
+		var targetURL string
+		if backendTarget == "vertex" {
+			if idx := strings.Index(resolvedURL, "/invoke/"); idx != -1 {
+				targetURL = resolvedURL[:idx] + "/invoke" + reqPath
+			} else {
+				targetURL = resolvedURL
+			}
+		} else {
+			upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
+			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
+			targetURL = upstreamBase + reqPath
+		}
+
+		proxySpan.SetAttributes(
+			attribute.String("dgem.backend", backendTarget),
+			attribute.String("dgem.upstream_url", targetURL),
+			attribute.String("dgem.route", reqPath),
+		)
+		w.Header().Set("X-DGem-Backend-Used", backendTarget)
 
 		deadline := time.Now().Add(serveWakeupTimeout)
 		for attempt := 1; ; attempt++ {
@@ -1108,7 +1220,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 			req.Header.Set("Content-Type", "application/json")
 			injectTraceContextToRequest(attemptCtx, req)
-			if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
+			if backendTarget == "vertex" {
+				if tok := FetchGCPAccessToken(); tok != "" {
+					req.Header.Set("Authorization", "Bearer "+tok)
+				}
+			} else if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
 				if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), targetURL); tok != "" {
 					req.Header.Set("Authorization", "Bearer "+tok)
 				}
@@ -1128,7 +1244,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 					time.Sleep(6 * time.Second)
 					continue
 				}
-				if resp.StatusCode == http.StatusOK {
+				if resp.StatusCode == http.StatusOK && backendTarget == "cloudrun" {
 					attemptSpan.SetStatus(codes.Ok, "ok")
 					MarkGPUWarm()
 				}
@@ -1146,7 +1262,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 			time.Sleep(6 * time.Second)
 		}
-	})
+	}
+	mux.HandleFunc("/v1/chat/completions", v1ProxyHandler)
+	mux.HandleFunc("/v1/raw/chat/completions", v1ProxyHandler)
+	mux.HandleFunc("/v1/systemone", v1ProxyHandler)
 
 	// 8. Model Context Protocol (MCP) Streamable HTTP Server at /mcp
 	mcpHandler := newMCPHTTPHandler()

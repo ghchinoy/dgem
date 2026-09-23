@@ -203,8 +203,8 @@ export class DgemStudio extends LitElement {
   @state() private mcpLatencyMs = 0;
   @state() private copiedSnippet = '';
 
-  // Inference Backend Target ('cloudrun' vs 'vertex' /invoke/*)
-  @state() private backendTarget: 'cloudrun' | 'vertex' = 'cloudrun';
+  // Inference Backend Target ('vertex_first' vs 'cloudrun' vs 'vertex' /invoke/*)
+  @state() private backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' = 'vertex_first';
   @state() private vertexUrl = '4217256562927861760';
   @state() private backendSettingsOpen = false;
   @state() private vertexStatus: {
@@ -989,12 +989,12 @@ export class DgemStudio extends LitElement {
       const resp = await fetch('/api/backend-config');
       if (!resp.ok) return;
       const data = await resp.json();
-      const storedBackend = localStorage.getItem('dgem-backend') as 'cloudrun' | 'vertex' | null;
+      const storedBackend = localStorage.getItem('dgem-backend-v2') as 'vertex_first' | 'cloudrun' | 'vertex' | null;
       const storedVertexUrl = localStorage.getItem('dgem-vertex-url');
-      if (storedBackend === 'vertex' || storedBackend === 'cloudrun') {
+      if (storedBackend === 'vertex_first' || storedBackend === 'vertex' || storedBackend === 'cloudrun') {
         this.backendTarget = storedBackend;
-      } else if (data.default_backend === 'vertex') {
-        this.backendTarget = 'vertex';
+      } else if (data.default_backend === 'vertex' || data.default_backend === 'cloudrun' || data.default_backend === 'vertex_first') {
+        this.backendTarget = data.default_backend;
       }
       if (storedVertexUrl && storedVertexUrl.trim() !== '') {
         this.vertexUrl = storedVertexUrl.trim();
@@ -1010,10 +1010,10 @@ export class DgemStudio extends LitElement {
     }
   }
 
-  private async saveBackendConfig(backend: 'cloudrun' | 'vertex', vertexUrl: string) {
+  private async saveBackendConfig(backend: 'vertex_first' | 'cloudrun' | 'vertex', vertexUrl: string) {
     this.backendTarget = backend;
     this.vertexUrl = (vertexUrl || '4217256562927861760').trim();
-    localStorage.setItem('dgem-backend', this.backendTarget);
+    localStorage.setItem('dgem-backend-v2', this.backendTarget);
     localStorage.setItem('dgem-vertex-url', this.vertexUrl);
     try {
       const resp = await fetch('/api/backend-config', {
@@ -1532,20 +1532,24 @@ export class DgemStudio extends LitElement {
           <div class="status-cluster">
             <div style="position:relative; display:inline-flex; align-items:center; gap:0.25rem;">
               <button
-                class="btn btn--sm ${this.backendTarget === 'vertex' ? 'btn--brand' : ''}"
+                class="btn btn--sm ${this.backendTarget === 'vertex' || this.backendTarget === 'vertex_first' ? 'btn--brand' : ''}"
                 @click=${async () => {
                   this.backendSettingsOpen = !this.backendSettingsOpen;
                   if (this.backendSettingsOpen) {
                     await this.fetchBackendConfig();
                   }
                 }}
-                title="Switch Inference Backend between Serverless Cloud Run GPU (default) and Google Cloud Vertex AI Dedicated Endpoints (/invoke/*)"
+                title="Switch Inference Backend: Vertex First (Auto-Failover), Cloud Run GPU, or Vertex AI Strict (/invoke/*)"
               >
                 <span class="material-symbols-outlined">
-                  ${this.backendTarget === 'vertex' ? 'hub' : 'cloud_done'}
+                  ${this.backendTarget === 'cloudrun' ? 'cloud_done' : 'hub'}
                 </span>
                 <span>
-                  ${this.backendTarget === 'vertex' ? 'Vertex AI (/invoke/*)' : 'Cloud Run GPU'}
+                  ${this.backendTarget === 'vertex_first'
+                    ? 'Vertex First (Auto)'
+                    : this.backendTarget === 'vertex'
+                      ? 'Vertex AI (/invoke/*)'
+                      : 'Cloud Run GPU'}
                 </span>
                 <span class="material-symbols-outlined" style="font-size:13px; opacity:0.85">
                   expand_more
@@ -1559,7 +1563,7 @@ export class DgemStudio extends LitElement {
                       @click=${() => (this.backendSettingsOpen = false)}
                     ></div>
                     <div
-                      style="position:absolute; top:calc(100% + 10px); right:0; width:430px; background:${this.resolvedTheme === 'dark' ? '#0f172a' : '#ffffff'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}; border:1.5px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; border-radius:12px; box-shadow:0 24px 48px -12px rgba(15, 23, 42, 0.45), 0 8px 16px -6px rgba(15, 23, 42, 0.25); padding:1rem; z-index:999; display:flex; flex-direction:column; gap:0.75rem;"
+                      style="position:absolute; top:calc(100% + 10px); right:0; width:440px; background:${this.resolvedTheme === 'dark' ? '#0f172a' : '#ffffff'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}; border:1.5px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; border-radius:12px; box-shadow:0 24px 48px -12px rgba(15, 23, 42, 0.45), 0 8px 16px -6px rgba(15, 23, 42, 0.25); padding:1rem; z-index:999; display:flex; flex-direction:column; gap:0.75rem;"
                     >
                       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid ${this.resolvedTheme === 'dark' ? '#1e293b' : '#e2e8f0'}; padding-bottom:0.55rem;">
                         <div>
@@ -1567,7 +1571,7 @@ export class DgemStudio extends LitElement {
                             Inference Backend Target
                           </div>
                           <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
-                            Select active serving target (<code>X-DGem-Backend</code>)
+                            Select active serving policy (<code>X-DGem-Backend</code> / MCP <code>backend</code>)
                           </div>
                         </div>
                         <button
@@ -1578,6 +1582,23 @@ export class DgemStudio extends LitElement {
                           ✕
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex_first' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex_first' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                        @click=${async () => {
+                          await this.saveBackendConfig('vertex_first', this.vertexUrl || '4217256562927861760');
+                          this.backendSettingsOpen = false;
+                        }}
+                      >
+                        <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
+                          <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">alt_route</span>
+                          <span>Vertex First · Cloud Run Failover (Recommended)</span>
+                        </div>
+                        <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
+                          Routes to Vertex AI Dedicated Endpoint (<code>4217256562927861760</code>) when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
+                        </div>
+                      </button>
 
                       <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.55rem;">
                         <button
@@ -1590,7 +1611,7 @@ export class DgemStudio extends LitElement {
                         >
                           <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
                             <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">cloud_done</span>
-                            <span>Cloud Run GPU</span>
+                            <span>Cloud Run GPU (Strict)</span>
                           </div>
                           <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
                             Scale-to-zero ($0/hr idle) · NVIDIA RTX Pro 6000
@@ -1606,7 +1627,7 @@ export class DgemStudio extends LitElement {
                         >
                           <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
                             <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">hub</span>
-                            <span>Vertex AI (/invoke/*)</span>
+                            <span>Vertex AI Strict (/invoke/*)</span>
                           </div>
                           <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
                             Dedicated Endpoint · <code>4217256562927861760</code>

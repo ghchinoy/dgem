@@ -69,6 +69,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&authToken, "token", "k", "", "Authorization Bearer token / API key")
 	RootCmd.PersistentFlags().BoolVar(&gcpAuth, "gcp-auth", false, "Automatically obtain GCP IAM identity token via gcloud auth print-identity-token or Cloud Run metadata server")
 	RootCmd.PersistentFlags().StringVar(&iapClientID, "iap-client-id", "", "OAuth 2.0 Client ID / Audience for Identity-Aware Proxy (IAP) protected endpoints (env: DGEM_IAP_CLIENT_ID)")
+	RootCmd.PersistentFlags().StringVar(&serveVertexURL, "vertex-url", "4217256562927861760", "Vertex AI Dedicated Endpoint ID or /invoke/* URL (env: DGEM_VERTEX_URL)")
 
 	viper.BindPFlag("url", RootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("model", RootCmd.PersistentFlags().Lookup("model"))
@@ -77,6 +78,7 @@ func init() {
 	viper.BindPFlag("token", RootCmd.PersistentFlags().Lookup("token"))
 	viper.BindPFlag("gcp_auth", RootCmd.PersistentFlags().Lookup("gcp-auth"))
 	viper.BindPFlag("iap_client_id", RootCmd.PersistentFlags().Lookup("iap-client-id"))
+	viper.BindPFlag("vertex_url", RootCmd.PersistentFlags().Lookup("vertex-url"))
 }
 
 func initConfig() {
@@ -219,6 +221,11 @@ func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
 
 // GetClient returns a configured API client using Viper values.
 func GetClient() *client.Client {
+	if f := RootCmd.PersistentFlags().Lookup("vertex-url"); f != nil && f.Changed {
+		if norm, err := expandAndValidateVertexURL(f.Value.String()); err == nil {
+			return GetClientForURL(norm)
+		}
+	}
 	return GetClientForURL(viper.GetString("url"))
 }
 

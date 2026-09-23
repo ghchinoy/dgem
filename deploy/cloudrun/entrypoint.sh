@@ -9,16 +9,17 @@ DISABLE_MM="${DISABLE_MM:-1}"
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-fork}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
-# Vertex AI Online Prediction passes AIP_STORAGE_URI (or has no /mnt/gcs/dgemma FUSE mount)
+# Vertex AI Online Prediction has no /mnt/gcs/dgemma FUSE mount:
+# Stage tokenizer + 4MB safetensors headers synchronously (<2s) so structured_server.py (:8080/health)
+# starts immediately for Vertex AI health probes, while 64-stream HTTPS Range downloads tensor bodies in parallel!
 if [ ! -d "$MODEL" ]; then
-  export AIP_STORAGE_URI="${AIP_STORAGE_URI:-gs://dgem-weights-genai-blackbelt-fishfooding/dgemma}"
-  echo "[init] No local FUSE mount at $MODEL; staging weights from $AIP_STORAGE_URI to /tmp/dgemma..."
+  export GCS_URI="${DGEM_WEIGHTS_URI:-${AIP_STORAGE_URI:-gs://dgem-weights-genai-blackbelt-fishfooding/dgemma}}"
+  echo "[init] Vertex AI mode (no FUSE mount at $MODEL); fast-staging tokenizer + headers from $GCS_URI to /tmp/dgemma..."
   mkdir -p /tmp/dgemma
   python3 -c '
 import json, os, urllib.request
 from concurrent.futures import ThreadPoolExecutor
-uri = os.environ["AIP_STORAGE_URI"].rstrip("/")
-assert uri.startswith("gs://"), f"Expected gs:// URI, got {uri}"
+uri = os.environ["GCS_URI"].rstrip("/")
 bucket, _, prefix = uri[5:].partition("/")
 req = urllib.request.Request(
     "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
@@ -27,22 +28,97 @@ req = urllib.request.Request(
 token = json.loads(urllib.request.urlopen(req, timeout=5).read().decode())["access_token"]
 list_url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o?prefix={prefix}/"
 items = json.loads(urllib.request.urlopen(urllib.request.Request(list_url, headers={"Authorization": f"Bearer {token}"})).read().decode()).get("items", [])
-def fetch_obj(item):
+HDR_BYTES = 4 * 1024 * 1024
+manifest = []
+def stage_initial(item):
     name = item["name"]
     rel = name[len(prefix)+1:]
     if not rel or "/" in rel:
         return
+    sz = int(item.get("size", 0))
     dst = os.path.join("/tmp/dgemma", rel)
     dl_url = f"https://storage.googleapis.com/{bucket}/{name}"
-    with urllib.request.urlopen(urllib.request.Request(dl_url, headers={"Authorization": f"Bearer {token}"})) as r, open(dst, "wb") as f:
-        while True:
-            chunk = r.read(16 * 1024 * 1024)
-            if not chunk:
-                break
-            f.write(chunk)
+    if rel.endswith(".safetensors"):
+        end = min(HDR_BYTES, sz) - 1
+        rreq = urllib.request.Request(dl_url, headers={"Authorization": f"Bearer {token}", "Range": f"bytes=0-{end}"})
+        with urllib.request.urlopen(rreq, timeout=30) as r, open(dst, "wb") as f:
+            f.write(r.read())
+            f.truncate(sz)
+        manifest.append({"file": rel, "size": sz})
+    else:
+        rreq = urllib.request.Request(dl_url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(rreq, timeout=30) as r, open(dst, "wb") as f:
+            f.write(r.read())
 with ThreadPoolExecutor(max_workers=16) as ex:
-    list(ex.map(fetch_obj, items))
+    list(ex.map(stage_initial, items))
+with open("/tmp/dgemma/.gcs_manifest.json", "w") as mf:
+    json.dump({"bucket": bucket, "prefix": prefix, "files": manifest}, mf)
 '
+  cat << 'EOF' > /tmp/sitecustomize.py
+import os, time
+try:
+    from vllm.model_executor.model_loader.default_loader import DefaultModelLoader
+    _orig_load_weights = DefaultModelLoader.load_weights
+    def _waiting_load_weights(self, model, model_config):
+        if str(getattr(model_config, "model", "")).startswith("/tmp/dgemma") and not os.path.exists("/tmp/dgemma/.ready"):
+            print("[init] EngineCore reached DefaultModelLoader.load_weights; waiting for /tmp/dgemma/.ready...", flush=True)
+            while not os.path.exists("/tmp/dgemma/.ready"):
+                time.sleep(0.2)
+            print("[init] /tmp/dgemma/.ready confirmed! Loading 17.53 GiB weights via zero-copy mmap...", flush=True)
+        return _orig_load_weights(self, model, model_config)
+    DefaultModelLoader.load_weights = _waiting_load_weights
+except Exception:
+    pass
+EOF
+  export PYTHONPATH="/tmp:${PYTHONPATH:-}"
+  export COPY_TO_SHM=1
+  (
+    set -e
+    python3 -c '
+import json, os, time, urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
+req = urllib.request.Request(
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+    headers={"Metadata-Flavor": "Google"}
+)
+token = json.loads(urllib.request.urlopen(req, timeout=5).read().decode())["access_token"]
+with open("/tmp/dgemma/.gcs_manifest.json") as mf:
+    meta = json.load(mf)
+bucket, prefix = meta["bucket"], meta["prefix"]
+hdr = 4 * 1024 * 1024
+chunk = 64 * 1024 * 1024
+tasks = []
+for fmeta in meta["files"]:
+    bn, sz = fmeta["file"], fmeta["size"]
+    df = os.path.join("/tmp/dgemma", bn)
+    for off in range(min(hdr, sz), sz, chunk):
+        tasks.append((bucket, prefix, token, bn, df, off, min(chunk, sz - off)))
+def dl(t):
+    bucket, prefix, token, bn, df, off, length = t
+    url = f"https://storage.googleapis.com/{bucket}/{prefix}/{bn}"
+    for attempt in range(4):
+        try:
+            rreq = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Range": f"bytes={off}-{off+length-1}"})
+            with urllib.request.urlopen(rreq, timeout=45) as resp:
+                data = resp.read()
+            fd = os.open(df, os.O_WRONLY)
+            try:
+                os.pwrite(fd, data, off)
+            finally:
+                os.close(fd)
+            return len(data)
+        except Exception:
+            if attempt == 3:
+                raise
+            time.sleep(0.5 * (attempt + 1))
+t0 = time.time()
+with ThreadPoolExecutor(max_workers=64) as ex:
+    for fut in as_completed([ex.submit(dl, t) for t in tasks]):
+        fut.result()
+print(f"[init] Vertex AI 64-stream GCS HTTPS staging completed in {time.time()-t0:.2f}s", flush=True)
+'
+    touch /tmp/dgemma/.ready
+  ) &
   MODEL="/tmp/dgemma"
 fi
 

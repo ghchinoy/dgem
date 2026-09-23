@@ -694,11 +694,15 @@ type DecidePolicyToolInput struct {
 	Template  string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge', 'calibration/prompt_injection_guard')."`
 	Variables map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
 	Image     string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
+	Backend   string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
+	VertexURL string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4217256562927861760)."`
 }
 
 type LocateBBoxToolInput struct {
-	Image  string `json:"image" jsonschema:"Image URL or base64 data URI (data:image/png;base64,...) to analyze with Gemma 4 SigLIP vision."`
-	Target string `json:"target" jsonschema:"Natural language description of the object to localize (e.g. 'red vintage pickup truck', 'the wine glass closest to the bottle')."`
+	Image     string `json:"image" jsonschema:"Image URL or base64 data URI (data:image/png;base64,...) to analyze with Gemma 4 SigLIP vision."`
+	Target    string `json:"target" jsonschema:"Natural language description of the object to localize (e.g. 'red vintage pickup truck', 'the wine glass closest to the bottle')."`
+	Backend   string `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default), 'vertex', or 'cloudrun'."`
+	VertexURL string `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
 }
 
 type BBoxCoords struct {
@@ -717,6 +721,8 @@ type LocateBBoxToolOutput struct {
 	CoordinateEntropy  map[string]float64 `json:"coordinate_entropy_nats"`
 	MaxEntropy         float64            `json:"max_entropy"`
 	WallTimeMs         int64              `json:"wall_time_ms"`
+	BackendTarget      string             `json:"backend_target"`
+	UpstreamURL        string             `json:"upstream_url"`
 }
 
 type CustomQuestionSpec struct {
@@ -729,6 +735,8 @@ type CustomQuestionSpec struct {
 type DecideCustomToolInput struct {
 	Context   string               `json:"context" jsonschema:"Input text, document, code diff, or event log to evaluate."`
 	Questions []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
+	Backend   string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', or 'cloudrun'."`
+	VertexURL string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
 }
 
 type ListTemplatesToolInput struct {
@@ -827,12 +835,18 @@ func buildMCPServer() *mcp.Server {
 		if input.Image != "" {
 			imgs = append(imgs, input.Image)
 		}
+		backendTarget, targetURL, bErr := resolveBackendTargetFromParams(ctx, input.Backend, input.VertexURL)
+		if bErr != nil {
+			return nil, GatewayDecideResponse{}, bErr
+		}
 		start := time.Now()
-		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, imgs)
+		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, imgs, targetURL)
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
-		MarkGPUWarm()
+		if backendTarget == "cloudrun" {
+			MarkGPUWarm()
+		}
 
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
@@ -853,7 +867,8 @@ func buildMCPServer() *mcp.Server {
 			WallTimeMs:     time.Since(start).Milliseconds(),
 			WarmupAttempts: attempts,
 			Model:          stats.Model,
-			UpstreamURL:    viper.GetString("url"),
+			BackendTarget:  backendTarget,
+			UpstreamURL:    targetURL,
 		}, nil
 	})
 
@@ -880,12 +895,18 @@ func buildMCPServer() *mcp.Server {
 		if err != nil {
 			return nil, LocateBBoxToolOutput{}, err
 		}
+		backendTarget, targetURL, bErr := resolveBackendTargetFromParams(ctx, input.Backend, input.VertexURL)
+		if bErr != nil {
+			return nil, LocateBBoxToolOutput{}, bErr
+		}
 		start := time.Now()
-		resp, _, _, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, []string{input.Image})
+		resp, _, _, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, []string{input.Image}, targetURL)
 		if err != nil {
 			return nil, LocateBBoxToolOutput{}, err
 		}
-		MarkGPUWarm()
+		if backendTarget == "cloudrun" {
+			MarkGPUWarm()
+		}
 
 		expYMin, argYMin := computeExpectedCoord(resp.Answers["ymin"])
 		expXMin, argXMin := computeExpectedCoord(resp.Answers["xmin"])
@@ -918,6 +939,8 @@ func buildMCPServer() *mcp.Server {
 			CoordinateEntropy:  coordEnt,
 			MaxEntropy:         maxEnt,
 			WallTimeMs:         time.Since(start).Milliseconds(),
+			BackendTarget:      backendTarget,
+			UpstreamURL:        targetURL,
 		}, nil
 	})
 
@@ -945,12 +968,18 @@ func buildMCPServer() *mcp.Server {
 		schemaBytes, _ := json.Marshal(schemaObj)
 		schemaStr, stateStr, _ := template.ParseStructuredPayload(string(schemaBytes), map[string]interface{}{"context": input.Context})
 
+		backendTarget, targetURL, bErr := resolveBackendTargetFromParams(ctx, input.Backend, input.VertexURL)
+		if bErr != nil {
+			return nil, GatewayDecideResponse{}, bErr
+		}
 		start := time.Now()
-		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaStr, stateStr, nil)
+		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaStr, stateStr, nil, targetURL)
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
-		MarkGPUWarm()
+		if backendTarget == "cloudrun" {
+			MarkGPUWarm()
+		}
 
 		maxEntropy := 0.0
 		for _, a := range resp.Answers {
@@ -966,7 +995,8 @@ func buildMCPServer() *mcp.Server {
 			WallTimeMs:     time.Since(start).Milliseconds(),
 			WarmupAttempts: attempts,
 			Model:          stats.Model,
-			UpstreamURL:    viper.GetString("url"),
+			BackendTarget:  backendTarget,
+			UpstreamURL:    targetURL,
 		}, nil
 	})
 

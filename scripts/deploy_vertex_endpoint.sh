@@ -25,9 +25,9 @@ MODEL_DISPLAY_NAME="${VERTEX_MODEL_NAME:-dgemma-invoke}"
 ENDPOINT_DISPLAY_NAME="${VERTEX_ENDPOINT_NAME:-dgemma-dedicated}"
 
 # Hardware profile:
-#   1x L4 (24GB VRAM, text-only DISABLE_MM=1): MACHINE_TYPE=g2-standard-8, ACCELERATOR_TYPE=NVIDIA_L4, ACCELERATOR_COUNT=1
+#   1x L4 (24GB VRAM, 64GB RAM for 17.53 GiB tmpfs + PyTorch load): MACHINE_TYPE=g2-standard-16, ACCELERATOR_TYPE=NVIDIA_L4, ACCELERATOR_COUNT=1
 #   2x L4 (48GB VRAM, multimodal DISABLE_MM=0): MACHINE_TYPE=g2-standard-24, ACCELERATOR_TYPE=NVIDIA_L4, ACCELERATOR_COUNT=2
-MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-8}"
+MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-16}"
 ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-NVIDIA_L4}"
 ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-1}"
 DISABLE_MM="${DISABLE_MM:-1}"
@@ -36,23 +36,22 @@ MAX_REPLICAS="${VERTEX_MAX_REPLICAS:-1}"
 SERVICE_ACCOUNT="${VERTEX_SERVICE_ACCOUNT:-dgemma-gpu-sa@${PROJECT_ID}.iam.gserviceaccount.com}"
 
 API_BASE="https://${REGION}-aiplatform.googleapis.com/v1beta1"
-TOKEN="$(gcloud auth print-access-token)"
+TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || gcloud auth print-access-token)"
 
 echo "==> [1/4] Uploading Invoke-Enabled Model (${MODEL_DISPLAY_NAME}) with invokeRoutePrefix=\"/*\"..."
 UPLOAD_PAYLOAD=$(cat <<EOF
 {
   "model": {
     "displayName": "${MODEL_DISPLAY_NAME}",
-    "artifactUri": "${ARTIFACT_URI}",
     "containerSpec": {
       "imageUri": "${IMAGE_URI}",
       "invokeRoutePrefix": "/*",
-      "healthRoute": "/vertex-health",
+      "healthRoute": "/health",
       "ports": [
         { "containerPort": 8080 }
       ],
       "env": [
-        { "name": "AIP_STORAGE_URI", "value": "${ARTIFACT_URI}" },
+        { "name": "DGEM_WEIGHTS_URI", "value": "${ARTIFACT_URI}" },
         { "name": "GCS_BUCKET", "value": "${GCS_BUCKET}" },
         { "name": "CANVAS", "value": "128" },
         { "name": "ENFORCE_EAGER", "value": "1" },
