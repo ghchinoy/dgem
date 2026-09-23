@@ -33,6 +33,9 @@ docs-site/node_modules/
 docs-site/dist/
 docs-site/.astro/
 studio/node_modules/
+studio/dist/*
+!studio/dist/.gitkeep
+cmd/studio_dist/
 
 # Rust/Cargo artifacts (if building diffgemma locally)
 target/

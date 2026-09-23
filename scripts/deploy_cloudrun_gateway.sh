@@ -42,9 +42,8 @@ cp -R cmd pkg templates "${TMP_CTX}/"
 mkdir -p "${TMP_CTX}/studio"
 cp studio/package*.json studio/tsconfig.json studio/vite.config.ts studio/index.html studio/embed.go "${TMP_CTX}/studio/"
 cp -R studio/src "${TMP_CTX}/studio/"
-if [ -d "studio/dist" ]; then
-  cp -R studio/dist "${TMP_CTX}/studio/"
-fi
+mkdir -p "${TMP_CTX}/studio/dist"
+touch "${TMP_CTX}/studio/dist/.gitkeep"
 cp deploy/gateway/Dockerfile "${TMP_CTX}/Dockerfile"
 
 echo "-> Building ${IMAGE} via Cloud Build..."
