@@ -47,6 +47,83 @@ interface BatchTableRow {
   errorMsg?: string;
 }
 
+interface CustomBuilderSlot {
+  id: string;
+  type: 'boolean' | 'choice' | 'score';
+  instructions: string;
+  optionsSpec: string; // "name:description | name2:description2"
+  levelsSpec: string;  // "1, 2, 3, 4, 5"
+}
+
+const DEFAULT_CUSTOM_SLOTS: CustomBuilderSlot[] = [
+  {
+    id: 'compliant',
+    type: 'boolean',
+    instructions: 'Does the contract clause satisfy standard enterprise legal policy without uncapped risk or lock-in?',
+    optionsSpec: '',
+    levelsSpec: '1, 2, 3, 4, 5',
+  },
+  {
+    id: 'risk_category',
+    type: 'choice',
+    instructions: 'Select the primary legal risk category present in the clause',
+    optionsSpec:
+      'indemnity:Uncapped indemnification or third-party IP liability | auto_renewal:Evergreen automatic renewal without 30-day opt-out | data_residency:Cross-border data transfer without GDPR/HIPAA DPA | none:Standard balanced commercial terms with no elevated risk',
+    levelsSpec: '1, 2, 3, 4, 5',
+  },
+];
+
+const DEFAULT_CUSTOM_DATASET_JSONL = [
+  JSON.stringify({
+    id: 'clause-01',
+    clause_text: 'Either party may terminate this Agreement upon sixty (60) days prior written notice for convenience without penalty.',
+    expected_compliant: 'yes',
+    expected_risk_category: 'none',
+  }),
+  JSON.stringify({
+    id: 'clause-02',
+    clause_text: 'Customer shall indemnify, defend, and hold harmless Vendor against any and all claims or damages of any kind without limitation or cap.',
+    expected_compliant: 'no',
+    expected_risk_category: 'indemnity',
+  }),
+  JSON.stringify({
+    id: 'clause-03',
+    clause_text: 'This Subscription Term shall automatically renew for successive three (3) year periods unless Customer gives notice at least 180 days prior.',
+    expected_compliant: 'no',
+    expected_risk_category: 'auto_renewal',
+  }),
+  JSON.stringify({
+    id: 'clause-04',
+    clause_text: 'Vendor may transfer and process Customer EU personal data in any global jurisdiction at its sole discretion without Standard Contractual Clauses.',
+    expected_compliant: 'no',
+    expected_risk_category: 'data_residency',
+  }),
+  JSON.stringify({
+    id: 'clause-05',
+    clause_text: 'Total aggregate liability of either party under this Agreement shall not exceed the fees paid by Customer in the preceding 12 months.',
+    expected_compliant: 'yes',
+    expected_risk_category: 'none',
+  }),
+  JSON.stringify({
+    id: 'clause-06',
+    clause_text: 'All Customer data shall remain encrypted at rest (AES-256) in US-Central1 and EU-West1 regions in accordance with the signed GDPR DPA.',
+    expected_compliant: 'yes',
+    expected_risk_category: 'none',
+  }),
+  JSON.stringify({
+    id: 'clause-07',
+    clause_text: 'Unless cancelled 90 days before anniversary, agreement renews automatically at a mandatory 25% annual price increase.',
+    expected_compliant: 'no',
+    expected_risk_category: 'auto_renewal',
+  }),
+  JSON.stringify({
+    id: 'clause-08',
+    clause_text: 'Customer assumes unlimited financial responsibility for any third-party patent infringement allegation arising from Vendor software.',
+    expected_compliant: 'no',
+    expected_risk_category: 'indemnity',
+  }),
+].join('\n');
+
 @customElement('dgem-batch-runner')
 export class DgemBatchRunner extends LitElement {
   @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'light';
@@ -61,6 +138,18 @@ export class DgemBatchRunner extends LitElement {
   @state() private totalItems = 0;
   @state() private wallElapsedSec = 0;
   @state() private loadingPresets = true;
+
+  // Custom Template Builder & Dataset Uploader State
+  @state() private builderMode: 'visual' | 'raw' = 'visual';
+  @state() private customPolicyName = 'batch/contract_audit';
+  @state() private customInstructions =
+    'You are an enterprise policy auditor evaluating a vendor contract clause.';
+  @state() private customStateVars = 'clause_text';
+  @state() private customSlots: CustomBuilderSlot[] = [...DEFAULT_CUSTOM_SLOTS];
+  @state() private customRawTemplate = '';
+  @state() private customDatasetText = DEFAULT_CUSTOM_DATASET_JSONL;
+  @state() private customParseMessage = '';
+  @state() private copiedTemplateBadge = false;
 
   private abortRun = false;
   private wallTimer?: number;
@@ -598,10 +687,149 @@ export class DgemBatchRunner extends LitElement {
       border-color: var(--brand);
       color: var(--brand);
     }
+
+    /* Custom Template & Dataset Builder Drawer */
+    .custom-drawer {
+      margin-top: 1.1rem;
+      padding: 1.15rem;
+      border-radius: 12px;
+      border: 1px solid var(--brand-border);
+      background: var(--bg-subtle);
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 1020px) {
+      .custom-drawer {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .builder-pane {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .pane-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .field-label {
+      font-size: 0.69rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    .text-input,
+    .code-area,
+    .select-input {
+      width: 100%;
+      padding: 0.45rem 0.65rem;
+      border-radius: 7px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.78rem;
+      font-family: inherit;
+    }
+
+    .code-area {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      line-height: 1.45;
+      resize: vertical;
+      min-height: 185px;
+    }
+
+    .slot-builder-card {
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      border-radius: 8px;
+      padding: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .slot-builder-top {
+      display: grid;
+      grid-template-columns: 130px 110px 1fr auto;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .mini-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border-radius: 7px;
+      padding: 0.32rem 0.65rem;
+      font-size: 0.73rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .mini-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    .mini-btn.danger:hover {
+      border-color: var(--miss-fg);
+      color: var(--miss-fg);
+    }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.25rem;
+    }
   `;
 
   connectedCallback() {
     super.connectedCallback();
+    this.customRawTemplate = this.compileVisualTemplate();
     this.loadBatchPresets();
   }
 
@@ -612,19 +840,340 @@ export class DgemBatchRunner extends LitElement {
     }
   }
 
+  private compileVisualTemplate(): string {
+    const questions = this.customSlots.map((s) => {
+      const q: Record<string, any> = {
+        id: (s.id || 'slot').trim(),
+        type: s.type || 'boolean',
+        instructions: s.instructions || 'Evaluate this slot.',
+      };
+      if (s.type === 'choice') {
+        const parts = (s.optionsSpec || 'option_a:First option | option_b:Second option')
+          .split('|')
+          .map((p) => p.trim())
+          .filter(Boolean);
+        q.options = parts.map((part) => {
+          const colonIdx = part.indexOf(':');
+          if (colonIdx > 0) {
+            return {
+              name: part.slice(0, colonIdx).trim(),
+              description: part.slice(colonIdx + 1).trim(),
+            };
+          }
+          return { name: part.trim(), description: part.trim() };
+        });
+      } else if (s.type === 'score') {
+        q.levels = (s.levelsSpec || '1, 2, 3, 4, 5')
+          .split(',')
+          .map((l) => l.trim())
+          .filter(Boolean);
+      }
+      return q;
+    });
+
+    const varNames = (this.customStateVars || 'input')
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+    const stateLines = varNames.map(
+      (v, i) => `    "${v}": {{ default "" .${v} | toJson }}${i < varNames.length - 1 ? ',' : ''}`
+    );
+
+    const schemaJson = JSON.stringify(
+      {
+        instructions: this.customInstructions,
+        questions,
+        samples: 'auto',
+      },
+      null,
+      4
+    );
+
+    return `{\n  "schema": ${schemaJson.replace(/\n/g, '\n  ')},\n  "state": {\n${stateLines.join('\n')}\n  }\n}`;
+  }
+
+  private getEffectiveCustomTemplate(): string {
+    return this.builderMode === 'raw' && this.customRawTemplate.trim()
+      ? this.customRawTemplate
+      : this.compileVisualTemplate();
+  }
+
+  private parseCustomDatasetItems(): BatchPresetItem[] {
+    const raw = (this.customDatasetText || '').trim();
+    if (!raw) return [];
+    const tmplStr = this.getEffectiveCustomTemplate();
+    const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    const items: BatchPresetItem[] = [];
+
+    // Detect if CSV vs JSONL
+    const firstTrimmed = lines[0].trim();
+    let parsedRecords: Record<string, any>[] = [];
+
+    if (firstTrimmed.startsWith('{') || firstTrimmed.startsWith('[')) {
+      if (firstTrimmed.startsWith('[')) {
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) parsedRecords = arr;
+        } catch {
+          // fallback to line-by-line
+        }
+      }
+      if (parsedRecords.length === 0) {
+        lines.forEach((line) => {
+          try {
+            parsedRecords.push(JSON.parse(line));
+          } catch {
+            // skip malformed line
+          }
+        });
+      }
+    } else {
+      // Simple CSV parser (handles quoted strings)
+      const parseCSVLine = (line: string): string[] => {
+        const out: string[] = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            inQuotes = !inQuotes;
+          } else if (ch === ',' && !inQuotes) {
+            out.push(cur.trim());
+            cur = '';
+          } else {
+            cur += ch;
+          }
+        }
+        out.push(cur.trim());
+        return out;
+      };
+      const headers = parseCSVLine(lines[0]);
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        const obj: Record<string, any> = {};
+        headers.forEach((h, idx) => {
+          if (h) obj[h] = cols[idx] ?? '';
+        });
+        parsedRecords.push(obj);
+      }
+    }
+
+    parsedRecords.forEach((rec, idx) => {
+      const id = String(rec.id || `custom-${String(idx + 1).padStart(2, '0')}`);
+      const expectedObj = typeof rec.expected === 'object' && rec.expected !== null ? rec.expected : {};
+      const variables: Record<string, any> =
+        typeof rec.variables === 'object' && rec.variables !== null ? { ...rec.variables } : {};
+
+      if (Object.keys(variables).length === 0) {
+        for (const [k, v] of Object.entries(rec)) {
+          if (k !== 'id' && k !== 'expected' && !k.startsWith('expected_')) {
+            variables[k] = v;
+          }
+        }
+      }
+
+      const firstVal = Object.values(variables)[0];
+      const preview = String(rec.preview || firstVal || JSON.stringify(variables)).slice(0, 140);
+
+      const expected_slots: BatchExpectedSlot[] = this.customSlots.map((s) => {
+        const slotId = (s.id || 'slot').trim();
+        const expVal =
+          expectedObj[slotId] !== undefined
+            ? String(expectedObj[slotId])
+            : rec[`expected_${slotId}`] !== undefined
+              ? String(rec[`expected_${slotId}`])
+              : '—';
+        return {
+          question: slotId,
+          label: s.instructions || slotId,
+          type: s.type === 'boolean' ? 'bool' : s.type,
+          expected: expVal,
+        };
+      });
+
+      items.push({
+        id,
+        domain: this.customPolicyName || 'custom_experiment',
+        tier: 'custom',
+        preview,
+        custom_template: tmplStr,
+        variables,
+        expected_slots,
+      });
+    });
+
+    this.customParseMessage = `Ready: ${items.length} dataset rows × ${this.customSlots.length} question slots (${items.length * this.customSlots.length} total evaluations)`;
+    return items;
+  }
+
+  private buildCustomSuiteObject(): BatchPresetSuite {
+    const items = this.parseCustomDatasetItems();
+    return {
+      id: 'custom_builder',
+      title: '🛠️ Custom Template & Dataset (.jsonl / .csv)',
+      category: 'Self-Service Experiment Builder',
+      badge: `${items.length} items · ${items.length * this.customSlots.length} slots`,
+      description:
+        'Design your own multi-slot Policy-as-Template (.json.tmpl), upload or paste any .jsonl / .csv dataset, and run live evaluations.',
+      default_concurrency: 4,
+      total_items: items.length,
+      total_questions: items.length * this.customSlots.length,
+      items,
+    };
+  }
+
+  private refreshCustomSuiteIfActive() {
+    if (this.builderMode === 'visual') {
+      this.customRawTemplate = this.compileVisualTemplate();
+    }
+    const customSuite = this.buildCustomSuiteObject();
+    const existingIdx = this.suites.findIndex((s) => s.id === 'custom_builder');
+    if (existingIdx >= 0) {
+      const updated = [...this.suites];
+      updated[existingIdx] = customSuite;
+      this.suites = updated;
+    } else {
+      this.suites = [...this.suites, customSuite];
+    }
+    if (this.selectedSuiteId === 'custom_builder') {
+      this.selectSuite('custom_builder');
+    }
+  }
+
+  private async handleDatasetFileUpload(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    this.customDatasetText = text.trim();
+
+    // Auto-detect state variable columns from first record
+    const items = this.parseCustomDatasetItems();
+    if (items.length > 0) {
+      const cols = Object.keys(items[0].variables);
+      if (cols.length > 0) {
+        this.customStateVars = cols.join(', ');
+      }
+    }
+    this.refreshCustomSuiteIfActive();
+  }
+
+  private copyCustomTemplate() {
+    const tmpl = this.getEffectiveCustomTemplate();
+    navigator.clipboard.writeText(tmpl);
+    this.copiedTemplateBadge = true;
+    setTimeout(() => {
+      this.copiedTemplateBadge = false;
+    }, 1800);
+  }
+
+  private downloadCustomTemplate() {
+    const tmpl = this.getEffectiveCustomTemplate();
+    const blob = new Blob([tmpl], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const cleanName = (this.customPolicyName || 'custom_policy').replace(/[^a-zA-Z0-9_-]/g, '_');
+    a.href = url;
+    a.download = `${cleanName}.json.tmpl`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private exportResults(format: 'csv' | 'jsonl') {
+    if (this.rows.length === 0) return;
+    let content = '';
+    let mime = 'text/plain';
+    let ext = format;
+
+    if (format === 'jsonl') {
+      content =
+        this.rows
+          .map((r) =>
+            JSON.stringify({
+              item_index: r.itemIndex,
+              item_id: r.item.id,
+              domain: r.item.domain,
+              question: r.slot.question,
+              type: r.slot.type,
+              state: r.state,
+              predicted: r.predicted ?? '',
+              expected: r.slot.expected,
+              confidence: r.confidence ?? null,
+              entropy_nats: r.entropy !== undefined ? Number(r.entropy.toFixed(4)) : null,
+              server_ms: r.serverMs ?? null,
+              round_trip_ms: r.roundTripMs ?? null,
+              preview: r.item.preview,
+            })
+          )
+          .join('\n') + '\n';
+      mime = 'application/x-ndjson';
+    } else {
+      const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const header = [
+        'item_index',
+        'item_id',
+        'domain',
+        'question',
+        'type',
+        'state',
+        'predicted',
+        'expected',
+        'confidence',
+        'entropy_nats',
+        'server_ms',
+        'round_trip_ms',
+        'preview',
+      ].join(',');
+      const lines = this.rows.map((r) =>
+        [
+          r.itemIndex,
+          esc(r.item.id),
+          esc(r.item.domain),
+          esc(r.slot.question),
+          esc(r.slot.type),
+          esc(r.state),
+          esc(r.predicted ?? ''),
+          esc(r.slot.expected),
+          r.confidence !== undefined ? r.confidence.toFixed(4) : '',
+          r.entropy !== undefined ? r.entropy.toFixed(4) : '',
+          r.serverMs ?? '',
+          r.roundTripMs ?? '',
+          esc(r.item.preview),
+        ].join(',')
+      );
+      content = [header, ...lines].join('\n') + '\n';
+      mime = 'text/csv';
+    }
+
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dgem_batch_${this.selectedSuiteId}_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   private async loadBatchPresets() {
     this.loadingPresets = true;
     try {
       const res = await fetch('/api/batch/presets');
       if (res.ok) {
         const data = await res.json();
-        this.suites = data.suites || [];
+        const serverSuites: BatchPresetSuite[] = data.suites || [];
+        this.suites = [...serverSuites, this.buildCustomSuiteObject()];
         if (this.suites.length > 0) {
           this.selectSuite(this.suites[0].id);
         }
+      } else {
+        this.suites = [this.buildCustomSuiteObject()];
+        this.selectSuite('custom_builder');
       }
     } catch (e) {
       console.error('Failed to load batch presets:', e);
+      this.suites = [this.buildCustomSuiteObject()];
+      this.selectSuite('custom_builder');
     } finally {
       this.loadingPresets = false;
     }
@@ -668,9 +1217,292 @@ export class DgemBatchRunner extends LitElement {
 
   private isMatch(predicted: string | undefined, expected: string): boolean {
     if (!predicted) return false;
+    if (!expected || expected === '—') return true; // Unlabeled dataset inference mode
     const p = this.normalizeAnswer(predicted).toLowerCase();
     const e = this.normalizeAnswer(expected).toLowerCase();
     return p === e;
+  }
+
+  private renderCustomBuilderDrawer() {
+    if (this.selectedSuiteId !== 'custom_builder') return '';
+
+    return html`
+      <div class="custom-drawer">
+        <!-- Left Pane: Step 1 — Policy Template Builder (.json.tmpl) -->
+        <div class="builder-pane">
+          <div class="pane-header">
+            <span class="pane-title">1. Policy Template Builder (<code>.json.tmpl</code>)</span>
+            <div class="seg-group">
+              <button
+                class="seg-btn ${this.builderMode === 'visual' ? 'active' : ''}"
+                @click=${() => {
+                  this.builderMode = 'visual';
+                  this.refreshCustomSuiteIfActive();
+                }}
+              >
+                Visual Slot Builder
+              </button>
+              <button
+                class="seg-btn ${this.builderMode === 'raw' ? 'active' : ''}"
+                @click=${() => {
+                  this.customRawTemplate = this.compileVisualTemplate();
+                  this.builderMode = 'raw';
+                }}
+              >
+                Raw .json.tmpl
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <span class="field-label">Experiment Name (Cloud Logging Tag)</span>
+              <input
+                class="text-input"
+                .value=${this.customPolicyName}
+                placeholder="e.g. batch/contract_audit"
+                @input=${(e: Event) => {
+                  this.customPolicyName = (e.target as HTMLInputElement).value;
+                  this.refreshCustomSuiteIfActive();
+                }}
+              />
+            </div>
+            <div class="field-group">
+              <span class="field-label">Dataset Variable Columns (comma-separated)</span>
+              <input
+                class="text-input"
+                .value=${this.customStateVars}
+                placeholder="e.g. clause_text, jurisdiction"
+                @input=${(e: Event) => {
+                  this.customStateVars = (e.target as HTMLInputElement).value;
+                  this.refreshCustomSuiteIfActive();
+                }}
+              />
+            </div>
+          </div>
+
+          ${this.builderMode === 'visual'
+            ? html`
+                <div class="field-group">
+                  <span class="field-label">Global Policy Instructions (Static vLLM Prefix Cache)</span>
+                  <input
+                    class="text-input"
+                    .value=${this.customInstructions}
+                    @input=${(e: Event) => {
+                      this.customInstructions = (e.target as HTMLInputElement).value;
+                      this.refreshCustomSuiteIfActive();
+                    }}
+                  />
+                </div>
+
+                <div class="field-group">
+                  <div class="pane-header">
+                    <span class="field-label">
+                      Simultaneous $O(1)$ Question Slots (${this.customSlots.length})
+                    </span>
+                    <button
+                      class="mini-btn"
+                      @click=${() => {
+                        this.customSlots = [
+                          ...this.customSlots,
+                          {
+                            id: `slot_${this.customSlots.length + 1}`,
+                            type: 'boolean',
+                            instructions: 'Is this condition satisfied?',
+                            optionsSpec: 'option_a:First choice | option_b:Second choice',
+                            levelsSpec: '1, 2, 3, 4, 5',
+                          },
+                        ];
+                        this.refreshCustomSuiteIfActive();
+                      }}
+                    >
+                      + Add Question Slot
+                    </button>
+                  </div>
+
+                  ${this.customSlots.map(
+                    (s, idx) => html`
+                      <div class="slot-builder-card">
+                        <div class="slot-builder-top">
+                          <input
+                            class="text-input"
+                            title="Slot ID (matches expected_<id> in dataset)"
+                            placeholder="slot_id"
+                            .value=${s.id}
+                            @input=${(e: Event) => {
+                              const next = [...this.customSlots];
+                              next[idx] = { ...s, id: (e.target as HTMLInputElement).value };
+                              this.customSlots = next;
+                              this.refreshCustomSuiteIfActive();
+                            }}
+                          />
+                          <select
+                            class="select-input"
+                            .value=${s.type}
+                            @change=${(e: Event) => {
+                              const next = [...this.customSlots];
+                              next[idx] = {
+                                ...s,
+                                type: (e.target as HTMLSelectElement).value as any,
+                              };
+                              this.customSlots = next;
+                              this.refreshCustomSuiteIfActive();
+                            }}
+                          >
+                            <option value="boolean">boolean</option>
+                            <option value="choice">choice</option>
+                            <option value="score">score</option>
+                          </select>
+                          <input
+                            class="text-input"
+                            placeholder="Slot question instructions..."
+                            .value=${s.instructions}
+                            @input=${(e: Event) => {
+                              const next = [...this.customSlots];
+                              next[idx] = {
+                                ...s,
+                                instructions: (e.target as HTMLInputElement).value,
+                              };
+                              this.customSlots = next;
+                              this.refreshCustomSuiteIfActive();
+                            }}
+                          />
+                          ${this.customSlots.length > 1
+                            ? html`
+                                <button
+                                  class="mini-btn danger"
+                                  title="Remove slot"
+                                  @click=${() => {
+                                    this.customSlots = this.customSlots.filter((_, i) => i !== idx);
+                                    this.refreshCustomSuiteIfActive();
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              `
+                            : ''}
+                        </div>
+
+                        ${s.type === 'choice'
+                          ? html`
+                              <input
+                                class="text-input"
+                                placeholder="Options: name:description | name2:description2 (max 26 [A-Z])"
+                                .value=${s.optionsSpec}
+                                @input=${(e: Event) => {
+                                  const next = [...this.customSlots];
+                                  next[idx] = {
+                                    ...s,
+                                    optionsSpec: (e.target as HTMLInputElement).value,
+                                  };
+                                  this.customSlots = next;
+                                  this.refreshCustomSuiteIfActive();
+                                }}
+                              />
+                            `
+                          : s.type === 'score'
+                            ? html`
+                                <input
+                                  class="text-input"
+                                  placeholder="Score levels (comma-separated): 1, 2, 3, 4, 5"
+                                  .value=${s.levelsSpec}
+                                  @input=${(e: Event) => {
+                                    const next = [...this.customSlots];
+                                    next[idx] = {
+                                      ...s,
+                                      levelsSpec: (e.target as HTMLInputElement).value,
+                                    };
+                                    this.customSlots = next;
+                                    this.refreshCustomSuiteIfActive();
+                                  }}
+                                />
+                              `
+                            : ''}
+                      </div>
+                    `
+                  )}
+                </div>
+              `
+            : html`
+                <div class="field-group">
+                  <span class="field-label">Raw Go Policy Template (<code>schema</code> + <code>state</code>)</span>
+                  <textarea
+                    class="code-area"
+                    .value=${this.customRawTemplate}
+                    @input=${(e: Event) => {
+                      this.customRawTemplate = (e.target as HTMLTextAreaElement).value;
+                      this.refreshCustomSuiteIfActive();
+                    }}
+                  ></textarea>
+                </div>
+              `}
+
+          <div class="action-bar">
+            <span style="font-size: 0.72rem; color: var(--text-muted);">
+              Static <code>"schema"</code> + dynamic <code>"state"</code> enables ~75% vLLM prefix-cache reuse.
+            </span>
+            <div style="display: flex; gap: 0.45rem;">
+              <button class="mini-btn" @click=${this.copyCustomTemplate}>
+                ${this.copiedTemplateBadge ? '✓ Copied!' : '📋 Copy .json.tmpl'}
+              </button>
+              <button class="mini-btn" @click=${this.downloadCustomTemplate}>
+                ⬇ Download .json.tmpl
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Pane: Step 2 — Dataset Uploader (.jsonl / .csv) -->
+        <div class="builder-pane">
+          <div class="pane-header">
+            <span class="pane-title">2. Dataset Rows (<code>.jsonl</code> or <code>.csv</code>)</span>
+            <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+              <label class="mini-btn" style="cursor: pointer;">
+                📂 Upload .jsonl / .csv
+                <input
+                  type="file"
+                  accept=".jsonl,.json,.csv,.tsv,.txt"
+                  style="display: none;"
+                  @change=${this.handleDatasetFileUpload}
+                />
+              </label>
+              <button
+                class="mini-btn"
+                @click=${() => {
+                  this.customSlots = [...DEFAULT_CUSTOM_SLOTS];
+                  this.customStateVars = 'clause_text';
+                  this.customDatasetText = DEFAULT_CUSTOM_DATASET_JSONL;
+                  this.refreshCustomSuiteIfActive();
+                }}
+              >
+                ⚡ Reset 8-Row Sample
+              </button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <span class="field-label">
+              Paste or Edit JSONL / CSV Rows (include <code>expected_&lt;slot_id&gt;</code> for live accuracy grading, or omit for unlabeled inference)
+            </span>
+            <textarea
+              class="code-area"
+              style="min-height: 235px;"
+              .value=${this.customDatasetText}
+              @input=${(e: Event) => {
+                this.customDatasetText = (e.target as HTMLTextAreaElement).value;
+                this.refreshCustomSuiteIfActive();
+              }}
+            ></textarea>
+          </div>
+
+          <div class="action-bar">
+            <span style="font-size: 0.73rem; font-weight: 600; color: var(--brand);">
+              ${this.customParseMessage}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private median(values: number[]): number {
@@ -927,6 +1759,8 @@ export class DgemBatchRunner extends LitElement {
             )}
           </div>
 
+          ${this.renderCustomBuilderDrawer()}
+
           <div class="toolbar">
             <div class="control-group">
               <span class="control-label">Concurrency</span>
@@ -966,6 +1800,26 @@ export class DgemBatchRunner extends LitElement {
                   @click=${() => (this.rowFilter = 'high_entropy')}
                 >
                   High H ≥ 0.25 (${this.rows.filter((r) => (r.entropy || 0) >= 0.25).length})
+                </button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <span class="control-label">Export Receipt</span>
+              <div class="seg-group">
+                <button
+                  class="seg-btn"
+                  title="Download results table as CSV"
+                  @click=${() => this.exportResults('csv')}
+                >
+                  ⬇ Export .csv
+                </button>
+                <button
+                  class="seg-btn"
+                  title="Download structured results receipt as JSONL"
+                  @click=${() => this.exportResults('jsonl')}
+                >
+                  ⬇ Export .jsonl
                 </button>
               </div>
             </div>

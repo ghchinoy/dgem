@@ -223,6 +223,7 @@ export default defineConfig({
           items: [
             { label: 'Overview', link: '/' },
             { label: 'Decision Studio, MCP & HTTP API', slug: 'studio-mcp-api' },
+            { label: 'Custom Dataset & Experiment Cookbook', slug: 'custom-dataset-guide' },
             { label: 'Setup & Metal Engine', slug: 'setup' },
             { label: 'dgem User Guide', slug: 'user-guide' },
           ],
