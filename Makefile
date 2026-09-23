@@ -93,5 +93,11 @@ gce-deploy: ## Deploy vLLM with DiffusionGemma structured reads to GCE with L4 G
 gce-teardown: ## Delete GCE GPU benchmark instance and firewall to eliminate idle cost
 	./scripts/teardown_gce_vllm.sh
 
+vertex-deploy: ## Deploy DiffusionGemma to a Vertex AI Dedicated Endpoint with arbitrary custom routes (invokeRoutePrefix="/*")
+	./scripts/deploy_vertex_endpoint.sh
+
+vertex-teardown: ## Undeploy models and delete Vertex AI Dedicated Endpoint to eliminate idle GPU cost
+	./scripts/teardown_vertex_endpoint.sh
+
 install: ## Install dgem binary to GOBIN
 	go install -ldflags="$(LDFLAGS)" .

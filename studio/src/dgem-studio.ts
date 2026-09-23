@@ -203,6 +203,11 @@ export class DgemStudio extends LitElement {
   @state() private mcpLatencyMs = 0;
   @state() private copiedSnippet = '';
 
+  // Inference Backend Target ('cloudrun' vs 'vertex' :rawPredict)
+  @state() private backendTarget: 'cloudrun' | 'vertex' = 'cloudrun';
+  @state() private vertexUrl = '';
+  @state() private backendSettingsOpen = false;
+
   static styles = css`
     :host {
       display: block;
@@ -962,7 +967,60 @@ export class DgemStudio extends LitElement {
   }
 
   private async loadInitialData() {
-    await Promise.all([this.fetchTemplates(), this.fetchGPUStatus(), this.fetchAuthMe()]);
+    await Promise.all([
+      this.fetchTemplates(),
+      this.fetchGPUStatus(),
+      this.fetchAuthMe(),
+      this.fetchBackendConfig(),
+    ]);
+  }
+
+  private async fetchBackendConfig() {
+    try {
+      const resp = await fetch('/api/backend-config');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const storedBackend = localStorage.getItem('dgem-backend') as 'cloudrun' | 'vertex' | null;
+      const storedVertexUrl = localStorage.getItem('dgem-vertex-url');
+      if (storedBackend === 'vertex' || storedBackend === 'cloudrun') {
+        this.backendTarget = storedBackend;
+      } else if (data.default_backend === 'vertex') {
+        this.backendTarget = 'vertex';
+      }
+      if (storedVertexUrl !== null) {
+        this.vertexUrl = storedVertexUrl;
+      } else if (data.vertex_url) {
+        this.vertexUrl = data.vertex_url;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  private async saveBackendConfig(backend: 'cloudrun' | 'vertex', vertexUrl: string) {
+    this.backendTarget = backend;
+    this.vertexUrl = vertexUrl.trim();
+    localStorage.setItem('dgem-backend', this.backendTarget);
+    localStorage.setItem('dgem-vertex-url', this.vertexUrl);
+    try {
+      const resp = await fetch('/api/backend-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          default_backend: this.backendTarget,
+          vertex_url: this.vertexUrl,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.vertex_url) {
+          this.vertexUrl = data.vertex_url;
+          localStorage.setItem('dgem-vertex-url', this.vertexUrl);
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   private async fetchTemplates() {
@@ -1060,9 +1118,8 @@ export class DgemStudio extends LitElement {
     this.loading = true;
     this.errorMessage = '';
 
-    // If the GPU is quiesced (scaled_to_zero), automatically trigger the Wake GPU state & coordinator
-    // just as if the user had clicked "Wake GPU" first.
-    if (this.gpuStatus?.gpu_state !== 'warm_and_ready') {
+    // If the GPU is quiesced (scaled_to_zero) and we are using Cloud Run, automatically trigger the Wake GPU state & coordinator
+    if (this.backendTarget === 'cloudrun' && this.gpuStatus?.gpu_state !== 'warm_and_ready') {
       this.warmingUp = true;
       this.warmupToast =
         'GPU was quiesced (0 instances) — automatically triggered GPU wakeup (0 → 1). Your decision policy will evaluate as soon as vLLM EngineCore comes online...';
@@ -1085,16 +1142,25 @@ export class DgemStudio extends LitElement {
     try {
       const payload: Record<string, unknown> = {
         variables: this.variableValues,
+        backend: this.backendTarget,
       };
+      if (this.vertexUrl) {
+        payload.vertex_url = this.vertexUrl;
+      }
       if (this.imageDataUrl) {
         payload.image_url = this.imageDataUrl;
       }
+      const reqHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-DGem-Surface': 'web_studio',
+        'X-DGem-Backend': this.backendTarget,
+      };
+      if (this.vertexUrl) {
+        reqHeaders['X-DGem-Vertex-Url'] = this.vertexUrl;
+      }
       const resp = await fetch(`/api/decide/${encodeURIComponent(this.selectedTemplateName)}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-DGem-Surface': 'web_studio',
-        },
+        headers: reqHeaders,
         body: JSON.stringify(payload),
       });
       const rawText = await resp.text();
@@ -1397,6 +1463,98 @@ export class DgemStudio extends LitElement {
           </div>
 
           <div class="status-cluster">
+            <div style="position:relative; display:inline-flex; align-items:center; gap:0.25rem;">
+              <button
+                class="btn btn--sm ${this.backendTarget === 'vertex' ? 'btn--brand' : ''}"
+                @click=${() => (this.backendSettingsOpen = !this.backendSettingsOpen)}
+                title="Switch Inference Backend between Serverless Cloud Run GPU (default) and Google Cloud Vertex AI Online Prediction Endpoints (:rawPredict)"
+              >
+                <span class="material-symbols-outlined">
+                  ${this.backendTarget === 'vertex' ? 'hub' : 'cloud_done'}
+                </span>
+                <span>
+                  ${this.backendTarget === 'vertex' ? 'Vertex AI Endpoint' : 'Cloud Run GPU'}
+                </span>
+                <span class="material-symbols-outlined" style="font-size:13px; opacity:0.8">
+                  tune
+                </span>
+              </button>
+
+              ${this.backendSettingsOpen
+                ? html`
+                    <div
+                      style="position:absolute; top:calc(100% + 8px); right:0; width:380px; background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:10px; box-shadow:var(--shadow-md); padding:0.9rem; z-index:200; display:flex; flex-direction:column; gap:0.65rem;"
+                    >
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:0.82rem; color:var(--text-primary)">
+                          Inference Backend Target (<code>X-DGem-Backend</code>)
+                        </strong>
+                        <button
+                          class="btn btn--sm"
+                          style="padding:0.15rem 0.45rem; font-size:0.7rem"
+                          @click=${() => (this.backendSettingsOpen = false)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.45rem;">
+                        <button
+                          class="btn btn--sm ${this.backendTarget === 'cloudrun' ? 'btn--brand' : ''}"
+                          style="justify-content:center;"
+                          @click=${() => this.saveBackendConfig('cloudrun', this.vertexUrl)}
+                        >
+                          <span class="material-symbols-outlined">cloud_done</span>
+                          Cloud Run GPU
+                        </button>
+                        <button
+                          class="btn btn--sm ${this.backendTarget === 'vertex' ? 'btn--brand' : ''}"
+                          style="justify-content:center;"
+                          @click=${() => this.saveBackendConfig('vertex', this.vertexUrl)}
+                        >
+                          <span class="material-symbols-outlined">hub</span>
+                          Vertex AI (/invoke/*)
+                        </button>
+                      </div>
+
+                      <div>
+                        <label
+                          style="display:block; font-size:0.72rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.25rem;"
+                        >
+                          Vertex AI Endpoint ID or Dedicated <code>/invoke/*</code> URL (<code>X-DGem-Vertex-Url</code>)
+                        </label>
+                        <input
+                          type="text"
+                          .value=${this.vertexUrl}
+                          @input=${(e: Event) => {
+                            this.vertexUrl = (e.target as HTMLInputElement).value;
+                          }}
+                          placeholder="e.g. 1234567890123456789 or https://<id>.us-central1-882920967572.prediction.vertexai.goog/.../invoke/v1"
+                          style="width:100%; font-family:var(--font-mono); font-size:0.72rem; padding:0.4rem 0.55rem; border-radius:6px; border:1px solid var(--border-subtle); background:var(--bg-inset); color:var(--text-primary);"
+                        />
+                        <div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.3rem; line-height:1.35;">
+                          Uses <code>invokeRoutePrefix="/*"</code> on a Dedicated Endpoint to map
+                          <code>/invoke/v1/chat/completions</code>, <code>/invoke/v1/raw/chat/completions</code>,
+                          <code>/invoke/v1/systemone</code>, and <code>/invoke/health</code> directly to <code>dgemma</code>.
+                        </div>
+                      </div>
+
+                      <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
+                        <button
+                          class="btn btn--sm btn--brand"
+                          @click=${async () => {
+                            await this.saveBackendConfig(this.backendTarget, this.vertexUrl);
+                            this.backendSettingsOpen = false;
+                          }}
+                        >
+                          Save & Apply
+                        </button>
+                      </div>
+                    </div>
+                  `
+                : null}
+            </div>
+
             <span class="pill" title=${this.gpuStatus?.message || ''}>
               <span class="dot ${dotClass}"></span>
               <span>${stateLabel}</span>
@@ -2259,6 +2417,8 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
                 ? html`
                     <dgem-batch-runner
                       .resolvedTheme=${this.resolvedTheme}
+                      .backendTarget=${this.backendTarget}
+                      .vertexUrl=${this.vertexUrl}
                       @batch-started=${() => this.fetchGPUStatus()}
                       @batch-completed=${() => this.fetchGPUStatus()}
                       @inspect-batch-item=${(e: CustomEvent<any>) => {

@@ -3,11 +3,47 @@ set -euo pipefail
 
 MODEL="${MODEL:-/mnt/gcs/dgemma}"
 CANVAS="${CANVAS:-128}"
-PORT="${PORT:-8080}"
+PORT="${AIP_HTTP_PORT:-${PORT:-8080}}"
 ENFORCE_EAGER="${ENFORCE_EAGER:-1}"
 DISABLE_MM="${DISABLE_MM:-1}"
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-fork}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
+
+# Vertex AI Online Prediction passes AIP_STORAGE_URI (e.g. gs://dgem-weights-.../dgemma) instead of a Cloud Run FUSE mount
+if [ ! -d "$MODEL" ] && [ -n "${AIP_STORAGE_URI:-}" ]; then
+  echo "[init] Vertex AI AIP_STORAGE_URI detected ($AIP_STORAGE_URI); staging weights to /tmp/dgemma..."
+  mkdir -p /tmp/dgemma
+  python3 -c '
+import json, os, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+uri = os.environ["AIP_STORAGE_URI"].rstrip("/")
+assert uri.startswith("gs://"), f"Expected gs:// URI, got {uri}"
+bucket, _, prefix = uri[5:].partition("/")
+req = urllib.request.Request(
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+    headers={"Metadata-Flavor": "Google"}
+)
+token = json.loads(urllib.request.urlopen(req, timeout=5).read().decode())["access_token"]
+list_url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o?prefix={prefix}/"
+items = json.loads(urllib.request.urlopen(urllib.request.Request(list_url, headers={"Authorization": f"Bearer {token}"})).read().decode()).get("items", [])
+def fetch_obj(item):
+    name = item["name"]
+    rel = name[len(prefix)+1:]
+    if not rel or "/" in rel:
+        return
+    dst = os.path.join("/tmp/dgemma", rel)
+    dl_url = f"https://storage.googleapis.com/{bucket}/{name}"
+    with urllib.request.urlopen(urllib.request.Request(dl_url, headers={"Authorization": f"Bearer {token}"})) as r, open(dst, "wb") as f:
+        while True:
+            chunk = r.read(16 * 1024 * 1024)
+            if not chunk:
+                break
+            f.write(chunk)
+with ThreadPoolExecutor(max_workers=16) as ex:
+    list(ex.map(fetch_obj, items))
+'
+  MODEL="/tmp/dgemma"
+fi
 
 mkdir -p /root/.cache/flashinfer /root/.triton /root/.cache/vllm
 

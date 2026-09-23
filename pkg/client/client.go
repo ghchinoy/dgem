@@ -48,13 +48,57 @@ func (c *Client) WithAuthToken(token string) *Client {
 	return c
 }
 
-// Complete executes an OpenAI-compatible chat completion.
+// IsVertexEndpointURL returns true if rawURL targets a Google Cloud Vertex AI Online Prediction Endpoint
+// (either a Dedicated Endpoint *.prediction.vertexai.goog with /invoke/* custom routes or *.aiplatform.googleapis.com).
+func IsVertexEndpointURL(rawURL string) bool {
+	u := strings.ToLower(strings.TrimSpace(rawURL))
+	return strings.Contains(u, "prediction.vertexai.goog") ||
+		strings.Contains(u, "aiplatform.googleapis.com") ||
+		strings.Contains(u, "/invoke/") ||
+		strings.HasSuffix(u, "/invoke") ||
+		strings.HasSuffix(u, ":rawpredict") ||
+		strings.HasSuffix(u, ":streamrawpredict") ||
+		strings.HasSuffix(u, ":predict")
+}
+
+// NormalizeVertexEndpointURL normalizes a Vertex AI Endpoint URL:
+//   - For Dedicated Endpoints using arbitrary custom routes (invokeRoutePrefix="/*"),
+//     routes to .../invoke/v1/chat/completions (which Vertex forwards as /v1/chat/completions to structured_server.py).
+//   - For standard regional endpoints (aiplatform.googleapis.com without /invoke), routes to :rawPredict.
+func NormalizeVertexEndpointURL(rawURL string) string {
+	u := strings.TrimRight(strings.TrimSpace(rawURL), "/")
+	if strings.Contains(strings.ToLower(u), "prediction.vertexai.goog") || strings.Contains(strings.ToLower(u), "/invoke") {
+		if strings.HasSuffix(u, "/invoke/v1/chat/completions") ||
+			strings.HasSuffix(u, "/invoke/v1/raw/chat/completions") ||
+			strings.HasSuffix(u, "/invoke/v1/systemone") {
+			return u
+		}
+		u = strings.TrimSuffix(u, "/chat/completions")
+		u = strings.TrimSuffix(u, "/v1")
+		if !strings.HasSuffix(u, "/invoke") {
+			u += "/invoke"
+		}
+		return u + "/v1/chat/completions"
+	}
+	u = strings.TrimSuffix(u, "/v1/chat/completions")
+	u = strings.TrimSuffix(u, "/chat/completions")
+	u = strings.TrimSuffix(u, "/v1")
+	if !strings.HasSuffix(u, ":rawPredict") && !strings.HasSuffix(u, ":streamRawPredict") && !strings.HasSuffix(u, ":predict") {
+		u += ":rawPredict"
+	}
+	return u
+}
+
+// Complete executes an OpenAI-compatible chat completion (or Vertex AI /invoke/v1/chat/completions or :rawPredict request).
 func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*ChatCompletionResponse, *RequestStats, error) {
 	if req.Model == "" {
 		req.Model = c.Model
 	}
 
 	endpoint := fmt.Sprintf("%s/chat/completions", c.BaseURL)
+	if IsVertexEndpointURL(c.BaseURL) {
+		endpoint = NormalizeVertexEndpointURL(c.BaseURL)
+	}
 	payloadBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal request: %w", err)

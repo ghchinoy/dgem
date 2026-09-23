@@ -128,6 +128,11 @@ func (p *gatewaySpanProcessor) OnEnd(s sdktrace.ReadOnlySpan) {
 		} else {
 			logEntry["dgem_surface"] = "rest_api"
 		}
+		if v, ok := attrs["dgem.backend"]; ok {
+			logEntry["dgem_backend"] = v
+		} else {
+			logEntry["dgem_backend"] = "cloudrun"
+		}
 		if v, ok := attrs["dgem.template"]; ok {
 			logEntry["dgem_template"] = v
 		}

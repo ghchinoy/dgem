@@ -857,6 +857,8 @@ class Handler(BaseHTTPRequestHandler):
                         info["phase"] = "ready"
             except Exception:
                 pass
+            if self.path == "/vertex-health":
+                return self._json(200 if info.get("vllm_ready") else 503, info)
             return self._json(200, info)
         if self.path in PAGES and TEST_PAGE:
             body = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), PAGES[self.path]), "rb").read()
@@ -903,7 +905,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": {"message": f"invalid body: {e}", "type": "invalid_request_error"}})
         if self.path == "/v1/systemone":
             return self._systemone(req, images)
-        if self.path == "/v1/chat/completions":
+        if self.path in ("/v1/chat/completions", "/predict", "/rawPredict"):
             return self._chat(req)
         return self._json(404, {"error": {"message": "unknown route"}})
 

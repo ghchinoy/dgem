@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -96,9 +97,65 @@ func initConfig() {
 	_ = viper.ReadInConfig()
 }
 
-// FetchGCPIdentityToken mints an OIDC identity token for either Cloud Run IAM or Identity-Aware Proxy (IAP).
-// On Cloud Run / GCE, it queries the local metadata server; on workstations, it invokes gcloud auth print-identity-token.
+// FetchGCPAccessToken mints an OAuth2 access token (cloud-platform scope) for Vertex AI Endpoints (:rawPredict).
+// On Cloud Run / GCE, it queries the local metadata server (/token); on workstations, it invokes gcloud auth print-access-token.
+func FetchGCPAccessToken() string {
+	const cacheKey = "oauth2_access_token|cloud-platform"
+	tokenCacheMu.Lock()
+	if cached, ok := tokenCache[cacheKey]; ok && time.Now().Before(cached.expires) {
+		tokenCacheMu.Unlock()
+		return cached.token
+	}
+	tokenCacheMu.Unlock()
+
+	if envTok := strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN")); envTok != "" {
+		return envTok
+	}
+
+	var token string
+	metaURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
+	if req, err := http.NewRequest("GET", metaURL, nil); err == nil {
+		req.Header.Set("Metadata-Flavor", "Google")
+		httpClient := &http.Client{Timeout: 800 * time.Millisecond}
+		if resp, err := httpClient.Do(req); err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				if body, err := io.ReadAll(resp.Body); err == nil {
+					var parsed struct {
+						AccessToken string `json:"access_token"`
+					}
+					if json.Unmarshal(body, &parsed) == nil && parsed.AccessToken != "" {
+						token = strings.TrimSpace(parsed.AccessToken)
+					}
+				}
+			}
+		}
+	}
+
+	if token == "" {
+		if out, err := exec.Command("gcloud", "auth", "print-access-token").Output(); err == nil {
+			token = strings.TrimSpace(string(out))
+		}
+	}
+
+	if token != "" {
+		tokenCacheMu.Lock()
+		tokenCache[cacheKey] = cachedToken{
+			token:   token,
+			expires: time.Now().Add(45 * time.Minute),
+		}
+		tokenCacheMu.Unlock()
+	}
+	return token
+}
+
+// FetchGCPIdentityToken mints an OIDC identity token for Cloud Run IAM / IAP,
+// or automatically mints an OAuth2 access token when targetURL is a Vertex AI Endpoint (:rawPredict).
 func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
+	if client.IsVertexEndpointURL(targetURL) && explicitAudience == "" {
+		return FetchGCPAccessToken()
+	}
+
 	cacheKey := explicitAudience + "|" + targetURL
 	tokenCacheMu.Lock()
 	if cached, ok := tokenCache[cacheKey]; ok && time.Now().Before(cached.expires) {
@@ -157,17 +214,29 @@ func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
 
 // GetClient returns a configured API client using Viper values.
 func GetClient() *client.Client {
-	baseURL := viper.GetString("url")
+	return GetClientForURL(viper.GetString("url"))
+}
+
+// GetClientForURL returns a configured API client targeting an explicit upstream URL
+// (either a Cloud Run /v1 URL or a Vertex AI :rawPredict endpoint URL).
+func GetClientForURL(targetURL string) *client.Client {
+	if strings.TrimSpace(targetURL) == "" {
+		targetURL = viper.GetString("url")
+	}
 	model := viper.GetString("model")
 	to := viper.GetDuration("timeout")
 	token := viper.GetString("token")
 	iapAud := viper.GetString("iap_client_id")
 
-	if token == "" && (viper.GetBool("gcp_auth") || iapAud != "") {
-		token = FetchGCPIdentityToken(iapAud, baseURL)
+	if token == "" && (viper.GetBool("gcp_auth") || iapAud != "" || client.IsVertexEndpointURL(targetURL)) {
+		aud := iapAud
+		if client.IsVertexEndpointURL(targetURL) {
+			aud = ""
+		}
+		token = FetchGCPIdentityToken(aud, targetURL)
 	}
 
-	c := client.NewClient(baseURL, model, to)
+	c := client.NewClient(targetURL, model, to)
 	if token != "" {
 		c.WithAuthToken(token)
 	}

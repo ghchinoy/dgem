@@ -127,6 +127,8 @@ const DEFAULT_CUSTOM_DATASET_JSONL = [
 @customElement('dgem-batch-runner')
 export class DgemBatchRunner extends LitElement {
   @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'light';
+  @property({ type: String }) backendTarget: 'cloudrun' | 'vertex' = 'cloudrun';
+  @property({ type: String }) vertexUrl = '';
 
   @state() private suites: BatchPresetSuite[] = [];
   @state() private selectedSuiteId = 'enterprise_multislot_25';
@@ -1561,20 +1563,30 @@ export class DgemBatchRunner extends LitElement {
         try {
           const body: Record<string, any> = {
             variables: item.variables || {},
+            backend: this.backendTarget,
           };
+          if (this.vertexUrl) {
+            body.vertex_url = this.vertexUrl;
+          }
           if (item.custom_template) {
             body.custom_template = item.custom_template;
           } else {
             body.template = item.template || 'support_triage';
           }
 
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-DGem-Surface': 'web_studio_batch',
+            'X-DGem-Template': item.template || `batch/${item.domain || suite.id}`,
+            'X-DGem-Backend': this.backendTarget,
+          };
+          if (this.vertexUrl) {
+            headers['X-DGem-Vertex-Url'] = this.vertexUrl;
+          }
+
           const res = await fetch('/api/decide', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-DGem-Surface': 'web_studio_batch',
-              'X-DGem-Template': item.template || `batch/${item.domain || suite.id}`,
-            },
+            headers,
             body: JSON.stringify(body),
           });
           const rttMs = Math.round(performance.now() - t0);

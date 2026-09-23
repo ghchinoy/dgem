@@ -8,11 +8,13 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
@@ -25,12 +27,15 @@ import (
 )
 
 var (
-	servePort          int
-	serveHost          string
-	serveTemplatesDir  string
-	serveUIDir         string
-	serveWakeupTimeout time.Duration
-	serveGPUIdleTTL    time.Duration
+	servePort           int
+	serveHost           string
+	serveTemplatesDir   string
+	serveUIDir          string
+	serveWakeupTimeout  time.Duration
+	serveGPUIdleTTL     time.Duration
+	serveVertexURL      string
+	serveDefaultBackend string
+	backendConfigMu     sync.RWMutex
 )
 
 var serveCmd = &cobra.Command{
@@ -38,7 +43,7 @@ var serveCmd = &cobra.Command{
 	GroupID: "core",
 	Short:   "Run the dgem HTTP API Gateway, Cold-Start Orchestrator, and Lit Web Studio",
 	Long: `serve launches a lightweight HTTP gateway and interactive Lit WebComponents Studio
-in front of a DiffusionGemma (dgemma) GPU backend.
+in front of a DiffusionGemma (dgemma) GPU backend (Cloud Run GPU or Vertex AI Endpoint).
 
 It enables colleagues to execute zero-shot multi-slot decisions via browser UI or simple
 REST JSON calls (POST /api/decide/{template}) without installing the dgem CLI or managing
@@ -47,10 +52,10 @@ that gracefully holds and retries requests while a scale-to-zero Cloud Run GPU w
 	Example: `  # Run gateway locally pointing at a Cloud Run dgemma GPU backend
   dgem serve -u https://dgemma-882920967572.us-central1.run.app/v1 --gcp-auth --port 8090
 
-  # Query the simplified template REST API with curl (no dgem CLI needed by caller)
-  curl -s http://localhost:8090/api/decide/support_triage \
-    -H "Content-Type: application/json" \
-    -d '{"variables": {"ticket": "Charged twice on invoice #9481 and prod API locked!"}}' | jq .`,
+  # Run gateway with both Cloud Run and a Vertex AI Endpoint (:rawPredict) configured
+  dgem serve -u https://dgemma-882920967572.us-central1.run.app/v1 \
+    --vertex-url https://us-central1-aiplatform.googleapis.com/v1/projects/genai-blackbelt-fishfooding/locations/us-central1/endpoints/1234567890:rawPredict \
+    --gcp-auth`,
 	RunE: runServe,
 }
 
@@ -61,6 +66,8 @@ func init() {
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
+	serveCmd.Flags().StringVar(&serveVertexURL, "vertex-url", "", "Optional Vertex AI Endpoint :rawPredict URL or Endpoint ID (env: DGEM_VERTEX_URL)")
+	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "cloudrun", "Default upstream inference backend: 'cloudrun' or 'vertex' (env: DGEM_DEFAULT_BACKEND)")
 
 	RootCmd.AddCommand(serveCmd)
 }
@@ -87,6 +94,8 @@ type GatewayDecideRequest struct {
 	Image          string                 `json:"image,omitempty"`
 	ImageURL       string                 `json:"image_url,omitempty"`
 	Images         []string               `json:"images,omitempty"`
+	Backend        string                 `json:"backend,omitempty"`
+	VertexURL      string                 `json:"vertex_url,omitempty"`
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
@@ -101,6 +110,7 @@ type GatewayDecideResponse struct {
 	ColdStartWaitMs int64                              `json:"cold_start_wait_ms"`
 	WarmupAttempts  int                                `json:"warmup_attempts"`
 	Model           string                             `json:"model"`
+	BackendTarget   string                             `json:"backend_target"`
 	UpstreamURL     string                             `json:"upstream_url"`
 	TraceID         string                             `json:"trace_id,omitempty"`
 	TraceSpans      []TraceSpanRecord                  `json:"trace_spans,omitempty"`
@@ -277,18 +287,113 @@ func isColdStartRetryable(err error) bool {
 		strings.Contains(s, "context deadline exceeded")
 }
 
-func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent string, images []string) (*client.StructuredDecisionResponse, *client.RequestStats, int, error) {
+// expandAndValidateVertexURL accepts either a bare Vertex AI Endpoint ID (e.g. "1234567890"),
+// a Dedicated Endpoint /invoke/* URL (https://<endpoint_id>.<region>-<project_number>.prediction.vertexai.goog/v1/projects/.../endpoints/.../invoke/v1/chat/completions),
+// or a standard Vertex AI Endpoint URL (https://us-central1-aiplatform.googleapis.com/v1/projects/.../endpoints/...:rawPredict).
+func expandAndValidateVertexURL(raw string) (string, error) {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return "", nil
+	}
+	proj := detectGCPProjectID()
+	if proj == "" {
+		proj = "genai-blackbelt-fishfooding"
+	}
+	projNum := strings.TrimSpace(os.Getenv("GCP_PROJECT_NUMBER"))
+	if projNum == "" {
+		projNum = "882920967572"
+	}
+	region := strings.TrimSpace(os.Getenv("GCP_REGION"))
+	if region == "" {
+		region = "us-central1"
+	}
+	// Bare numeric Endpoint ID or projects/.../endpoints/... relative resource name:
+	// Expand to Dedicated Endpoint /invoke/v1/chat/completions URL (requires invokeRoutePrefix="/*" + dedicatedEndpointEnabled=true)
+	if !strings.HasPrefix(v, "http://") && !strings.HasPrefix(v, "https://") {
+		epID := v
+		if strings.HasPrefix(v, "projects/") {
+			parts := strings.Split(strings.TrimSuffix(v, "/"), "/")
+			epID = parts[len(parts)-1]
+			v = fmt.Sprintf("https://%s.%s-%s.prediction.vertexai.goog/v1/%s/invoke/v1/chat/completions", epID, region, projNum, strings.TrimPrefix(v, "/"))
+		} else {
+			v = fmt.Sprintf("https://%s.%s-%s.prediction.vertexai.goog/v1/projects/%s/locations/%s/endpoints/%s/invoke/v1/chat/completions", epID, region, projNum, proj, region, epID)
+		}
+	}
+	parsed, err := url.Parse(v)
+	hostLower := ""
+	if parsed != nil {
+		hostLower = strings.ToLower(parsed.Host)
+	}
+	if err != nil || parsed.Scheme != "https" || (!strings.HasSuffix(hostLower, ".prediction.vertexai.goog") && !strings.HasSuffix(hostLower, ".aiplatform.googleapis.com")) {
+		return "", fmt.Errorf("invalid Vertex AI Endpoint URL (must target https://<endpoint>.<region>-<project_num>.prediction.vertexai.goog/.../invoke/... or https://<region>-aiplatform.googleapis.com/... or be an Endpoint ID): %s", raw)
+	}
+	return client.NormalizeVertexEndpointURL(v), nil
+}
+
+// resolveBackendTarget determines whether a request should route to "cloudrun" or "vertex"
+// based on headers (X-DGem-Backend, X-DGem-Vertex-Url), payload overrides, or server default.
+func resolveBackendTarget(r *http.Request, payloadBackend, payloadVertexURL string) (string, string, error) {
+	backendConfigMu.RLock()
+	defBackend := serveDefaultBackend
+	defVertexURL := serveVertexURL
+	backendConfigMu.RUnlock()
+
+	targetBackend := strings.ToLower(strings.TrimSpace(r.Header.Get("X-DGem-Backend")))
+	if targetBackend == "" {
+		targetBackend = strings.ToLower(strings.TrimSpace(payloadBackend))
+	}
+	if targetBackend == "" {
+		targetBackend = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("backend")))
+	}
+	if targetBackend == "" {
+		targetBackend = strings.ToLower(strings.TrimSpace(defBackend))
+	}
+	if targetBackend != "vertex" {
+		targetBackend = "cloudrun"
+	}
+
+	if targetBackend == "vertex" {
+		rawVx := strings.TrimSpace(r.Header.Get("X-DGem-Vertex-Url"))
+		if rawVx == "" {
+			rawVx = strings.TrimSpace(payloadVertexURL)
+		}
+		if rawVx == "" {
+			rawVx = strings.TrimSpace(defVertexURL)
+		}
+		if rawVx == "" {
+			return "vertex", "", fmt.Errorf("backend 'vertex' requested, but no Vertex AI Endpoint URL or ID is configured (pass X-DGem-Vertex-Url header, configure via Settings, or set DGEM_VERTEX_URL)")
+		}
+		normURL, err := expandAndValidateVertexURL(rawVx)
+		if err != nil {
+			return "vertex", "", err
+		}
+		return "vertex", normURL, nil
+	}
+
+	return "cloudrun", viper.GetString("url"), nil
+}
+
+func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent string, images []string, targetURLOverride ...string) (*client.StructuredDecisionResponse, *client.RequestStats, int, error) {
+	targetURL := viper.GetString("url")
+	if len(targetURLOverride) > 0 && strings.TrimSpace(targetURLOverride[0]) != "" {
+		targetURL = strings.TrimSpace(targetURLOverride[0])
+	}
+	isVertex := client.IsVertexEndpointURL(targetURL)
+
 	ctx, orchSpan := gatewayTracer().Start(ctx, "dgem.gpu.orchestrate")
 	defer orchSpan.End()
 	orchSpan.SetAttributes(
-		attribute.String("dgem.upstream_url", viper.GetString("url")),
+		attribute.String("dgem.upstream_url", targetURL),
+		attribute.String("dgem.backend", map[bool]string{true: "vertex", false: "cloudrun"}[isVertex]),
 		attribute.String("dgem.model", viper.GetString("model")),
 		attribute.Int("dgem.image_count", len(images)),
 	)
 
 	deadline := time.Now().Add(serveWakeupTimeout)
 	orchStart := time.Now()
-	NotifyColdStartWarmup()
+	if !isVertex {
+		NotifyColdStartWarmup()
+	}
 	attempts := 0
 	for {
 		attempts++
@@ -296,7 +401,7 @@ func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent st
 		attemptCtx, attemptSpan := gatewayTracer().Start(ctx, "dgem.gpu.forward_pass")
 		attemptSpan.SetAttributes(attribute.Int("dgem.attempt", attempts))
 
-		c := GetClient()
+		c := GetClientForURL(targetURL)
 		reqCtx, cancel := context.WithTimeout(attemptCtx, 90*time.Second)
 		resp, stats, err := c.Decide(reqCtx, schemaContent, stateContent, images...)
 		cancel()
@@ -349,6 +454,19 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if envUpstream := os.Getenv("UPSTREAM_DGEMMA_URL"); envUpstream != "" && !cmd.Flags().Changed("url") {
 		viper.Set("url", envUpstream)
 	}
+	if envVx := os.Getenv("DGEM_VERTEX_URL"); envVx != "" && !cmd.Flags().Changed("vertex-url") {
+		serveVertexURL = envVx
+	} else if envVx2 := os.Getenv("VERTEX_DGEMMA_URL"); envVx2 != "" && !cmd.Flags().Changed("vertex-url") {
+		serveVertexURL = envVx2
+	}
+	if serveVertexURL != "" {
+		if norm, err := expandAndValidateVertexURL(serveVertexURL); err == nil {
+			serveVertexURL = norm
+		}
+	}
+	if envDefB := os.Getenv("DGEM_DEFAULT_BACKEND"); envDefB != "" && !cmd.Flags().Changed("default-backend") {
+		serveDefaultBackend = strings.ToLower(strings.TrimSpace(envDefB))
+	}
 	if os.Getenv("DGEM_GCP_AUTH") == "1" || os.Getenv("DGEM_GCP_AUTH") == "true" {
 		viper.Set("gcp_auth", true)
 	}
@@ -363,10 +481,62 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// 1. Health check endpoint for Cloud Run / Load Balancer probes
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		backendConfigMu.RLock()
+		defB := serveDefaultBackend
+		vxURL := serveVertexURL
+		backendConfigMu.RUnlock()
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":       "ok",
-			"service":      "dgem-gateway",
-			"upstream_url": viper.GetString("url"),
+			"status":          "ok",
+			"service":         "dgem-gateway",
+			"default_backend": defB,
+			"upstream_url":    viper.GetString("url"),
+			"vertex_url":      vxURL,
+		})
+	})
+
+	// 1a. Runtime Backend Configuration Inspector & Switcher (GET / POST /api/backend-config)
+	mux.HandleFunc("/api/backend-config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost {
+			var body struct {
+				DefaultBackend string `json:"default_backend"`
+				VertexURL      string `json:"vertex_url"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+			normVx, err := expandAndValidateVertexURL(body.VertexURL)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+			backendConfigMu.Lock()
+			if body.DefaultBackend == "vertex" || body.DefaultBackend == "cloudrun" {
+				serveDefaultBackend = body.DefaultBackend
+			}
+			if body.VertexURL != "" || body.DefaultBackend == "cloudrun" {
+				serveVertexURL = normVx
+			}
+			backendConfigMu.Unlock()
+		}
+		backendConfigMu.RLock()
+		defB := serveDefaultBackend
+		vxURL := serveVertexURL
+		backendConfigMu.RUnlock()
+		proj := detectGCPProjectID()
+		if proj == "" {
+			proj = "genai-blackbelt-fishfooding"
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"default_backend":   defB,
+			"cloudrun_url":      viper.GetString("url"),
+			"vertex_url":        vxURL,
+			"vertex_configured": vxURL != "",
+			"project_id":        proj,
+			"region":            "us-central1",
 		})
 	})
 
@@ -593,6 +763,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		images = append(images, payload.Images...)
 
+		backendTarget, targetUpstreamURL, backendErr := resolveBackendTarget(r, payload.Backend, payload.VertexURL)
+		if backendErr != nil {
+			rootSpan.SetStatus(codes.Error, backendErr.Error())
+			rootSpan.End()
+			writeErr(http.StatusBadRequest, backendErr.Error())
+			return
+		}
+
 		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
 		surface := strings.TrimSpace(r.Header.Get("X-DGem-Surface"))
 		if surface == "" {
@@ -604,17 +782,18 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		rootSpan.SetAttributes(
 			attribute.String("dgem.surface", surface),
+			attribute.String("dgem.backend", backendTarget),
 			attribute.String("dgem.template", tmplLabel),
 			attribute.String("dgem.user", userEmail),
 			attribute.Bool("dgem.multimodal", len(images) > 0),
 		)
 
 		start := time.Now()
-		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, images)
+		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, images, targetUpstreamURL)
 		if err != nil {
 			rootSpan.SetStatus(codes.Error, err.Error())
 			rootSpan.End()
-			writeErr(http.StatusBadGateway, fmt.Sprintf("upstream decision failed after %d attempt(s): %s", attempts, err.Error()))
+			writeErr(http.StatusBadGateway, fmt.Sprintf("upstream (%s) decision failed after %d attempt(s): %s", backendTarget, attempts, err.Error()))
 			return
 		}
 		maxEntropy := 0.0
@@ -634,7 +813,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if gpuForwardMs <= 0 && resp.Diagnostics.Timing.TotalMs > 0 {
 			gpuForwardMs = int64(resp.Diagnostics.Timing.TotalMs)
 		}
-		MarkGPUWarm(gpuForwardMs)
+		if backendTarget == "cloudrun" {
+			MarkGPUWarm(gpuForwardMs)
+		}
 		coldWaitMs := wallTimeMs - gpuForwardMs
 		if coldWaitMs < 0 {
 			coldWaitMs = 0
@@ -666,7 +847,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 			ColdStartWaitMs: coldWaitMs,
 			WarmupAttempts:  attempts,
 			Model:           stats.Model,
-			UpstreamURL:     viper.GetString("url"),
+			BackendTarget:   backendTarget,
+			UpstreamURL:     targetUpstreamURL,
 			TraceID:         traceID,
 			TraceSpans:      getTraceSpansByTraceID(traceID),
 		}
