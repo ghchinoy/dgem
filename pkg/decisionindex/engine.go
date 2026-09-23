@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
+	"github.com/ghchinoy/dgem/pkg/permutation"
 )
 
 const (
@@ -72,6 +73,9 @@ type EngineOptions struct {
 	NaiveLimits       bool    // If true, mimics naive 26-option / 10-slot capacity rejections (HTTP 422 Unsupported)
 	TemperatureScale  float64 // Post-hoc slot temperature scaling T* (1.0 = unscaled)
 	MaxConcurrency    int
+	DualMirror        bool    // EXP-13C: Evaluate forward + reversed option orderings on the same diffusion canvas
+	NullPriorDebias   bool    // EXP-13B: Divide out content-free positional 'A'-bias prior
+	PriorAlpha        float64 // Damping exponent alpha in [0, 1] for null-prior de-biasing
 }
 
 // DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled.
@@ -82,6 +86,7 @@ func DefaultEngineOptions() EngineOptions {
 		NaiveLimits:       false,
 		TemperatureScale:  1.25,
 		MaxConcurrency:    4,
+		PriorAlpha:        0.50,
 	}
 }
 
@@ -191,7 +196,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 		batchKeys := standardKeys[i:end]
 		multiBatches++
 
-		batchAns, passes, err := evaluateStandardBatch(ctx, cli, stateText, batchKeys, req.Questions, opts.TemperatureScale)
+		batchAns, passes, err := evaluateStandardBatch(ctx, cli, stateText, batchKeys, req.Questions, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -238,7 +243,7 @@ func evaluateStandardBatch(
 	stateText string,
 	batchKeys []string,
 	allQuestions map[string]SystemOneQuestion,
-	tempScale float64,
+	opts EngineOptions,
 ) (map[string]SystemOneAnswer, int, error) {
 	questionsPayload := make([]map[string]any, 0, len(batchKeys))
 	for _, qKey := range batchKeys {
@@ -269,15 +274,29 @@ func evaluateStandardBatch(
 	if err != nil {
 		return nil, 1, err
 	}
+	schemaJSON := string(schemaBytes)
+
+	var slotOpts map[string][]permutation.OptionItem
+	if opts.DualMirror && len(batchKeys) <= 4 {
+		schemaJSON, slotOpts, _ = permutation.InjectDualMirrorSchema(schemaJSON)
+	} else if opts.NullPriorDebias {
+		slotOpts = permutation.ExtractSchemaSlotOptions(schemaJSON)
+	}
 
 	if strings.TrimSpace(stateText) == "" {
 		stateText = "Evaluate the decision questions based on the provided option criteria."
 	}
 
-	resp, _, err := cli.Decide(ctx, string(schemaBytes), stateText)
+	resp, _, err := cli.Decide(ctx, schemaJSON, stateText)
 	if err != nil {
 		return nil, 1, err
 	}
+
+	if (opts.DualMirror && len(batchKeys) <= 4) || opts.NullPriorDebias {
+		permutation.PostProcessDecisionResponse(resp, slotOpts, opts.DualMirror && len(batchKeys) <= 4, opts.NullPriorDebias, opts.PriorAlpha)
+	}
+
+	tempScale := opts.TemperatureScale
 
 	out := make(map[string]SystemOneAnswer, len(batchKeys))
 	for _, qKey := range batchKeys {
@@ -338,7 +357,7 @@ func evaluateWideQuestionTournament(
 	optKeys := sortedOptionKeys(qSpec.Criteria)
 	numOpts := len(optKeys)
 	if numOpts <= MaxOptionsPerSlot {
-		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, tempScale)
+		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale})
 		if err != nil {
 			return SystemOneAnswer{}, passes, err
 		}
@@ -380,7 +399,7 @@ func evaluateWideQuestionTournament(
 			end = len(round1Keys)
 		}
 		subKeys := round1Keys[i:end]
-		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, subKeys, round1Questions, 1.0)
+		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0})
 		if err != nil {
 			return SystemOneAnswer{}, passesUsed + p, err
 		}
@@ -437,7 +456,7 @@ func evaluateWideQuestionTournament(
 		},
 	}
 
-	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, finalQ, 1.0)
+	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0})
 	if err != nil {
 		return SystemOneAnswer{}, passesUsed + p, err
 	}

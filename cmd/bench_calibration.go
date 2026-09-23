@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ghchinoy/dgem/pkg/client"
 	"github.com/spf13/cobra"
+	"github.com/ghchinoy/dgem/pkg/permutation"
 	"github.com/spf13/viper"
 	"google.golang.org/genai"
 )
@@ -40,6 +41,9 @@ var (
 	calTempScale        float64
 	calAutoTemp         bool
 	calUSDPer1k         float64
+	calDualMirror       bool
+	calNullPriorDebias  bool
+	calPriorAlpha       float64
 )
 
 // Semantic color palette following A2A CLI guidelines
@@ -106,6 +110,9 @@ func init() {
 	benchCalibrationCmd.Flags().Float64Var(&calTempScale, "temperature-scale", 1.0, "Post-hoc slot logit temperature scaling factor T > 0 (e.g. 1.45)")
 	benchCalibrationCmd.Flags().BoolVar(&calAutoTemp, "auto-temperature", false, "Automatically fit optimal temperature T* in [0.50, 3.50] to maximize JevBench Calibration Score")
 	benchCalibrationCmd.Flags().Float64Var(&calUSDPer1k, "usd-per-1k", 0.0, "Override estimated cost in USD per 1,000 decisions (0 = auto from model tariff)")
+	benchCalibrationCmd.Flags().BoolVar(&calDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
+	benchCalibrationCmd.Flags().BoolVar(&calNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
+	benchCalibrationCmd.Flags().Float64Var(&calPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
 
 	RootCmd.AddCommand(benchCalibrationCmd)
 }
@@ -577,12 +584,23 @@ func evaluateCalibrationCaseWithThink(ctx context.Context, c *client.Client, tc 
 		return res
 	}
 
+	var slotOpts map[string][]permutation.OptionItem
+	if calDualMirror {
+		schemaJSON, slotOpts, _ = permutation.InjectDualMirrorSchema(schemaJSON)
+	} else if calNullPriorDebias {
+		slotOpts = permutation.ExtractSchemaSlotOptions(schemaJSON)
+	}
+
 	resp, stats, err := c.Decide(ctx, schemaJSON, stateJSON)
 	if err != nil {
 		res.Error = err.Error()
 		return res
 	}
 	res.WallTimeMs = float64(stats.WallTime.Milliseconds())
+
+	if calDualMirror || calNullPriorDebias {
+		permutation.PostProcessDecisionResponse(resp, slotOpts, calDualMirror, calNullPriorDebias, calPriorAlpha)
+	}
 
 	qa, ok := resp.Answers[qID]
 	if !ok {

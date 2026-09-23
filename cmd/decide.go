@@ -9,19 +9,23 @@ import (
 	"strings"
 
 	"github.com/ghchinoy/dgem/pkg/client"
+	"github.com/ghchinoy/dgem/pkg/permutation"
 	"github.com/ghchinoy/dgem/pkg/template"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	decideTemplate string
-	decideVars     []string
-	decideDataFile string
-	decideFormat   string
-	decideSchema   string
-	decideState    string
-	decideImages   []string
+	decideTemplate        string
+	decideVars            []string
+	decideDataFile        string
+	decideFormat          string
+	decideSchema          string
+	decideState           string
+	decideImages          []string
+	decideDualMirror      bool
+	decideNullPriorDebias bool
+	decidePriorAlpha      float64
 )
 
 var decideCmd = &cobra.Command{
@@ -32,7 +36,9 @@ var decideCmd = &cobra.Command{
 via discrete diffusion slot readout in a single forward pass without autoregressive
 text generation overhead (popularized by TypeSafe AI's Jev evaluations and vLLM PR #57250).
 You can specify a template definition file (-t), key-value pairs (-v key=val),
-or raw schema/state payloads.`,
+or raw schema/state payloads. Pass --dual-mirror (EXP-13C) to evaluate forward and
+reversed option orderings simultaneously on the same O(1) diffusion canvas, or
+--null-prior-debias (EXP-13B) to divide out content-free positional 'A'-bias.`,
 	RunE: runDecide,
 }
 
@@ -44,6 +50,9 @@ func init() {
 	decideCmd.Flags().StringVar(&decideSchema, "schema", "", "Raw JSON schema file path (skips template engine)")
 	decideCmd.Flags().StringVar(&decideState, "state", "", "Raw JSON state string or file path")
 	decideCmd.Flags().StringArrayVarP(&decideImages, "image", "I", nil, "Attach local image file path or remote image URL (can be specified multiple times)")
+	decideCmd.Flags().BoolVar(&decideDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
+	decideCmd.Flags().BoolVar(&decideNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
+	decideCmd.Flags().Float64Var(&decidePriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
 
 	RootCmd.AddCommand(decideCmd)
 }
@@ -139,9 +148,20 @@ func runDecide(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify either --template (-t) or --schema")
 	}
 
+	var slotOpts map[string][]permutation.OptionItem
+	if decideDualMirror {
+		schemaContent, slotOpts, _ = permutation.InjectDualMirrorSchema(schemaContent)
+	} else if decideNullPriorDebias {
+		slotOpts = permutation.ExtractSchemaSlotOptions(schemaContent)
+	}
+
 	resp, stats, err := c.Decide(ctx, schemaContent, stateContent, decideImages...)
 	if err != nil {
 		return fmt.Errorf("decision query failed: %w", err)
+	}
+
+	if decideDualMirror || decideNullPriorDebias {
+		permutation.PostProcessDecisionResponse(resp, slotOpts, decideDualMirror, decideNullPriorDebias, decidePriorAlpha)
 	}
 
 	if decideFormat == "json" {

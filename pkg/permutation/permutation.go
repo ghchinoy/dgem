@@ -820,3 +820,329 @@ func BuildPermutationReport(endpoint, model string, gateNormH, alpha float64, np
 		Cases:                  results,
 	}
 }
+
+// DefaultCalibratedNullPriors returns the empirically measured content-free positional null priors
+// p_0(k) from EXP-13B on Cloud Run DiffusionGemma (plus analytical primacy-recency interpolation for K >= 5).
+func DefaultCalibratedNullPriors() NullPrior {
+	byCard := map[int][]float64{
+		2: {0.8832, 0.1168},
+		3: {0.7834, 0.0859, 0.1307},
+		4: {0.4932, 0.0484, 0.1630, 0.2954},
+	}
+	for k := 5; k <= 26; k++ {
+		vec := make([]float64, k)
+		var sum float64
+		for i := 0; i < k; i++ {
+			// Primacy on slot 0 + slight recency on slot K-1
+			w := 1.0
+			if i == 0 {
+				w = 2.4
+			} else if i == k-1 {
+				w = 1.35
+			}
+			vec[i] = w
+			sum += w
+		}
+		for i := range vec {
+			vec[i] /= sum
+		}
+		byCard[k] = vec
+	}
+	return NullPrior{ByCardinality: byCard}
+}
+
+// ExtractSchemaSlotOptions parses a dgem JSON schema and returns the ordered option items for each choice/boolean slot.
+func ExtractSchemaSlotOptions(schemaJSON string) map[string][]OptionItem {
+	out := make(map[string][]OptionItem)
+	var schemaMap map[string]any
+	if err := json.Unmarshal([]byte(schemaJSON), &schemaMap); err != nil {
+		return out
+	}
+	qRaw, ok := schemaMap["questions"].([]any)
+	if !ok {
+		return out
+	}
+	for _, item := range qRaw {
+		qMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		qID, _ := qMap["id"].(string)
+		qType, _ := qMap["type"].(string)
+		if qID == "" {
+			continue
+		}
+		switch qType {
+		case "boolean":
+			out[qID] = []OptionItem{
+				{Name: "yes", Description: "Affirmative / True"},
+				{Name: "no", Description: "Negative / False"},
+			}
+		case "choice":
+			optsRaw, ok := qMap["options"].([]any)
+			if !ok {
+				continue
+			}
+			var opts []OptionItem
+			for _, oItem := range optsRaw {
+				if oMap, ok := oItem.(map[string]any); ok {
+					name, _ := oMap["name"].(string)
+					desc, _ := oMap["description"].(string)
+					if name != "" {
+						opts = append(opts, OptionItem{Name: name, Description: desc})
+					}
+				} else if oStr, ok := oItem.(string); ok && oStr != "" {
+					opts = append(opts, OptionItem{Name: oStr})
+				}
+			}
+			if len(opts) >= 2 {
+				out[qID] = opts
+			}
+		}
+	}
+	return out
+}
+
+// InjectDualMirrorSchema transforms a dgem JSON schema by adding a companion reversed-option slot
+// (`<id>__mirror_rev`) for every choice/boolean slot so both forward and reversed option orderings
+// are evaluated simultaneously on the SAME bidirectional diffusion canvas (reads=1).
+func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem, bool) {
+	slotOpts := ExtractSchemaSlotOptions(schemaJSON)
+	if len(slotOpts) == 0 || len(slotOpts) > 5 {
+		return schemaJSON, slotOpts, false
+	}
+	var schemaMap map[string]any
+	if err := json.Unmarshal([]byte(schemaJSON), &schemaMap); err != nil {
+		return schemaJSON, slotOpts, false
+	}
+	qRaw, ok := schemaMap["questions"].([]any)
+	if !ok {
+		return schemaJSON, slotOpts, false
+	}
+	var newQuestions []any
+	injected := false
+	for _, item := range qRaw {
+		newQuestions = append(newQuestions, item)
+		qMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		qID, _ := qMap["id"].(string)
+		qType, _ := qMap["type"].(string)
+		opts, hasOpts := slotOpts[qID]
+		if !hasOpts || len(opts) < 2 {
+			continue
+		}
+		// Skip if question has depends_on / ask_if to preserve single-pass level-0 scheduling
+		if _, hasDep := qMap["depends_on"]; hasDep {
+			continue
+		}
+		if qType == "boolean" || qType == "choice" {
+			revOpts := ReverseOptions(opts)
+			revObjs := make([]map[string]string, len(revOpts))
+			for i, ro := range revOpts {
+				aliasName := fmt.Sprintf("item_%d", i+1)
+				desc := ro.Description
+				if desc == "" {
+					desc = ro.Name
+				} else if len(ro.Name) > 1 && !strings.HasPrefix(strings.ToLower(ro.Name), "opt_") {
+					desc = ro.Name + ": " + desc
+				}
+				m := map[string]string{
+					"name":        aliasName,
+					"description": desc,
+				}
+				revObjs[i] = m
+			}
+			instr, _ := qMap["instructions"].(string)
+			mirrorQ := map[string]any{
+				"id":           qID + "__mirror_rev",
+				"type":         "choice",
+				"instructions": instr,
+				"options":      revObjs,
+			}
+			newQuestions = append(newQuestions, mirrorQ)
+			injected = true
+		}
+	}
+	if !injected {
+		return schemaJSON, slotOpts, false
+	}
+	schemaMap["questions"] = newQuestions
+	updatedBytes, err := json.Marshal(schemaMap)
+	if err != nil {
+		return schemaJSON, slotOpts, false
+	}
+	return string(updatedBytes), slotOpts, true
+}
+
+// PostProcessDecisionResponse applies EXP-13B Null-Prior De-Biasing and/or EXP-13C O(1) Dual-Mirror Canvas
+// distribution merging in-place on a StructuredDecisionResponse, returning per-slot Mirror TVD and Mirror JSD.
+func PostProcessDecisionResponse(
+	resp *client.StructuredDecisionResponse,
+	slotOpts map[string][]OptionItem,
+	enableDualMirror bool,
+	enableNullPrior bool,
+	alpha float64,
+) (map[string]float64, map[string]float64) {
+	mirrorTVD := make(map[string]float64)
+	mirrorJSD := make(map[string]float64)
+	if resp == nil || len(resp.Answers) == 0 || len(slotOpts) == 0 {
+		return mirrorTVD, mirrorJSD
+	}
+	if alpha <= 0 {
+		alpha = 0.50 // Conservative default damping factor so weak priors don't over-invert
+	}
+	np := DefaultCalibratedNullPriors()
+
+	for qID, opts := range slotOpts {
+		qaFwd, hasFwd := resp.Answers[qID]
+		if !hasFwd || len(opts) < 2 {
+			continue
+		}
+		optKeys := make([]string, len(opts))
+		for i, o := range opts {
+			optKeys[i] = o.Name
+		}
+
+		probsFwd := normalizeAnswerProbs(qaFwd, opts)
+		if enableNullPrior {
+			probsFwd, _ = ApplyPriorDeBiasing(probsFwd, opts, &np, alpha)
+		}
+
+		finalProbs := probsFwd
+		revID := qID + "__mirror_rev"
+		if enableDualMirror {
+			if qaRev, hasRev := resp.Answers[revID]; hasRev {
+				revOpts := ReverseOptions(opts)
+				aliasOpts := make([]OptionItem, len(revOpts))
+				for i, ro := range revOpts {
+					aliasOpts[i] = OptionItem{Name: fmt.Sprintf("item_%d", i+1), Description: ro.Description}
+				}
+				probsAlias := normalizeAnswerProbs(qaRev, aliasOpts)
+				probsRev := make(map[string]float64, len(revOpts))
+				for i, ro := range revOpts {
+					probsRev[ro.Name] = probsAlias[fmt.Sprintf("item_%d", i+1)]
+				}
+				if enableNullPrior {
+					probsRev, _ = ApplyPriorDeBiasing(probsRev, revOpts, &np, alpha)
+				}
+				_, _, _, _, mJSD := ComputeBALDDecomposition([]map[string]float64{probsFwd, probsRev}, optKeys)
+				mTVD := ComputeTVD(probsFwd, probsRev, optKeys)
+
+				fwdWinner := optKeys[0]
+				for _, k := range optKeys {
+					if probsFwd[k] > probsFwd[fwdWinner] {
+						fwdWinner = k
+					}
+				}
+				revWinner := optKeys[0]
+				for _, k := range optKeys {
+					if probsRev[k] > probsRev[revWinner] {
+						revWinner = k
+					}
+				}
+
+				// Determine winner:
+				// 1. If forward slot picked a non-first option (k > 0), it already overcame Slot-0 ('A') primacy bias -> keep fwdWinner.
+				// 2. Only allow reverse slot to flip fwdWinner if fwdWinner was Slot 0 ('A') AND revWinner is an interior
+				//    option (not reverse slot's own Slot 0, which is optKeys[len-1]) with strong confidence.
+				chosenWinner := fwdWinner
+				lastKey := optKeys[len(optKeys)-1]
+				if fwdWinner == optKeys[0] && revWinner != optKeys[0] && revWinner != lastKey && probsRev[revWinner] > 0.75 && probsRev[optKeys[0]] < 0.05 {
+					chosenWinner = revWinner
+				}
+
+				// Blend distributions (70% forward + 30% mirror) so MirrorTVD/MirrorJSD softens overconfidence
+				// and raises Shannon entropy on permutation-sensitive items while keeping chosenWinner as argmax.
+				comb := make(map[string]float64, len(optKeys))
+				var sum float64
+				for _, k := range optKeys {
+					comb[k] = 0.70*probsFwd[k] + 0.30*probsRev[k]
+					sum += comb[k]
+				}
+				for _, k := range optKeys {
+					comb[k] /= sum
+				}
+				// Ensure chosenWinner remains strict argmax
+				maxOther := 0.0
+				for _, k := range optKeys {
+					if k != chosenWinner && comb[k] > maxOther {
+						maxOther = comb[k]
+					}
+				}
+				if comb[chosenWinner] <= maxOther {
+					comb[chosenWinner] = maxOther + 0.02
+					sum = 0
+					for _, k := range optKeys {
+						sum += comb[k]
+					}
+					for _, k := range optKeys {
+						comb[k] /= sum
+					}
+				}
+
+				finalProbs = comb
+				mirrorTVD[qID] = mTVD
+				mirrorJSD[qID] = mJSD
+				delete(resp.Answers, revID)
+			}
+		}
+
+		// Update qaFwd in-place with the calibrated distribution
+		winner := optKeys[0]
+		bestP := -1.0
+		for _, k := range optKeys {
+			if finalProbs[k] > bestP {
+				bestP = finalProbs[k]
+				winner = k
+			}
+		}
+		h, _ := ComputeShannonEntropy(finalProbs, len(optKeys))
+		qaFwd.Probabilities = finalProbs
+		qaFwd.Confidence = bestP
+		qaFwd.Entropy = h
+		if qaFwd.Choice != "" || qaFwd.Label == "" {
+			qaFwd.Choice = winner
+		}
+		if qaFwd.Label != "" {
+			qaFwd.Label = winner
+		}
+		if len(optKeys) == 2 && (optKeys[0] == "yes" || optKeys[0] == "true") {
+			qaFwd.Noul = finalProbs[optKeys[0]]
+		}
+		resp.Answers[qID] = qaFwd
+	}
+	return mirrorTVD, mirrorJSD
+}
+
+func normalizeAnswerProbs(qa client.QuestionAnswer, orderedOpts []OptionItem) map[string]float64 {
+	out := make(map[string]float64, len(orderedOpts))
+	var sum float64
+	chosen := strings.TrimSpace(qa.Choice)
+	if chosen == "" {
+		chosen = strings.TrimSpace(qa.Label)
+	}
+	for _, o := range orderedOpts {
+		p := qa.Probabilities[o.Name]
+		if p <= 0 && o.Name == "yes" && qa.Noul > 0 {
+			p = qa.Noul
+		} else if p <= 0 && o.Name == "no" && qa.Noul > 0 {
+			p = 1.0 - qa.Noul
+		}
+		if p <= 0 && strings.EqualFold(chosen, o.Name) {
+			p = 0.90
+		} else if p <= 0 {
+			p = 0.10 / float64(max(1, len(orderedOpts)-1))
+		}
+		out[o.Name] = p
+		sum += p
+	}
+	if sum > 0 {
+		for k := range out {
+			out[k] /= sum
+		}
+	}
+	return out
+}
+

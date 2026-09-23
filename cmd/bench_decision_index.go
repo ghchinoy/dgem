@@ -25,6 +25,9 @@ var (
 	diCompareNaive   bool
 	diServeSystemOne string
 	diJSON           bool
+	diDualMirror     bool
+	diNullPrior      bool
+	diPriorAlpha     float64
 
 	diStyleAccent = lipgloss.NewStyle().Foreground(lipgloss.Color("#38BDF8")).Bold(true)
 	diStylePass   = lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E")).Bold(true)
@@ -109,14 +112,17 @@ for direct execution with the upstream Python runner:
 		if diServeSystemOne != "" {
 			opts := decisionindex.DefaultEngineOptions()
 			opts.TemperatureScale = diTempScale
+			opts.DualMirror = diDualMirror
+			opts.NullPriorDebias = diNullPrior
+			opts.PriorAlpha = diPriorAlpha
 			mux := http.NewServeMux()
 			mux.Handle("/v1/systemone", decisionindex.NewSystemOneHTTPHandler(cli, opts))
 			mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write([]byte(`{"status":"ok","protocol":"decision-index-v1-systemone"}`))
 			})
-			fmt.Fprintf(os.Stderr, "%s Serving apolinario/decision-index POST /v1/systemone adapter on %s -> upstream %s (T*=%.2f)\n",
-				diStylePass.Render("●"), diStyleAccent.Render(diServeSystemOne), diStyleID.Render(serverURL), diTempScale)
+			fmt.Fprintf(os.Stderr, "%s Serving apolinario/decision-index POST /v1/systemone adapter on %s -> upstream %s (T*=%.2f, dual_mirror=%v, null_prior=%v)\n",
+				diStylePass.Render("●"), diStyleAccent.Render(diServeSystemOne), diStyleID.Render(serverURL), diTempScale, diDualMirror, diNullPrior)
 			return http.ListenAndServe(diServeSystemOne, mux)
 		}
 
@@ -128,13 +134,16 @@ for direct execution with the upstream Python runner:
 		}
 
 		if !diJSON {
-			fmt.Printf("\n%s %s\n", diStyleAccent.Render("━━━ EXP-12: Decision Index (apolinario/decision-index) Benchmark Harness ━━━"), diStyleMuted.Render(fmt.Sprintf("(%d benchmarks, T*=%.2f)", len(rows), diTempScale)))
+			fmt.Printf("\n%s %s\n", diStyleAccent.Render("━━━ EXP-12: Decision Index (apolinario/decision-index) Benchmark Harness ━━━"), diStyleMuted.Render(fmt.Sprintf("(%d benchmarks, T*=%.2f, dual_mirror=%v, null_prior=%v)", len(rows), diTempScale, diDualMirror, diNullPrior)))
 			fmt.Printf("  Endpoint: %s | Workers: %d | Multi-Slot Batching: <=%d slots/pass | Wide-Option Bracket: <=%d opts/slot\n\n",
 				diStyleID.Render(serverURL), diWorkers, decisionindex.MaxSlotsPerPass, decisionindex.MaxOptionsPerSlot)
 		}
 
 		opts := decisionindex.DefaultEngineOptions()
 		opts.TemperatureScale = diTempScale
+		opts.DualMirror = diDualMirror
+		opts.NullPriorDebias = diNullPrior
+		opts.PriorAlpha = diPriorAlpha
 
 		results := make([]decisionindex.CaseEvalResult, len(rows))
 		sem := make(chan struct{}, max(1, diWorkers))
@@ -304,4 +313,7 @@ func init() {
 	benchDecisionIndexCmd.Flags().BoolVar(&diCompareNaive, "compare-naive", true, "Include side-by-side ablation against naive 26-option / 10-slot capacity limits")
 	benchDecisionIndexCmd.Flags().StringVar(&diServeSystemOne, "serve-systemone", "", "Start HTTP server on address (e.g. :8095) exposing POST /v1/systemone for upstream apolinario/decision-index")
 	benchDecisionIndexCmd.Flags().BoolVar(&diJSON, "json", false, "Output Decision Index receipt as structured JSON")
+	benchDecisionIndexCmd.Flags().BoolVar(&diDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
+	benchDecisionIndexCmd.Flags().BoolVar(&diNullPrior, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
+	benchDecisionIndexCmd.Flags().Float64Var(&diPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
 }
