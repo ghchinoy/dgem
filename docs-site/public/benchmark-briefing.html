@@ -737,6 +737,50 @@
         </tbody>
       </table>
     </div>
+
+    <div class="panel" style="margin-top:0.85rem;margin-bottom:0">
+      <h3>Chronological Execution Order: How <code>dgem</code> + <code>DiffusionGemma</code> Work Together in One Request (~125&ndash;300 ms)</h3>
+      <p style="margin-bottom:0.75rem">
+        For non-ML stakeholders, think of <strong><code>DiffusionGemma</code> as a high-speed judge that reads an entire page of checkboxes at once</strong>, and <strong><code>dgem</code> as the ballot designer, digital scale, and traffic controller</strong> wrapping that judge in five strict steps:
+      </p>
+      <div class="grid3" style="grid-template-columns:repeat(5,minmax(0,1fr));gap:0.65rem">
+        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--clay);text-transform:uppercase">Step 1 &middot; Pre-Pass (0.1 ms)</div>
+          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Ballot Design &amp; Mirroring</div>
+          <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
+            <code>dgem</code> prints the ballot twice on the same canvas: once forward (<code>A..D</code>) and once reversed (<code>D..A</code>), or splits wide lists (&gt;26) into brackets.
+          </p>
+        </div>
+        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--slate);text-transform:uppercase">Step 2 &middot; GPU Pass (~125 ms)</div>
+          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Diffusion Snapshot Read</div>
+          <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
+            <code>DiffusionGemma</code> evaluates all forward and mirrored slots simultaneously in <strong>one bidirectional GPU pass</strong> and emits raw letter scores.
+          </p>
+        </div>
+        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive);text-transform:uppercase">Step 3 &middot; Post-Pass 1 (0.1 ms)</div>
+          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Tare the Scale (Null-Prior)</div>
+          <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
+            <code>dgem</code> subtracts the model's built-in <code>Box A</code> habit (<span class="math"><i>p</i><sub>0</sub></span> = 49%&ndash;88% on blank input), cutting Brier error by up to <strong>90.2%</strong>.
+          </p>
+        </div>
+        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive);text-transform:uppercase">Step 4 &middot; Post-Pass 2 (0.1 ms)</div>
+          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Mirror Merge &amp; Temp Dial</div>
+          <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
+            <code>dgem</code> compares the forward &amp; reversed ballots (<code>Mirror TVD</code>) and applies the Humility Dial (<span class="math"><i>T</i><sup>*</sup> = 1.25&ndash;1.35</span>) so 95% confidence = 95% accuracy.
+          </p>
+        </div>
+        <div style="background:var(--cream);border:1px solid var(--g300);border-radius:5px;padding:0.7rem">
+          <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--amber);text-transform:uppercase">Step 5 &middot; Post-Pass 3 (Gate)</div>
+          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Fast-Exit or Escalate</div>
+          <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
+            If both ballots agree (<span class="math"><i>H&#771;</i> &lt; 0.16</span>), <code>dgem</code> returns immediately (<strong>72% of traffic</strong>); if they clash, it escalates to Gemini (<strong>98.0% accuracy</strong>).
+          </p>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- SECTION 07: COPY-PASTE BRIEFING MEMO -->
