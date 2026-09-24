@@ -16,7 +16,10 @@ import (
 	"google.golang.org/genai"
 )
 
-const DefaultCascadeGeminiModel = "gemini-3.8-flash"
+const (
+	DefaultCascadeGeminiModel  = "gemini-3.8-flash"
+	DefaultCascadeGeminiModels = "gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite"
+)
 
 // CascadeSlotTelemetry records Stage 1 (dgemma) vs Stage 2 (Gemini 3.x) per-slot resolution.
 type CascadeSlotTelemetry struct {
@@ -50,7 +53,8 @@ var (
 	cascadeGenaiProj   string
 )
 
-// SanitizeCascadeModel enforces the Gemini 3.x series mandate (defaulting to gemini-3.8-flash
+// SanitizeCascadeModel enforces the Gemini 3.x series mandate (defaulting to gemini-3.8-flash,
+// remapping gemini-3.5-flash -> gemini-3.7-flash and gemini-3.1-flash-lite -> gemini-3.5-flash-lite,
 // and upgrading any legacy gemini-1.x / gemini-2.x reference to gemini-3.8-flash).
 func SanitizeCascadeModel(raw string) string {
 	m := strings.TrimSpace(raw)
@@ -64,10 +68,42 @@ func SanitizeCascadeModel(raw string) string {
 		}
 	}
 	lower := strings.ToLower(m)
+	switch lower {
+	case "gemini-3.5-flash":
+		return "gemini-3.7-flash"
+	case "gemini-3.1-flash-lite":
+		return "gemini-3.5-flash-lite"
+	}
 	if strings.HasPrefix(lower, "gemini-2") || strings.HasPrefix(lower, "gemini-1") {
 		return DefaultCascadeGeminiModel
 	}
 	return m
+}
+
+// GetConfiguredCascadeModels returns the ordered list of selectable Stage-2 Gemini 3.x models
+// from DGEM_CASCADE_MODELS or --cascade-models (defaulting to gemini-3.8-flash, gemini-3.7-flash, gemini-3.5-flash-lite).
+func GetConfiguredCascadeModels() []string {
+	raw := strings.TrimSpace(os.Getenv("DGEM_CASCADE_MODELS"))
+	if raw == "" {
+		raw = strings.TrimSpace(serveCascadeModels)
+	}
+	if raw == "" {
+		raw = DefaultCascadeGeminiModels
+	}
+	parts := strings.Split(raw, ",")
+	seen := make(map[string]bool)
+	var out []string
+	for _, p := range parts {
+		m := SanitizeCascadeModel(p)
+		if m != "" && !seen[m] {
+			seen[m] = true
+			out = append(out, m)
+		}
+	}
+	if len(out) == 0 {
+		return []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"}
+	}
+	return out
 }
 
 func getSharedGenaiClient(ctx context.Context) (*genai.Client, string, error) {
@@ -381,7 +417,7 @@ func ExecuteStage2GeminiCascade(
 	t0 := time.Now()
 	candidateModels := []string{model}
 	// Transparent Gemini 3.x publisher fallback if the alias is not directly bound on the project's Vertex endpoint
-	for _, fallback := range []string{"gemini-3-flash-preview", "gemini-3.1-flash-lite-preview"} {
+	for _, fallback := range []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3-flash-preview"} {
 		if fallback != model {
 			candidateModels = append(candidateModels, fallback)
 		}

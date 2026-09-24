@@ -40,6 +40,7 @@ var (
 	serveVertexProject  string
 	serveDefaultBackend string
 	serveCascadeModel   string
+	serveCascadeModels  string
 	backendConfigMu     sync.RWMutex
 )
 
@@ -72,7 +73,8 @@ func init() {
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
 	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "vertex_first", "Default upstream inference backend: 'vertex_first' (Vertex primary + Cloud Run failover), 'vertex', or 'cloudrun' (env: DGEM_DEFAULT_BACKEND)")
-	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'; env: DGEM_CASCADE_MODEL)")
+	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'; env: DGEM_CASCADE_MODEL)")
+	serveCmd.Flags().StringVar(&serveCascadeModels, "cascade-models", DefaultCascadeGeminiModels, "Comma-separated list of selectable Stage-2 Vertex AI Gemini 3.x models exposed in the API & Web Studio (env: DGEM_CASCADE_MODELS)")
 
 	RootCmd.AddCommand(serveCmd)
 }
@@ -795,8 +797,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodPost {
 			var body struct {
-				DefaultBackend string `json:"default_backend"`
-				VertexURL      string `json:"vertex_url"`
+				DefaultBackend      string   `json:"default_backend"`
+				VertexURL           string   `json:"vertex_url"`
+				DefaultCascadeModel string   `json:"default_cascade_model"`
+				CascadeModels       []string `json:"cascade_models"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
@@ -816,11 +820,19 @@ func runServe(cmd *cobra.Command, args []string) error {
 			if body.VertexURL != "" || body.DefaultBackend == "cloudrun" || body.DefaultBackend == "vertex_first" {
 				serveVertexURL = normVx
 			}
+			if strings.TrimSpace(body.DefaultCascadeModel) != "" {
+				serveCascadeModel = SanitizeCascadeModel(body.DefaultCascadeModel)
+			}
+			if len(body.CascadeModels) > 0 {
+				serveCascadeModels = strings.Join(body.CascadeModels, ",")
+			}
 			backendConfigMu.Unlock()
 		}
 		backendConfigMu.RLock()
 		defB := serveDefaultBackend
 		vxURL := serveVertexURL
+		defCascade := SanitizeCascadeModel("")
+		cascadeList := GetConfiguredCascadeModels()
 		backendConfigMu.RUnlock()
 		if vxURL == "" {
 			vxURL, _ = expandAndValidateVertexURL(defaultVertexEndpointID)
@@ -831,13 +843,15 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		vSt := inspectVertexEndpointState(r.Context(), vxURL)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"default_backend":   defB,
-			"cloudrun_url":      viper.GetString("url"),
-			"vertex_url":        vxURL,
-			"vertex_configured": vxURL != "",
-			"vertex_status":     vSt,
-			"project_id":        proj,
-			"region":            "us-central1",
+			"default_backend":       defB,
+			"cloudrun_url":          viper.GetString("url"),
+			"vertex_url":            vxURL,
+			"vertex_configured":     vxURL != "",
+			"vertex_status":         vSt,
+			"project_id":            proj,
+			"region":                "us-central1",
+			"default_cascade_model": defCascade,
+			"cascade_models":        cascadeList,
 		})
 	})
 

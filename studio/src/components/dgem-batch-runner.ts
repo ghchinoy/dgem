@@ -139,7 +139,12 @@ export class DgemBatchRunner extends LitElement {
   @state() private selectedSuiteId = 'enterprise_multislot_25';
   @state() private concurrency = 4;
   @state() private cascadeMode: 'off' | 'on_miss' | 'entropy' = 'off';
-  @state() private cascadeModel: 'gemini-3.8-flash' | 'gemini-3.5-flash' | 'gemini-3.1-flash-lite' = 'gemini-3.8-flash';
+  @state() private cascadeModel = 'gemini-3.8-flash';
+  @state() private cascadeModels: string[] = [
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash-lite',
+  ];
   @state() private cascadeThreshold = 0.35;
   @state() private rowFilter: 'all' | 'miss' | 'high_entropy' = 'all';
   @state() private rows: BatchTableRow[] = [];
@@ -841,6 +846,23 @@ export class DgemBatchRunner extends LitElement {
     super.connectedCallback();
     this.customRawTemplate = this.compileVisualTemplate();
     this.loadBatchPresets();
+    this.loadBackendCascadeConfig();
+  }
+
+  private async loadBackendCascadeConfig() {
+    try {
+      const resp = await fetch('/api/backend-config');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (Array.isArray(data?.cascade_models) && data.cascade_models.length > 0) {
+        this.cascadeModels = data.cascade_models;
+      }
+      if (typeof data?.default_cascade_model === 'string' && data.default_cascade_model.trim()) {
+        this.cascadeModel = data.default_cascade_model.trim();
+      }
+    } catch {
+      // keep default ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite']
+    }
   }
 
   disconnectedCallback() {
@@ -1868,7 +1890,7 @@ export class DgemBatchRunner extends LitElement {
                   <div class="control-group">
                     <span class="control-label">Stage-2 Gemini 3.x Model</span>
                     <div class="seg-group">
-                      ${(['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'] as const).map(
+                      ${this.cascadeModels.map(
                         (m) => html`
                           <button
                             class="seg-btn ${this.cascadeModel === m ? 'active' : ''}"

@@ -58,7 +58,8 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `mcp`, `bench`, `bench-calibra
 | :--- | :--- | :--- | :--- |
 | **`--default-backend`** | `DGEM_DEFAULT_BACKEND` | **`vertex_first`** | Default upstream GPU routing policy when a request does not specify `X-DGem-Backend` or `backend`:<br/>• **`vertex_first`** *(Recommended)*: Routes to the warm Vertex AI Dedicated Endpoint (`--vertex-url`) for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically fails over to Serverless Cloud Run GPU (`-u`) if Vertex is updating or scaled to zero.<br/>• **`vertex`**: Strictly pins requests to the Vertex AI Dedicated Endpoint (`/invoke/*`).<br/>• **`cloudrun`**: Strictly pins requests to Serverless Cloud Run GPU (`dgemma`). |
 | **`--vertex-url`** | `DGEM_VERTEX_URL` | **`4217256562927861760`** | Target Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL used by `vertex_first` and `vertex` routing modes. |
-| **`--cascade-model`** | `DGEM_CASCADE_MODEL` | **`gemini-3.8-flash`** | Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash`, `gemini-3.5-flash`, or `gemini-3.1-flash-lite`). |
+| **`--cascade-model`** | `DGEM_CASCADE_MODEL` | **`gemini-3.8-flash`** | Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash`, `gemini-3.7-flash`, or `gemini-3.5-flash-lite`). |
+| **`--cascade-models`** | `DGEM_CASCADE_MODELS` | **`gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite`** | Comma-separated list of selectable Stage 2 Vertex AI Gemini 3.x models exposed in `GET /api/backend-config` and the Web Studio. |
 | **`-u, --url`** | `DGEM_URL` | `http://127.0.0.1:8080/v1` | Upstream Serverless Cloud Run GPU `/v1` URL used by `cloudrun` routing and `vertex_first` failover. |
 | **`--port`** | `PORT` | `8080` | HTTP listener port. |
 
@@ -88,4 +89,4 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 | **`vertex_url`** | `string` | `"4217256562927861760"` *(optional)* | Custom Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. |
 | **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`). |
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
-| **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.5-flash"`, or `"gemini-3.1-flash-lite"`). |
+| **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |

@@ -96,13 +96,13 @@ curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
 When Stage 1 (`DiffusionGemma`) encounters an ambiguous input (where restricted-softmax Shannon entropy $H \ge 0.35\text{ nats}$, e.g. `ChaosNLI` human-disagreement items or complex multi-hop `ANLI-R3` contradictions), `dgem` can automatically escalate that item to a **Stage 2 Gemini Cascade (`EXP-05`)**.
 
 > [!IMPORTANT]
-> **Supported Stage 2 Gemini Models**: Always use **`gemini-3.8-flash`** (default), **`gemini-3.5-flash`**, or **`gemini-3.1-flash-lite`** via standard Vertex AI `generateContent` routes. Never reference legacy Gemini 2.x models.
+> **Supported Stage 2 Gemini Models**: Always use **`gemini-3.8-flash`** (default), **`gemini-3.7-flash`**, or **`gemini-3.5-flash-lite`** via standard Vertex AI `generateContent` routes. Never reference legacy Gemini 2.x models.
 
 | Parameter | Values / Default | Surface Support | Description |
 | :--- | :--- | :--- | :--- |
 | **`cascade_mode`** | `"off"` (default) \| `"entropy"` \| `"on_miss"` | Web Studio Batch Eval, `POST /api/decide`, MCP (`decide_policy`, `decide_custom_questions`) | **`"off"`**: Stage 1 `dgemma` only (`~490 ms` GPU denoise).<br/>**`"entropy"`**: Production uncertainty gate — early-exits confident decisions at Stage 1 ($H < \tau$, ~72% of traffic) and escalates only high-entropy items ($H \ge \tau$) to Stage 2 Gemini.<br/>**`"on_miss"`**: Batch Eval ground-truth audit mode — escalates items where Stage 1 disagrees with the dataset's `expected` label. |
 | **`cascade_threshold`** | `0.35` *(default, in nats)* | Web Studio Batch Eval, `POST /api/decide`, MCP, `dgem bench-calibration` | Shannon entropy gate $\tau$ in nats (`0.35` raw nats, or `0.16` normalized $\tilde{H} = H / \ln|\mathcal{V}_m|$). |
-| **`cascade_model`** | `"gemini-3.8-flash"` *(default)* | Web Studio Batch Eval, `POST /api/decide`, MCP, `dgem serve`, `dgem bench-calibration` | Target Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.5-flash"`, or `"gemini-3.1-flash-lite"`). |
+| **`cascade_model`** | `"gemini-3.8-flash"` *(default)* | Web Studio Batch Eval, `POST /api/decide`, MCP, `dgem serve`, `dgem bench-calibration` | Target Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). Configurable globally via `--cascade-model` (`DGEM_CASCADE_MODEL`) and `--cascade-models` (`DGEM_CASCADE_MODELS`). |
 
 ### Example: Calling `/api/decide` and MCP with `cascade_mode: "entropy"`
 

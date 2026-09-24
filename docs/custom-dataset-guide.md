@@ -179,13 +179,13 @@ For interactive datasets (**10 to 250 rows**), you can build your template, uplo
 When a single-pass Stage 1 `DiffusionGemma` decision exhibits high epistemic uncertainty (Shannon entropy $H \ge 0.35\text{ nats}$) or misses an expected ground-truth label during batch evaluation, `dgem` can automatically escalate that item to a **Stage 2 Gemini Cascade** (`EXP-05`).
 
 > [!IMPORTANT]
-> **Supported Stage 2 Gemini Models**: Always use **`gemini-3.8-flash`** (default), **`gemini-3.5-flash`**, or **`gemini-3.1-flash-lite`** via standard Vertex AI `generateContent` endpoints. Never use legacy Gemini 2.x models.
+> **Supported Stage 2 Gemini Models**: Always use **`gemini-3.8-flash`** (default), **`gemini-3.7-flash`**, or **`gemini-3.5-flash-lite`** via standard Vertex AI `generateContent` endpoints. Never use legacy Gemini 2.x models.
 
 | Parameter | Allowed Values / Default | Description |
 | :--- | :--- | :--- |
 | **`cascade_mode`** | `"off"` (default) \| `"entropy"` \| `"on_miss"` | **`"off"`**: Stage 1 `dgemma` only.<br/>**`"entropy"`**: Production escalation gate — early-exits low-entropy decisions at Stage 1 ($H < \tau$, ~72% of traffic in `~536 ms`) and escalates only uncertain items ($H \ge \tau$) to Stage 2 Gemini.<br/>**`"on_miss"`**: Evaluation-time diagnostic cascade — escalates any row where Stage 1 disagrees with the dataset's `expected` label to verify whether Stage 2 resolves the error. |
 | **`cascade_threshold`** | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ for `"entropy"` mode (`0.35` nats raw, or `0.16` when using cardinality-normalized entropy $\tilde{H} = H / \ln|\mathcal{V}_m|$). |
-| **`cascade_model`** | `"gemini-3.8-flash"` *(default)* | Target Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.5-flash"`, or `"gemini-3.1-flash-lite"`). |
+| **`cascade_model`** | `"gemini-3.8-flash"` *(default)* | Target Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
 
 ### Example: Enabling `vertex_first` + Stage 2 `gemini-3.8-flash` Cascade via `/api/decide` and MCP
 

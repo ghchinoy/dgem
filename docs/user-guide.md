@@ -90,7 +90,8 @@ dgem serve [flags]
   - `vertex`: Strictly pins requests to the Vertex AI Dedicated Endpoint (`/invoke/*`).
   - `cloudrun`: Strictly pins requests to Serverless Cloud Run GPU (`dgemma`).
 * `--vertex-url string`: Default Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4217256562927861760`).
-* `--cascade-model string`: Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash` [default], `gemini-3.5-flash`, or `gemini-3.1-flash-lite`).
+* `--cascade-model string`: Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash` [default], `gemini-3.7-flash`, or `gemini-3.5-flash-lite`; env: `DGEM_CASCADE_MODEL`).
+* `--cascade-models string`: Comma-separated list of selectable Stage 2 Gemini 3.x models (`gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite`; env: `DGEM_CASCADE_MODELS`).
 * `-u`, `--url string`: Upstream Cloud Run GPU `/v1` base URL for `cloudrun` routing and `vertex_first` failover.
 * `--gcp-auth`: Automatically mint GCP OIDC identity tokens (for Cloud Run) and OAuth2 access tokens (for Vertex AI `/invoke/*` and Stage 2 Gemini `generateContent`).
 
@@ -103,7 +104,7 @@ dgem serve [flags]
   - `vertex_url`: Optional Vertex AI Dedicated Endpoint ID (`"4217256562927861760"`) or `/invoke/v1` URL override
   - `cascade_mode`: `"off"` (default) | `"entropy"` | `"on_miss"`
   - `cascade_threshold`: `0.35` (default Shannon entropy $H$ threshold in nats)
-  - `cascade_model`: `"gemini-3.8-flash"` (default), `"gemini-3.5-flash"`, or `"gemini-3.1-flash-lite"`
+  - `cascade_model`: `"gemini-3.8-flash"` (default), `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`
 
 ---
 
