@@ -60,11 +60,24 @@ At default temperature $T = 1.0$, discrete diffusion denoising sharpens logits a
 
 ### Blindspot 3: Structural Length, Wording & Context Shifts
 - **1-Token vs. Multi-Token Labels**: In standard LLMs, a 3-token label (`"authorized business activity"`) gets penalized relative to a 1-token label (`"benign"`). `dgem` solves this structurally by binding every option—regardless of word count—to a **single 1-token proxy letter (`A–Z`)** on the canvas.
-- **Omitted Variables & Base-Rate Drift**: An email saying *"Your package could not be delivered"* cannot have a single calibrated spam probability if `sender_domain` is omitted or if Deployment Environment A has `1%` spam while Environment B has `80%` spam.
+-- **Omitted Variables & Base-Rate Drift**: An email saying *"Your package could not be delivered"* cannot have a single calibrated spam probability if `sender_domain` is omitted or if Deployment Environment A has `1%` spam while Environment B has `80%` spam.
+
+### Visual Proof: What a Confidence Score Actually Is (`Class Intersections` vs. `Learned Posterior`)
+
+To understand why raw model confidence fails—and how **`dgem IDC`** fixes it—consider what happens physically where two decision classes meet:
+
+![Class Density Intersections and Learned vs. True Bayes Posterior Across dgem IDC](/assets/idc/idc_1d_class_intersections.webp)
+
+1. **Top Panel (`Class Density Intersections`)**: Every classification task has a region of clear evidence for **Option 2** ($x \ll 0$), clear evidence for **Option 1** ($x \gg 0$), and a central **Class Intersection Zone** ($\min(p(x\mid A), p(x\mid B))$, shaded amber around $x \approx 0$) where the two classes genuinely overlap—either because humans themselves split 50/50 (`ChaosNLI`) or because a decisive variable (such as `sender_domain`) was omitted from the input. At $x = 0$, the **True Bayes Posterior** $P_{\text{true}}(Y=A \mid x) = \sigma\!\left(\ln\frac{p(x\mid A)}{p(x\mid B)}\right)$ **must equal `50.0%`**.
+2. **Bottom Panel (`Learned Confidence vs. True Bayes Posterior`)**:
+   - **Stage 1 (`Raw Shannon, T=1.0`, Red Curve)**: Because of the **`88.3%` Box-A Primacy Bias** ($b_{\text{pos}} = +2.02\text{ logits}$) combined with $T=1.0$ denoising sharpness, the raw decision boundary (`P = 50%`) is shifted far to the left ($x = -0.72$). Worse, at the true 50/50 intersection ($x = 0.04$, e.g., `perm_06` Hospital `ChaosNLI`), the raw curve saturates at **`99.4%` confidence (`H = 0.031 nats`)**—creating the shaded red **"False-Certainty Trap"** where single-pass Shannon entropy falsely exits early!
+   - **Stage 2 (`Instant Double-Ballot Reversed`, Orange Dotted Curve)**: Printing `Option 1` in `Box B` on the same canvas shifts the boundary to $x = +0.72$, immediately exposing the **Ballot-Flip Zone** (`Mirror TVD = 0.274`).
+   - **Stage 3 (`Tare Weight`, Blue Dash-Dot Curve)**: Subtracting the content-free prior $\log p_0(\text{A})$ (`--null-prior-debias`) snaps the `P = 50%` crossover directly back to $x = 0.00$ (`-90.2%` Brier error).
+   - **Stage 4–5 (`Full dgem IDC + Cascade`, Bold Emerald Curve)**: Combining Dual-Mirror averaging, Tare Weight, and the Humility Dial ($T^* = 1.30$) aligns the learned confidence curve directly on top of the **True Bayes Posterior** (`10-Bin ECE = 0.0326`) and quarantines the central intersection band ($x \in [-0.65, +0.65]$) for Stage-2 Gemini escalation.
 
 ---
 
-## 4. Stage 3: How `dgem Invariant Decision Calibration (IDC)` Works (Chronological Pipeline)
+## 4. Stage 3: How `dgem Invariant Decision Calibration (IDC)` Works (Chronological Pipeline & 2D Boundary Geometry)
 
 To solve all three blindspots with **zero latency penalty**, `dgem` wraps `DiffusionGemma` in a **5-step chronological pipeline** (`~125–300 ms` total wall-clock time):
 
@@ -76,8 +89,20 @@ flowchart LR
     S4 --> S5["Step 5: POST-PASS 3 (Gate)\ndgem Traffic Controller\n• High Trust (72%): Return in 125ms\n• Hidden Toss-Up (28%): Escalate\n  to Gemini -> 98.0% Accuracy"]
 ```
 
+### The 5-Stage Evolution of 2D Decision Boundaries & Confidence Spaces
+
+Plotting the 2D semantic evidence space $(s(o_1 \mid X), s(o_2 \mid X))$ shows how each stage of `dgem IDC` repairs the decision boundary around the true $45^\circ$ diagonal ($s_1 = s_2$):
+
+![The 5-Stage Geometric Evolution of dgem Decision Boundaries and Confidence Spaces](/assets/idc/idc_5stage_decision_boundaries_2d.webp)
+
+### 3-Way Probability Simplex ($\Delta^2$) Trajectories & 10-Bin Reliability Calibration
+
+On 3-choice NLI tasks (`Entailment [A]`, `Neutral [B]`, `Contradiction [C]` in `EXP-13` `ChaosNLI`), plotting the raw vs. `IDC`-calibrated probability vectors on the 2D Barycentric Simplex ($\Delta^2$) alongside the 10-bin reliability curve shows how `dgem IDC` eliminates false-confident errors:
+
+![3-Way Barycentric Probability Simplex and 10-Bin Calibration Reliability Curve](/assets/idc/idc_3way_simplex_and_reliability.webp)
+
 | Pipeline Step | When It Runs | Technique & Plain-English Analogy | What It Does Mathematically | Verified Empirical Impact |
-| :--- | :---: | :--- | :--- | :--- |
+| :--- | :--- | :--- | :--- | :--- |
 | **Step 1: Ballot Design & Mirroring** | **Pre-Pass** (`0.1 ms`) | **Instant Double-Ballot (`--dual-mirror`, `EXP-13C`)** + **Tournament Brackets (`EXP-12`)**: Prints the ballot twice on the same canvas (`Forward A..D` + `Reversed D..A`). | Appends `<id>__mirror_rev` with reversed options $[o_K \dots o_1]$ onto the same `reads=1` diffusion canvas. | **`0 ms` latency overhead** (`125 ms` for 2 mirrored slots vs. `129 ms` for 1 slot); **`100%` coverage** up to 255 options. |
 | **Step 2: Diffusion Snapshot Read** | **GPU Pass** (`~125 ms`) | **High-Speed Camera Snapshot**: Reads the entire prompt and fills every checkbox on the page simultaneously. | Bidirectional attention across prompt + all `[MASK]` slots; restricted softmax over `[A-Z]` per slot. | **`100%` valid schema**, zero multi-token label length penalty. |
 | **Step 3: "Zeroing the Scale"** | **Post-Pass 1** (`0.1 ms`) | **Tare Weight (`--null-prior-debias`, `EXP-13B`)**: Subtracts the weight of the bowl (`Box A` bias) before weighing the answer. | Divides raw probabilities by the measured content-free prior: $\tilde{p}_k \propto p_k / p_0(k)^\alpha$ (plus optional Bayes base rate $\pi_{\text{env}}(k)$). | **Cuts Brier error by `-90.2%`** (`EXP-13`) and makes **`>90%`-confidence predictions `100.0%` accurate (`31/31`)** (`EXP-04`). |

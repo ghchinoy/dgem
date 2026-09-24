@@ -32,6 +32,8 @@ __pycache__/
 docs-site/node_modules/
 docs-site/dist/
 docs-site/.astro/
+docs/assets/idc/*.png
+docs-site/public/assets/idc/*.png
 studio/node_modules/
 studio/dist/*
 !studio/dist/.gitkeep
