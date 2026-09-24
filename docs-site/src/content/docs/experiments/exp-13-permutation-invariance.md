@@ -11,6 +11,10 @@ In constrained decision models (`DiffusionGemma` / `dgem`), single-pass epistemi
 
 However, **Shannon entropy under a single option ordering $\pi_0$ measures token-slot certainty, not semantic invariance**:
 $$z(\ell_k \mid X, \pi) = s(o_{\pi(k)} \mid X) + b_{\text{pos}}(k) + \epsilon_{\text{fmt}}(X, \pi, k)$$
+where:
+- $s(o_{\pi(k)} \mid X)$ is the true semantic preference for option $o_{\pi(k)}$,
+- $b_{\text{pos}}(k)$ is the structural positional/token bias for slot index $k$ (e.g., primacy bias toward `'A'`), and
+- $\epsilon_{\text{fmt}}(X, \pi, k)$ is formatting-order interaction noise.
 
 **The Epistemic Blindspot**: When a task is genuinely ambiguous ($s(o_1 \mid X) \approx s(o_2 \mid X)$), a strong positional prior $b_{\text{pos}}(0) \gg b_{\text{pos}}(1)$ artificially inflates the probability of whichever option happens to sit in Slot `'A'`, collapsing single-pass Shannon entropy $H(Y \mid X, \pi_0) \to 0$ and causing a **False Early Exit** in entropy-gated cascades (`EXP-05`).
 
@@ -31,6 +35,8 @@ Executed via `./bin/dgem bench-permutation -u "https://dgemma-tkb3aiuiea-uc.a.ru
 
 ### 3.1 `EXP-13B`: Measured Content-Free Positional Null Priors ($p_0$)
 
+When prompted with a content-free context (`[REDACTED / CONTENT-FREE CALIBRATION PROBE]`) and neutral option labels (`Option 1` $\dots$ `Option K`), `dgemma` exhibits a severe structural bias toward **Slot 0 (`'A'`)** (and secondary recency bias on `'D'` for $K=4$, starving middle slot `'B'` to `4.8%`):
+
 | Cardinality ($K$) | Slot `'A'` ($p_0(0)$) | Slot `'B'` ($p_0(1)$) | Slot `'C'` ($p_0(2)$) | Slot `'D'` ($p_0(3)$) | Uniform Baseline ($1/K$) | Slot `'A'` Bias Ratio | Null Entropy ($H_0$ vs $\ln K$) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **$K=2$ (`Binary`)** | **`88.3%`** | `11.7%` | — | — | `50.0%` | **`1.77x`** | `0.361` / `0.693 nats` |
@@ -38,6 +44,8 @@ Executed via `./bin/dgem bench-permutation -u "https://dgemma-tkb3aiuiea-uc.a.ru
 | **$K=4$ (`4-Way MCQ`)** | **`49.3%`** | **`4.8%`** | `16.3%` | `29.5%` | `25.0%` | **`1.97x`** | `1.164` / `1.386 nats` |
 
 Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k)^\alpha$ with $\alpha=1.0$) reduced the **Multi-Class Brier Score by `-90.2%`** (`0.0173` $\rightarrow$ **`0.0017`**).
+
+---
 
 ### 3.2 `EXP-13A` & `EXP-13C`: Method Comparison (`1-Slot` vs. `Null-Prior` vs. `Cyclic-K` vs. `O(1) Dual-Mirror Canvas`)
 
@@ -48,7 +56,11 @@ Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k
 | **`3. K-Pass Cyclic Ensemble (13A Oracle)`** | `K` (`2–4`) | `369.5 ms` (`2.86x`) | `100.0%` | `0.0369` | `0.1570` | **`0.0%` (Exact Invariant)** | ✅ Full `Cyclic JSD` ($I(Y;\Pi\mid X)$) |
 | **`4. O(1) Dual-Mirror Canvas (13C)`** | **`1` (`2 slots`)** | **`125.0 ms` (`0.97x`)** | **`100.0%`** | **`0.0442`** | **`0.1370` (`-10.8%`)** | **`0.0%` (Exact Reversal Invariant)** | ✅ **Live `Mirror JSD` & `Mirror TVD` in 1 Pass** |
 
-### 3.3 Regime Breakdown (`H2` Proof)
+> **Key Architectural Breakthrough**: Because `DiffusionGemma` evaluates both `decision_fwd` ($[o_1 \dots o_K]$) and `decision_rev` ($[o_K \dots o_1]$) inside the **same 256-token bidirectional canvas**, **`O(1)` Dual-Mirror Canvas (`13C`) runs in `125.0 ms` vs. `129.0 ms` for a single slot (`0 ms` latency overhead)** while achieving **`0.0%` reversal flip rate** and exposing live **Mirror TVD / JSD** in a single read.
+
+---
+
+### 3.3 Regime Breakdown: Why Single-Pass Entropy Fails on `ChaosNLI` While `JSD` & `Mirror TVD` Catch It (`H2` Proof)
 
 | Regime (`4 cases each`) | Mean 1-Pass Norm Entropy ($\tilde{H}$) | Mean `Cyclic JSD` ($I(Y;\Pi\mid X)$) | `Cyclic JSD` Multiplier vs Consensus | Cyclic Permutation Flip Rate | Mean Single-Pass `Mirror TVD` (`13C`) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -56,3 +68,23 @@ Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k
 | **`adversarial_trap`** (Distractor in `'A'`) | `0.0110` | `0.0036 nats` | `2.1x` | **`0.0%`** (`0/4`) | `0.0060` |
 | **`binary_ablation`** ($K=2$ policies) | `0.0056` | `0.0016 nats` | `0.9x` | **`0.0%`** (`0/4`) | `0.0029` |
 | **`ambiguous_chaosnli`** (Human split) | `0.0977` | **`0.2683 nats`** | **`157.8x`** | **`50.0%`** (`2/4` flip `argmax`) | **`0.2738` (`66.8x` consensus)** |
+
+#### Concrete Case Proofs (`perm_06` & `perm_08`):
+1. **`perm_06_ambiguous_chaosnli_hospital` (*Surgeon sighing after operation: 48% Entailment vs 46% Neutral*)**:
+   - **Canonical 1-Slot (`A=entailment, B=neutral, C=contradiction`)**: `dgemma` outputs `entailment` with **`99.4%` confidence** and **Single-Pass Normalized Entropy $\tilde{H} = 0.031$** (well below the `0.16` cascade threshold $\rightarrow$ **False Early Exit!**). Why? Because `entailment` sits in Slot `'A'` ($p_0(\text{A}) = 78.3\%$), reinforcing a near-50/50 semantic split into artificial certainty.
+   - **Under Cyclic Shift (`A=neutral, B=contradiction, C=entailment`)**: `dgemma` **flips its answer (`Cyclic JSD = 0.573 nats`, `337x` consensus)**!
+2. **`perm_08_ambiguous_fair_use_parody` (*Commercial billboard parody: 36% Fair Use vs 34% Infringement vs 30% Factual Jury Question*)**:
+   - **Canonical 1-Slot**: Single-Pass Normalized Entropy is **`0.007`** (another **False Early Exit** under single-pass entropy!).
+   - **Under `O(1)` Dual-Mirror Canvas (`13C`)**: In a **single `125 ms` forward pass**, `decision_fwd` and `decision_rev` disagree with **`Mirror TVD = 0.258` (`63x` consensus)** and **`Cyclic JSD = 0.157 nats`**, immediately flagging the item for Stage-2 escalation!
+
+---
+
+## 4. Reproducibility & CLI Usage
+
+```bash
+# Run from saved Cloud Run GPU receipt (instant table + JSON validation):
+./bin/dgem bench-permutation --from-receipt benchmarks/results_permutation_cloudrun.json
+
+# Run live against Cloud Run GPU (executes 13B Null-Prior probes + 13A K-Cyclic shifts + 13C Dual-Mirror Canvas):
+./bin/dgem bench-permutation -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth -w 2
+```

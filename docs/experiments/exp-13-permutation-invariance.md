@@ -1,3 +1,8 @@
+---
+title: "EXP-13: Permutation Sensitivity & O(1) Dual-Mirror Canvas"
+description: "Measuring content-free positional 'A'-bias, Cyclic Jensen-Shannon Divergence (I(Y; Π | X)), and O(1) single-pass Dual-Mirror Canvas calibration on Cloud Run GPU."
+---
+
 # EXP-13: Permutation Sensitivity, Content-Free Null-Prior De-Biasing & O(1) Dual-Mirror Canvas Calibration
 
 ## 1. Motivation & Problem Statement

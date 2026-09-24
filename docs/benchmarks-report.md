@@ -350,4 +350,17 @@ To evaluate `DiffusionGemma` (`dgemma`) as a **Single-Pass Listwise Reranker** (
 - **Continuous Softmax Expectation ($\hat{r}_i = \sum_{g=0}^3 g \cdot p_{i,g}$) vs. Discrete `argmax`**: Eliminates the `70.0%` discrete bin tie rate (`0.0%` ties), boosting **`nDCG@10` by `+8.49 pts` (`0.8416` $\rightarrow$ `0.9265`)** and **`MRR@10` by `+20.37 pts` (`0.7407` $\rightarrow$ `0.9444`)** from the exact same single forward pass (`~1,377 ms` warm for 12 simultaneous slots = `~138 ms` effective per passage).
 - **Reproduction**: `./bin/dgem bench-rerank --from-receipt benchmarks/results_rerank_cloudrun.json`
 
+---
+
+## 12. `EXP-11` (`JevBench v1.3.1`), `EXP-12` (`jev-decision-index`) & `EXP-13` (`O(1)` Dual-Mirror Calibration)
+
+For full scorecards, mathematical proofs, and live leaderboard comparisons across the external `Jev` benchmark ecosystem, see the dedicated experiment reports:
+
+| Experiment | External Benchmark Suite | `dgem` Headline Result & Leaderboard Rank | Primary Report & Telemetry Receipt |
+| :--- | :--- | :--- | :--- |
+| **[`EXP-11`](experiments/exp-11-jevbench-parity.md)** | **`JevBench v1.3.1`** (`fstandhartinger/jevbench`, 231 Public Tasks across 18 Families) | **Rank `#1` (`75.70` Composite / `76.54` Acc Preset)** with post-hoc Slot Temperature Scaling ($T^* = 1.25$, `-56.2%` ECE in `0 ms`), surpassing `#1 Hopper` (`75.40`). With `EXP-05` Entropy Cascade ($\tilde{H} \ge 0.50$, saving `71.9%` of LLM calls), reaches **`90.05` Intelligence (`+10.51 pts`)** and **`90.66` Calibration (`+13.78 pts`)**. | [`docs/experiments/exp-11-jevbench-parity.md`](experiments/exp-11-jevbench-parity.md)<br>[`benchmarks/jevbench/results_djev_upstream_calibrated.json`](../benchmarks/jevbench/results_djev_upstream_calibrated.json) |
+| **[`EXP-12`](experiments/exp-12-decision-index.md)** | **`jev-decision-index`** (`multimodalart/jev-decision-index` / `apolinario/decision-index`, 5 Areas, 40 Panel Benchmarks) | **`98.89 / 100` (`+22.22 pts` vs. naive `djev`, `100.0%` coverage)** on the 22-benchmark Cloud Run suite via Multi-Slot Canvas Batching ($M > 8$) & 2-Stage Bracket Tournaments ($K > 26$). Projects to **Rank `#3 / 49` Overall (`#1` Diffusion, `46.90` `balanced_skill`)** as Pure System-1 (`0%` LLM), **Rank `#1 / 49` Overall (`53.94` `balanced_skill`, beating TypeSafe `Jev 1.13.0` [`51.67`])** with `EXP-05`/`11` Entropy Cascade, and **Rank `#1 / 31` (`56.51` raw)** on `v0.1`. | [`docs/experiments/exp-12-decision-index.md`](experiments/exp-12-decision-index.md)<br>[`benchmarks/decision_index/results_decision_index_cloudrun.json`](../benchmarks/decision_index/results_decision_index_cloudrun.json) |
+| **[`EXP-13`](experiments/exp-13-permutation-invariance.md)** | **Permutation Sensitivity, Null-Prior De-Biasing & $O(1)$ Dual-Mirror Canvas** | **Null-Prior De-Biasing (`13B`)** cuts Multi-Class Brier Score by **`-90.2%`** (`0.0173` $\rightarrow$ `0.0017`), while **`O(1)` Dual-Mirror Canvas (`13C`)** evaluates `decision_fwd` + `decision_rev` in **1 forward pass (`125 ms`, `0 ms` overhead)** with **`0.0%` reversal flip rate** and **`66.8×` `Mirror TVD` spike** on `ChaosNLI` human disagreement. | [`docs/experiments/exp-13-permutation-invariance.md`](experiments/exp-13-permutation-invariance.md)<br>[`benchmarks/results_permutation_cloudrun.json`](../benchmarks/results_permutation_cloudrun.json) |
+
+
 
