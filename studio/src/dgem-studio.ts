@@ -1062,6 +1062,7 @@ export class DgemStudio extends LitElement {
     } catch {
       // ignore
     }
+    await this.fetchGPUStatus();
   }
 
   private async handleProvisionVertex() {
@@ -1087,6 +1088,7 @@ export class DgemStudio extends LitElement {
     } finally {
       this.vertexActionBusy = false;
       await this.fetchBackendConfig();
+      await this.fetchGPUStatus();
     }
   }
 
@@ -1112,6 +1114,7 @@ export class DgemStudio extends LitElement {
     } finally {
       this.vertexActionBusy = false;
       await this.fetchBackendConfig();
+      await this.fetchGPUStatus();
     }
   }
 
@@ -1128,7 +1131,7 @@ export class DgemStudio extends LitElement {
 
   private async fetchGPUStatus() {
     try {
-      const resp = await fetch('/api/status');
+      const resp = await fetch(`/api/status?backend=${encodeURIComponent(this.backendTarget)}`);
       if (!resp.ok) return;
       const prevState = this.gpuStatus?.gpu_state;
       this.gpuStatus = await resp.json();
@@ -1567,18 +1570,45 @@ export class DgemStudio extends LitElement {
     const idleRemSec = this.gpuStatus?.idle_remaining_seconds || 0;
     const idleMinsLeft = Math.max(1, Math.ceil(idleRemSec / 60));
 
-    const dotClass = isWarm ? 'dot--ready' : isWarming ? 'dot--warming' : 'dot--cold';
-    const stateLabel = isWarm
-      ? 'GPU Warm & Ready'
-      : isWarming
-        ? phaseLabel || 'GPU Warming Up...'
-        : 'GPU Scaled-to-Zero (Standby)';
+    const activeBackend =
+      this.gpuStatus?.active_backend ||
+      (this.backendTarget === 'cloudrun'
+        ? 'cloudrun'
+        : this.vertexStatus?.state === 'deployed'
+          ? 'vertex'
+          : this.backendTarget === 'vertex'
+            ? 'vertex'
+            : 'cloudrun');
+    const isVertexBackend = activeBackend === 'vertex';
 
-    const subDetail = isWarm
-      ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
-      : isWarming
-        ? `(${elapsedSec}s / ~${ewmaWakeSec}s EWMA)`
-        : `($0/hr idle · ~${ewmaWakeSec}s wake)`;
+    const dotClass = isWarm ? 'dot--ready' : isWarming ? 'dot--warming' : 'dot--cold';
+    const stateLabel = isVertexBackend
+      ? isWarm
+        ? 'Vertex L4 Warm & Ready'
+        : isWarming
+          ? phaseLabel || 'Vertex L4 Scaling Up...'
+          : 'Vertex L4 Quiesced (0 Replicas)'
+      : isWarm
+        ? this.backendTarget === 'vertex_first'
+          ? 'Cloud Run Failover Warm'
+          : 'Cloud Run GPU Warm'
+        : isWarming
+          ? phaseLabel || 'Cloud Run GPU Waking...'
+          : this.backendTarget === 'vertex_first'
+            ? 'Cloud Run Failover Standby'
+            : 'Cloud Run Scaled-to-Zero';
+
+    const subDetail = isVertexBackend
+      ? isWarm
+        ? `(1× L4 · ~${lastReadoutMs > 0 ? lastReadoutMs : 490}ms readout · 0s wake)`
+        : isWarming
+          ? `(0 → 1 replica · g2-standard-16)`
+          : `($0/hr idle · 1× L4 unprovisioned)`
+      : isWarm
+        ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
+        : isWarming
+          ? `(${elapsedSec}s / ~${ewmaWakeSec}s EWMA)`
+          : `($0/hr idle · ~${ewmaWakeSec}s wake)`;
 
     return html`
       <header>
@@ -1772,7 +1802,13 @@ export class DgemStudio extends LitElement {
 
                       <div style="display:flex; justify-content:space-between; align-items:center; padding-top:0.2rem;">
                         <span style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
-                          Active: <strong>${this.backendTarget === 'vertex' ? 'Vertex AI (/invoke/*)' : 'Cloud Run GPU'}</strong>
+                          Active: <strong>${this.backendTarget === 'vertex_first'
+                            ? isVertexBackend
+                              ? 'Vertex First → Vertex AI L4 (/invoke/*)'
+                              : 'Vertex First → Cloud Run GPU (Failover)'
+                            : this.backendTarget === 'vertex'
+                              ? 'Vertex AI Strict (/invoke/*)'
+                              : 'Cloud Run GPU (Strict)'}</strong>
                         </span>
                         <button
                           class="btn btn--sm btn--brand"
@@ -1797,22 +1833,37 @@ export class DgemStudio extends LitElement {
 
             <button
               class="btn btn--sm ${isWarm || isWarming ? '' : 'btn--brand'}"
-              ?disabled=${isWarm || isWarming}
-              @click=${() => this.handleWarmupGPU(false)}
-              title=${isWarm
-                ? 'vLLM EngineCore & SigLIP are already warm and ready'
-                : isWarming
-                  ? 'Single-flight GPU warmup is currently in progress'
-                  : 'Trigger scale-from-zero GPU warmup on dgemma'}
+              ?disabled=${isWarm || isWarming || this.vertexActionBusy}
+              @click=${() =>
+                isVertexBackend && !isWarm && !isWarming
+                  ? this.handleProvisionVertex()
+                  : this.handleWarmupGPU(false)}
+              title=${isVertexBackend
+                ? isWarm
+                  ? 'Vertex AI Dedicated Endpoint 4217256562927861760 (1× L4 · g2-standard-16) is warm and ready'
+                  : isWarming
+                    ? 'Vertex AI Dedicated Endpoint replica is currently scaling up (0 → 1)'
+                    : 'Provision 1× NVIDIA L4 replica on Vertex AI Dedicated Endpoint 4217256562927861760'
+                : isWarm
+                  ? 'Cloud Run GPU vLLM EngineCore & SigLIP are warm and ready'
+                  : isWarming
+                    ? 'Single-flight Cloud Run GPU warmup is currently in progress'
+                    : 'Trigger scale-from-zero GPU warmup on Cloud Run (dgemma)'}
             >
               <span class="material-symbols-outlined">
-                ${isWarm ? 'check_circle' : isWarming ? 'hourglass_top' : 'bolt'}
+                ${isWarm ? 'check_circle' : isWarming ? 'hourglass_top' : isVertexBackend ? 'rocket_launch' : 'bolt'}
               </span>
-              ${isWarm
-                ? 'GPU Ready'
-                : isWarming
-                  ? `Warming Up (${elapsedSec}s)...`
-                  : 'Wake GPU'}
+              ${isVertexBackend
+                ? isWarm
+                  ? 'Vertex Ready'
+                  : isWarming
+                    ? 'Scaling L4...'
+                    : 'Provision L4'
+                : isWarm
+                  ? 'Cloud Run Ready'
+                  : isWarming
+                    ? `Waking (${elapsedSec}s)...`
+                    : 'Wake Cloud Run'}
             </button>
 
             <button

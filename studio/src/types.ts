@@ -11,6 +11,8 @@ export interface GPUHealthStatus {
   gateway_status: string;
   upstream_url: string;
   gpu_state: 'warm_and_ready' | 'warming_up' | 'scaled_to_zero' | 'unreachable' | string;
+  active_backend?: 'vertex' | 'cloudrun' | string;
+  requested_backend?: 'vertex_first' | 'vertex' | 'cloudrun' | string;
   gpu_available: boolean;
   gpu_hardware: string;
   vram_gb: number;

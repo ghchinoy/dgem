@@ -243,7 +243,7 @@ func startGPUKeepaliveLoop() {
 			if defB == "vertex_first" || defB == "vertex" {
 				vSt := inspectVertexEndpointState(context.Background(), vxURL)
 				if vSt.State == "deployed" {
-					MarkGPUWarm(490)
+					RecordVertexReadoutLatency(490)
 				}
 			}
 
@@ -346,7 +346,20 @@ func NotifyColdStartWarmup() {
 	}
 }
 
-// MarkGPUWarm records that the upstream vLLM engine successfully completed a decision readout
+var lastVertexReadoutLatencyMs int64 = 490
+
+// RecordVertexReadoutLatency records the most recent Vertex AI /invoke/* readout latency
+// without marking the scale-to-zero Cloud Run GPU container as warm.
+func RecordVertexReadoutLatency(latencyMs int64) {
+	if latencyMs <= 0 {
+		return
+	}
+	gpuStateMu.Lock()
+	lastVertexReadoutLatencyMs = latencyMs
+	gpuStateMu.Unlock()
+}
+
+// MarkGPUWarm records that the upstream Cloud Run vLLM engine successfully completed a decision readout
 // and wakes any callers waiting on an in-flight warmup broadcast channel.
 func MarkGPUWarm(latencyMs ...int64) {
 	gpuStateMu.Lock()
@@ -370,6 +383,8 @@ type HealthAndGPUStatusOutput struct {
 	GatewayHealthy        bool    `json:"gateway_healthy"`
 	GPUAvailable          bool    `json:"gpu_available"`
 	GPUState              string  `json:"gpu_state"` // "warm_and_ready", "warming_up", "scaled_to_zero"
+	ActiveBackend         string  `json:"active_backend"`    // "vertex" or "cloudrun"
+	RequestedBackend      string  `json:"requested_backend"` // "vertex_first", "vertex", or "cloudrun"
 	ContainerReachable    bool    `json:"container_reachable"`
 	WarmupInProgress      bool    `json:"warmup_in_progress"`
 	WarmupElapsedSeconds  int     `json:"warmup_elapsed_seconds,omitempty"`
@@ -393,20 +408,31 @@ type HealthAndGPUStatusOutput struct {
 // CheckHealthAndGPUStatus inspects both the gateway, the Vertex AI Dedicated Endpoint (when vertex_first
 // or vertex is configured), and the upstream Cloud Run GPU service.
 func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPUStatusOutput {
+	return CheckHealthAndGPUStatusForBackend(ctx, userEmail, "")
+}
+
+// CheckHealthAndGPUStatusForBackend inspects the readiness and telemetry of the requested backend target
+// ("vertex_first", "vertex", or "cloudrun").
+func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOverride string) HealthAndGPUStatusOutput {
 	backendConfigMu.RLock()
 	defB := serveDefaultBackend
 	vxURL := serveVertexURL
 	backendConfigMu.RUnlock()
 
+	reqMode := strings.ToLower(strings.TrimSpace(backendOverride))
+	if reqMode == "vertex" || reqMode == "cloudrun" || reqMode == "vertex_first" {
+		defB = reqMode
+	}
+
 	catalog, _ := discoverTemplates(serveTemplatesDir)
 	idleWindow := getGPUIdleWindow()
 
-	// 1. If Vertex First or Vertex is the configured backend, check Vertex AI Dedicated Endpoint state first!
+	// 1. If Vertex First or Vertex is the effective backend, check Vertex AI Dedicated Endpoint state first!
 	if defB == "vertex_first" || defB == "vertex" {
 		vSt := inspectVertexEndpointState(ctx, vxURL)
 		if vSt.State == "deployed" && vSt.ReplicaCount > 0 {
 			gpuStateMu.RLock()
-			lastReadMs := lastReadoutLatencyMs
+			lastReadMs := lastVertexReadoutLatencyMs
 			gpuStateMu.RUnlock()
 			if lastReadMs <= 0 {
 				lastReadMs = 490
@@ -415,12 +441,14 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 				GatewayHealthy:       true,
 				GPUAvailable:         true,
 				GPUState:             "warm_and_ready",
+				ActiveBackend:        "vertex",
+				RequestedBackend:     defB,
 				ContainerReachable:   true,
 				WarmupInProgress:     false,
 				EWMAWakeSeconds:      0,
 				SecondsSinceLastRead: 0,
-				IdleRemainingSeconds: int(idleWindow.Seconds()),
-				IdleTTLSeconds:       int(idleWindow.Seconds()),
+				IdleRemainingSeconds: 0,
+				IdleTTLSeconds:       0,
 				LastReadoutMs:        lastReadMs,
 				EstimatedWakeSeconds: 0,
 				UpstreamURL:          vxURL,
@@ -428,21 +456,45 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 				GPUTier:              fmt.Sprintf("Vertex AI Dedicated Endpoint (%s · /invoke/*)", vSt.MachineType),
 				TemplatesAvailable:   len(catalog),
 				AuthenticatedUser:    userEmail,
-				Detail:               fmt.Sprintf("Vertex AI Dedicated Endpoint %s is Warm & Ready (0.0s cold start · ~490ms GPU denoise · /invoke/*).", vSt.EndpointID),
+				Detail:               fmt.Sprintf("Vertex AI Dedicated Endpoint %s is Warm & Ready (%d× L4 · 0.0s cold start · ~%dms GPU denoise · /invoke/*).", vSt.EndpointID, vSt.ReplicaCount, lastReadMs),
 			}
 		}
-		if vSt.State == "deploying" && defB == "vertex" {
+		if defB == "vertex" {
+			if vSt.State == "deploying" {
+				return HealthAndGPUStatusOutput{
+					GatewayHealthy:       true,
+					GPUAvailable:         false,
+					GPUState:             "warming_up",
+					ActiveBackend:        "vertex",
+					RequestedBackend:     defB,
+					ContainerReachable:   false,
+					WarmupInProgress:     true,
+					WarmupPhase:          "vertex_scaling_up",
+					WarmupPhaseLabel:     vSt.Message,
+					EWMAWakeSeconds:      90,
+					EstimatedWakeSeconds: 90,
+					IdleTTLSeconds:       0,
+					UpstreamURL:          vxURL,
+					Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
+					GPUTier:              fmt.Sprintf("Vertex AI Dedicated Endpoint (%s · /invoke/*)", vSt.MachineType),
+					TemplatesAvailable:   len(catalog),
+					AuthenticatedUser:    userEmail,
+					Detail:               vSt.Message,
+				}
+			}
 			return HealthAndGPUStatusOutput{
 				GatewayHealthy:       true,
 				GPUAvailable:         false,
-				GPUState:             "warming_up",
+				GPUState:             "scaled_to_zero",
+				ActiveBackend:        "vertex",
+				RequestedBackend:     defB,
 				ContainerReachable:   false,
-				WarmupInProgress:     true,
-				WarmupPhase:          "vertex_scaling_up",
-				WarmupPhaseLabel:     vSt.Message,
-				EWMAWakeSeconds:      120,
-				EstimatedWakeSeconds: 120,
-				IdleTTLSeconds:       int(idleWindow.Seconds()),
+				WarmupInProgress:     false,
+				WarmupPhase:          "vertex_quiesced",
+				WarmupPhaseLabel:     "Vertex L4 Quiesced (0 replicas)",
+				EWMAWakeSeconds:      90,
+				EstimatedWakeSeconds: 90,
+				IdleTTLSeconds:       0,
 				UpstreamURL:          vxURL,
 				Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
 				GPUTier:              fmt.Sprintf("Vertex AI Dedicated Endpoint (%s · /invoke/*)", vSt.MachineType),
@@ -476,6 +528,8 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 
 	out := HealthAndGPUStatusOutput{
 		GatewayHealthy:       true,
+		ActiveBackend:        "cloudrun",
+		RequestedBackend:     defB,
 		UpstreamURL:          viper.GetString("url"),
 		Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
 		GPUTier:              "1x NVIDIA RTX Pro 6000 (48GB VRAM, SigLIP Multimodal)",

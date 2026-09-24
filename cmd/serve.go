@@ -428,7 +428,6 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 				st.ReplicaCount = 1
 				st.MachineType = "g2-standard-16 (NVIDIA L4)"
 				st.Message = fmt.Sprintf("Active & Ready (1 replica · %s · /invoke/*)", st.MachineType)
-				MarkGPUWarm()
 				vertexStatusCacheMu.Lock()
 				vertexStatusCached = st
 				vertexStatusCacheExpires = time.Now().Add(30 * time.Second)
@@ -996,10 +995,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 		w.Header().Set("Content-Type", "application/json")
 		userEmail := strings.TrimPrefix(r.Header.Get("X-Goog-Authenticated-User-Email"), "accounts.google.com:")
 		probeStart := time.Now()
-		st := CheckHealthAndGPUStatus(r.Context(), userEmail)
+		backendParam := strings.TrimSpace(r.URL.Query().Get("backend"))
+		if backendParam == "" {
+			backendParam = strings.TrimSpace(r.Header.Get("X-DGem-Backend"))
+		}
+		st := CheckHealthAndGPUStatusForBackend(r.Context(), userEmail, backendParam)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":                  st.GPUState,
 			"gpu_state":               st.GPUState,
+			"active_backend":          st.ActiveBackend,
+			"requested_backend":       st.RequestedBackend,
 			"gpu_available":           st.GPUAvailable,
 			"gateway_healthy":         st.GatewayHealthy,
 			"reachable":               st.ContainerReachable,
@@ -1366,6 +1371,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		if backendTarget == "cloudrun" {
 			MarkGPUWarm(gpuForwardMs)
+		} else if backendTarget == "vertex" {
+			RecordVertexReadoutLatency(gpuForwardMs)
 		}
 		coldWaitMs := orchElapsedMs - gpuForwardMs
 		if coldWaitMs < 0 {
