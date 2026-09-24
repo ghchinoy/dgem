@@ -236,6 +236,7 @@ export default defineConfig({
             { label: 'The Journey to Decision Models', slug: 'decision-models-primer' },
             { label: 'Confidence Beyond Shannon (IDC)', slug: 'confidence-beyond-shannon' },
             { label: 'Discrete Diffusion vs. Autoregression', slug: 'architecture' },
+            { label: 'Unclassified Grouping & Taxonomy Discovery', slug: 'taxonomy-discovery' },
             { label: 'Glossary & Mental Models', slug: 'glossary' },
             { label: 'Template Catalog (Policy-as-Code)', slug: 'templates' },
           ],

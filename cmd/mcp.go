@@ -772,15 +772,17 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 type StatusToolInput struct{}
 
 type DecidePolicyToolInput struct {
-	Template         string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge', 'calibration/prompt_injection_guard')."`
-	Variables        map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
-	Image            string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
-	Backend          string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
-	VertexURL        string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4217256562927861760)."`
-	CascadeMode      string                 `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
-	CascadeThreshold float64                `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
-	CascadeModel     string                 `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`
-	ExpectedAnswers  map[string]string      `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
+	Template          string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'taxonomy_discovery', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge')."`
+	Variables         map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
+	Image             string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
+	Backend           string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
+	VertexURL         string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4217256562927861760)."`
+	CascadeMode       string                 `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
+	CascadeThreshold  float64                `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
+	CascadeModel      string                 `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`
+	ExpectedAnswers   map[string]string      `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
+	SuggestExpansions bool                   `json:"suggest_expansions,omitempty" jsonschema:"If true, dynamically injects an 'other_unclassified' catch-all option into choice slots (if absent) and proposes new {'name', 'description'} options when unclassified or high-entropy."`
+	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty" jsonschema:"Shannon entropy threshold H in nats on choice slots to trigger taxonomy expansion proposals (default 0.35)."`
 }
 
 type LocateBBoxToolInput struct {
@@ -818,14 +820,16 @@ type CustomQuestionSpec struct {
 }
 
 type DecideCustomToolInput struct {
-	Context          string               `json:"context" jsonschema:"Input text, document, code diff, or event log to evaluate."`
-	Questions        []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
-	Backend          string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', or 'cloudrun'."`
-	VertexURL        string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
-	CascadeMode      string               `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
-	CascadeThreshold float64              `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
-	CascadeModel     string               `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`
-	ExpectedAnswers  map[string]string    `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
+	Context           string               `json:"context" jsonschema:"Input text, document, code diff, or event log to evaluate."`
+	Questions         []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
+	Backend           string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', or 'cloudrun'."`
+	VertexURL         string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
+	CascadeMode       string               `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
+	CascadeThreshold  float64              `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
+	CascadeModel      string               `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`
+	ExpectedAnswers   map[string]string    `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
+	SuggestExpansions bool                 `json:"suggest_expansions,omitempty" jsonschema:"If true, dynamically injects an 'other_unclassified' catch-all option into choice slots (if absent) and proposes new {'name', 'description'} options when unclassified or high-entropy."`
+	ExpansionEntropy  float64              `json:"expansion_entropy,omitempty" jsonschema:"Shannon entropy threshold H in nats on choice slots to trigger taxonomy expansion proposals (default 0.35)."`
 }
 
 type ListTemplatesToolInput struct {
@@ -920,6 +924,14 @@ func buildMCPServer() *mcp.Server {
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
+		var injectedSlots map[string]bool
+		var existingOptions map[string][]client.ProposedOption
+		if input.SuggestExpansions {
+			schemaContent, injectedSlots, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
+		} else {
+			_, _, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
+		}
+
 		var imgs []string
 		if input.Image != "" {
 			imgs = append(imgs, input.Image)
@@ -951,6 +963,27 @@ func buildMCPServer() *mcp.Server {
 			)
 		}
 
+		if input.SuggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
+			expandCtx, expandSpan := gatewayTracer().Start(ctx, "dgem.taxonomy.expand")
+			resp.SuggestedExpansions = SynthesizeTaxonomyExpansions(
+				expandCtx,
+				nil,
+				cleanID,
+				stateContent,
+				resp,
+				injectedSlots,
+				existingOptions,
+				input.ExpansionEntropy,
+				targetURL,
+			)
+			expandSpan.SetAttributes(
+				attribute.Bool("dgem.taxonomy.triggered", len(resp.SuggestedExpansions) > 0),
+				attribute.Int("dgem.taxonomy.suggestions_count", len(resp.SuggestedExpansions)),
+			)
+			expandSpan.SetStatus(codes.Ok, "ok")
+			expandSpan.End()
+		}
+
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
 			if q.Entropy > maxEntropy {
@@ -963,16 +996,18 @@ func buildMCPServer() *mcp.Server {
 			}
 		}
 		return nil, GatewayDecideResponse{
-			Template:       cleanID,
-			Answers:        resp.Answers,
-			Diagnostics:    resp.Diagnostics,
-			Cascade:        cascadeSummary,
-			MaxEntropy:     maxEntropy,
-			WallTimeMs:     time.Since(start).Milliseconds(),
-			WarmupAttempts: attempts,
-			Model:          stats.Model,
-			BackendTarget:  backendTarget,
-			UpstreamURL:    targetURL,
+			Template:            cleanID,
+			Answers:             resp.Answers,
+			Diagnostics:         resp.Diagnostics,
+			Decision:            resp,
+			Cascade:             cascadeSummary,
+			SuggestedExpansions: resp.SuggestedExpansions,
+			MaxEntropy:          maxEntropy,
+			WallTimeMs:          time.Since(start).Milliseconds(),
+			WarmupAttempts:      attempts,
+			Model:               stats.Model,
+			BackendTarget:       backendTarget,
+			UpstreamURL:         targetURL,
 		}, nil
 	})
 
@@ -1072,6 +1107,14 @@ func buildMCPServer() *mcp.Server {
 		schemaBytes, _ := json.Marshal(schemaObj)
 		schemaStr, stateStr, _ := template.ParseStructuredPayload(string(schemaBytes), map[string]interface{}{"context": input.Context})
 
+		var injectedSlots map[string]bool
+		var existingOptions map[string][]client.ProposedOption
+		if input.SuggestExpansions {
+			schemaStr, injectedSlots, existingOptions = InjectUnclassifiedCatchAll(schemaStr)
+		} else {
+			_, _, existingOptions = InjectUnclassifiedCatchAll(schemaStr)
+		}
+
 		backendTarget, targetURL, bErr := resolveBackendTargetFromParams(ctx, input.Backend, input.VertexURL)
 		if bErr != nil {
 			return nil, GatewayDecideResponse{}, bErr
@@ -1099,6 +1142,27 @@ func buildMCPServer() *mcp.Server {
 			)
 		}
 
+		if input.SuggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
+			expandCtx, expandSpan := gatewayTracer().Start(ctx, "dgem.taxonomy.expand")
+			resp.SuggestedExpansions = SynthesizeTaxonomyExpansions(
+				expandCtx,
+				nil,
+				"custom_questions",
+				stateStr,
+				resp,
+				injectedSlots,
+				existingOptions,
+				input.ExpansionEntropy,
+				targetURL,
+			)
+			expandSpan.SetAttributes(
+				attribute.Bool("dgem.taxonomy.triggered", len(resp.SuggestedExpansions) > 0),
+				attribute.Int("dgem.taxonomy.suggestions_count", len(resp.SuggestedExpansions)),
+			)
+			expandSpan.SetStatus(codes.Ok, "ok")
+			expandSpan.End()
+		}
+
 		maxEntropy := 0.0
 		for _, a := range resp.Answers {
 			if a.Entropy > maxEntropy {
@@ -1106,16 +1170,18 @@ func buildMCPServer() *mcp.Server {
 			}
 		}
 		return nil, GatewayDecideResponse{
-			Template:       "custom_questions",
-			Answers:        resp.Answers,
-			Diagnostics:    resp.Diagnostics,
-			Cascade:        cascadeSummary,
-			MaxEntropy:     maxEntropy,
-			WallTimeMs:     time.Since(start).Milliseconds(),
-			WarmupAttempts: attempts,
-			Model:          stats.Model,
-			BackendTarget:  backendTarget,
-			UpstreamURL:    targetURL,
+			Template:            "custom_questions",
+			Answers:             resp.Answers,
+			Diagnostics:         resp.Diagnostics,
+			Decision:            resp,
+			Cascade:             cascadeSummary,
+			SuggestedExpansions: resp.SuggestedExpansions,
+			MaxEntropy:          maxEntropy,
+			WallTimeMs:          time.Since(start).Milliseconds(),
+			WarmupAttempts:      attempts,
+			Model:               stats.Model,
+			BackendTarget:       backendTarget,
+			UpstreamURL:         targetURL,
 		}, nil
 	})
 

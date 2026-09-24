@@ -72,6 +72,8 @@ export class DgemPolicyComposer extends LitElement {
       border-radius: 10px;
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .card-header {
@@ -216,7 +218,11 @@ export class DgemPolicyComposer extends LitElement {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.74rem;
       line-height: 1.5;
-      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      overflow-x: hidden;
+      max-width: 100%;
       max-height: 440px;
       overflow-y: auto;
       border: 1px solid #1e293b;

@@ -83,10 +83,31 @@ type Usage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
+// ProposedOption represents a ready-to-paste {"name", "description"} choice option for a .json.tmpl policy.
+type ProposedOption struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// TaxonomyExpansionSuggestion records an unclassified/high-entropy slot detection and DiffusionGemma's proposed new class.
+type TaxonomyExpansionSuggestion struct {
+	QuestionID        string             `json:"question_id"`
+	TriggerReason     string             `json:"trigger_reason"`
+	Stage1Choice      string             `json:"stage1_choice"`
+	Stage1Confidence  float64            `json:"stage1_confidence"`
+	Stage1Entropy     float64            `json:"stage1_entropy"`
+	TopCandidates     map[string]float64 `json:"top_candidates,omitempty"`
+	InjectedCatchAll  bool               `json:"injected_catch_all"`
+	SuggestedOption   ProposedOption     `json:"suggested_option"`
+	RawThought        string             `json:"raw_thought,omitempty"`
+	TemplatePatchHint string             `json:"template_patch_hint,omitempty"`
+}
+
 // StructuredDecisionResponse represents the parsed Jev-style content.
 type StructuredDecisionResponse struct {
-	Answers     map[string]QuestionAnswer `json:"answers"`
-	Diagnostics Diagnostics               `json:"diagnostics"`
+	Answers             map[string]QuestionAnswer     `json:"answers"`
+	Diagnostics         Diagnostics                   `json:"diagnostics"`
+	SuggestedExpansions []TaxonomyExpansionSuggestion `json:"suggested_expansions,omitempty"`
 }
 
 // QuestionAnswer holds the evaluated result for a single question.
@@ -134,10 +155,19 @@ func (qa QuestionAnswer) DisplayValue() string {
 	}
 }
 
-// Diagnostics contains server-side timing, sampling, and slot entropy data.
+// ThoughtDiagnostic captures DiffusionGemma's optional pre-canvas thought channel output ("think": N).
+type ThoughtDiagnostic struct {
+	Text   string  `json:"text"`
+	Tokens int     `json:"tokens"`
+	Ms     float64 `json:"ms"`
+	Budget int     `json:"budget,omitempty"`
+}
+
+// Diagnostics contains server-side timing, sampling, thought channel, and slot entropy data.
 type Diagnostics struct {
-	Hole      string                       `json:"hole"`
+	Hole      string                       `json:"hole,omitempty"`
 	Steps     int                          `json:"steps"`
+	Thought   *ThoughtDiagnostic           `json:"thought,omitempty"`
 	Timing    TimingStats                  `json:"timing"`
 	Samples   SampleStats                  `json:"samples"`
 	Questions map[string]QuestionDiagnostic `json:"questions"`

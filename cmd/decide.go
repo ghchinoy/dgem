@@ -22,10 +22,12 @@ var (
 	decideFormat          string
 	decideSchema          string
 	decideState           string
-	decideImages          []string
-	decideDualMirror      bool
-	decideNullPriorDebias bool
-	decidePriorAlpha      float64
+	decideImages            []string
+	decideDualMirror        bool
+	decideNullPriorDebias   bool
+	decidePriorAlpha        float64
+	decideSuggestExpansions bool
+	decideExpansionEntropy  float64
 )
 
 var decideCmd = &cobra.Command{
@@ -37,8 +39,10 @@ via discrete diffusion slot readout in a single forward pass without autoregress
 text generation overhead (popularized by TypeSafe AI's Jev evaluations and vLLM PR #57250).
 You can specify a template definition file (-t), key-value pairs (-v key=val),
 or raw schema/state payloads. Pass --dual-mirror (EXP-13C) to evaluate forward and
-reversed option orderings simultaneously on the same O(1) diffusion canvas, or
---null-prior-debias (EXP-13B) to divide out content-free positional 'A'-bias.`,
+reversed option orderings simultaneously on the same O(1) diffusion canvas,
+--null-prior-debias (EXP-13B) to divide out content-free positional 'A'-bias, or
+--suggest-expansions to dynamically detect unclassified/high-entropy items and propose
+new {"name", "description"} choice options.`,
 	RunE: runDecide,
 }
 
@@ -53,6 +57,8 @@ func init() {
 	decideCmd.Flags().BoolVar(&decideDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
 	decideCmd.Flags().BoolVar(&decideNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
 	decideCmd.Flags().Float64Var(&decidePriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
+	decideCmd.Flags().BoolVar(&decideSuggestExpansions, "suggest-expansions", false, "Dynamically inject an 'other_unclassified' catch-all (if absent) and propose new {"+"\"name\", \"description\""+"} options when unclassified or high-entropy")
+	decideCmd.Flags().Float64Var(&decideExpansionEntropy, "expansion-entropy", 0.35, "Shannon entropy threshold (in nats) on choice slots to trigger taxonomy expansion suggestions")
 
 	RootCmd.AddCommand(decideCmd)
 }
@@ -148,6 +154,14 @@ func runDecide(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify either --template (-t) or --schema")
 	}
 
+	var injectedSlots map[string]bool
+	var existingOptions map[string][]client.ProposedOption
+	if decideSuggestExpansions {
+		schemaContent, injectedSlots, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
+	} else {
+		_, _, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
+	}
+
 	var slotOpts map[string][]permutation.OptionItem
 	if decideDualMirror {
 		schemaContent, slotOpts, _ = permutation.InjectDualMirrorSchema(schemaContent)
@@ -162,6 +176,19 @@ func runDecide(cmd *cobra.Command, args []string) error {
 
 	if decideDualMirror || decideNullPriorDebias {
 		permutation.PostProcessDecisionResponse(resp, slotOpts, decideDualMirror, decideNullPriorDebias, decidePriorAlpha)
+	}
+
+	if decideSuggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
+		resp.SuggestedExpansions = SynthesizeTaxonomyExpansions(
+			ctx,
+			c,
+			decideTemplate,
+			stateContent,
+			resp,
+			injectedSlots,
+			existingOptions,
+			decideExpansionEntropy,
+		)
 	}
 
 	if decideFormat == "json" {
@@ -200,5 +227,24 @@ func printDecisionTable(resp *client.StructuredDecisionResponse) {
 
 		fmt.Printf("%-16s | %-10s | %-20s | %-10s | %-10s | %-10s\n",
 			k, qType, val, confStr, stderrStr, agreeStr)
+	}
+	if resp.Diagnostics.Thought != nil && strings.TrimSpace(resp.Diagnostics.Thought.Text) != "" {
+		fmt.Println(strings.Repeat("-", 88))
+		fmt.Printf("THOUGHT (%d tok, %.0fms): %s\n",
+			resp.Diagnostics.Thought.Tokens,
+			resp.Diagnostics.Thought.Ms,
+			strings.TrimSpace(resp.Diagnostics.Thought.Text))
+	}
+	if len(resp.SuggestedExpansions) > 0 {
+		fmt.Println(strings.Repeat("-", 88))
+		fmt.Println("SUGGESTED TAXONOMY EXPANSIONS:")
+		for _, sug := range resp.SuggestedExpansions {
+			optJSON, _ := json.Marshal(sug.SuggestedOption)
+			fmt.Printf("  • Slot %q (%s)\n", sug.QuestionID, sug.TriggerReason)
+			fmt.Printf("    Proposed Option : %s\n", string(optJSON))
+			if sug.TemplatePatchHint != "" {
+				fmt.Printf("    Actionable Hint : %s\n", sug.TemplatePatchHint)
+			}
+		}
 	}
 }

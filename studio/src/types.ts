@@ -75,10 +75,29 @@ export interface DecisionDiagnostics {
   questions?: Record<string, QuestionDiagnostic>;
 }
 
+export interface ProposedOption {
+  name: string;
+  description: string;
+}
+
+export interface TaxonomyExpansionSuggestion {
+  question_id: string;
+  trigger_reason: string;
+  stage1_choice: string;
+  stage1_confidence: number;
+  stage1_entropy: number;
+  top_candidates?: Record<string, number>;
+  injected_catch_all?: boolean;
+  suggested_option: ProposedOption;
+  raw_thought?: string;
+  template_patch_hint?: string;
+}
+
 export interface DecideAPIResponse {
   template: string;
   variables?: Record<string, string>;
   wall_time_ms: number;
+  suggested_expansions?: TaxonomyExpansionSuggestion[];
   stats?: {
     model?: string;
     endpoint?: string;
@@ -89,6 +108,7 @@ export interface DecideAPIResponse {
   decision: {
     answers: Record<string, QuestionAnswer>;
     diagnostics?: DecisionDiagnostics;
+    suggested_expansions?: TaxonomyExpansionSuggestion[];
   };
 }
 

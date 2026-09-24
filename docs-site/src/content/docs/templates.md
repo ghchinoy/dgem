@@ -97,6 +97,18 @@ Because DiffusionGemma evaluates all questions on a bidirectional `[MASK]` canva
     ```
   </TabItem>
 
+  <TabItem label="Taxonomy Discovery ('other')">
+    **File**: `templates/taxonomy_discovery.json.tmpl`
+
+    Groups unclassified (`"other"`) inputs, evaluates `in_taxonomy` (`boolean`), `novelty_score` (`score`), and a conditional `expansion_driver` (`ask_if: {"primary_category": ["other"]}`), and synthesizes a new `{"name", "description"}` option via DiffusionGemma's `"think": 48` channel (see [Unclassified Grouping & Taxonomy Discovery](/dgem/taxonomy-discovery/)).
+
+    ```bash
+    ./bin/dgem decide -t templates/taxonomy_discovery.json.tmpl \
+      -v 'input=We need a custom bilateral AI model indemnity addendum and ECCN export-control review before procurement signs.' \
+      --stats
+    ```
+  </TabItem>
+
   <TabItem label="PR Code Review & Risk">
     **File**: `templates/code_review.json.tmpl`
 

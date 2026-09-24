@@ -14,6 +14,7 @@ import type {
   DecideAPIResponse,
   PresetSample,
   QuestionAnswer,
+  TaxonomyExpansionSuggestion,
   MCPToolSpec,
 } from './types.js';
 
@@ -194,6 +195,10 @@ export class DgemStudio extends LitElement {
   @state() private catalogSearch = '';
   @state() private inspectedTemplate: TemplateEntry | null = null;
   @state() private cascadeTau = 0.35;
+  @state() private suggestExpansions = false;
+  @state() private expansionEntropy = 0.35;
+  @state() private customTemplateOverride = '';
+  @state() private appliedExpansions: string[] = [];
 
   // Tab 3: MCP & API interactive tester state
   @state() private selectedMcpTool = 'get_health_and_gpu_status';
@@ -510,14 +515,19 @@ export class DgemStudio extends LitElement {
 
     .workspace-grid {
       display: grid;
-      grid-template-columns: 5fr 7fr;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
       gap: 1.25rem;
       align-items: start;
     }
 
+    .workspace-grid > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
     @media (max-width: 1024px) {
       .workspace-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
@@ -527,6 +537,8 @@ export class DgemStudio extends LitElement {
       border-radius: var(--radius-base, 10px);
       box-shadow: var(--shadow-xs);
       overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .card-header {
@@ -860,20 +872,30 @@ export class DgemStudio extends LitElement {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.75rem;
       line-height: 1.5;
-      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      overflow-x: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
       border: 1px solid #1e293b;
     }
 
     .catalog-split {
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(380px, 1fr);
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
       gap: 1.15rem;
       align-items: start;
     }
 
+    .catalog-split > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
     @media (max-width: 1100px) {
       .catalog-split {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
@@ -914,6 +936,9 @@ export class DgemStudio extends LitElement {
       border: 1px solid var(--border-default, #e2e8f0);
       background: var(--neutral-secondary-soft, #f8fafc);
       padding: 0.95rem;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
     }
 
     .toast-banner {
@@ -1148,11 +1173,15 @@ export class DgemStudio extends LitElement {
     this.activePresetId = p.id;
     this.selectedTemplateName = p.template;
     this.variableValues = { ...p.variables };
+    this.customTemplateOverride = '';
+    this.appliedExpansions = [];
     this.errorMessage = '';
   }
 
   private selectTemplateByName(name: string) {
     this.selectedTemplateName = name;
+    this.customTemplateOverride = '';
+    this.appliedExpansions = [];
     const matchingPreset = PRESETS.find((p) => p.template === name);
     this.activePresetId = matchingPreset ? matchingPreset.id : '';
     const found = this.templates.find((t) => t.name === name);
@@ -1162,6 +1191,33 @@ export class DgemStudio extends LitElement {
         nextVars[v] = this.variableValues[v] || '';
       }
       this.variableValues = nextVars;
+    }
+  }
+
+  private applySuggestedExpansion(sug: TaxonomyExpansionSuggestion) {
+    const activeTmpl = this.templates.find((t) => t.name === this.selectedTemplateName);
+    const baseSrc =
+      this.customTemplateOverride ||
+      (activeTmpl as any)?.raw_template ||
+      activeTmpl?.raw_source ||
+      '';
+    if (!baseSrc || !sug.suggested_option?.name) {
+      return;
+    }
+    const optSnippet = JSON.stringify({
+      name: sug.suggested_option.name,
+      description: sug.suggested_option.description,
+    });
+    const idPattern = new RegExp(
+      `("id"\\s*:\\s*"${sug.question_id}"[\\s\\S]*?"options"\\s*:\\s*\\[)`,
+      'm'
+    );
+    if (idPattern.test(baseSrc)) {
+      this.customTemplateOverride = baseSrc.replace(idPattern, `$1\n          ${optSnippet},`);
+      if (!this.appliedExpansions.includes(sug.suggested_option.name)) {
+        this.appliedExpansions = [...this.appliedExpansions, sug.suggested_option.name];
+      }
+      this.runDecision();
     }
   }
 
@@ -1210,7 +1266,12 @@ export class DgemStudio extends LitElement {
       const payload: Record<string, unknown> = {
         variables: this.variableValues,
         backend: this.backendTarget,
+        suggest_expansions: this.suggestExpansions,
+        expansion_entropy: this.expansionEntropy,
       };
+      if (this.customTemplateOverride) {
+        payload.custom_template = this.customTemplateOverride;
+      }
       if (this.vertexUrl) {
         payload.vertex_url = this.vertexUrl;
       }
@@ -1222,6 +1283,9 @@ export class DgemStudio extends LitElement {
         'X-DGem-Surface': 'web_studio',
         'X-DGem-Backend': this.backendTarget,
       };
+      if (this.suggestExpansions) {
+        reqHeaders['X-DGem-Suggest-Expansions'] = 'true';
+      }
       if (this.vertexUrl) {
         reqHeaders['X-DGem-Vertex-Url'] = this.vertexUrl;
       }
@@ -1858,6 +1922,50 @@ export class DgemStudio extends LitElement {
             @evaluate-decision=${() => this.runDecision()}
           >
             <div slot="multimodal">
+              <div
+                class="field"
+                style="padding:0.65rem 0.8rem;border-radius:8px;border:1px solid var(--border-default);background:var(--neutral-secondary-soft);margin-bottom:0.75rem"
+              >
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;flex-wrap:wrap">
+                  <label
+                    style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-heading)"
+                  >
+                    <input
+                      type="checkbox"
+                      .checked=${this.suggestExpansions}
+                      @change=${(e: Event) => {
+                        this.suggestExpansions = (e.target as HTMLInputElement).checked;
+                      }}
+                    />
+                    <span>Suggest Taxonomy Expansions (--suggest-expansions)</span>
+                  </label>
+                  <span class="field-var-badge tabular">
+                    Auto-injects 'other_unclassified' · H ≥ ${this.expansionEntropy.toFixed(2)} nats
+                  </span>
+                </div>
+                ${this.appliedExpansions.length > 0
+                  ? html`
+                      <div
+                        style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-top:0.5rem;padding-top:0.45rem;border-top:1px dashed var(--border-default);font-size:0.73rem"
+                      >
+                        <span style="color:var(--brand-default);font-weight:600">
+                          Active Policy Expanded: +${this.appliedExpansions.join(', +')}
+                        </span>
+                        <button
+                          class="btn btn--sm"
+                          @click=${() => {
+                            this.customTemplateOverride = '';
+                            this.appliedExpansions = [];
+                            this.runDecision();
+                          }}
+                        >
+                          Reset Policy
+                        </button>
+                      </div>
+                    `
+                  : null}
+              </div>
+
               <div class="field">
                 <label class="field-label">
                   <span>Multimodal Vision Attachment (SigLIP 896×896)</span>
@@ -2056,6 +2164,71 @@ export class DgemStudio extends LitElement {
                   </div>
                 `}
 
+            ${(() => {
+              const suggestions: TaxonomyExpansionSuggestion[] =
+                rawRes?.suggested_expansions || this.result?.decision?.suggested_expansions || [];
+              if (!Array.isArray(suggestions) || suggestions.length === 0) return null;
+              return html`
+                <div
+                  style="margin-top:1.1rem;padding:0.95rem 1rem;border-radius:8px;border:1px solid #ec4899;background:rgba(236,72,153,0.07)"
+                >
+                  <div
+                    style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;gap:0.5rem"
+                  >
+                    <span
+                      style="font-size:0.8rem;font-weight:700;color:var(--text-heading);display:flex;align-items:center;gap:0.4rem"
+                    >
+                      <span class="material-symbols-outlined" style="color:#ec4899">auto_awesome</span>
+                      Suggested Taxonomy Expansions (Zero-Retraining Policy Discovery)
+                    </span>
+                    <span class="field-var-badge tabular">
+                      ${suggestions.length} proposed option${suggestions.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:0.65rem">
+                    ${suggestions.map((sug) => {
+                      const optJson = JSON.stringify(sug.suggested_option);
+                      return html`
+                        <div
+                          style="padding:0.7rem 0.85rem;border-radius:6px;border:1px solid var(--border-default);background:var(--surface-card)"
+                        >
+                          <div
+                            style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.35rem"
+                          >
+                            <span style="font-size:0.76rem;font-weight:700;color:var(--text-heading)">
+                              Slot <code>${sug.question_id}</code> ·
+                              <span style="color:#ec4899">${sug.trigger_reason}</span>
+                            </span>
+                            <div style="display:flex;gap:0.45rem;align-items:center">
+                              <button
+                                class="btn btn--sm"
+                                @click=${() => this.copyText(`exp-${sug.question_id}`, optJson)}
+                              >
+                                ${this.copiedSnippet === `exp-${sug.question_id}`
+                                  ? '✓ Copied JSON'
+                                  : 'Copy Option JSON'}
+                              </button>
+                              <button
+                                class="btn btn--primary btn--sm"
+                                @click=${() => this.applySuggestedExpansion(sug)}
+                              >
+                                ➕ Add Option to Policy &amp; Re-Run
+                              </button>
+                            </div>
+                          </div>
+                          <div
+                            style="font-family:var(--font-mono);font-size:0.74rem;padding:0.45rem 0.6rem;border-radius:4px;background:var(--neutral-secondary-soft);overflow-x:auto"
+                          >
+                            ${optJson}
+                          </div>
+                        </div>
+                      `;
+                    })}
+                  </div>
+                </div>
+              `;
+            })()}
+
             ${rawRes?.trace_spans && Array.isArray(rawRes.trace_spans) && rawRes.trace_spans.length > 0
               ? (() => {
                   const spans = rawRes.trace_spans as any[];
@@ -2139,6 +2312,12 @@ export class DgemStudio extends LitElement {
                         </span>
                         <span style="display:inline-flex;align-items:center;gap:0.3rem">
                           <span
+                            style="width:10px;height:6px;border-radius:2px;background:#ec4899;display:inline-block"
+                          ></span>
+                          Taxonomy Expansion
+                        </span>
+                        <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                          <span
                             style="width:10px;height:6px;border-radius:2px;background:#f59e0b;display:inline-block"
                           ></span>
                           Cold-Start Backoff
@@ -2159,7 +2338,9 @@ export class DgemStudio extends LitElement {
                               ? sp.depth
                               : sp.name === 'dgem.gateway.decide'
                               ? 0
-                              : sp.name === 'dgem.template.render' || sp.name === 'dgem.gpu.orchestrate'
+                              : sp.name === 'dgem.template.render' ||
+                                sp.name === 'dgem.gpu.orchestrate' ||
+                                sp.name === 'dgem.taxonomy.expand'
                               ? 1
                               : sp.name === 'dgem.gpu.forward_pass' ||
                                 sp.name === 'dgem.gpu.cold_start_backoff'
@@ -2180,6 +2361,8 @@ export class DgemStudio extends LitElement {
                             barColor = '#ef4444';
                           } else if (sp.name === 'dgem.template.render') {
                             barColor = '#14b8a6';
+                          } else if (sp.name === 'dgem.taxonomy.expand') {
+                            barColor = '#ec4899';
                           } else if (sp.name === 'dgem.gpu.cold_start_backoff') {
                             barColor = '#f59e0b';
                           } else if (sp.name === 'dgem.gpu.network_and_auth') {

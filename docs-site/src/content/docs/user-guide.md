@@ -102,6 +102,10 @@ dgem decide [flags]
 * `-d`, `--data string`: Path to a JSON file containing variables.
 * `-f`, `--format string`: Output format: `table` (default) or `json`.
 * `-I`, `--image stringArray`: Attach local image file path or remote image URL (can be specified multiple times for video frame sequences).
+* `--suggest-expansions`: Dynamically inject an `other_unclassified` catch-all option into `choice` slots (if absent) and propose new `{"name", "description"}` options when an item resolves to `other*` or exceeds `--expansion-entropy` (see [Unclassified Grouping & Taxonomy Discovery](/dgem/taxonomy-discovery/)).
+* `--expansion-entropy float`: Shannon entropy threshold in nats on `choice` slots to trigger taxonomy expansion proposals (default: `0.35`).
+* `--dual-mirror`: Evaluate forward and reversed option orderings simultaneously on the same $O(1)$ diffusion canvas (`EXP-13C`).
+* `--null-prior-debias`: Divide out content-free positional `'A'`-bias in logit space (`EXP-13B`).
 * `--schema string`: Path to a raw JSON schema file (skips template engine).
 * `--state string`: Raw JSON state string or file path.
 

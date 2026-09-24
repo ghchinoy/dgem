@@ -95,37 +95,40 @@ type TemplateCatalogEntry struct {
 
 // GatewayDecideRequest is the JSON body accepted by POST /api/decide.
 type GatewayDecideRequest struct {
-	Template         string                 `json:"template,omitempty"`
-	CustomTemplate   string                 `json:"custom_template,omitempty"`
-	Variables        map[string]interface{} `json:"variables,omitempty"`
-	Image            string                 `json:"image,omitempty"`
-	ImageURL         string                 `json:"image_url,omitempty"`
-	Images           []string               `json:"images,omitempty"`
-	Backend          string                 `json:"backend,omitempty"`
-	VertexURL        string                 `json:"vertex_url,omitempty"`
-	CascadeMode      string                 `json:"cascade_mode,omitempty"`      // "off" (default), "entropy", or "on_miss"
-	CascadeThreshold float64                `json:"cascade_threshold,omitempty"` // default 0.35 nats
-	CascadeModel     string                 `json:"cascade_model,omitempty"`     // default "gemini-3.8-flash"
-	ExpectedAnswers  map[string]string      `json:"expected_answers,omitempty"`  // optional slot_id -> expected value for "on_miss" cascade
+	Template          string                 `json:"template,omitempty"`
+	CustomTemplate    string                 `json:"custom_template,omitempty"`
+	Variables         map[string]interface{} `json:"variables,omitempty"`
+	Image             string                 `json:"image,omitempty"`
+	ImageURL          string                 `json:"image_url,omitempty"`
+	Images            []string               `json:"images,omitempty"`
+	Backend           string                 `json:"backend,omitempty"`
+	VertexURL         string                 `json:"vertex_url,omitempty"`
+	CascadeMode       string                 `json:"cascade_mode,omitempty"`       // "off" (default), "entropy", or "on_miss"
+	CascadeThreshold  float64                `json:"cascade_threshold,omitempty"`  // default 0.35 nats
+	CascadeModel      string                 `json:"cascade_model,omitempty"`      // default "gemini-3.8-flash"
+	ExpectedAnswers   map[string]string      `json:"expected_answers,omitempty"`   // optional slot_id -> expected value for "on_miss" cascade
+	SuggestExpansions bool                   `json:"suggest_expansions,omitempty"` // dynamically inject 'other_unclassified' and propose new {"name", "description"} options
+	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
 type GatewayDecideResponse struct {
-	Template        string                             `json:"template"`
-	Answers         map[string]client.QuestionAnswer   `json:"answers"`
-	Diagnostics     client.Diagnostics                 `json:"diagnostics"`
-	Decision        *client.StructuredDecisionResponse `json:"decision,omitempty"`
-	Cascade         *CascadeExecutionSummary           `json:"cascade,omitempty"`
-	MaxEntropy      float64                            `json:"max_entropy"`
-	WallTimeMs      int64                              `json:"wall_time_ms"`
-	GpuForwardMs    int64                              `json:"gpu_forward_ms"`
-	ColdStartWaitMs int64                              `json:"cold_start_wait_ms"`
-	WarmupAttempts  int                                `json:"warmup_attempts"`
-	Model           string                             `json:"model"`
-	BackendTarget   string                             `json:"backend_target"`
-	UpstreamURL     string                             `json:"upstream_url"`
-	TraceID         string                             `json:"trace_id,omitempty"`
-	TraceSpans      []TraceSpanRecord                  `json:"trace_spans,omitempty"`
+	Template            string                               `json:"template"`
+	Answers             map[string]client.QuestionAnswer     `json:"answers"`
+	Diagnostics         client.Diagnostics                   `json:"diagnostics"`
+	Decision            *client.StructuredDecisionResponse   `json:"decision,omitempty"`
+	Cascade             *CascadeExecutionSummary             `json:"cascade,omitempty"`
+	SuggestedExpansions []client.TaxonomyExpansionSuggestion `json:"suggested_expansions,omitempty"`
+	MaxEntropy          float64                              `json:"max_entropy"`
+	WallTimeMs          int64                                `json:"wall_time_ms"`
+	GpuForwardMs        int64                                `json:"gpu_forward_ms"`
+	ColdStartWaitMs     int64                                `json:"cold_start_wait_ms"`
+	WarmupAttempts      int                                  `json:"warmup_attempts"`
+	Model               string                               `json:"model"`
+	BackendTarget       string                               `json:"backend_target"`
+	UpstreamURL         string                               `json:"upstream_url"`
+	TraceID             string                               `json:"trace_id,omitempty"`
+	TraceSpans          []TraceSpanRecord                    `json:"trace_spans,omitempty"`
 }
 
 var varRegex = regexp.MustCompile(`\{\{\s*(?:default\s+"[^"]*"\s+)?\.([a-zA-Z0-9_]+)`)
@@ -1173,6 +1176,34 @@ func runServe(cmd *cobra.Command, args []string) error {
 			return
 		}
 
+		suggestExpansions := payload.SuggestExpansions
+		if !suggestExpansions {
+			if hdrSug := strings.ToLower(strings.TrimSpace(r.Header.Get("X-DGem-Suggest-Expansions"))); hdrSug == "true" || hdrSug == "1" {
+				suggestExpansions = true
+			} else if qSug := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("suggest_expansions"))); qSug == "true" || qSug == "1" {
+				suggestExpansions = true
+			}
+		}
+		expansionEntropy := payload.ExpansionEntropy
+		if expansionEntropy <= 0 {
+			if hdrEnt := strings.TrimSpace(r.Header.Get("X-DGem-Expansion-Entropy")); hdrEnt != "" {
+				if v, err := strconv.ParseFloat(hdrEnt, 64); err == nil && v > 0 {
+					expansionEntropy = v
+				}
+			}
+		}
+		if expansionEntropy <= 0 {
+			expansionEntropy = 0.35
+		}
+
+		var injectedSlots map[string]bool
+		var existingOptions map[string][]client.ProposedOption
+		if suggestExpansions {
+			schemaContent, injectedSlots, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
+		} else {
+			_, _, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
+		}
+
 		var images []string
 		if payload.Image != "" {
 			images = append(images, payload.Image)
@@ -1205,6 +1236,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 			attribute.String("dgem.template", tmplLabel),
 			attribute.String("dgem.user", userEmail),
 			attribute.Bool("dgem.multimodal", len(images) > 0),
+			attribute.Bool("dgem.taxonomy.suggest_enabled", suggestExpansions),
+			attribute.Int("dgem.taxonomy.injected_catch_all_count", len(injectedSlots)),
 		)
 
 		orchWallStart := time.Now()
@@ -1273,6 +1306,46 @@ func runServe(cmd *cobra.Command, args []string) error {
 			cascadeSpan.End()
 		}
 
+		// Optional Unclassified Grouping & Taxonomy Expansion Synthesis (dgem.taxonomy.expand OTel child span)
+		if suggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
+			expandCtx, expandSpan := gatewayTracer().Start(ctx, "dgem.taxonomy.expand")
+			resp.SuggestedExpansions = SynthesizeTaxonomyExpansions(
+				expandCtx,
+				nil,
+				tmplLabel,
+				stateContent,
+				resp,
+				injectedSlots,
+				existingOptions,
+				expansionEntropy,
+				targetUpstreamURL,
+			)
+			var proposedNames []string
+			for _, s := range resp.SuggestedExpansions {
+				if s.SuggestedOption.Name != "" {
+					proposedNames = append(proposedNames, s.SuggestedOption.Name)
+				}
+			}
+			expandTriggered := len(resp.SuggestedExpansions) > 0
+			expandSpan.SetAttributes(
+				attribute.Bool("dgem.taxonomy.triggered", expandTriggered),
+				attribute.Int("dgem.taxonomy.suggestions_count", len(resp.SuggestedExpansions)),
+				attribute.Int("dgem.taxonomy.injected_catch_all_count", len(injectedSlots)),
+				attribute.Float64("dgem.taxonomy.entropy_threshold", expansionEntropy),
+				attribute.String("dgem.taxonomy.proposed_names", strings.Join(proposedNames, ",")),
+			)
+			expandSpan.SetStatus(codes.Ok, "ok")
+			expandSpan.End()
+
+			rootSpan.SetAttributes(
+				attribute.Bool("dgem.taxonomy.triggered", expandTriggered),
+				attribute.Int("dgem.taxonomy.suggestions_count", len(resp.SuggestedExpansions)),
+			)
+			if expandTriggered {
+				w.Header().Set("X-DGem-Suggested-Expansions", strconv.Itoa(len(resp.SuggestedExpansions)))
+			}
+		}
+
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
 			if q.Entropy > maxEntropy {
@@ -1318,21 +1391,22 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		w.Header().Set("X-DGem-Backend-Used", backendTarget)
 		out := GatewayDecideResponse{
-			Template:        tmplLabel,
-			Answers:         resp.Answers,
-			Diagnostics:     resp.Diagnostics,
-			Decision:        resp,
-			Cascade:         cascadeSummary,
-			MaxEntropy:      maxEntropy,
-			WallTimeMs:      wallTimeMs,
-			GpuForwardMs:    gpuForwardMs,
-			ColdStartWaitMs: coldWaitMs,
-			WarmupAttempts:  attempts,
-			Model:           stats.Model,
-			BackendTarget:   backendTarget,
-			UpstreamURL:     targetUpstreamURL,
-			TraceID:         traceID,
-			TraceSpans:      getTraceSpansByTraceID(traceID),
+			Template:            tmplLabel,
+			Answers:             resp.Answers,
+			Diagnostics:         resp.Diagnostics,
+			Decision:            resp,
+			Cascade:             cascadeSummary,
+			SuggestedExpansions: resp.SuggestedExpansions,
+			MaxEntropy:          maxEntropy,
+			WallTimeMs:          wallTimeMs,
+			GpuForwardMs:        gpuForwardMs,
+			ColdStartWaitMs:     coldWaitMs,
+			WarmupAttempts:      attempts,
+			Model:               stats.Model,
+			BackendTarget:       backendTarget,
+			UpstreamURL:         targetUpstreamURL,
+			TraceID:             traceID,
+			TraceSpans:          getTraceSpansByTraceID(traceID),
 		}
 		_ = json.NewEncoder(w).Encode(out)
 	}

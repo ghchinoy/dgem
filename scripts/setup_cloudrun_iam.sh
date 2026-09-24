@@ -142,13 +142,14 @@ gcloud iap web add-iam-policy-binding \
   --role="roles/iap.httpsResourceAccessor" \
   --quiet >/dev/null
 
-# Allow gcloud CLI (32555940559.apps.googleusercontent.com) and custom IAP clients to authenticate programmatically through IAP
+# Allow gcloud CLI (32555940559...) and Google Cloud SDK ADC (764086051850...) to authenticate programmatically through IAP
 IAP_SETTINGS_TMP="$(mktemp)"
 cat <<EOF >"${IAP_SETTINGS_TMP}"
 accessSettings:
   oauthSettings:
     programmaticClients:
       - 32555940559.apps.googleusercontent.com
+      - 764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com
 EOF
 if [ -n "${IAP_CLIENT_ID:-}" ]; then
   echo "      - ${IAP_CLIENT_ID}" >>"${IAP_SETTINGS_TMP}"
