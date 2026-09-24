@@ -691,11 +691,15 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 type StatusToolInput struct{}
 
 type DecidePolicyToolInput struct {
-	Template  string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge', 'calibration/prompt_injection_guard')."`
-	Variables map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
-	Image     string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
-	Backend   string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
-	VertexURL string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4217256562927861760)."`
+	Template         string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge', 'calibration/prompt_injection_guard')."`
+	Variables        map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
+	Image            string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
+	Backend          string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
+	VertexURL        string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4217256562927861760)."`
+	CascadeMode      string                 `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
+	CascadeThreshold float64                `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
+	CascadeModel     string                 `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.5-flash', 'gemini-3.1-flash-lite')."`
+	ExpectedAnswers  map[string]string      `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
 }
 
 type LocateBBoxToolInput struct {
@@ -733,10 +737,14 @@ type CustomQuestionSpec struct {
 }
 
 type DecideCustomToolInput struct {
-	Context   string               `json:"context" jsonschema:"Input text, document, code diff, or event log to evaluate."`
-	Questions []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
-	Backend   string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', or 'cloudrun'."`
-	VertexURL string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
+	Context          string               `json:"context" jsonschema:"Input text, document, code diff, or event log to evaluate."`
+	Questions        []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
+	Backend          string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', or 'cloudrun'."`
+	VertexURL        string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
+	CascadeMode      string               `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
+	CascadeThreshold float64              `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
+	CascadeModel     string               `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.5-flash', 'gemini-3.1-flash-lite')."`
+	ExpectedAnswers  map[string]string    `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
 }
 
 type ListTemplatesToolInput struct {
@@ -814,7 +822,7 @@ func buildMCPServer() *mcp.Server {
 	// Tool 3: decide_policy
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "decide_policy",
-		Description: "Executes a zero-shot multi-slot decision policy (.json.tmpl) on DiffusionGemma in O(1) forward passes, returning joint slot answers, probabilities, and calibrated epistemic Shannon entropy H (in nats).",
+		Description: "Executes a zero-shot multi-slot decision policy (.json.tmpl) on DiffusionGemma in O(1) forward passes, returning joint slot answers, probabilities, calibrated epistemic Shannon entropy H (in nats), and optional Stage-2 Gemini 3.x cascade escalation (gemini-3.8-flash default).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input DecidePolicyToolInput) (*mcp.CallToolResult, GatewayDecideResponse, error) {
 		tmplID := strings.TrimSpace(input.Template)
 		if tmplID == "" {
@@ -848,6 +856,20 @@ func buildMCPServer() *mcp.Server {
 			MarkGPUWarm()
 		}
 
+		var cascadeSummary *CascadeExecutionSummary
+		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
+			cascadeSummary = ExecuteStage2GeminiCascade(
+				ctx,
+				input.CascadeMode,
+				input.CascadeThreshold,
+				input.CascadeModel,
+				input.ExpectedAnswers,
+				schemaContent,
+				stateContent,
+				resp,
+			)
+		}
+
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
 			if q.Entropy > maxEntropy {
@@ -863,6 +885,7 @@ func buildMCPServer() *mcp.Server {
 			Template:       cleanID,
 			Answers:        resp.Answers,
 			Diagnostics:    resp.Diagnostics,
+			Cascade:        cascadeSummary,
 			MaxEntropy:     maxEntropy,
 			WallTimeMs:     time.Since(start).Milliseconds(),
 			WarmupAttempts: attempts,
@@ -947,7 +970,7 @@ func buildMCPServer() *mcp.Server {
 	// Tool 5: decide_custom_questions
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "decide_custom_questions",
-		Description: "Evaluates an ad-hoc list of boolean, choice (<=26 options), or score (1..5) questions simultaneously in 1 forward pass against a context document, returning joint answers and calibrated Shannon entropy H.",
+		Description: "Evaluates an ad-hoc list of boolean, choice (<=26 options), or score (1..5) questions simultaneously in 1 forward pass against a context document, returning joint answers, calibrated Shannon entropy H, and optional Stage-2 Gemini 3.x cascade escalation (gemini-3.8-flash default).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input DecideCustomToolInput) (*mcp.CallToolResult, GatewayDecideResponse, error) {
 		if len(input.Questions) == 0 {
 			return nil, GatewayDecideResponse{}, fmt.Errorf("'questions' list cannot be empty")
@@ -981,6 +1004,20 @@ func buildMCPServer() *mcp.Server {
 			MarkGPUWarm()
 		}
 
+		var cascadeSummary *CascadeExecutionSummary
+		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
+			cascadeSummary = ExecuteStage2GeminiCascade(
+				ctx,
+				input.CascadeMode,
+				input.CascadeThreshold,
+				input.CascadeModel,
+				input.ExpectedAnswers,
+				schemaStr,
+				stateStr,
+				resp,
+			)
+		}
+
 		maxEntropy := 0.0
 		for _, a := range resp.Answers {
 			if a.Entropy > maxEntropy {
@@ -991,6 +1028,7 @@ func buildMCPServer() *mcp.Server {
 			Template:       "custom_questions",
 			Answers:        resp.Answers,
 			Diagnostics:    resp.Diagnostics,
+			Cascade:        cascadeSummary,
 			MaxEntropy:     maxEntropy,
 			WallTimeMs:     time.Since(start).Milliseconds(),
 			WarmupAttempts: attempts,

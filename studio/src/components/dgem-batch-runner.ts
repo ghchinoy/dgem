@@ -45,6 +45,11 @@ interface BatchTableRow {
   serverMs?: number;
   roundTripMs?: number;
   errorMsg?: string;
+  escalated?: boolean;
+  stage1Predicted?: string;
+  cascadeModel?: string;
+  cascadeExplanation?: string;
+  cascadeLatencyMs?: number;
 }
 
 interface CustomBuilderSlot {
@@ -127,12 +132,15 @@ const DEFAULT_CUSTOM_DATASET_JSONL = [
 @customElement('dgem-batch-runner')
 export class DgemBatchRunner extends LitElement {
   @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'light';
-  @property({ type: String }) backendTarget: 'cloudrun' | 'vertex' = 'cloudrun';
+  @property({ type: String }) backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' = 'vertex_first';
   @property({ type: String }) vertexUrl = '';
 
   @state() private suites: BatchPresetSuite[] = [];
   @state() private selectedSuiteId = 'enterprise_multislot_25';
   @state() private concurrency = 4;
+  @state() private cascadeMode: 'off' | 'on_miss' | 'entropy' = 'off';
+  @state() private cascadeModel: 'gemini-3.8-flash' | 'gemini-3.5-flash' | 'gemini-3.1-flash-lite' = 'gemini-3.8-flash';
+  @state() private cascadeThreshold = 0.35;
   @state() private rowFilter: 'all' | 'miss' | 'high_entropy' = 'all';
   @state() private rows: BatchTableRow[] = [];
   @state() private running = false;
@@ -1561,9 +1569,20 @@ export class DgemBatchRunner extends LitElement {
 
         const t0 = performance.now();
         try {
+          const expectedMap: Record<string, string> = {};
+          for (const s of item.expected_slots || []) {
+            if (s.question && s.expected && s.expected !== '—') {
+              expectedMap[s.question] = s.expected;
+            }
+          }
+
           const body: Record<string, any> = {
             variables: item.variables || {},
             backend: this.backendTarget,
+            cascade_mode: this.cascadeMode,
+            cascade_model: this.cascadeModel,
+            cascade_threshold: this.cascadeThreshold,
+            expected_answers: expectedMap,
           };
           if (this.vertexUrl) {
             body.vertex_url = this.vertexUrl;
@@ -1579,6 +1598,8 @@ export class DgemBatchRunner extends LitElement {
             'X-DGem-Surface': 'web_studio_batch',
             'X-DGem-Template': item.template || `batch/${item.domain || suite.id}`,
             'X-DGem-Backend': this.backendTarget,
+            'X-DGem-Cascade-Mode': this.cascadeMode,
+            'X-DGem-Cascade-Model': this.cascadeModel,
           };
           if (this.vertexUrl) {
             headers['X-DGem-Vertex-Url'] = this.vertexUrl;
@@ -1601,6 +1622,7 @@ export class DgemBatchRunner extends LitElement {
           } else {
             const payload = await res.json();
             const answers = payload.answers || {};
+            const cascadeInfo = payload.cascade || null;
             const timing = payload.diagnostics?.timing || {};
             const serverMs =
               timing.total_ms ||
@@ -1613,6 +1635,7 @@ export class DgemBatchRunner extends LitElement {
             this.rows = this.rows.map((r) => {
               if (r.item.id !== item.id) return r;
               const slotAns = answers[r.slot.question];
+              const slotCascade = cascadeInfo?.slots?.[r.slot.question];
               const rawVal =
                 slotAns?.value !== undefined
                   ? slotAns.value
@@ -1626,11 +1649,13 @@ export class DgemBatchRunner extends LitElement {
               const conf = typeof slotAns?.confidence === 'number' ? slotAns.confidence : 0;
               const qDiag = qDiags[r.slot.question];
               let ent =
-                typeof slotAns?.entropy === 'number' && slotAns.entropy > 0
-                  ? slotAns.entropy
-                  : typeof qDiag?.entropy === 'number' && qDiag.entropy > 0
-                    ? qDiag.entropy
-                    : 0;
+                typeof slotCascade?.stage1_entropy === 'number' && slotCascade.stage1_entropy > 0
+                  ? slotCascade.stage1_entropy
+                  : typeof slotAns?.entropy === 'number' && slotAns.entropy > 0
+                    ? slotAns.entropy
+                    : typeof qDiag?.entropy === 'number' && qDiag.entropy > 0
+                      ? qDiag.entropy
+                      : 0;
               if (ent === 0 && slotAns?.probabilities && typeof slotAns.probabilities === 'object') {
                 for (const p of Object.values(slotAns.probabilities)) {
                   const prob = Number(p);
@@ -1648,6 +1673,11 @@ export class DgemBatchRunner extends LitElement {
                 entropy: ent,
                 serverMs: Math.round(serverMs),
                 roundTripMs: rttMs,
+                escalated: Boolean(slotCascade?.escalated),
+                stage1Predicted: slotCascade?.stage1_value || predStr || '—',
+                cascadeModel: cascadeInfo?.model || this.cascadeModel,
+                cascadeExplanation: slotCascade?.explanation || '',
+                cascadeLatencyMs: cascadeInfo?.latency_ms || 0,
               };
             });
           }
@@ -1703,8 +1733,16 @@ export class DgemBatchRunner extends LitElement {
   render() {
     const completedRows = this.rows.filter((r) => r.state === 'pass' || r.state === 'miss');
     const passRows = this.rows.filter((r) => r.state === 'pass');
+    const escalatedRows = completedRows.filter((r) => r.escalated);
+    const stage1PassCount = completedRows.filter((r) =>
+      this.isMatch(r.stage1Predicted || r.predicted, r.slot.expected)
+    ).length;
     const accPct =
       completedRows.length > 0 ? ((passRows.length / completedRows.length) * 100).toFixed(1) : '—';
+    const stage1AccPct =
+      completedRows.length > 0
+        ? ((stage1PassCount / completedRows.length) * 100).toFixed(1)
+        : '—';
 
     // Collect per-item latencies (1 per itemIndex)
     const seenItems = new Set<number>();
@@ -1735,7 +1773,7 @@ export class DgemBatchRunner extends LitElement {
             <div class="title-group">
               <h2>Batch Decision Evaluation & Live Streaming Telemetry</h2>
               <p>
-                Select a ground-truth challenge suite below and run concurrent single-pass DiffusionGemma evaluations with live accuracy, confidence, and latency metrics.
+                Select a ground-truth challenge suite below and run concurrent single-pass DiffusionGemma evaluations with optional Stage-2 Vertex AI Gemini 3.x escalation (<code>${this.cascadeModel}</code>).
               </p>
             </div>
             <div>
@@ -1791,6 +1829,61 @@ export class DgemBatchRunner extends LitElement {
                 )}
               </div>
             </div>
+
+            <div class="control-group">
+              <span class="control-label">Stage-2 Gemini Cascade (EXP-05)</span>
+              <div class="seg-group">
+                <button
+                  class="seg-btn ${this.cascadeMode === 'off' ? 'active' : ''}"
+                  title="Stage-1 DiffusionGemma only (no Gemini escalation)"
+                  @click=${() => {
+                    if (!this.running) this.cascadeMode = 'off';
+                  }}
+                >
+                  Off (dgemma Only)
+                </button>
+                <button
+                  class="seg-btn ${this.cascadeMode === 'on_miss' ? 'active' : ''}"
+                  title="Forward missed cases to Vertex AI ${this.cascadeModel} with dgemma's Tier-1 prior distribution"
+                  @click=${() => {
+                    if (!this.running) this.cascadeMode = 'on_miss';
+                  }}
+                >
+                  ⚡ Forward on Miss → ${this.cascadeModel}
+                </button>
+                <button
+                  class="seg-btn ${this.cascadeMode === 'entropy' ? 'active' : ''}"
+                  title="Forward high-entropy slots (H >= 0.35 nats) to Vertex AI ${this.cascadeModel} (production cascade)"
+                  @click=${() => {
+                    if (!this.running) this.cascadeMode = 'entropy';
+                  }}
+                >
+                  ⚡ Entropy H ≥ 0.35 → ${this.cascadeModel}
+                </button>
+              </div>
+            </div>
+
+            ${this.cascadeMode !== 'off'
+              ? html`
+                  <div class="control-group">
+                    <span class="control-label">Stage-2 Gemini 3.x Model</span>
+                    <div class="seg-group">
+                      ${(['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'] as const).map(
+                        (m) => html`
+                          <button
+                            class="seg-btn ${this.cascadeModel === m ? 'active' : ''}"
+                            @click=${() => {
+                              if (!this.running) this.cascadeModel = m;
+                            }}
+                          >
+                            ${m}
+                          </button>
+                        `
+                      )}
+                    </div>
+                  </div>
+                `
+              : ''}
 
             <div class="control-group">
               <span class="control-label">Filter Rows</span>
@@ -1852,10 +1945,14 @@ export class DgemBatchRunner extends LitElement {
           </div>
 
           <div class="metric-tile">
-            <span class="metric-label">Accuracy</span>
+            <span class="metric-label">${this.cascadeMode !== 'off' ? 'Cascade Accuracy' : 'Accuracy'}</span>
             <div class="metric-val">
               <span>${accPct}${accPct !== '—' ? '%' : ''}</span>
-              <span class="metric-sub">(${passRows.length}/${completedRows.length || this.rows.length} questions)</span>
+              <span class="metric-sub">
+                ${this.cascadeMode !== 'off' && escalatedRows.length > 0
+                  ? `Stage 1: ${stage1AccPct}% · ${escalatedRows.length} escalated to ${this.cascadeModel}`
+                  : `(${passRows.length}/${completedRows.length || this.rows.length} questions)`}
+              </span>
             </div>
           </div>
 
@@ -1951,9 +2048,21 @@ export class DgemBatchRunner extends LitElement {
                     <td>
                       ${r.predicted !== undefined
                         ? html`
-                            <span class="val-pill ${r.state === 'pass' ? 'match' : 'mismatch'}">
-                              ${r.predicted}
-                            </span>
+                            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem;">
+                              <span class="val-pill ${r.state === 'pass' ? 'match' : 'mismatch'}">
+                                ${r.predicted}
+                              </span>
+                              ${r.escalated
+                                ? html`
+                                    <span
+                                      title="${r.cascadeExplanation || `Escalated to Stage-2 ${r.cascadeModel}`}"
+                                      style="font-size:0.65rem; font-weight:700; padding:0.12rem 0.42rem; border-radius:999px; background:var(--brand-soft); color:var(--brand); border:1px solid var(--brand-border);"
+                                    >
+                                      ⚡ ${r.cascadeModel} (Stage 1: ${r.stage1Predicted})
+                                    </span>
+                                  `
+                                : ''}
+                            </div>
                           `
                         : html`<span style="color: var(--text-muted)">—</span>`}
                     </td>
@@ -1980,7 +2089,9 @@ export class DgemBatchRunner extends LitElement {
                       ${r.serverMs !== undefined
                         ? html`
                             <div class="ms-primary">${r.serverMs} ms</div>
-                            <div class="ms-sub">RTT ${r.roundTripMs} ms</div>
+                            <div class="ms-sub">
+                              RTT ${r.roundTripMs} ms${r.escalated && r.cascadeLatencyMs ? ` (+${r.cascadeLatencyMs}ms S2)` : ''}
+                            </div>
                           `
                         : html`<span style="color: var(--text-muted)">—</span>`}
                     </td>

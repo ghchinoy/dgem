@@ -223,7 +223,9 @@ export default defineConfig({
           items: [
             { label: 'Overview', link: '/' },
             { label: 'Decision Studio, MCP & HTTP API', slug: 'studio-mcp-api' },
+            { label: 'Experiment Authoring & Backend Guide', slug: 'experiment-authoring-guide' },
             { label: 'Custom Dataset & Experiment Cookbook', slug: 'custom-dataset-guide' },
+            { label: 'CLI, HTTP Gateway & MCP Reference', slug: 'cli-reference' },
             { label: 'Setup & Metal Engine', slug: 'setup' },
             { label: 'dgem User Guide', slug: 'user-guide' },
           ],

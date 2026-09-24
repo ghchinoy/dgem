@@ -61,19 +61,51 @@ export DGEM_TOKEN="Bearer <your-token>"
 ```
 
 ### Global CLI Flags
-* `--url`, `-u`: Base URL of the running server (default: `http://127.0.0.1:8080/v1`).
-* `--model`, `-m`: Model identifier (`diffgemma-26b-a4b-it-q4` on local Metal; `/model` on Cloud Run / vLLM).
+* `--url`, `-u`: Base URL of the running server (default: `http://127.0.0.1:8080/v1`, or Cloud Run GPU / Gateway URL).
+* `--vertex-url`: Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4217256562927861760`, resolving to `https://4217256562927861760.us-central1-882920967572.prediction.vertexai.goog/v1/projects/882920967572/locations/us-central1/endpoints/4217256562927861760/invoke/v1`). When passed, `dgem` automatically mints an OAuth2 `cloud-platform` access token (`gcloud auth print-access-token`) and routes directly to `/invoke/v1/*`.
+* `--model`, `-m`: Model identifier (`diffgemma-26b-a4b-it-q4` on local Metal; `/model` on Cloud Run / Vertex AI / vLLM).
 * `--timeout`: HTTP timeout duration (default: `120s`).
 * `--stats`, `-s`: Print comprehensive timing, KV cache reuse, raw Shannon entropy $H_m$, and cardinality-normalized entropy $\tilde{H}_m$.
 * `-k`, `--token`: Authorization Bearer token or API key for secured endpoints.
-* `--gcp-auth`: Automatically obtain and inject a Google Cloud IAM identity token (`gcloud auth print-identity-token`) for authenticated Cloud Run (`dgemma`) endpoints.
+* `--gcp-auth`: Automatically obtain and inject a Google Cloud IAM identity token (`gcloud auth print-identity-token` for Cloud Run) or OAuth2 access token (`gcloud auth print-access-token` for Vertex AI `/invoke/*`).
 * `--config`: Path to custom config file.
 
-> **Remote & Cloud Endpoints**: For deploying and querying Serverless Cloud Run (`make cloudrun-deploy`) or GCE vLLM instances (`make gce-deploy`), see the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md).
+> **Remote & Cloud Endpoints**: For deploying and querying Vertex AI Dedicated Endpoints (`make vertex-deploy`), Serverless Cloud Run (`make cloudrun-deploy`), or GCE vLLM instances (`make gce-deploy`), see [Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md) and the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md).
 
 ---
 
 ## 2. Command Reference
+
+### `dgem serve` (Decision Studio, HTTP Gateway API & `/v1/systemone` Proxy)
+Launches the embedded Lit WebComponents Decision Studio, `/api/decide` Policy Gateway, `/v1/systemone` direct multipart/JSON proxy, and `/mcp` Streamable HTTP MCP server.
+
+```bash
+dgem serve [flags]
+```
+
+#### Key `dgem serve` Flags
+* `--port int`: HTTP listener port (default: `8080`).
+* `--default-backend string`: Default inference backend routing strategy (`vertex_first` [default], `vertex`, or `cloudrun`).
+  - `vertex_first`: Routes to the warm Vertex AI Dedicated Endpoint (`--vertex-url`) for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically fails over to Serverless Cloud Run GPU (`-u`) if Vertex is updating or scaled to zero.
+  - `vertex`: Strictly pins requests to the Vertex AI Dedicated Endpoint (`/invoke/*`).
+  - `cloudrun`: Strictly pins requests to Serverless Cloud Run GPU (`dgemma`).
+* `--vertex-url string`: Default Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4217256562927861760`).
+* `--cascade-model string`: Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash` [default], `gemini-3.5-flash`, or `gemini-3.1-flash-lite`).
+* `-u`, `--url string`: Upstream Cloud Run GPU `/v1` base URL for `cloudrun` routing and `vertex_first` failover.
+* `--gcp-auth`: Automatically mint GCP OIDC identity tokens (for Cloud Run) and OAuth2 access tokens (for Vertex AI `/invoke/*` and Stage 2 Gemini `generateContent`).
+
+#### Gateway Proxy Endpoints (`dgem serve`)
+* `POST /api/decide` & `POST /api/decide/{template}`: Evaluates a named or inline `.json.tmpl` policy. Supports `X-DGem-Backend: vertex_first | vertex | cloudrun`, `?backend=...`, or JSON `"backend": "..."`, plus Stage 2 Gemini Cascade parameters (`"cascade_mode": "off" | "entropy" | "on_miss"`, `"cascade_threshold": 0.35`, `"cascade_model": "gemini-3.8-flash"`). Returns `X-DGem-Backend-Used: vertex | cloudrun`.
+* `POST /v1/systemone`: Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation) supporting both `application/json` and `multipart/form-data` (image + JSON `state`/`questions`). Honors `X-DGem-Backend` / `?backend=vertex_first|vertex|cloudrun` and returns `X-DGem-Backend-Used`.
+* `POST /v1/chat/completions` & `POST /v1/raw/chat/completions`: OpenAI-compatible structured envelope and raw vLLM pass-through proxies with `vertex_first` auto-failover.
+* `POST /mcp`: Stateless Streamable HTTP Model Context Protocol endpoint. Specifically, the MCP inference tools (`decide_policy`, `decide_custom_questions`, `locate_bounding_boxes`) accept:
+  - `backend`: `"vertex_first"` (default) | `"vertex"` | `"cloudrun"`
+  - `vertex_url`: Optional Vertex AI Dedicated Endpoint ID (`"4217256562927861760"`) or `/invoke/v1` URL override
+  - `cascade_mode`: `"off"` (default) | `"entropy"` | `"on_miss"`
+  - `cascade_threshold`: `0.35` (default Shannon entropy $H$ threshold in nats)
+  - `cascade_model`: `"gemini-3.8-flash"` (default), `"gemini-3.5-flash"`, or `"gemini-3.1-flash-lite"`
+
+---
 
 ### `dgem decide`
 Executes single-pass discrete diffusion slot readout (or multi-stage conditional DAG execution when a template declares `depends_on` and `ask_if`).

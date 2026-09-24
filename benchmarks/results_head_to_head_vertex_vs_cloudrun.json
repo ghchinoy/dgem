@@ -1,0 +1,97 @@
+{
+  "phase1_concurrency_sweep_vertex_l4": {
+    "w=1": {
+      "accuracy_pct": 80,
+      "workers": 1,
+      "total_sec": 65.37,
+      "throughput_dps": 0.46,
+      "gpu_mean_ms": 461.6,
+      "gpu_p50_ms": 499.4,
+      "gpu_p90_ms": 517.1,
+      "gpu_p99_ms": 576.0,
+      "wall_mean_ms": 503.2,
+      "wall_p50_ms": 534,
+      "wall_p90_ms": 605
+    },
+    "w=4": {
+      "accuracy_pct": 76.7,
+      "workers": 4,
+      "total_sec": 5.51,
+      "throughput_dps": 5.44,
+      "gpu_mean_ms": 656.0,
+      "gpu_p50_ms": 717.4,
+      "gpu_p90_ms": 769.8,
+      "gpu_p99_ms": 827.6,
+      "wall_mean_ms": 712.7,
+      "wall_p50_ms": 786,
+      "wall_p90_ms": 833
+    },
+    "w=8": {
+      "accuracy_pct": 76.7,
+      "workers": 8,
+      "total_sec": 4.01,
+      "throughput_dps": 7.49,
+      "gpu_mean_ms": 944.9,
+      "gpu_p50_ms": 1009.4,
+      "gpu_p90_ms": 1025.7,
+      "gpu_p99_ms": 1054.5,
+      "wall_mean_ms": 979.4,
+      "wall_p50_ms": 1047,
+      "wall_p90_ms": 1059
+    },
+    "w=16": {
+      "workers": 16,
+      "concurrent_vllm_sequences": 64,
+      "status": "Saturated single L4 24GB KV-cache ceiling (MAX_NUM_SEQS=16); requires w<=8 per L4 replica or max-replica-count>=2"
+    }
+  },
+  "phase1_cloudrun_baseline": {
+    "accuracy_pct": 80,
+    "workers": 1,
+    "total_sec": 13.77,
+    "throughput_dps": 2.18,
+    "gpu_mean_ms": 427.3,
+    "gpu_p50_ms": 451.2,
+    "gpu_p90_ms": 468.8,
+    "gpu_p99_ms": 473.4,
+    "wall_mean_ms": 459.0,
+    "wall_p50_ms": 481,
+    "wall_p90_ms": 498
+  },
+  "phase2_calibration_50case": {
+    "vertex_l4": {
+      "accuracy_pct": 88,
+      "chance_corrected_accuracy_pct": 83.05,
+      "ece_10bin": 0.04695507942784348,
+      "brier_score": 0.1944,
+      "p50_latency_ms": 790.0,
+      "jevbench_composite_score": 73.37
+    },
+    "cloudrun_l4": {
+      "accuracy_pct": 82.0,
+      "chance_corrected_accuracy_pct": 74.57,
+      "ece_10bin": 0.0684,
+      "brier_score": 0.2412,
+      "p50_latency_ms": 712.0,
+      "jevbench_composite_score": 71.18
+    }
+  },
+  "phase3_rerank_30query_300passage": {
+    "vertex_l4": {
+      "mean_wall_latency_ms": 1631.9,
+      "ndcg_at_10": null,
+      "mrr_at_10": null,
+      "followir_p_mrr": null,
+      "tie_rate_pct": null,
+      "poison_quarantine_pct": null
+    },
+    "cloudrun_l4": {
+      "mean_wall_latency_ms": 1454.3,
+      "ndcg_at_10": null,
+      "mrr_at_10": null,
+      "followir_p_mrr": null,
+      "tie_rate_pct": null,
+      "poison_quarantine_pct": null
+    }
+  }
+}

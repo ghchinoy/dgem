@@ -1,21 +1,25 @@
 # dgem — DiffusionGemma as a Zero-Shot Decision Model
 
-**`dgem`** is a declarative **Policy-as-Template** engine and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **Local Apple Silicon (macOS Metal)**, **Serverless Cloud Run GPU (`NVIDIA L4` & `NVIDIA RTX Pro 6000`)**, and **Google Compute Engine (`L4` / `2× A100`)** deployments.
+**`dgem`** is a declarative **Policy-as-Template** engine and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **four serving targets**:
+1. **Vertex AI Dedicated Endpoints (`/invoke/*`, `g2-standard-16` `1× NVIDIA L4` `64 GB` RAM)** — `0.0 s` cold start, `~490 ms` GPU denoise (`~536 ms` wall time), enterprise MLOps (`vertex_first` default in `dgemma-gateway`).
+2. **Serverless Cloud Run GPU (`NVIDIA RTX Pro 6000` `48GB` & `NVIDIA L4` `24GB`)** — Scale-to-zero (`$0.00/hr` idle cost), `~427 ms` GPU denoise (`~459 ms` warm wall latency).
+3. **Google Compute Engine VM (`1× L4` `NVFP4` / `2× A100` `bfloat16`)** — Dedicated VM continuous batching and custom CUDA kernel profiling.
+4. **Local Apple Silicon (`macOS Metal`)** — Native Rust Metal engine (`diffgemma`, `q4` unified memory) with zero cloud cost.
 
-There's also a web app **Decision Studio** (via `dgem serve`), **Model Context Protocol (`MCP`) Server** via (`dgem mcp` & `/mcp`), and **HTTP Gateway REST API** to facilicate usage.
+It ships with an embedded **Decision Studio Web App (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `/mcp`)**, **HTTP Gateway REST API (`/api/decide` & `/v1/systemone`)**, and **Stage 2 Gemini Cascade (`gemini-3.8-flash` default)**.
 
 ---
 
 ## Four Ways to Use `dgem`
 
-See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-api.md`)](docs/studio-mcp-api.md)** for full details:
+See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-api.md`)](docs/studio-mcp-api.md)** and **[Experiment Authoring Guide (`docs/experiment-authoring-guide.md`)](docs/experiment-authoring-guide.md)** for full details:
 
 | Interaction Surface | Command / Endpoint | Description |
 | :--- | :--- | :--- |
-| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090`<br>`http://localhost:8090/` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, one-click **Scale-to-Zero Cloud Run GPU warmup**, and **OpenTelemetry Trace Waterfall** inspection. |
-| **2. 🤖 Model Context Protocol (`MCP`)** | `./bin/dgem mcp` (`stdio`)<br>`POST /mcp` (`Streamable HTTP`) | Native MCP server exposing **6 tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) to **Gemini CLI**, **Claude Desktop**, **Cursor**, and cloud agent orchestrators. |
-| **3. 🌐 HTTP Gateway REST API** | `POST /api/decide/{template}`<br>`GET /api/templates`, `POST /api/warmup` | Execute any `.json.tmpl` decision policy with a simple JSON variable map (`curl` / microservices) without installing `dgem` or managing local templates. Automatically handles GCP IAM/IAP auth and holds requests while scale-from-zero Cloud Run GPUs wake up. |
-| **4. ⌨️ CLI & 6 Benchmark Suites** | `./bin/dgem decide` / `./bin/dgem bench-*` | Direct single-pass decisions (`--stats`) and six reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-10`). |
+| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090`<br>`https://dgemma.aaie.cloud` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, and **OpenTelemetry Trace Waterfall** inspection. |
+| **2. 🤖 Model Context Protocol (`MCP`)** | `./bin/dgem mcp` (`stdio`)<br>`POST /mcp` (`Streamable HTTP`) | Native MCP server exposing **6 tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) with `backend` (`vertex_first` \| `vertex` \| `cloudrun`) and Stage 2 Gemini Cascade support (`cascade_mode`, `cascade_threshold`, `cascade_model`). |
+| **3. 🌐 HTTP Gateway REST API** | `POST /api/decide/{template}`<br>`POST /v1/systemone`, `GET /api/templates` | Execute any `.json.tmpl` decision policy or `/v1/systemone` schema with `X-DGem-Backend: vertex_first \| vertex \| cloudrun` (`X-DGem-Backend-Used` returned on every response) and optional Stage 2 `gemini-3.8-flash` cascade. |
+| **4. ⌨️ CLI & 7 Benchmark Suites** | `./bin/dgem decide --vertex-url ...`<br>`./bin/dgem bench-*` | Direct single-pass decisions (`--stats`, `--vertex-url 4217256562927861760`) and seven reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-13`). |
 
 ### Why a "Decision Model"?
 
@@ -38,7 +42,7 @@ While raw single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises **8.0�
 | Architectural Dimension | Discrete Diffusion Decision Model (`dgem`) | Discriminative Encoder (DeBERTa-v3 / Llama-Guard) | Autoregressive LLM (Gemini / Gemma 4) | Compiled Rulebook (`ecotone` C++ WFST) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Policy Adaptability** | **Zero-Shot Policy-as-Template** (edit `.json.tmpl` in seconds) | Requires labeled dataset & weight retraining per label change | Zero-shot prompt engineering | Manual grammar authoring & compilation |
-| **Inference Latency** | **125 – 458 ms** (1-pass Cloud Run GPU / Metal) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
+| **Inference Latency** | **125 – 490 ms** (1-pass Vertex AI L4 / Cloud Run GPU / Metal) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
 | **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 12 joint slots take same pass) | $O(M_{\text{heads}})$ separate classifiers per attribute | **$O(T_{\text{output}})$ linear penalty** (serial token loop) | $O(N_{\text{chars}})$ graph traversal |
 | **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single forward pass | Independent static classification heads | Unidirectional causal bias (`left -> right`) | Local sliding window (1–3 tokens) |
 | **Epistemic Calibration (`IDC`)** | **Null-Prior + Dual-Mirror + $T^*$** (`0.0326` ECE, `0%` reversal flip, **8.0×** $H$ on `ChaosNLI`) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
@@ -46,61 +50,35 @@ While raw single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises **8.0�
 
 ---
 
-## Supported Deployment Environments
+## Supported Deployment Environments (4 Serving Targets)
 
-`dgem` connects to any OpenAI-compatible or native Jev endpoint and exposes Decision Studio, MCP, REST API, and CLI surfaces:
+See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU (`docs/vertex-ai-vs-cloudrun.md`)](docs/vertex-ai-vs-cloudrun.md)** for the complete architectural comparison and live 30-case benchmark receipts:
 
-```
-    ┌──────────────────────┬──────────────────────┬──────────────────────┐
-    │ 1. Decision Studio   │ 2. MCP Server        │ 3. REST API & CLI    │
-    │ Browser Web UI (:8090│ dgem mcp & POST /mcp │ POST /api/decide/... │
-    └──────────────────────┴──────────┬───────────┴──────────────────────┘
-                                      │
-          ┌───────────────────────────┼───────────────────────────┐
-          ▼                           ▼                           ▼
-Local Apple Silicon (Metal)  Cloud Run Serverless GPU   Cloud GPU on GCE VM
-• diffgemma serve (:8080)    • 1× L4 (24GB) / RTX 6000  • 1× L4 (NVFP4) / 2× A100 (bf16)
-• 4-bit Q4 Unified Memory    • Self-contained container • vLLM PR #57250 nightly wheel
-• 32k KV Context             • GCS FUSE weight mount    • 32k context + Triton Attn
-• Zero cloud cost            • 459ms avg wall latency   • Direct raw completions
-```
+| Serving Target | Hardware & Shape | Cold-Start / Wakeup | Avg GPU Denoise (`N=4`) | Avg End-to-End Wall Time | Cost Profile | Recommended Use Case |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `g2-standard-16` (`1× NVIDIA L4` `24GB` VRAM, `64GB` RAM, ID `4217256562927861760`) | **`0.0 s`** (`minReplicaCount=1`, permanently warm) | **`490.0 ms`** (`195 ms` for `N=1`) | **`536.0 ms`** (`245 ms` for `N=1`) | `~$1.12/hr` while deployed (`$0/hr` after `make vertex-teardown`) | **Primary Production Target (`vertex_first` default)**: Zero cold-start SLA, interactive agents, CI/CD gates, and multimodal `SigLIP` headroom (`64 GB` RAM). |
+| **2. Serverless Cloud Run GPU (`dgemma`)** | `1× NVIDIA RTX Pro 6000` (`48GB` VRAM, `80Gi` RAM) or `1× L4` (`24GB`) | **`~121.8 s`** (`0 → 1` scale-from-zero) | **`427.3 ms`** (`171 ms` for `N=1`) | **`459.0 ms`** (`199 ms` for `N=1`) | **`$0.00/hr` when idle** (`min-instances=0`) | **Scale-to-Zero & Auto-Failover Standby (`cloudrun`)**: Episodic batch jobs, research evaluations, and zero-idle-cost sandboxes. |
+| **3. Cloud GPU on GCE VM** | `g2-standard-8` (`1× L4` `NVFP4`) or `a2-highgpu-2g` (`2× A100` `bfloat16`) | **`0.0 s`** (dedicated VM) | — | **`1,968.7 ms`** (`L4`) / **`2,733 ms`** (`2× A100`) | `~$0.70/hr` (`L4`) / `~$7.34/hr` (`2× A100`) | High-throughput raw `vLLM` continuous batching (`Banking77` / `CLINC150`) & `bfloat16` precision baselines. |
+| **4. Local Apple Silicon (`Metal`)** | Apple M-Series (`diffgemma-26b-a4b-it-q4` unified RAM) | **`0.0 s`** (local daemon) | **`892.0 ms`** (`210 ms` for `N=1`) | **`898.5 ms`** | **`$0.00/hr`** (local hardware) | Offline laptop development, policy authoring, and local verification. |
 
-### Option A: Local Apple Silicon (Metal)
-Runs fully offline on M-series Macs using the native Rust Metal engine ([`diffgemma`](https://github.com/mmastrac/diffgemma)):
+### Option A: Vertex AI Dedicated Endpoint (`/invoke/*`, Recommended Primary)
+Deploys the `dgemma` container with arbitrary custom routes (`invokeRoutePrefix: "/*"`) onto a `g2-standard-16` (`1× NVIDIA L4`, `64 GB` RAM) Vertex AI Dedicated Endpoint (`4217256562927861760`) so `/invoke/v1/chat/completions`, `/invoke/v1/systemone`, and `/invoke/health` are served with **`0.0 s` wakeup**:
 ```bash
-# 1. Install diffgemma engine
-make setup
+# 1. Deploy dgemma to Vertex AI Dedicated Endpoint (g2-standard-16, 1× NVIDIA L4):
+make vertex-deploy
 
-# 2. Download the 4-bit model pack (mmastrac/diffgemma-26b-a4b-it-q4)
-make download
+# 2. Run single-pass decision or 30-case benchmark directly against /invoke/v1:
+./bin/dgem decide --vertex-url 4217256562927861760 --gcp-auth \
+  -t templates/support_triage.json.tmpl -v 'ticket=Emergency outage' --stats
+./bin/dgem bench --vertex-url 4217256562927861760 --gcp-auth \
+  -d benchmarks/eval_dataset.jsonl -o benchmarks/results_vertex_l4_invoke.json
 
-# 3. Launch background Metal server on port 8080
-make serve
-
-# 4. Stop when finished
-make stop
+# 3. Teardown replica when zero-idle-cost ($0.00/hr) is desired:
+make vertex-teardown
 ```
 
-### Option B: Cloud GPU on Google Compute Engine (NVIDIA L4 / A100)
-Provisions automated, production-grade GCE instances with the nightly vLLM wheel (`wheels.vllm.ai`, matching PR #57250 base commit `133b71e0be`) and Triton attention:
-```bash
-# 4-bit NVFP4 on 1× NVIDIA L4 (g2-standard-8, ~$0.70/hr):
-export GCP_PROJECT="your-gcp-project"
-PRECISION=4 make gce-deploy
-
-# 8-bit FP8-dynamic on 1× NVIDIA A100-40GB (a2-highgpu-1g, ~$3.67/hr):
-PRECISION=8 make gce-deploy
-
-# 16-bit unquantized bfloat16 on 2× NVIDIA A100-40GB (a2-highgpu-2g, TP=2, ~$7.34/hr):
-export GCP_ZONE="us-central1-b"
-PRECISION=16 make gce-deploy
-
-# Mandatory immediate teardown to eliminate idle costs:
-make gce-teardown
-```
-
-### Option C: Serverless Cloud GPU on Google Cloud Run (1× NVIDIA L4)
-Builds and deploys a self-contained container image to Google Artifact Registry and runs on Cloud Run with GCS FUSE weight streaming:
+### Option B: Serverless Cloud GPU on Google Cloud Run (`1× NVIDIA RTX Pro 6000` / `1× L4`)
+Builds and deploys a self-contained container image to Google Artifact Registry and runs on Cloud Run with scale-to-zero (`--min-instances=0`):
 ```bash
 export GCP_PROJECT="your-gcp-project"
 export GCP_REGION="us-central1"
@@ -111,7 +89,7 @@ make cloudrun-build
 # 2. Pre-stage 17.57 GB NVFP4 weights to GCS:
 make cloudrun-stage
 
-# 3. Deploy dgemma service on Cloud Run (1× NVIDIA L4, 24GB):
+# 3. Deploy dgemma service on Cloud Run:
 make cloudrun-deploy
 
 # 4. Run discrete decisions or 30-case benchmark:
@@ -121,6 +99,29 @@ SERVICE_URL=$(gcloud run services describe dgemma --region=$GCP_REGION --format=
 
 # 5. Mandatory immediate teardown to eliminate idle costs:
 make cloudrun-teardown
+```
+
+### Option C: Cloud GPU on Google Compute Engine (`NVIDIA L4` / `2× A100`)
+Provisions automated GCE instances with the nightly vLLM wheel (`wheels.vllm.ai`, matching PR #57250 base commit `133b71e0be`) and Triton attention:
+```bash
+# 4-bit NVFP4 on 1× NVIDIA L4 (g2-standard-8, ~$0.70/hr):
+export GCP_PROJECT="your-gcp-project"
+PRECISION=4 make gce-deploy
+
+# 16-bit unquantized bfloat16 on 2× NVIDIA A100-40GB (a2-highgpu-2g, TP=2, ~$7.34/hr):
+export GCP_ZONE="us-central1-b"
+PRECISION=16 make gce-deploy
+
+# Mandatory immediate teardown to eliminate idle costs:
+make gce-teardown
+```
+
+### Option D: Local Apple Silicon (Metal)
+Runs fully offline on M-series Macs using the native Rust Metal engine ([`diffgemma`](https://github.com/mmastrac/diffgemma)):
+```bash
+make setup && make download && make serve
+# Stop when finished:
+make stop
 ```
 
 ---
@@ -237,9 +238,12 @@ Evaluates 30-way to 151-way intent routing and Out-of-Scope (`oos`) rejection on
 
 ## Documentation & Research Ledger
 
+* **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, `g2-standard-16` (`64 GB` RAM) sizing, and live 30-case benchmark receipts.
+* **[Experiment Authoring Guide & Backend Target Selection](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
+* **[CLI, HTTP Gateway & MCP Reference](docs/cli-reference.md)**: Complete flag and tool parameter reference (`--vertex-url`, `dgem serve --default-backend vertex_first`, `/v1/systemone`, and MCP tools).
 * **[The Journey to Decision Models](docs/decision-models-primer.md)**: Architectural primer contrasting Classical ML, Symbolic WFSTs, Autoregressive LLMs, and Discrete Diffusion Decision Models.
-* **[Experiments & Research Ledger (`docs/experiments/`)](docs/experiments/README.md)**: Structured log of completed empirical studies (`EXP-01` through `EXP-04`) and active architectural investigations (`EXP-05` Entropy-Gated Cascades, `EXP-06` Encoder Comparisons, `EXP-07` Conditional Policy DAGs).
-* **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Full empirical receipts comparing Apple M5 Metal, Cloud Run 1× L4, GCE 1× L4, GCE 2× A100 `bfloat16`, `ChaosNLI`, Banking77, and CLINC150.
+* **[Experiments & Research Ledger (`docs/experiments/`)](docs/experiments/README.md)**: Structured log of completed empirical studies (`EXP-01` through `EXP-13`) and active architectural investigations (`EXP-05` Entropy-Gated Cascades, `EXP-06` Encoder Comparisons, `EXP-07` Conditional Policy DAGs).
+* **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Full empirical receipts comparing Vertex AI `1× L4`, Cloud Run `1× RTX Pro 6000` / `1× L4`, Apple M5 Metal, GCE `1× L4`, GCE `2× A100` `bfloat16`, `ChaosNLI`, Banking77, and CLINC150.
 * **[Template Catalog (`Policy-as-Code`)](docs/templates.md)**: Complete reference of declarative `.json.tmpl` decision schemas across triage, guardrails, NLU, and multimodal vision.
 * **[Ecotone (WFST) vs. DiffusionGemma](docs/ecotone-comparison.md)**: Semiotic polysemy taxonomy, head-to-head findings, and the hybrid Cascaded Normalizer architecture.
 * **[Architecture: Discrete Diffusion vs. Autoregression](docs/architecture.md)**: Mechanical breakdown of 256-token canvas denoising, bidirectional slot readout, and terminology history.

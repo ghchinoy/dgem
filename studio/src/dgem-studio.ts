@@ -1563,7 +1563,7 @@ export class DgemStudio extends LitElement {
                       @click=${() => (this.backendSettingsOpen = false)}
                     ></div>
                     <div
-                      style="position:absolute; top:calc(100% + 10px); right:0; width:440px; background:${this.resolvedTheme === 'dark' ? '#0f172a' : '#ffffff'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}; border:1.5px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; border-radius:12px; box-shadow:0 24px 48px -12px rgba(15, 23, 42, 0.45), 0 8px 16px -6px rgba(15, 23, 42, 0.25); padding:1rem; z-index:999; display:flex; flex-direction:column; gap:0.75rem;"
+                      style="position:absolute; top:calc(100% + 10px); left:0; width:min(440px, calc(100vw - 2rem)); background:${this.resolvedTheme === 'dark' ? '#0f172a' : '#ffffff'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}; border:1.5px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; border-radius:12px; box-shadow:0 24px 48px -12px rgba(15, 23, 42, 0.45), 0 8px 16px -6px rgba(15, 23, 42, 0.25); padding:1rem; z-index:999; display:flex; flex-direction:column; gap:0.75rem;"
                     >
                       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid ${this.resolvedTheme === 'dark' ? '#1e293b' : '#e2e8f0'}; padding-bottom:0.55rem;">
                         <div>

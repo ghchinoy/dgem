@@ -91,7 +91,11 @@ NevIR negation inversion, FollowIR p-MRR policy steerability, and RAG prompt-inj
 		if rerankVerifyMath {
 			pyArgs = append(pyArgs, "--verify-math")
 		} else {
-			pyArgs = append(pyArgs, "--endpoint", serverURL)
+			c := GetClient()
+			pyArgs = append(pyArgs, "--endpoint", c.BaseURL)
+			if rerankReceiptPath != "" {
+				pyArgs = append(pyArgs, "--output", rerankReceiptPath)
+			}
 			if gcpAuth {
 				pyArgs = append(pyArgs, "--gcp-auth")
 			}

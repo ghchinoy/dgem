@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,9 @@ var (
 	serveWakeupTimeout  time.Duration
 	serveGPUIdleTTL     time.Duration
 	serveVertexURL      string
+	serveVertexProject  string
 	serveDefaultBackend string
+	serveCascadeModel   string
 	backendConfigMu     sync.RWMutex
 )
 
@@ -69,6 +72,7 @@ func init() {
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
 	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "vertex_first", "Default upstream inference backend: 'vertex_first' (Vertex primary + Cloud Run failover), 'vertex', or 'cloudrun' (env: DGEM_DEFAULT_BACKEND)")
+	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'; env: DGEM_CASCADE_MODEL)")
 
 	RootCmd.AddCommand(serveCmd)
 }
@@ -89,14 +93,18 @@ type TemplateCatalogEntry struct {
 
 // GatewayDecideRequest is the JSON body accepted by POST /api/decide.
 type GatewayDecideRequest struct {
-	Template       string                 `json:"template,omitempty"`
-	CustomTemplate string                 `json:"custom_template,omitempty"`
-	Variables      map[string]interface{} `json:"variables,omitempty"`
-	Image          string                 `json:"image,omitempty"`
-	ImageURL       string                 `json:"image_url,omitempty"`
-	Images         []string               `json:"images,omitempty"`
-	Backend        string                 `json:"backend,omitempty"`
-	VertexURL      string                 `json:"vertex_url,omitempty"`
+	Template         string                 `json:"template,omitempty"`
+	CustomTemplate   string                 `json:"custom_template,omitempty"`
+	Variables        map[string]interface{} `json:"variables,omitempty"`
+	Image            string                 `json:"image,omitempty"`
+	ImageURL         string                 `json:"image_url,omitempty"`
+	Images           []string               `json:"images,omitempty"`
+	Backend          string                 `json:"backend,omitempty"`
+	VertexURL        string                 `json:"vertex_url,omitempty"`
+	CascadeMode      string                 `json:"cascade_mode,omitempty"`      // "off" (default), "entropy", or "on_miss"
+	CascadeThreshold float64                `json:"cascade_threshold,omitempty"` // default 0.35 nats
+	CascadeModel     string                 `json:"cascade_model,omitempty"`     // default "gemini-3.8-flash"
+	ExpectedAnswers  map[string]string      `json:"expected_answers,omitempty"`  // optional slot_id -> expected value for "on_miss" cascade
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
@@ -105,6 +113,7 @@ type GatewayDecideResponse struct {
 	Answers         map[string]client.QuestionAnswer   `json:"answers"`
 	Diagnostics     client.Diagnostics                 `json:"diagnostics"`
 	Decision        *client.StructuredDecisionResponse `json:"decision,omitempty"`
+	Cascade         *CascadeExecutionSummary           `json:"cascade,omitempty"`
 	MaxEntropy      float64                            `json:"max_entropy"`
 	WallTimeMs      int64                              `json:"wall_time_ms"`
 	GpuForwardMs    int64                              `json:"gpu_forward_ms"`
@@ -1170,12 +1179,70 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		orchWallStart := time.Now()
 		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, images, targetUpstreamURL)
+		if err != nil && len(images) > 0 && backendTarget == "vertex" && strings.Contains(err.Error(), "At most 0 image") {
+			// Automatic multimodal failover to Cloud Run GPU (DISABLE_MM=0)
+			crURL := strings.TrimSpace(viper.GetString("url"))
+			if crURL != "" {
+				backendTarget = "cloudrun"
+				targetUpstreamURL = crURL
+				resp, stats, attempts, err = executeDecideWithWarmup(ctx, schemaContent, stateContent, images, targetUpstreamURL)
+			}
+		}
 		if err != nil {
 			rootSpan.SetStatus(codes.Error, err.Error())
 			rootSpan.End()
 			writeErr(http.StatusBadGateway, fmt.Sprintf("upstream (%s) decision failed after %d attempt(s): %s", backendTarget, attempts, err.Error()))
 			return
 		}
+
+		// Optional Stage-2 Vertex AI Gemini 3.x Cascade ("entropy" or "on_miss", default model: gemini-3.8-flash)
+		cascadeMode := strings.TrimSpace(payload.CascadeMode)
+		if cascadeMode == "" {
+			cascadeMode = strings.TrimSpace(r.Header.Get("X-DGem-Cascade-Mode"))
+		}
+		if cascadeMode == "" {
+			cascadeMode = strings.TrimSpace(r.URL.Query().Get("cascade_mode"))
+		}
+		cascadeThreshold := payload.CascadeThreshold
+		if cascadeThreshold <= 0 {
+			if hdrThresh := strings.TrimSpace(r.Header.Get("X-DGem-Cascade-Threshold")); hdrThresh != "" {
+				if v, err := strconv.ParseFloat(hdrThresh, 64); err == nil && v > 0 {
+					cascadeThreshold = v
+				}
+			}
+		}
+		cascadeModel := strings.TrimSpace(payload.CascadeModel)
+		if cascadeModel == "" {
+			cascadeModel = strings.TrimSpace(r.Header.Get("X-DGem-Cascade-Model"))
+		}
+		var cascadeSummary *CascadeExecutionSummary
+		if cascadeMode != "" && cascadeMode != "off" && cascadeMode != "none" {
+			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
+			cascadeSummary = ExecuteStage2GeminiCascade(
+				ctx,
+				cascadeMode,
+				cascadeThreshold,
+				cascadeModel,
+				payload.ExpectedAnswers,
+				schemaContent,
+				stateContent,
+				resp,
+			)
+			if cascadeSummary != nil {
+				cascadeSpan.SetAttributes(
+					attribute.String("dgem.cascade.mode", cascadeSummary.Mode),
+					attribute.String("dgem.cascade.model", cascadeSummary.Model),
+					attribute.Bool("dgem.cascade.triggered", cascadeSummary.Triggered),
+					attribute.Int("dgem.cascade.escalated_count", cascadeSummary.EscalatedCount),
+					attribute.Int64("dgem.cascade.latency_ms", cascadeSummary.LatencyMs),
+				)
+				if cascadeSummary.Triggered {
+					w.Header().Set("X-DGem-Cascade-Used", cascadeSummary.Model)
+				}
+			}
+			cascadeSpan.End()
+		}
+
 		maxEntropy := 0.0
 		for _, q := range resp.Diagnostics.Questions {
 			if q.Entropy > maxEntropy {
@@ -1219,11 +1286,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 		rootSpan.SetStatus(codes.Ok, "ok")
 		rootSpan.End()
 
+		w.Header().Set("X-DGem-Backend-Used", backendTarget)
 		out := GatewayDecideResponse{
 			Template:        tmplLabel,
 			Answers:         resp.Answers,
 			Diagnostics:     resp.Diagnostics,
 			Decision:        resp,
+			Cascade:         cascadeSummary,
 			MaxEntropy:      maxEntropy,
 			WallTimeMs:      wallTimeMs,
 			GpuForwardMs:    gpuForwardMs,

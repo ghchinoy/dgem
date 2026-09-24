@@ -649,6 +649,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="EXP-11 Phase-0 Pre-Shootout Reranking Validation Suite")
     parser.add_argument("--verify-math", action="store_true", help="Run offline mathematical & fixture verification (no GPU required)")
     parser.add_argument("--endpoint", type=str, default="", help="Run live via ./bin/dgem decide against endpoint URL (e.g. https://.../v1)")
+    parser.add_argument("--output", type=str, default="", help="Optional output path for JSON receipt")
     parser.add_argument("--gcp-auth", action="store_true", help="Pass --gcp-auth to ./bin/dgem decide for Cloud Run IAM authentication")
     args = parser.parse_args()
 
@@ -722,7 +723,8 @@ def main() -> None:
         "total_query_passage_pairs": len(cases) * 10,
         "summary_metrics": summary,
     }
-    with open(RECEIPT_PATH, "w", encoding="utf-8") as f:
+    target_receipt_path = args.output if args.output else RECEIPT_PATH
+    with open(target_receipt_path, "w", encoding="utf-8") as f:
         json.dump(receipt, f, indent=2)
 
     print("=" * 116)
@@ -730,7 +732,7 @@ def main() -> None:
     if mean_latency_ms is not None:
         print(f" Mean Live Wall Latency (12 Slots / Pass): {mean_latency_ms} ms")
     print(f" Dataset Written : {DATASET_PATH}")
-    print(f" Receipt Written : {RECEIPT_PATH}")
+    print(f" Receipt Written : {target_receipt_path}")
     print("=" * 116)
     header = (
         f"{'Reranking Regime':<44} | {'nDCG@10':>7} | {'MRR@10':>6} | {'MAP@10':>6} | "

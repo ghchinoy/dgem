@@ -341,13 +341,13 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 		entropySymbol = "H_norm"
 	}
 
-	targetEndpointDisplay := viper.GetString("url")
-	targetModelDisplay := viper.GetString("model")
+	targetEndpointDisplay := c.BaseURL
+	targetModelDisplay := c.Model
 	if calVertexModel != "" && calCascadeFrom == "" {
 		targetEndpointDisplay = fmt.Sprintf("vertexai://%s/locations/global", gcpProj)
 		targetModelDisplay = calVertexModel
 	} else if calCascadeFrom != "" && calCascadeSelfThink > 0 {
-		targetEndpointDisplay = fmt.Sprintf("self-cascade(%s -> %s[think=%d])", calCascadeFrom, viper.GetString("url"), calCascadeSelfThink)
+		targetEndpointDisplay = fmt.Sprintf("self-cascade(%s -> %s[think=%d])", calCascadeFrom, c.BaseURL, calCascadeSelfThink)
 		targetModelDisplay = fmt.Sprintf("DiffusionGemma [think=0, %s<%.2f] -> DiffusionGemma [think=%d, %s>=%.2f]",
 			entropySymbol, calCascadeThreshold, calCascadeSelfThink, entropySymbol, calCascadeThreshold)
 	} else if calCascadeFrom != "" && calVertexModel != "" {

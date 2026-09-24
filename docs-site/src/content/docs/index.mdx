@@ -1,9 +1,9 @@
 ---
 title: DiffusionGemma — Zero-Shot Decision Model
-description: Declarative Policy-as-Template engine, Lit WebComponents Decision Studio, Model Context Protocol (MCP) Server, HTTP Gateway API, and sub-second discrete diffusion slot readouts across Apple Silicon Metal, Serverless Cloud Run GPU, and Google Compute Engine.
+description: Declarative Policy-as-Template engine, Lit WebComponents Decision Studio, Model Context Protocol (MCP) Server, HTTP Gateway API, and sub-second discrete diffusion slot readouts across Vertex AI Dedicated Endpoints (/invoke/*), Serverless Cloud Run GPU, Google Compute Engine, and Apple Silicon Metal.
 template: splash
 hero:
-  tagline: Turn declarative .json.tmpl schemas into sub-second zero-shot Decision Policies with calibrated Shannon entropy (H)—via Decision Studio (Web UI), Model Context Protocol (MCP), HTTP REST API, or CLI across Apple Silicon Metal and Serverless Cloud Run GPUs.
+  tagline: Turn declarative .json.tmpl schemas into sub-second zero-shot Decision Policies with calibrated Shannon entropy (H)—via Decision Studio (Web UI), Model Context Protocol (MCP), HTTP REST API, or CLI across Vertex AI Dedicated Endpoints (/invoke/*), Serverless Cloud Run GPUs, and Apple Silicon Metal.
   image:
     file: ../../assets/hero.svg
   actions:
@@ -11,13 +11,13 @@ hero:
       link: /dgem/studio-mcp-api/
       icon: rocket
       variant: primary
-    - text: Decision Models Primer
-      link: /dgem/decision-models-primer/
-      icon: open-book
+    - text: Vertex AI (/invoke/*) vs. Cloud Run
+      link: /dgem/vertex-ai-vs-cloudrun/
+      icon: setting
       variant: secondary
-    - text: Experiments Ledger (EXP-01–11)
-      link: /dgem/experiments/
-      icon: document
+    - text: Experiment Authoring Guide
+      link: /dgem/experiment-authoring-guide/
+      icon: open-book
       variant: secondary
     - text: Benchmark Report
       link: /dgem/benchmarks/
@@ -38,16 +38,16 @@ import JevParityDashboard from '../../components/JevParityDashboard.astro';
 
 <CardGrid stagger>
   <Card title="🖥️ 1. Decision Studio Web App (dgem serve)" icon="laptop">
-    Embedded **Lit WebComponents** playground (`http://localhost:8080/`) featuring a live catalog of all **26+ `.json.tmpl` policies** (`core`, `calibration`, `multimodal`, `rerank`), interactive **SigLIP Bounding Box SVG Canvas (`EXP-09`)**, one-click **Scale-to-Zero Cloud Run GPU Warmup**, and **OpenTelemetry Trace Waterfall** inspection.
+    Embedded **Lit WebComponents** playground (`https://dgemma.aaie.cloud`) featuring all **26+ `.json.tmpl` policies**, topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, interactive **SigLIP Bounding Box SVG Canvas (`EXP-09`)**, and **OpenTelemetry Trace Waterfall** inspection.
   </Card>
   <Card title="🤖 2. Model Context Protocol (MCP) Server" icon="puzzle">
-    Connect **Gemini CLI**, **Claude Desktop**, **Cursor**, or cloud agents via `dgem mcp` (`stdio`) or `POST /mcp` (`Streamable HTTP`). Exposes **6 native MCP tools**: `decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, and `warmup_gpu`.
+    Connect **Gemini CLI**, **Claude Desktop**, **Cursor**, or cloud agents via `dgem mcp` (`stdio`) or `POST /mcp` (`Streamable HTTP`). Exposes **6 native MCP tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) with `backend` (`vertex_first` \| `vertex` \| `cloudrun`) and Stage 2 Gemini Cascade parameters.
   </Card>
-  <Card title="🌐 3. HTTP Gateway REST API (/api/decide)" icon="external">
-    Call `POST /api/decide/{template}` from any microservice, web frontend, or `curl` with a simple JSON variable map—no local `dgem` CLI or `.json.tmpl` files required. Automatically mints GCP IAM/IAP identity tokens and holds requests while scale-from-zero Cloud Run GPUs wake up.
+  <Card title="🌐 3. HTTP Gateway REST API (/api/decide & /v1/systemone)" icon="external">
+    Call `POST /api/decide/{template}` or `POST /v1/systemone` with `X-DGem-Backend: vertex_first | vertex | cloudrun` (`X-DGem-Backend-Used` returned on every response). Automatically routes to the warm Vertex AI Dedicated Endpoint (`0.0 s` wakeup, `~490 ms` GPU denoise) with seamless Cloud Run failover.
   </Card>
   <Card title="⌨️ 4. CLI & 7 Benchmark Harnesses" icon="terminal">
-    Execute sub-second decisions (`dgem decide`), generative prompts (`dgem ask`), and seven reproducible benchmark suites (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`) backed by immutable JSON telemetry receipts.
+    Execute sub-second decisions (`dgem decide --vertex-url 4217256562927861760`), generative prompts (`dgem ask`), and seven reproducible benchmark suites (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`).
   </Card>
 </CardGrid>
 
@@ -59,30 +59,29 @@ import JevParityDashboard from '../../components/JevParityDashboard.astro';
   <Card title="📜 Policy-as-Template (Zero-Shot)" icon="document">
     Treat `.json.tmpl` files as executable decision policies rather than brittle prompts. Add new boolean gates, `[A-Z]` choices, or ordinal rubrics in seconds without retraining encoder heads—achieving **100% accuracy** on `AgentDrift` trajectory hijacks, `deepset/prompt-injections`, `LLM-AggreFact` grounding, and `MS MARCO`.
   </Card>
-  <Card title="📊 Epistemic Calibration (ChaosNLI 8.0×)" icon="random">
-    Restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ rises monotonically with human annotator disagreement—spiking **8.0× higher** (`0.0744` $\rightarrow$ `0.5932 nats`) on split `ChaosNLI` items to provide a mathematically grounded **Abstain / Escalate gate (`EXP-05`, 98.0% cascade accuracy)**.
+  <Card title="📊 Epistemic Calibration & Stage 2 Gemini Cascade" icon="random">
+    Restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ rises monotonically with human annotator disagreement—spiking **8.0× higher** (`0.0744` $\rightarrow$ `0.5932 nats`) on split `ChaosNLI` items to drive the **Stage 2 Gemini Cascade (`gemini-3.8-flash` default, `EXP-05`, 98.0% accuracy)**.
   </Card>
   <Card title="🔎 Listwise Reranking & Spatial Grounding" icon="magnifier">
     Continuous Softmax Expectation ($\hat{r}_i = \sum g \cdot p_{i,g}$) scores **10 candidate RAG passages + 2 security gates in 1 pass (`EXP-10`, `0.9265 nDCG@10`, `0.0%` tie rate)** and regresses sub-bin 2D bounding boxes (`EXP-09`, `+30.2% mIoU`) with per-edge occlusion entropy.
   </Card>
-  <Card title="☁️ Zero-Idle-Cost Cloud Run & Apple Metal" icon="seti:terraform">
-    Run offline on macOS M-series hardware (`diffgemma`) or deploy scale-to-zero containers (`dgemma`) on Cloud Run `1× NVIDIA L4` (`24GB`) and `1× NVIDIA RTX Pro 6000` (`48GB`, `SigLIP` vision) with GCS FUSE safetensors prefetching.
+  <Card title="☁️ Vertex AI (/invoke/*), Cloud Run & Apple Metal" icon="seti:terraform">
+    Run with **`0.0 s` cold start (`~490 ms` GPU denoise)** on **Vertex AI Dedicated Endpoints (`g2-standard-16` `1× L4`, `64 GB` RAM)**, scale-to-zero (`$0.00/hr` idle) on **Cloud Run GPU**, or offline on **Apple Silicon Metal**.
   </Card>
 </CardGrid>
 
 ---
 
-## Multi-Environment Serving Matrix
+## Multi-Environment Serving Matrix (4 Primary Serving Targets)
 
-`dgem` acts as a unified policy gateway, web studio, MCP server, and benchmark driver across five serving configurations:
+See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](/dgem/vertex-ai-vs-cloudrun/)** for the full architectural breakdown and live 30-case benchmark comparison:
 
-| Environment | Engine & Backend | Model & Precision | Verified Latency | Primary Use Case |
+| Serving Target | Engine & Hardware Shape | Cold-Start / Wakeup | Verified GPU Denoise / Wall Time | Primary Use Case |
 | :--- | :--- | :--- | :--- | :--- |
-| **Serverless Cloud Run (`1× L4` 24GB)** | `structured_server.py` + vLLM (`TRITON_ATTN`) | `nvidia/diffusiongemma-26B-A4B-it-NVFP4`<br />4-bit NVFP4 (GCS FUSE prefetch) | **458.9 ms avg** (`bench`)<br />**1,377 ms warm** (`bench-rerank` 12 slots) | Scale-to-zero serverless guardrails, listwise reranking (`EXP-10`), & CI/CD policy gating |
-| **Serverless Cloud Run (`1× RTX Pro 6000` 48GB)** | `structured_server.py` + vLLM + `SigLIP` Vision (`DISABLE_MM=0`) | `nvidia/diffusiongemma-26B-A4B-it-NVFP4`<br />4-bit NVFP4 (`80Gi` RAM, `48GB` VRAM) | **~520 ms warm** (`EXP-09` 5-slot bbox) | Multimodal `SigLIP` spatial grounding (`EXP-09`), Decision Studio & MCP cloud backend |
-| **Apple Silicon (M-series)** | Native Rust Metal (`diffgemma`) | `diffgemma-26b-a4b-it-q4`<br />4-bit quantized (~18.8 GB Unified RAM) | **~1,659 ms** (`bench` 3-slot)<br />~425–850 ms (1-slot) | Local development, offline privacy, $0 cloud cost |
-| **Google Compute Engine (`1× L4`)** | Raw vLLM + Triton Attention (`TRITON_ATTN`) | `nvidia/diffusiongemma-26B-A4B-it-NVFP4`<br />4-bit NVFP4 (18.1 GB VRAM) | **~1,968 ms avg**<br />(1-slot intent: ~650 ms) | High-throughput continuous batching (`Banking77` / `CLINC150`) |
-| **Google Compute Engine (`2× A100`)** | vLLM Tensor Parallel (`TP=2`) | `google/diffusiongemma-26B-A4B-it`<br />**16-bit Unquantized** (`bfloat16`, 50.1 GB) | **~2,733 ms avg** | Reference precision baseline, zero quantization loss |
+| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `structured_server.py` + vLLM (`TRITON_ATTN`) on **`g2-standard-16` (`1× NVIDIA L4` `24GB` VRAM, `64GB` RAM, ID `4217256562927861760`)** | **`0.0 s`** (`minReplicaCount=1`, permanently warm) | **`490.0 ms` avg GPU** (`536.0 ms` wall for `N=4`; `195 ms` for `N=1`) | **Recommended Primary Target (`vertex_first` default)**: Zero cold-start SLA, interactive agents, synchronous CI/CD gates, and multimodal `SigLIP` headroom. |
+| **2. Serverless Cloud Run GPU (`dgemma`)** | `structured_server.py` + vLLM on **`1× NVIDIA RTX Pro 6000` (`48GB` VRAM, `80Gi` RAM)** or **`1× L4` (`24GB`)** | **`~121.8 s`** (`0 → 1` scale-from-zero, `$0.00/hr` idle) | **`427.3 ms` avg GPU** (`459.0 ms` warm wall) | **Scale-to-Zero & Auto-Failover Standby (`cloudrun`)**: Episodic batch evaluations, research experiments, and `$0.00/hr` idle sandboxes. |
+| **3. Google Compute Engine VM (`1× L4` / `2× A100`)** | Raw vLLM + Triton Attention (`TRITON_ATTN`) on `g2-standard-8` (`1× L4` `NVFP4`) or `a2-highgpu-2g` (`2× A100` `bfloat16`) | **`0.0 s`** (dedicated VM) | **`~1,968.7 ms`** (`L4`) / **`~2,733 ms`** (`2× A100`) | High-throughput continuous batching (`Banking77` / `CLINC150`) and 16-bit unquantized `bfloat16` baselines. |
+| **4. Local Apple Silicon (`Metal`)** | Native Rust Metal (`diffgemma`) with `diffgemma-26b-a4b-it-q4` (`~18.8 GB` Unified RAM) | **`0.0 s`** (local daemon) | **`892.0 ms` avg GPU** (`898.5 ms` wall; `210 ms` for `N=1`) | Local development, offline privacy, `$0.00/hr` cloud cost. |
 
 ---
 

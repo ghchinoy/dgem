@@ -132,24 +132,25 @@ Or connect directly to a running `dgem serve` gateway over **Streamable HTTP**:
 | **`get_health_and_gpu_status`** | `{}` | Returns `gateway_healthy`, `gpu_available`, `gpu_state` (`warm_and_ready`, `warming_up`, `scaled_to_zero`), `seconds_since_last_read`, `estimated_wake_seconds`, `gpu_tier`, and `templates_available`. Agents call this first to check if the Cloud Run GPU is warm. |
 | **`warmup_gpu`** | `{"wait_for_ready": true \| false}` | Triggers a scale-from-zero wakeup (`0 -> 1` instance) on the Cloud Run GPU backend. Set `wait_for_ready: false` to start streaming the 17.53 GiB safetensors over GCS FUSE asynchronously while the agent performs other work. |
 | **`list_policy_templates`** | `{"category": "core" \| "calibration" \| "multimodal" \| "rerank"}` | Lists all 26+ executable `.json.tmpl` decision policies, their required `variables`, and `sample_vars`. |
-| **`decide_policy`** | `{"template": "support_triage", "variables": {...}, "image": "..."}` | Executes any named `.json.tmpl` policy in $O(1)$ forward passes and returns joint `answers`, restricted-softmax `probabilities`, per-slot `entropy` ($H$ in nats), `max_entropy`, and `wall_time_ms`. |
-| **`decide_custom_questions`** | `{"context": "...", "questions": [{"id": "...", "type": "boolean\|choice\|score", "question": "...", "options": [...]}]}` | Evaluates an ad-hoc multi-slot decision schema dynamically constructed by the calling agent in 1 forward pass—without needing a pre-existing `.json.tmpl` file on disk. |
-| **`locate_bounding_boxes`** | `{"image": "<url-or-data-uri>", "target": "checkout button"}` | Executes single-pass `SigLIP` 2D spatial localization (`EXP-09`), returning both `softmax_expectation_box_1000` ($\hat{c}_m = \sum_k v_k p_{m,k}$) and `discrete_argmax_box_1000` `[ymin, xmin, ymax, xmax]` in `[0, 1000]` coordinates plus per-edge occlusion entropy (`coordinate_entropy_nats`). |
+| **`decide_policy`** | `{"template": "support_triage", "variables": {...}, "image": "...", "backend": "vertex_first\|vertex\|cloudrun", "vertex_url": "...", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}` | Executes any named `.json.tmpl` policy in $O(1)$ forward passes on `vertex_first` (default), `vertex`, or `cloudrun`, with optional Stage 2 Gemini Cascade (`gemini-3.8-flash`), returning `answers`, restricted-softmax `probabilities`, per-slot `entropy`, `backend_used`, and `wall_time_ms`. |
+| **`decide_custom_questions`** | `{"context": "...", "questions": [{"id": "...", "type": "boolean\|choice\|score", "question": "...", "options": [...]}], "backend": "vertex_first\|vertex\|cloudrun", "vertex_url": "...", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}` | Evaluates an ad-hoc multi-slot decision schema dynamically constructed by the calling agent in 1 forward pass—the MCP equivalent of `POST /v1/systemone`—without needing a `.json.tmpl` file on disk. |
+| **`locate_bounding_boxes`** | `{"image": "<url-or-data-uri>", "target": "checkout button", "backend": "vertex_first\|vertex\|cloudrun", "vertex_url": "..."}` | Executes single-pass `SigLIP` 2D spatial localization (`EXP-09`), returning both `softmax_expectation_box_1000` ($\hat{c}_m = \sum_k v_k p_{m,k}$) and `discrete_argmax_box_1000` `[ymin, xmin, ymax, xmax]` in `[0, 1000]` coordinates plus per-edge occlusion entropy (`coordinate_entropy_nats`). |
 
 ---
 
 ## 4. HTTP Gateway REST API Reference (`dgem serve`)
 
-Any service or script can query `dgem serve` using standard HTTP/JSON without installing the `dgem` CLI or templates locally.
+Any service or script can query `dgem serve` (`https://dgemma.aaie.cloud`) using standard HTTP/JSON. Pass `X-DGem-Backend: vertex_first | vertex | cloudrun` (or `?backend=vertex_first` / JSON `"backend": "vertex_first"`) to select the GPU target; every response returns `X-DGem-Backend-Used: vertex | cloudrun`.
 
 | Endpoint | Method | Description |
 | :--- | :---: | :--- |
-| **`/api/decide/{template}`** | `POST` | Renders `{template}.json.tmpl` with `{"variables": {...}, "image": "..."}`, runs 1-pass `DiffusionGemma` readout (holding/retrying automatically if the Cloud Run GPU is cold-starting), and returns `answers`, `diagnostics`, `max_entropy`, `gpu_forward_ms`, `cold_start_wait_ms`, and `trace_spans`. |
+| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders `{template}.json.tmpl` (or inline `custom_template`) with `{"variables": {...}, "backend": "vertex_first", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}`, runs 1-pass `DiffusionGemma` readout, and returns `answers`, `diagnostics`, `backend_used`, `max_entropy`, `gpu_forward_ms`, and `trace_spans`. |
+| **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` multipart image + JSON `state`/`questions` schema evaluation) across Vertex AI (`/invoke/v1/systemone`) or Cloud Run GPU (`/v1/systemone`). |
 | **`/api/templates`** | `GET` | Returns the full JSON catalog of discovered `.json.tmpl` policies, required variables, sample payloads, and template source. |
-| **`/api/status`** | `GET` | Returns real-time health and scale-to-zero GPU state (`warm_and_ready`, `warming_up`, `scaled_to_zero`). |
+| **`/api/status` & `/api/vertex/status`** | `GET` | Returns real-time health and replica state for both Cloud Run GPU (`dgemma`) and Vertex AI Dedicated Endpoint (`4217256562927861760`). |
 | **`/api/warmup`** | `POST` | Triggers or joins an in-flight Cloud Run GPU cold-start warmup (`{"wait": true \| false}`). |
 | **`/api/traces`** | `GET` | Returns recent OpenTelemetry traces (`?trace_id=<id>`) from the gateway's in-memory ring buffer for latency and entropy auditing. |
-| **`/v1/chat/completions`** | `POST` | OpenAI-compatible pass-through proxy to the upstream `DiffusionGemma` server with automatic GCP IAM/IAP token injection and cold-start retry protection. |
+| **`/v1/chat/completions` & `/v1/raw/chat/completions`** | `POST` | OpenAI-compatible structured envelope and raw vLLM pass-through proxies with `vertex_first` auto-failover and automatic GCP IAM/OAuth2 token injection. |
 | **`/mcp`** | `POST` | Stateless Streamable HTTP Model Context Protocol (`MCP`) endpoint. |
 
 ### Example: Calling the REST Gateway API with `curl`

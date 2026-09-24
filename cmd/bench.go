@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
@@ -19,6 +20,7 @@ var (
 	benchMode              string
 	benchOutput            string
 	benchLimit             int
+	benchWorkers           int
 	benchIncludeGenerative bool
 )
 
@@ -36,6 +38,7 @@ func init() {
 	benchCmd.Flags().StringVarP(&benchMode, "mode", "M", "slot", "Benchmark mode: 'slot' (slot readout only), 'generative', or 'both'")
 	benchCmd.Flags().StringVarP(&benchOutput, "output", "o", "", "Export structured JSON benchmark metrics to file")
 	benchCmd.Flags().IntVarP(&benchLimit, "limit", "n", 0, "Limit number of cases to evaluate (0 = all)")
+	benchCmd.Flags().IntVarP(&benchWorkers, "workers", "w", 1, "Number of concurrent evaluation workers")
 	benchCmd.Flags().BoolVar(&benchIncludeGenerative, "with-generative", false, "Deprecated: use --mode both instead")
 
 	RootCmd.AddCommand(benchCmd)
@@ -72,19 +75,21 @@ type CaseResult struct {
 
 // BenchmarkReport summarizes the aggregated benchmark run.
 type BenchmarkReport struct {
-	Timestamp      string       `json:"timestamp"`
-	TargetURL      string       `json:"target_url"`
-	TargetModel    string       `json:"target_model"`
-	TotalCases     int          `json:"total_cases"`
-	Mode           string       `json:"mode"`
-	SlotAvgDenoise float64      `json:"slot_avg_denoise_ms"`
-	SlotAvgWall    float64      `json:"slot_avg_wall_ms"`
-	SlotAccuracy   float64      `json:"slot_accuracy_pct"`
-	SlotMultiReads int          `json:"slot_multi_reads_triggered"`
-	GenAvgWall     float64      `json:"gen_avg_wall_ms,omitempty"`
-	GenAvgTokens   float64      `json:"gen_avg_tokens,omitempty"`
-	GenSyntaxRate  float64      `json:"gen_syntax_rate_pct,omitempty"`
-	Cases          []CaseResult `json:"cases"`
+	Timestamp       string       `json:"timestamp"`
+	TargetURL       string       `json:"target_url"`
+	TargetModel     string       `json:"target_model"`
+	TotalCases      int          `json:"total_cases"`
+	Workers         int          `json:"workers"`
+	TotalElapsedSec float64      `json:"total_elapsed_sec"`
+	Mode            string       `json:"mode"`
+	SlotAvgDenoise  float64      `json:"slot_avg_denoise_ms"`
+	SlotAvgWall     float64      `json:"slot_avg_wall_ms"`
+	SlotAccuracy    float64      `json:"slot_accuracy_pct"`
+	SlotMultiReads  int          `json:"slot_multi_reads_triggered"`
+	GenAvgWall      float64      `json:"gen_avg_wall_ms,omitempty"`
+	GenAvgTokens    float64      `json:"gen_avg_tokens,omitempty"`
+	GenSyntaxRate   float64      `json:"gen_syntax_rate_pct,omitempty"`
+	Cases           []CaseResult `json:"cases"`
 }
 
 var fallbackCases = []EvalCase{
@@ -173,7 +178,6 @@ func loadDataset(path string) ([]EvalCase, error) {
 func runBench(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	c := GetClient()
-	engine := template.NewEngine()
 
 	mode := strings.ToLower(benchMode)
 	if benchIncludeGenerative {
@@ -209,7 +213,7 @@ func runBench(cmd *cobra.Command, args []string) error {
 		fmt.Println("Warmup complete. Server is healthy.")
 	}
 
-	var results []CaseResult
+	results := make([]CaseResult, len(cases))
 	var correctCount int
 
 	fmt.Println(strings.Repeat("-", 90))
@@ -217,106 +221,123 @@ func runBench(cmd *cobra.Command, args []string) error {
 		"ID", "Domain", "Tier", "Match", "Samples", "Denoise", "Wall", "Status")
 	fmt.Println(strings.Repeat("-", 90))
 
-	for _, tc := range cases {
-		cr := CaseResult{
-			ID:     tc.ID,
-			Domain: tc.Domain,
-			Tier:   tc.Tier,
-		}
+	workers := benchWorkers
+	if workers < 1 {
+		workers = 1
+	}
+	if workers > len(cases) {
+		workers = len(cases)
+	}
 
-		// 1. Run Slot Readout if requested
-		if mode == "slot" || mode == "both" {
-			rendered, err := engine.RenderFile(tc.Template, tc.Variables)
-			if err != nil {
-				return fmt.Errorf("case %s template render failed: %w", tc.ID, err)
-			}
-			schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, tc.Variables)
-			if err != nil {
-				return fmt.Errorf("case %s payload parse failed: %w", tc.ID, err)
-			}
+	suiteStart := time.Now()
+	jobs := make(chan int, len(cases))
+	var wg sync.WaitGroup
+	var printMu sync.Mutex
 
-			resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
-			if err != nil {
-				cr.SlotAccurate = false
-				cr.SlotWallTimeMs = 0
-			} else {
-				cr.SlotDenoiseMs = stats.DenoiseMs
-				cr.SlotPrefillMs = stats.PrefillMs
-				cr.SlotWallTimeMs = float64(stats.WallTime.Milliseconds())
-				cr.SlotSamples = stats.SamplesN
-				cr.SlotExtended = stats.Extended
-				cr.SlotAnswers = make(map[string]interface{})
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			localEngine := template.NewEngine()
+			for idx := range jobs {
+				tc := cases[idx]
+				cr := CaseResult{
+					ID:     tc.ID,
+					Domain: tc.Domain,
+					Tier:   tc.Tier,
+				}
 
-				// Check accuracy against expected
-				matchAll := true
-				for expKey, expVal := range tc.Expected {
-					ans, ok := resp.Answers[expKey]
-					if !ok {
-						matchAll = false
-						break
-					}
-					actual := strings.ToLower(ans.DisplayValue())
-					expected := strings.ToLower(expVal)
-					if actual != expected {
-						if (actual == "true" && expected == "yes") || (actual == "false" && expected == "no") ||
-							(actual == "yes" && expected == "true") || (actual == "no" && expected == "false") {
-							// match
-						} else {
-							matchAll = false
+				if mode == "slot" || mode == "both" {
+					rendered, err := localEngine.RenderFile(tc.Template, tc.Variables)
+					if err == nil {
+						schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, tc.Variables)
+						if err == nil {
+							resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
+							if err == nil {
+								cr.SlotDenoiseMs = stats.DenoiseMs
+								cr.SlotPrefillMs = stats.PrefillMs
+								cr.SlotWallTimeMs = float64(stats.WallTime.Milliseconds())
+								cr.SlotSamples = stats.SamplesN
+								cr.SlotExtended = stats.Extended
+								cr.SlotAnswers = make(map[string]interface{})
+
+								matchAll := true
+								for expKey, expVal := range tc.Expected {
+									ans, ok := resp.Answers[expKey]
+									if !ok {
+										matchAll = false
+										break
+									}
+									actual := strings.ToLower(ans.DisplayValue())
+									expected := strings.ToLower(expVal)
+									if actual != expected {
+										if (actual == "true" && expected == "yes") || (actual == "false" && expected == "no") ||
+											(actual == "yes" && expected == "true") || (actual == "no" && expected == "false") {
+											// match
+										} else {
+											matchAll = false
+										}
+									}
+									cr.SlotAnswers[expKey] = actual
+								}
+								cr.SlotAccurate = matchAll
+							}
 						}
 					}
-					cr.SlotAnswers[expKey] = actual
 				}
-				cr.SlotAccurate = matchAll
-				if matchAll {
-					correctCount++
-				}
-			}
-		}
 
-		// 2. Run Generative if requested
-		if mode == "generative" || mode == "both" {
-			varParts := make([]string, 0, len(tc.Variables))
-			for k, v := range tc.Variables {
-				varParts = append(varParts, fmt.Sprintf("%s: %v", k, v))
-			}
-			prompt := fmt.Sprintf("Classify this data. Output strictly valid JSON object matching fields for this case.\n\nData: %s",
-				strings.Join(varParts, "\n"))
+				if mode == "generative" || mode == "both" {
+					varParts := make([]string, 0, len(tc.Variables))
+					for k, v := range tc.Variables {
+						varParts = append(varParts, fmt.Sprintf("%s: %v", k, v))
+					}
+					prompt := fmt.Sprintf("Classify this data. Output strictly valid JSON object matching fields for this case.\n\nData: %s",
+						strings.Join(varParts, "\n"))
 
-			genModel := c.Model
-			if !strings.Contains(genModel, ":think=false") {
-				genModel = genModel + ":think=false"
-			}
+					genModel := c.Model
+					if !strings.Contains(genModel, ":think=false") {
+						genModel = genModel + ":think=false"
+					}
 
-			chatResp, genStats, err := c.Complete(ctx, client.ChatCompletionRequest{
-				Model: genModel,
-				Messages: []client.ChatMessage{
-					{Role: "user", Content: prompt},
-				},
-				MaxTokens: 64,
-			})
-			if err == nil {
-				cr.GenWallTimeMs = float64(genStats.WallTime.Milliseconds())
-				cr.GenTokens = genStats.OutputTokens
-				if len(chatResp.Choices) > 0 {
-					cr.GenResponse = strings.TrimSpace(chatResp.Choices[0].Message.RawContent())
-					var testJSON map[string]interface{}
-					if json.Unmarshal([]byte(cr.GenResponse), &testJSON) == nil {
-						cr.GenValidJSON = true
+					chatResp, genStats, err := c.Complete(ctx, client.ChatCompletionRequest{
+						Model: genModel,
+						Messages: []client.ChatMessage{
+							{Role: "user", Content: prompt},
+						},
+						MaxTokens: 64,
+					})
+					if err == nil {
+						cr.GenWallTimeMs = float64(genStats.WallTime.Milliseconds())
+						cr.GenTokens = genStats.OutputTokens
+						if len(chatResp.Choices) > 0 {
+							cr.GenResponse = strings.TrimSpace(chatResp.Choices[0].Message.RawContent())
+							var testJSON map[string]interface{}
+							if json.Unmarshal([]byte(cr.GenResponse), &testJSON) == nil {
+								cr.GenValidJSON = true
+							}
+						}
 					}
 				}
+
+				results[idx] = cr
+				matchStr := "PASS"
+				if !cr.SlotAccurate {
+					matchStr = "FAIL"
+				}
+				printMu.Lock()
+				fmt.Printf("%-8s | %-12s | %-12s | %-6s | %7d | %6.0fms | %6.0fms | %s\n",
+					cr.ID, cr.Domain, cr.Tier, matchStr, cr.SlotSamples, cr.SlotDenoiseMs, cr.SlotWallTimeMs, "OK")
+				printMu.Unlock()
 			}
-		}
-
-		results = append(results, cr)
-
-		matchStr := "PASS"
-		if !cr.SlotAccurate {
-			matchStr = "FAIL"
-		}
-		fmt.Printf("%-8s | %-12s | %-12s | %-6s | %7d | %6.0fms | %6.0fms | %s\n",
-			cr.ID, cr.Domain, cr.Tier, matchStr, cr.SlotSamples, cr.SlotDenoiseMs, cr.SlotWallTimeMs, "OK")
+		}()
 	}
+
+	for i := range cases {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	totalElapsedSec := time.Since(suiteStart).Seconds()
 
 	// Calculate aggregates
 	var sumDenoise, sumSlotWall, sumGenWall float64
@@ -324,6 +345,9 @@ func runBench(cmd *cobra.Command, args []string) error {
 	var multiReads, genValidCount int
 
 	for _, r := range results {
+		if r.SlotAccurate {
+			correctCount++
+		}
 		sumDenoise += r.SlotDenoiseMs
 		sumSlotWall += r.SlotWallTimeMs
 		if r.SlotExtended {
@@ -340,16 +364,18 @@ func runBench(cmd *cobra.Command, args []string) error {
 
 	n := float64(len(results))
 	report := BenchmarkReport{
-		Timestamp:      time.Now().UTC().Format(time.RFC3339),
-		TargetURL:      c.BaseURL,
-		TargetModel:    c.Model,
-		TotalCases:     len(results),
-		Mode:           mode,
-		SlotAvgDenoise: sumDenoise / n,
-		SlotAvgWall:    sumSlotWall / n,
-		SlotAccuracy:   float64(correctCount) / n * 100,
-		SlotMultiReads: multiReads,
-		Cases:          results,
+		Timestamp:       time.Now().UTC().Format(time.RFC3339),
+		TargetURL:       c.BaseURL,
+		TargetModel:     c.Model,
+		TotalCases:      len(results),
+		Workers:         workers,
+		TotalElapsedSec: totalElapsedSec,
+		Mode:            mode,
+		SlotAvgDenoise:  sumDenoise / n,
+		SlotAvgWall:     sumSlotWall / n,
+		SlotAccuracy:    float64(correctCount) / n * 100,
+		SlotMultiReads:  multiReads,
+		Cases:           results,
 	}
 
 	if mode == "generative" || mode == "both" {

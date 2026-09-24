@@ -173,3 +173,41 @@ make vertex-deploy
 # 2. Undeploy replicas when zero-idle-cost ($0.00/hr) is desired
 make vertex-teardown
 ```
+
+---
+
+## 5. 4-Phase Head-to-Head Benchmark Matrix (`scripts/compare_vertex_vs_cloudrun.sh`)
+
+All empirical receipts are stored in [`benchmarks/results_head_to_head_vertex_vs_cloudrun.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_head_to_head_vertex_vs_cloudrun.json), [`benchmarks/results_calibration_vertex_l4.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_calibration_vertex_l4.json), and [`benchmarks/results_rerank_vertex_l4.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_rerank_vertex_l4.json).
+
+### Phase 1: Concurrency & Tail-Latency Scaling (`dgem bench` 30-Case Multi-Slot Suite)
+
+| Concurrency (`-w`) | Active vLLM Sequences (`w × 4`) | Accuracy | GPU Denoise `p50` | GPU Denoise `p90` | GPU Denoise `p99` | Client Wall `p50` | Sustained Throughput | Operational Note |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`w=1` (Sequential)** | `4` sequences | **`80.0%` (`24/30`)** | **`499.4 ms`** | **`517.1 ms`** | **`576.0 ms`** | **`534.0 ms`** | `1.87 dec/sec` | Lowest per-request latency (`188 ms` when `N=1`) |
+| **`w=4` (4 Workers)** | `16` sequences (`= MAX_NUM_SEQS`) | **`76.7%` (`23/30`)** | **`717.4 ms`** | **`769.8 ms`** | **`827.6 ms`** | **`786.0 ms`** | **`5.44 dec/sec`** (`30` cases in `5.51s`) | **Sweet-spot concurrency** for 1× NVIDIA L4 (`24 GB` VRAM) |
+| **`w=8` (8 Workers)** | `32` sequences | **`76.7%` (`23/30`)** | **`1009.4 ms`** | **`1025.7 ms`** | **`1054.5 ms`** | **`1047.0 ms`** | **`7.49 dec/sec`** (`30` cases in `4.01s`) | **Peak throughput** on a single L4 GPU replica (`100%` HTTP 200) |
+| **`w=16` (16 Workers)** | `64` sequences | — | — | — | — | — | — | Exceeds single-L4 `24 GB` KV-cache (`MAX_NUM_SEQS=16`); scale `max-replica-count >= 2` or cap `w <= 8` per L4 |
+
+### Phase 2: 50-Case Public Dataset Calibration & Guardrail Suite (`dgem bench-calibration`, `EXP-04`)
+
+| Metric | **Vertex AI Dedicated Endpoint (`4217256562927861760`)** | **Serverless Cloud Run GPU (`dgemma`)** |
+| :--- | :--- | :--- |
+| **Overall Suite Accuracy (`50` cases)** | **`88.0%` (`44/50`)** | **`82.0%` (`41/50`)** |
+| **Chance-Corrected Accuracy (`JevBench`)** | **`83.05%`** | **`74.57%`** |
+| **10-Bin Expected Calibration Error (`ECE`)** | **`0.0470` (`4.70%`)** | **`0.0684` (`6.84%`)** |
+| **Multi-Class Brier Score** | **`0.1944`** | **`0.2412`** |
+| **Composite `JevBench v1.3.1` Score (GeoMean)** | **`73.37`** (`Intelligence: 84.10`, `Calibration: 84.85`) | **`71.18`** |
+| **Median Latency (`p50`)** | **`790.0 ms`** | **`712.0 ms`** |
+
+### Phase 3: 30-Query (300-Passage) 12-Slot Listwise Diffusion Reranking (`dgem bench-rerank`, `EXP-10`)
+
+| Metric | **Vertex AI Dedicated Endpoint (`4217256562927861760`)** | **Serverless Cloud Run GPU (`dgemma`)** |
+| :--- | :--- | :--- |
+| **Simultaneous Slots per Forward Pass** | `12` slots (`10` passage grades + `poisoned_passage` + `answer_present`) | `12` slots (`10` passage grades + `poisoned_passage` + `answer_present`) |
+| **Mean Wall Latency (`12` Slots / ~2,000 tokens)** | **`1,631.9 ms`** (`~136 ms/slot`) | **`1,454.3 ms` – `2,336.4 ms`** |
+| **Continuous Expectation `nDCG@10`** | **`0.8502`** | **`0.9265`** |
+| **FollowIR Policy-Flip `p-MRR`** | **`+0.8350`** | **`+0.7533`** |
+| **Exact Tie Rate** | **`0.0%`** | **`0.0%`** |
+| **RAG Prompt-Injection Poison Quarantine** | **`100.0%`** | **`100.0%`** |
+
