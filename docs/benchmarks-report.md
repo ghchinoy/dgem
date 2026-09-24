@@ -225,13 +225,12 @@ Stratifying the 50 benchmark items by their human annotator disagreement tier (`
 
 * **Why This Matters for Production Guardrails**: On `ChaosNLI`, when 100 human annotators agree (`low-entropy`), DiffusionGemma achieves **100% accuracy** with near-zero entropy (`H = 0.0744 nats`). When the human crowd itself splits evenly across `entailment`, `neutral`, and `contradiction` (`high-entropy`), DiffusionGemma's internal Shannon entropy spikes **8.0× higher (`H = 0.5932 nats`)**—providing an uncalibrated autoregressive LLM's missing signal: **a mathematically grounded abstention / escalation gate**.
 
-### 8.3 Head-to-Head: DiffusionGemma 26B vs. `gemini-3.8-flash`, `gemini-3.5-flash-lite`, and `gemini-2.5-flash`
+### 8.3 Head-to-Head: DiffusionGemma 26B vs. `gemini-3.8-flash` and `gemini-3.5-flash-lite`
 
-Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/results_calibration_gemini38.json`](../benchmarks/results_calibration_gemini38.json)) and cross-referencing the 46-case `mizan eval compare-engines` sweep across `gemini-2.5-flash`, `gemini-3.5-flash-lite`, and `gemini-3.8-flash`, we compared single-pass discrete diffusion readout on a Cloud Run L4 GPU (`NVFP4`) against Vertex AI autoregressive models:
+Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/results_calibration_gemini38.json`](../benchmarks/results_calibration_gemini38.json)) and cross-referencing the 46-case `mizan eval compare-engines` sweep across `gemini-3.5-flash-lite` and `gemini-3.8-flash`, we compared single-pass discrete diffusion readout on a Cloud Run L4 GPU (`NVFP4`) against Vertex AI autoregressive models:
 
 | Engine / Architecture | 46-Case `mizan` YAML Acc | 50-Case `dgem` Schema Acc | Avg Latency / Req | Speedup vs. `3.8-flash` | Architectural Strength |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **`gemini-2.5-flash`** (Vertex AI Autoregressive) | 80.4% (37 / 46) | — | 2,423 ms | 1.41× | Baseline previous-generation Flash model |
 | **`gemini-3.5-flash-lite`** (Vertex AI Autoregressive) | 82.6% (38 / 46) | — | 905 ms | 3.77× | Fast general-purpose autoregressive lite model |
 | **`DiffusionGemma 26B`** (Cloud Run 1× L4 `NVFP4`, `s=1`) | **89.1% (41 / 46)** | **88.0% (44 / 50)** | **712 ms** ⭐ | **4.79× faster** ⭐ | **100% AgentDrift (`693 ms`), 100% Guardrail (`669 ms`), 100% Intent (`765 ms`)**, calibrated Shannon entropy $H$ |
 | **`gemini-3.8-flash`** (Vertex AI Autoregressive) | 87.0% (40 / 46) | **98.0% (49 / 50)** 🏆 | 3,412 ms | 1.00× (Baseline) | **100% ANLI (`3/3`), 100% ChaosNLI (`6/6`), 100% Toxicity (`6/6`)** via multi-hop reasoning |
