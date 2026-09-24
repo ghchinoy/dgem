@@ -315,10 +315,27 @@ func normalizeQuestionAnswers(s *StructuredDecisionResponse) *StructuredDecision
 	if s == nil {
 		return nil
 	}
+	if s.Answers == nil {
+		s.Answers = make(map[string]QuestionAnswer)
+	}
+	if s.Diagnostics.Questions == nil {
+		s.Diagnostics.Questions = make(map[string]QuestionDiagnostic)
+	}
 	for k, qa := range s.Answers {
 		if qa.Type == "noul" {
 			qa.Type = "bool"
-			s.Answers[k] = qa
+		}
+		if qa.Probabilities == nil {
+			qa.Probabilities = make(map[string]float64)
+		}
+		s.Answers[k] = qa
+		if _, ok := s.Diagnostics.Questions[k]; !ok {
+			s.Diagnostics.Questions[k] = QuestionDiagnostic{
+				ArgmaxIsLabel: true,
+				ArgmaxToken:   qa.DisplayValue(),
+				Entropy:       qa.Entropy,
+				LabelMass:     qa.Confidence,
+			}
 		}
 	}
 	return s

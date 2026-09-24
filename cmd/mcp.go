@@ -237,7 +237,7 @@ func runRemoteMCPProxy(remoteURL string) error {
 		}
 	}
 
-	handleLine := func(line []byte, reqID *json.RawMessage, method string) {
+	handleLine := func(line []byte, reqID *json.RawMessage, method string, rpcName string) {
 		stateMu.RLock()
 		protoVer := sessionProtoVer
 		sid := sessionID
@@ -253,6 +253,9 @@ func runRemoteMCPProxy(remoteURL string) error {
 		if method != "" {
 			req.Header.Set("Mcp-Method", method)
 		}
+		if rpcName != "" {
+			req.Header.Set("Mcp-Name", rpcName)
+		}
 		if protoVer != "" {
 			req.Header.Set("Mcp-Protocol-Version", protoVer)
 		}
@@ -263,6 +266,56 @@ func runRemoteMCPProxy(remoteURL string) error {
 		tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), remoteURL)
 		if tok != "" {
 			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+
+		// If get_health_and_gpu_status is called with a specific backend parameter,
+		// query /api/status?backend=<backend> directly so backend-specific telemetry is returned
+		// even if the remote gateway's /mcp schema was built before StatusToolInput.Backend.
+		if method == "tools/call" && rpcName == "get_health_and_gpu_status" {
+			var statusCall struct {
+				Params struct {
+					Arguments struct {
+						Backend string `json:"backend"`
+					} `json:"arguments"`
+				} `json:"params"`
+			}
+			if json.Unmarshal(line, &statusCall) == nil && strings.TrimSpace(statusCall.Params.Arguments.Backend) != "" {
+				bParam := strings.TrimSpace(statusCall.Params.Arguments.Backend)
+				apiStatusURL := strings.TrimSuffix(strings.TrimRight(remoteURL, "/"), "/mcp") + "/api/status?backend=" + bParam
+				sReq, sErr := http.NewRequest(http.MethodGet, apiStatusURL, nil)
+				if sErr == nil {
+					if tok != "" {
+						sReq.Header.Set("Authorization", "Bearer "+tok)
+					}
+					if sResp, doErr := httpClient.Do(sReq); doErr == nil {
+						sBody, _ := io.ReadAll(sResp.Body)
+						sResp.Body.Close()
+						if sResp.StatusCode == http.StatusOK && len(sBody) > 0 {
+							var rawObj map[string]interface{}
+							if json.Unmarshal(sBody, &rawObj) == nil {
+								normBytes, _ := json.Marshal(rawObj)
+								rpcResult := map[string]interface{}{
+									"jsonrpc": "2.0",
+									"id":      *reqID,
+									"result": map[string]interface{}{
+										"content": []map[string]interface{}{
+											{
+												"type": "text",
+												"text": string(normBytes),
+											},
+										},
+										"structuredContent": rawObj,
+									},
+								}
+								if outBytes, mErr := json.Marshal(rpcResult); mErr == nil {
+									writeStdoutLine(outBytes)
+									return
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 
 		isListen := method == "subscriptions/listen"
@@ -319,7 +372,148 @@ func runRemoteMCPProxy(remoteURL string) error {
 			return
 		}
 		if len(trimmed) > 0 && bytes.HasPrefix(trimmed, []byte("{")) {
+			if method == "tools/call" && (rpcName == "decide_policy" || rpcName == "decide_custom_questions") && bytes.Contains(trimmed, []byte("validating tool output:")) {
+				var callEnv struct {
+					Params struct {
+						Arguments json.RawMessage `json:"arguments"`
+					} `json:"params"`
+				}
+				if json.Unmarshal(line, &callEnv) == nil && len(callEnv.Params.Arguments) > 0 {
+					reqPayload := []byte(callEnv.Params.Arguments)
+					if rpcName == "decide_custom_questions" {
+						var customIn DecideCustomToolInput
+						if json.Unmarshal(callEnv.Params.Arguments, &customIn) == nil && len(customIn.Questions) > 0 {
+							var qList []map[string]interface{}
+							for _, q := range customIn.Questions {
+								qType := strings.ToLower(strings.TrimSpace(q.Type))
+								switch qType {
+								case "bool", "boolean", "noul":
+									qType = "boolean"
+								case "choice":
+									qType = "choice"
+								case "score", "scale":
+									qType = "score"
+								default:
+									qType = "boolean"
+								}
+								qObj := map[string]interface{}{
+									"id":       q.ID,
+									"type":     qType,
+									"question": q.Question,
+								}
+								if qType == "choice" && len(q.Options) > 0 {
+									var opts []map[string]string
+									for _, o := range q.Options {
+										opts = append(opts, map[string]string{"name": o, "description": o})
+									}
+									qObj["options"] = opts
+								}
+								qList = append(qList, qObj)
+							}
+							tmplBytes, _ := json.Marshal(map[string]interface{}{
+								"schema": map[string]interface{}{
+									"questions": qList,
+								},
+								"state": "{{.context}}",
+							})
+							gwReq := GatewayDecideRequest{
+								Template:          "custom_questions",
+								CustomTemplate:    string(tmplBytes),
+								Variables:         map[string]interface{}{"context": customIn.Context},
+								Backend:           customIn.Backend,
+								VertexURL:         customIn.VertexURL,
+								CascadeMode:       customIn.CascadeMode,
+								CascadeThreshold:  customIn.CascadeThreshold,
+								CascadeModel:      customIn.CascadeModel,
+								ExpectedAnswers:   customIn.ExpectedAnswers,
+								SuggestExpansions: customIn.SuggestExpansions,
+								ExpansionEntropy:  customIn.ExpansionEntropy,
+							}
+							if b, mErr := json.Marshal(gwReq); mErr == nil {
+								reqPayload = b
+							}
+						}
+					}
+					apiDecideURL := strings.TrimSuffix(strings.TrimRight(remoteURL, "/"), "/mcp") + "/api/decide"
+					fbReq, fbErr := http.NewRequest(http.MethodPost, apiDecideURL, bytes.NewReader(reqPayload))
+					if fbErr == nil {
+						fbReq.Header.Set("Content-Type", "application/json")
+						if tok != "" {
+							fbReq.Header.Set("Authorization", "Bearer "+tok)
+						}
+						if fbResp, doErr := httpClient.Do(fbReq); doErr == nil {
+							fbBody, _ := io.ReadAll(fbResp.Body)
+							fbResp.Body.Close()
+							if fbResp.StatusCode == http.StatusOK && len(fbBody) > 0 {
+								var rawObj map[string]interface{}
+								if json.Unmarshal(fbBody, &rawObj) == nil {
+									if diag, ok := rawObj["diagnostics"].(map[string]interface{}); ok {
+										if diag["questions"] == nil {
+											diag["questions"] = map[string]interface{}{}
+										}
+									}
+									if dec, ok := rawObj["decision"].(map[string]interface{}); ok {
+										if ddiag, ok := dec["diagnostics"].(map[string]interface{}); ok {
+											if ddiag["questions"] == nil {
+												ddiag["questions"] = map[string]interface{}{}
+											}
+										}
+									}
+									normBytes, _ := json.Marshal(rawObj)
+									rpcResult := map[string]interface{}{
+										"jsonrpc": "2.0",
+										"id":      *reqID,
+										"result": map[string]interface{}{
+											"content": []map[string]interface{}{
+												{
+													"type": "text",
+													"text": string(normBytes),
+												},
+											},
+											"structuredContent": rawObj,
+										},
+									}
+									if outBytes, mErr := json.Marshal(rpcResult); mErr == nil {
+										writeStdoutLine(outBytes)
+										return
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 			var compactBuf bytes.Buffer
+			if method == "tools/list" {
+				var listResp map[string]interface{}
+				if json.Unmarshal(trimmed, &listResp) == nil {
+					if res, ok := listResp["result"].(map[string]interface{}); ok {
+						if tools, ok := res["tools"].([]interface{}); ok {
+							for _, t := range tools {
+								if tm, ok := t.(map[string]interface{}); ok && tm["name"] == "get_health_and_gpu_status" {
+									if schema, ok := tm["inputSchema"].(map[string]interface{}); ok {
+										props, _ := schema["properties"].(map[string]interface{})
+										if props == nil {
+											props = map[string]interface{}{}
+										}
+										if _, hasBackend := props["backend"]; !hasBackend {
+											props["backend"] = map[string]interface{}{
+												"type":        "string",
+												"description": "Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU).",
+											}
+											schema["properties"] = props
+										}
+									}
+								}
+							}
+							if patched, pErr := json.Marshal(listResp); pErr == nil {
+								writeStdoutLine(patched)
+								return
+							}
+						}
+					}
+				}
+			}
 			if json.Compact(&compactBuf, trimmed) == nil {
 				writeStdoutLine(compactBuf.Bytes())
 			} else {
@@ -340,6 +534,8 @@ func runRemoteMCPProxy(remoteURL string) error {
 			ID     *json.RawMessage `json:"id"`
 			Method string           `json:"method"`
 			Params struct {
+				Name            string            `json:"name"`
+				URI             string            `json:"uri"`
 				ProtocolVersion string            `json:"protocolVersion"`
 				Meta            map[string]string `json:"_meta"`
 			} `json:"params"`
@@ -354,6 +550,8 @@ func runRemoteMCPProxy(remoteURL string) error {
 				ID     *json.RawMessage `json:"id"`
 				Method string           `json:"method"`
 				Params struct {
+					Name string                 `json:"name"`
+					URI  string                 `json:"uri"`
 					Meta map[string]interface{} `json:"_meta"`
 				} `json:"params"`
 			}
@@ -364,6 +562,12 @@ func runRemoteMCPProxy(remoteURL string) error {
 				if rpcEnv.Method == "" {
 					rpcEnv.Method = rawEnv.Method
 				}
+				if rpcEnv.Params.Name == "" {
+					rpcEnv.Params.Name = rawEnv.Params.Name
+				}
+				if rpcEnv.Params.URI == "" {
+					rpcEnv.Params.URI = rawEnv.Params.URI
+				}
 				if pv, ok := rawEnv.Params.Meta["io.modelcontextprotocol/protocolVersion"].(string); ok && pv != "" {
 					stateMu.Lock()
 					sessionProtoVer = pv
@@ -371,21 +575,25 @@ func runRemoteMCPProxy(remoteURL string) error {
 				}
 			}
 		}
+		rpcName := rpcEnv.Params.Name
+		if rpcName == "" {
+			rpcName = rpcEnv.Params.URI
+		}
 
 		// Execute "initialize" and "notifications/initialized" synchronously so sessionProtoVer and sessionID
 		// are guaranteed to be set before subsequent calls; dispatch all other methods ("subscriptions/listen",
 		// "tools/list", "tools/call") concurrently so "subscriptions/listen" never blocks "tools/list"!
 		if rpcEnv.Method == "initialize" || rpcEnv.Method == "notifications/initialized" {
-			handleLine(line, rpcEnv.ID, rpcEnv.Method)
+			handleLine(line, rpcEnv.ID, rpcEnv.Method, rpcName)
 		} else {
 			if rpcEnv.Method == "subscriptions/listen" {
-				go handleLine(line, rpcEnv.ID, rpcEnv.Method)
+				go handleLine(line, rpcEnv.ID, rpcEnv.Method, rpcName)
 			} else {
 				wg.Add(1)
-				go func(l []byte, id *json.RawMessage, m string) {
+				go func(l []byte, id *json.RawMessage, m string, n string) {
 					defer wg.Done()
-					handleLine(l, id, m)
-				}(line, rpcEnv.ID, rpcEnv.Method)
+					handleLine(l, id, m, n)
+				}(line, rpcEnv.ID, rpcEnv.Method, rpcName)
 			}
 		}
 	}
