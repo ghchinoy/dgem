@@ -86,6 +86,18 @@ const PRESETS: PresetSample[] = [
       scene_context: 'UI viewport or camera frame',
     },
   },
+  {
+    id: 'taxonomy-discovery',
+    title: 'Zero-Retraining Taxonomy Discovery',
+    badge: 'New · --suggest-expansions',
+    template: 'taxonomy_discovery',
+    description: 'Detects unclassified/high-entropy inputs and synthesizes copy-pasteable {name, description} options in 1 click.',
+    variables: {
+      domain: 'enterprise_saas_operations',
+      input:
+        'We need to execute a custom bilateral AI model indemnity addendum and export-control classification (ECCN) review before our procurement board signs the Q4 enterprise renewal.',
+    },
+  },
 ];
 
 const MCP_TOOLS: MCPToolSpec[] = [
@@ -1178,6 +1190,9 @@ export class DgemStudio extends LitElement {
     this.variableValues = { ...p.variables };
     this.customTemplateOverride = '';
     this.appliedExpansions = [];
+    if (p.template === 'taxonomy_discovery' || p.id === 'taxonomy-discovery') {
+      this.suggestExpansions = true;
+    }
     this.errorMessage = '';
   }
 
@@ -1185,13 +1200,19 @@ export class DgemStudio extends LitElement {
     this.selectedTemplateName = name;
     this.customTemplateOverride = '';
     this.appliedExpansions = [];
+    if (name === 'taxonomy_discovery') {
+      this.suggestExpansions = true;
+    }
     const matchingPreset = PRESETS.find((p) => p.template === name);
     this.activePresetId = matchingPreset ? matchingPreset.id : '';
     const found = this.templates.find((t) => t.name === name);
     if (found) {
       const nextVars: Record<string, string> = {};
       for (const v of found.variables || []) {
-        nextVars[v] = this.variableValues[v] || '';
+        nextVars[v] =
+          this.variableValues[v] ||
+          (matchingPreset && matchingPreset.variables[v]) ||
+          '';
       }
       this.variableValues = nextVars;
     }

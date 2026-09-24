@@ -1138,6 +1138,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 				payload.Variables["user_input"] = txtVal
 			}
 		}
+		if inVal, hasIn := payload.Variables["input"]; !hasIn || inVal == "" {
+			for _, k := range []string{"input_text", "ticket", "document", "text", "context"} {
+				if v, ok := payload.Variables[k]; ok && v != "" {
+					payload.Variables["input"] = v
+					break
+				}
+			}
+		}
 
 		_, renderSpan := gatewayTracer().Start(ctx, "dgem.template.render")
 		engine := template.NewEngine()
