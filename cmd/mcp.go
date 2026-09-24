@@ -235,7 +235,19 @@ var keepaliveOnce sync.Once
 func startGPUKeepaliveLoop() {
 	keepaliveOnce.Do(func() {
 		go func() {
-			// On gateway startup, probe upstream /health once with a 3s timeout: if the GPU container
+			// 0. If Vertex First or Vertex is configured, immediately check Vertex /invoke/health on startup
+			backendConfigMu.RLock()
+			defB := serveDefaultBackend
+			vxURL := serveVertexURL
+			backendConfigMu.RUnlock()
+			if defB == "vertex_first" || defB == "vertex" {
+				vSt := inspectVertexEndpointState(context.Background(), vxURL)
+				if vSt.State == "deployed" {
+					MarkGPUWarm(490)
+				}
+			}
+
+			// On gateway startup, probe upstream Cloud Run /health once with a 3s timeout: if the GPU container
 			// is already warm ("phase":"ready" / "vllm_ready":true), sync gateway state immediately.
 			upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
 			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
@@ -267,6 +279,19 @@ func startGPUKeepaliveLoop() {
 			ticker := time.NewTicker(4 * time.Minute)
 			defer ticker.Stop()
 			for range ticker.C {
+				// Keep Vertex AI Dedicated Endpoint (/invoke/health) warm when vertex_first or vertex is active
+				backendConfigMu.RLock()
+				curDefB := serveDefaultBackend
+				curVxURL := serveVertexURL
+				backendConfigMu.RUnlock()
+				if curDefB == "vertex_first" || curDefB == "vertex" {
+					invalidateVertexStatusCache()
+					vSt := inspectVertexEndpointState(context.Background(), curVxURL)
+					if vSt.State == "deployed" {
+						MarkGPUWarm()
+					}
+				}
+
 				idleWindow := getGPUIdleWindow()
 				gpuStateMu.RLock()
 				lastWarm := lastWarmTimestamp
@@ -365,10 +390,69 @@ type HealthAndGPUStatusOutput struct {
 	Detail                string  `json:"detail"`
 }
 
-// CheckHealthAndGPUStatus inspects both the gateway and the upstream Cloud Run GPU service
-// WITHOUT sending unsolicited HTTP probes when idle (which would otherwise trigger Cloud Run's
-// scale-from-zero activator or reset its idle scale-down timer).
+// CheckHealthAndGPUStatus inspects both the gateway, the Vertex AI Dedicated Endpoint (when vertex_first
+// or vertex is configured), and the upstream Cloud Run GPU service.
 func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPUStatusOutput {
+	backendConfigMu.RLock()
+	defB := serveDefaultBackend
+	vxURL := serveVertexURL
+	backendConfigMu.RUnlock()
+
+	catalog, _ := discoverTemplates(serveTemplatesDir)
+	idleWindow := getGPUIdleWindow()
+
+	// 1. If Vertex First or Vertex is the configured backend, check Vertex AI Dedicated Endpoint state first!
+	if defB == "vertex_first" || defB == "vertex" {
+		vSt := inspectVertexEndpointState(ctx, vxURL)
+		if vSt.State == "deployed" && vSt.ReplicaCount > 0 {
+			gpuStateMu.RLock()
+			lastReadMs := lastReadoutLatencyMs
+			gpuStateMu.RUnlock()
+			if lastReadMs <= 0 {
+				lastReadMs = 490
+			}
+			return HealthAndGPUStatusOutput{
+				GatewayHealthy:       true,
+				GPUAvailable:         true,
+				GPUState:             "warm_and_ready",
+				ContainerReachable:   true,
+				WarmupInProgress:     false,
+				EWMAWakeSeconds:      0,
+				SecondsSinceLastRead: 0,
+				IdleRemainingSeconds: int(idleWindow.Seconds()),
+				IdleTTLSeconds:       int(idleWindow.Seconds()),
+				LastReadoutMs:        lastReadMs,
+				EstimatedWakeSeconds: 0,
+				UpstreamURL:          vxURL,
+				Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
+				GPUTier:              fmt.Sprintf("Vertex AI Dedicated Endpoint (%s · /invoke/*)", vSt.MachineType),
+				TemplatesAvailable:   len(catalog),
+				AuthenticatedUser:    userEmail,
+				Detail:               fmt.Sprintf("Vertex AI Dedicated Endpoint %s is Warm & Ready (0.0s cold start · ~490ms GPU denoise · /invoke/*).", vSt.EndpointID),
+			}
+		}
+		if vSt.State == "deploying" && defB == "vertex" {
+			return HealthAndGPUStatusOutput{
+				GatewayHealthy:       true,
+				GPUAvailable:         false,
+				GPUState:             "warming_up",
+				ContainerReachable:   false,
+				WarmupInProgress:     true,
+				WarmupPhase:          "vertex_scaling_up",
+				WarmupPhaseLabel:     vSt.Message,
+				EWMAWakeSeconds:      120,
+				EstimatedWakeSeconds: 120,
+				IdleTTLSeconds:       int(idleWindow.Seconds()),
+				UpstreamURL:          vxURL,
+				Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
+				GPUTier:              fmt.Sprintf("Vertex AI Dedicated Endpoint (%s · /invoke/*)", vSt.MachineType),
+				TemplatesAvailable:   len(catalog),
+				AuthenticatedUser:    userEmail,
+				Detail:               vSt.Message,
+			}
+		}
+	}
+
 	gpuStateMu.Lock()
 	// Safety expiry: never allow warmupInProgress to stay stuck past serveWakeupTimeout (10m)
 	if warmupInProgress && time.Since(warmupStartedAt) > 10*time.Minute {
@@ -389,9 +473,6 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 		ewmaSec = 45
 	}
 	gpuStateMu.Unlock()
-
-	catalog, _ := discoverTemplates(serveTemplatesDir)
-	idleWindow := getGPUIdleWindow()
 
 	out := HealthAndGPUStatusOutput{
 		GatewayHealthy:       true,

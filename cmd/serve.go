@@ -425,6 +425,7 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 				st.ReplicaCount = 1
 				st.MachineType = "g2-standard-16 (NVIDIA L4)"
 				st.Message = fmt.Sprintf("Active & Ready (1 replica · %s · /invoke/*)", st.MachineType)
+				MarkGPUWarm()
 				vertexStatusCacheMu.Lock()
 				vertexStatusCached = st
 				vertexStatusCacheExpires = time.Now().Add(30 * time.Second)
@@ -456,24 +457,39 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 								AcceleratorType string `json:"acceleratorType"`
 							} `json:"machineSpec"`
 						} `json:"dedicatedResources"`
+						Status struct {
+							AvailableReplicaCount int `json:"availableReplicaCount"`
+						} `json:"status"`
 					} `json:"deployedModels"`
 				}
 				if json.NewDecoder(resp.Body).Decode(&epData) == nil {
 					if epData.DisplayName != "" {
 						st.DisplayName = epData.DisplayName
 					}
-					st.ReplicaCount = len(epData.DeployedModels)
-					if st.ReplicaCount > 0 {
-						st.State = "deployed"
-						st.DeployedModel = epData.DeployedModels[0].ID
-						st.MachineType = epData.DeployedModels[0].DedicatedResources.MachineSpec.MachineType
+					if len(epData.DeployedModels) > 0 {
+						dm := epData.DeployedModels[0]
+						st.DeployedModel = dm.ID
+						st.MachineType = dm.DedicatedResources.MachineSpec.MachineType
 						if st.MachineType == "" {
 							st.MachineType = "g2-standard-16 (NVIDIA L4)"
 						}
-						st.Message = fmt.Sprintf("Active & Ready (%d replica · %s · /invoke/*)", st.ReplicaCount, st.MachineType)
+						st.ReplicaCount = dm.Status.AvailableReplicaCount
+						if st.ReplicaCount > 0 {
+							st.State = "deployed"
+							st.Message = fmt.Sprintf("Active & Ready (%d replica · %s · /invoke/*)", st.ReplicaCount, st.MachineType)
+							vertexStatusCacheMu.Lock()
+							vertexStatusCached = st
+							vertexStatusCacheExpires = time.Now().Add(20 * time.Second)
+							vertexStatusCacheMu.Unlock()
+							return st
+						}
+						// Model is attached to the endpoint, but availableReplicaCount is 0 (scaled to zero / waking 0->1)
+						st.State = "deploying"
+						st.ReplicaCount = 0
+						st.Message = fmt.Sprintf("Scaling up Vertex AI GPU replica (0 → 1 · %s · /invoke/*)...", st.MachineType)
 						vertexStatusCacheMu.Lock()
 						vertexStatusCached = st
-						vertexStatusCacheExpires = time.Now().Add(30 * time.Second)
+						vertexStatusCacheExpires = time.Now().Add(5 * time.Second)
 						vertexStatusCacheMu.Unlock()
 						return st
 					}
