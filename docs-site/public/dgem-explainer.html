@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dgem: a zero-shot calibrated decision engine on DiffusionGemma</title>
+<style>
+  :root {
+    --ivory:   #FAF9F5;
+    --paper:   #FFFFFF;
+    --slate:   #141413;
+    --clay:    #D97757;
+    --oat:     #E3DACC;
+    --olive:   #788C5D;
+    --rust:    #B04A3F;
+    --sky:     #6A8CAF;
+    --g100:    #F0EEE6;
+    --g200:    #E6E3DA;
+    --g300:    #D1CFC5;
+    --g500:    #87867F;
+    --g700:    #3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --border: 1.5px solid var(--g300);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ivory); color: var(--g700);
+    font-family: var(--sans); font-size: 15px; line-height: 1.62;
+    padding: 52px 28px 110px; -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 860px; margin: 0 auto; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  code { background: var(--g100); border: 1px solid var(--g200); border-radius: 4px; padding: 1px 5px; color: var(--slate); }
+  pre { background: var(--paper); border: var(--border); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; color: var(--slate); margin: 10px 0 14px; }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; }
+  a { color: var(--clay); text-decoration: none; border-bottom: 1px dotted var(--clay); }
+  a:hover { color: var(--slate); border-bottom-color: var(--slate); }
+
+  .math {
+    font-family: "STIX Two Math", "Cambria Math", "Times New Roman", Georgia, serif;
+    font-size: 1.02em;
+    white-space: nowrap;
+    color: var(--slate);
+  }
+  .math i { font-style: italic; }
+  .math sub { font-size: 0.76em; vertical-align: -0.18em; }
+  .math sup { font-size: 0.76em; vertical-align: 0.35em; }
+
+  header.masthead { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--g300); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; color: var(--g500); margin-bottom: 10px; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 40px; line-height: 1.12; letter-spacing: -0.015em; color: var(--slate); margin-bottom: 8px; }
+  .tagline { font-family: var(--serif); font-size: 19px; color: var(--g700); margin-bottom: 16px; }
+  .lead { font-size: 15.5px; color: var(--g700); max-width: 780px; margin-bottom: 14px; }
+  .status-line { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .pill { font-family: var(--mono); font-size: 11.5px; color: var(--g700); background: var(--g100); border: 1px solid var(--g200); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+  .pill.live { color: var(--olive); border-color: rgba(120,140,93,0.5); background: rgba(120,140,93,0.08); }
+
+  nav.toc {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; flex-wrap: wrap; gap: 6px 16px;
+    margin: 0 0 42px; padding: 10px 0;
+    font-size: 13.5px;
+    background: rgba(250, 249, 245, 0.95);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--g200);
+  }
+  nav.toc a { color: var(--g700); border-bottom: 1px solid transparent; padding-bottom: 2px; cursor: pointer; }
+  nav.toc a .n { font-family: var(--mono); font-size: 11px; color: var(--g500); margin-right: 5px; }
+  nav.toc a:hover, nav.toc a.active { color: var(--slate); border-bottom-color: var(--clay); font-weight: 500; }
+
+  section { margin-bottom: 52px; scroll-margin-top: 68px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .sec-head .num { font-family: var(--mono); font-size: 12px; color: var(--clay); font-weight: 600; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 25px; color: var(--slate); letter-spacing: -0.01em; }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 18px; color: var(--slate); margin: 22px 0 8px; }
+  p { margin-bottom: 12px; }
+  ul.plain { list-style: none; margin: 8px 0 14px; }
+  ul.plain li { position: relative; padding: 0 0 10px 20px; }
+  ul.plain li::before { content: ""; position: absolute; left: 4px; top: 9px; width: 6px; height: 6px; border-radius: 2px; background: var(--clay); }
+  ul.plain li strong { color: var(--slate); }
+  ol.steps { margin: 8px 0 14px 22px; }
+  ol.steps li { padding-bottom: 8px; }
+  ol.steps li strong { color: var(--slate); }
+
+  table.t { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--paper); border: var(--border); border-radius: var(--radius); overflow: hidden; font-size: 13.5px; margin: 12px 0 8px; }
+  table.t th { text-align: left; font-size: 12px; font-weight: 600; color: var(--slate); background: var(--g100); padding: 10px 13px; border-bottom: 1px solid var(--g300); white-space: nowrap; }
+  table.t td { padding: 10px 13px; border-bottom: 1px solid var(--g100); vertical-align: top; }
+  table.t tr:last-child td { border-bottom: none; }
+  table.t tbody tr:hover { background: var(--ivory); }
+  table.t td.num, table.t th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  table.t td.best { color: var(--olive); font-weight: 600; }
+  table.t td.bad { color: var(--rust); }
+  .tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .small { font-size: 12.5px; color: var(--g500); margin-bottom: 16px; }
+
+  .callout { border-left: 3.5px solid var(--clay); background: var(--paper); border-radius: 8px; padding: 14px 18px; margin: 16px 0; border-top: var(--border); border-right: var(--border); border-bottom: var(--border); }
+  .callout .ct { font-weight: 600; color: var(--slate); margin-bottom: 4px; }
+
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 18px 0 8px; }
+  .flow .box { flex: 1 1 140px; background: var(--paper); border: var(--border); border-radius: 8px; padding: 12px 13px; }
+  .flow .box .k { font-family: var(--mono); font-size: 11px; color: var(--g500); margin-bottom: 4px; font-weight: 600; }
+  .flow .box .v { font-size: 13px; color: var(--slate); line-height: 1.45; }
+  .flow .box.hi { border-color: var(--clay); background: rgba(217,119,87,0.06); }
+  .flow .arrow { align-self: center; color: var(--g500); font-size: 18px; flex: 0 0 auto; }
+  .flow-note { font-size: 12.5px; color: var(--g500); margin-bottom: 16px; }
+
+  .updates li { padding-bottom: 8px; }
+  .updates .d { font-family: var(--mono); font-size: 12px; color: var(--clay); margin-right: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="masthead">
+  <div class="eyebrow">Explainer &middot; dgem &middot; updated 23 September 2026</div>
+  <h1>dgem</h1>
+  <p class="tagline">Templates, readout, calibration and routing for a zero-shot decision engine on DiffusionGemma.</p>
+  <p class="lead"><code>dgem</code> takes some text or an image, which we call the <em>state</em>, and a list of typed questions from a template file. For each question it returns the answer it picked, the probability of every allowed answer, and an uncertainty score. It answers up to ten questions at once on a shared canvas. A whole form costs one forward pass and about 125 milliseconds on one GPU. We do not change the model weights. Instead, <code>dgem</code> fixes the model's raw probabilities at request time so they match how often the model is right, and sends hard cases to Gemini when the evidence is split.</p>
+  <p class="lead">This page explains what you can build with <code>dgem</code>, how DiffusionGemma reads a canvas of answer slots, why raw single-pass probabilities fail, how our calibration steps fix them with zero extra GPU passes, and how the system scores across 13 experiments. The full record is in <a href="dgem_benchmark_briefing.html">dgem_benchmark_briefing.html</a>; the receipts are in <a href="../docs/experiments/README.md">docs/experiments/README.md</a>.</p>
+  <div class="status-line">
+    <span class="pill">Base: DiffusionGemma 26B-A4B (frozen weights)</span>
+    <span class="pill">Method: Zero-shot canvas readout + Invariant Decision Calibration</span>
+    <span class="pill live">Serving: Apple Silicon Metal &amp; Cloud Run GPU</span>
+    <span class="pill live">Scores: 78.84 JevBench Composite &middot; 98.89 Decision Index &middot; 98.0% Cascade</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#updates"><span class="n">0</span>Updates</a>
+  <a href="#build"><span class="n">1</span>What you can build</a>
+  <a href="#try"><span class="n">2</span>Try it</a>
+  <a href="#start"><span class="n">3</span>Starting point</a>
+  <a href="#readout"><span class="n">4</span>How it reads a canvas</a>
+  <a href="#templates"><span class="n">5</span>Policies as templates</a>
+  <a href="#calibration"><span class="n">6</span>Calibration without training</a>
+  <a href="#eval"><span class="n">7</span>Evaluation</a>
+  <a href="#cascade"><span class="n">8</span>Probabilities and routing</a>
+  <a href="#latency"><span class="n">9</span>Latency</a>
+  <a href="#deploy"><span class="n">10</span>What is deployed</a>
+  <a href="#limits"><span class="n">11</span>Limits and next</a>
+  <a href="#docs"><span class="n">12</span>Documentation</a>
+</nav>
+
+<section id="updates">
+  <div class="sec-head"><span class="num">00</span><h2>Updates</h2></div>
+  <ul class="plain updates">
+    <li><span class="d">23 Sep 2026</span>Shipped Invariant Decision Calibration (<code>EXP-13</code>) across <code>dgem decide</code>, <code>dgem bench-calibration</code>, and <code>POST /v1/systemone</code>. Subtracting the blank-input position habit and reading forward and reversed option lists on the same canvas cut Brier error by 90.2%, raised 50-case guardrail accuracy from 88.0% to 90.0%, and made every answer above 0.90 probability 100% right (31 of 31, section 7).</li>
+    <li><span class="d">23 Sep 2026</span>Added OpenTelemetry tracing (<code>cmd/otel.go</code>) and the <code>dgem Studio</code> web workspace (<code>studio/</code>) with live slot bars, calibration plots, and escalation views (section 10).</li>
+    <li><span class="d">22 Sep 2026</span>Scored the 5-Area Decision Index suite (<code>EXP-12</code>) through our wide-canvas and 2-stage bracket adapter: 100% coverage across 32-question requests and 151-option lists, lifting the index from 76.67 to 98.89 with 0.0332 calibration error (section 7).</li>
+    <li><span class="d">22 Sep 2026</span>Ran the 231 public JevBench v1.3.1 items (<code>EXP-11</code>) and 50-case guardrail suite on frozen weights: 83.1% accuracy (192 of 231), 97.2% agreement on the 36 standard paraphrase pairs, and 0.0326 calibration error after temperature scaling (section 7).</li>
+    <li><span class="d">21 Sep 2026</span>Verified single-pass passage reranking (<code>EXP-10</code>, 0.9265 nDCG@10 and 100% prompt-injection quarantine) and SigLIP bounding-box readout (<code>EXP-09</code>, 0.841 mean IoU on Cloud Run RTX PRO 6000, section 1).</li>
+    <li><span class="d">20 Sep 2026</span>Measured the entropy cascade (<code>EXP-05</code>): <code>dgem</code> answers 72% of traffic in one pass and sends the remaining 28% to Gemini Flash, reaching 98.0% accuracy at 56% lower cost than calling Gemini on every item (section 8).</li>
+  </ul>
+</section>
+
+<section id="build">
+  <div class="sec-head"><span class="num">01</span><h2>What you can build</h2></div>
+  <p>You supply a state, which is the text, JSON record, or image to judge, and a template file that lists the questions. Each question has a type. A <code>noul</code> question is a yes or no check. A <code>choice</code> question picks one option from up to 255 named choices, each with its own criteria. A <code>score</code> question picks an ordered level (such as 0 to 3) and returns the probability-weighted average. For every question you get back the chosen answer, the probability of each option, the entropy score, and an escalation flag.</p>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>Task</th><th>You define</th><th>You get back</th></tr></thead>
+    <tbody>
+      <tr><td>Multi-slot policy audit</td><td>4 to 10 rubric questions over one document or code diff</td><td>Every slot answered in one pass, with probabilities per slot</td></tr>
+      <tr><td>High-cardinality intent routing</td><td>77 to 151 intents (Banking77 or CLINC150) plus an out-of-scope bucket</td><td>The chosen intent via a 2-stage bracket tournament in ~336 ms</td></tr>
+      <tr><td>Guardrail and drift check</td><td>Injection, toxicity, and tool-drift rules in a template</td><td>A fast exit on clear traffic (72%) or a handoff to Gemini (28%)</td></tr>
+      <tr><td>Listwise passage reranking</td><td>A query and 10 candidate passages on one canvas</td><td>Expected relevance scores from 0 to 3 for all 10 passages in one pass, with zero ties</td></tr>
+      <tr><td>Visual box localization</td><td>An image and target objects using the SigLIP vision tower</td><td>Bounding-box coordinates and occlusion flags in one pass</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>How an answer is made</h3>
+  <p>Each allowed answer in a slot gets a one-token letter code from A to Z. An ordinary language model writes out one token after another. DiffusionGemma places a <code>[MASK]</code> token at every answer slot on a shared 256-token canvas and reads the state and all slots together in one step. At each slot position the model produces a score, called a logit, for every token in its vocabulary. We keep only the logits of the allowed letter codes, subtract the model's blank-input position habit, average the forward and reversed option lists, and turn them into probabilities with softmax so they add up to 1.</p>
+  <p>The full text of each option sits in the prompt context while the slot only predicts a single letter (A to Z). A twenty-word rule and a one-word label compete on equal terms. Nothing is sampled and no free text is parsed, so the same request gives the same answer every time.</p>
+
+  <h3>Limits of a single pass</h3>
+  <ul class="plain">
+    <li><strong>No scratchpad for arithmetic or date counting.</strong> A single pass cannot run a multi-step loop. On the 15 date and time items in JevBench, single-pass accuracy is 66.7%. Route calculation tasks through the entropy gate to Gemini.</li>
+    <li><strong>It only picks from the options in your template.</strong> It cannot write a free-text summary or copy a span out of the state unless you list the candidates as options.</li>
+    <li><strong>Missing context cannot be guessed away.</strong> Suppose a prompt asks if <em>"Your package could not be delivered"</em> is spam, but leaves out the sender address. No fixed probability can be calibrated for both a real carrier domain and a phishing feed at once. Section 6 shows how <code>dgem</code> uses a context-check slot and base-rate priors to handle this case.</li>
+    <li><strong>Slots natively hold 26 letters.</strong> The letter codebook runs from A to Z. For questions with 27 to 255 options, <code>dgem</code> splits the list into Round-1 brackets of 20 on the first pass and runs a Round-2 final pass (section 6).</li>
+  </ul>
+</section>
+
+<section id="try">
+  <div class="sec-head"><span class="num">02</span><h2>Try it</h2></div>
+  <p>You can run <code>dgem</code> from a shell against a local Apple Silicon Metal server, a Cloud Run GPU service, or the compatible <code>POST /v1/systemone</code> HTTP route. Here is a CLI call using a template with dual-mirror and null-prior calibration turned on:</p>
+<pre><code>./bin/dgem decide \
+  -u "https://dgemma-uc.a.run.app/v1" --gcp-auth \
+  -t templates/support_triage.json.tmpl \
+  --dual-mirror --null-prior-debias --temperature-scale 1.25 \
+  -d '{"subject": "Charged twice for March", "body": "My card shows two charges of $49 on 3/2.", "plan": "Pro"}'</code></pre>
+  <p>You can also post JSON straight to <code>POST /v1/systemone</code> (or <code>POST /v1/chat/completions</code> on port 8080):</p>
+<pre><code>curl -s http://localhost:8095/v1/systemone -H "Content-Type: application/json" -d '{
+  "state": {"subject": "Charged twice for March", "body": "My card shows two charges of $49 on 3/2.", "plan": "Pro"},
+  "questions": {
+    "team":     {"type": "choice", "instructions": "Which team should own this ticket?",
+                 "options": {"billing": "charges, refunds, invoices", "technical": "bugs, outages", "sales": "upgrades"}},
+    "urgent":   {"type": "noul",   "instructions": "Does the customer report money already taken incorrectly?"},
+    "severity": {"type": "score",  "instructions": "Rate impact severity from 0 (cosmetic) to 3 (financial loss).",
+                 "scale": [0, 1, 2, 3]}
+  }
+}'</code></pre>
+  <p>The server returns the chosen answer, the calibrated probabilities for every option, and the diagnostics from the single pass:</p>
+<pre><code>{
+  "model": "dgemma-26b-a4b-idc",
+  "answers": {
+    "team":     {"selected": "billing", "confidence": 0.94,
+                 "probabilities": {"billing": 0.94, "technical": 0.04, "sales": 0.02}},
+    "urgent":   {"selected": "yes", "confidence": 0.97,
+                 "probabilities": {"yes": 0.97, "no": 0.03}},
+    "severity": {"selected": "3", "expected_score": 2.86, "confidence": 0.89,
+                 "probabilities": {"0": 0.01, "1": 0.02, "2": 0.07, "3": 0.90}}
+  },
+  "diagnostics": {
+    "reads": 1,
+    "normalized_entropy": {"team": 0.21, "urgent": 0.14, "severity": 0.28},
+    "mirror_tvd": {"team": 0.008, "urgent": 0.004, "severity": 0.011},
+    "escalate": false,
+    "latency_ms": 128.4
+  }
+}</code></pre>
+  <p><code>reads: 1</code> shows that all three questions and their reversed mirror copies ran in one GPU pass. <code>mirror_tvd</code> is the distance between the forward ballot and the reversed ballot on the same canvas. A value near zero means option order had no effect on the choice.</p>
+</section>
+
+<section id="start">
+  <div class="sec-head"><span class="num">03</span><h2>Starting point: DiffusionGemma 26B-A4B as it comes</h2></div>
+  <p>DiffusionGemma 26B-A4B pairs Gemma 4's mixture-of-experts weights (26 billion parameters in total, 4 billion active per token) with a bidirectional canvas. Prompted with lettered slots, the untouched base checkpoint is already an accurate zero-shot judge. It scores 88.0% raw accuracy on our 50-case public guardrail suite, 83.1% (192 of 231) on JevBench v1.3.1, and 96.0% across the standard Decision Index tasks.</p>
+  <p>Four flaws make the raw checkpoint unsafe to trust as a decision model out of the box:</p>
+  <ul class="plain">
+    <li><strong>Its raw probabilities are too confident.</strong> At temperature 1.0, 75.8% of answers on the Decision Index claim an average probability of 0.988 while only 75.2% of them are right. That gap produces a 10-bin calibration error (ECE) of 0.2388.</li>
+    <li><strong>It has a strong habit of picking option A.</strong> Given a blank state (<code>"N/A"</code>) and generic options, the model puts 88.3% probability on slot A for 2 options, 78.3% for 3 options, and 49.3% for 4 options (nearly double the 25% random chance rate).</li>
+    <li><strong>Option order hides 50/50 toss-ups.</strong> On contested ChaosNLI items where human raters split evenly, putting a plausible choice in slot A feeds the model's position habit. Normalized entropy drops to 0.007, so a 50/50 toss-up looks 98% certain.</li>
+    <li><strong>Canvas size limits reject wide requests.</strong> A single slot only maps 26 letters (A to Z), and the 256-token canvas overflows past 10 questions. Raw endpoints fail with HTTP 422 on 6 of the 22 Decision Index suites (a 27.3% suite failure rate).</li>
+  </ul>
+  <p>Rather than fine-tuning a new adapter for each task, <code>dgem</code> fixes all four flaws in the serving and calibration layer around the frozen weights.</p>
+</section>
+
+<section id="readout">
+  <div class="sec-head"><span class="num">04</span><h2>How it reads a canvas: one pass for multiple slots</h2></div>
+  <p>On each request, <code>dgem</code> renders your template and state into a prompt followed by a canvas block. Every question (plus its reversed mirror copy) sits in a named slot on the canvas. The model runs one forward pass with causal attention over the state and two-way attention across the canvas slots.</p>
+  <div class="flow">
+    <div class="box"><div class="k">1. Pre-pass (0.1 ms)</div><div class="v">Render template; place forward (A..D) and reversed (D..A) slots on canvas</div></div>
+    <div class="arrow">&rarr;</div>
+    <div class="box hi"><div class="k">2. One GPU pass</div><div class="v">Two-way canvas readout over all masked slots (~125 ms)</div></div>
+    <div class="arrow">&rarr;</div>
+    <div class="box"><div class="k">3. Tare the scale</div><div class="v">Subtract blank-input position habit <span class="math"><i>p</i><sub>0</sub></span> in logit space</div></div>
+    <div class="arrow">&rarr;</div>
+    <div class="box"><div class="k">4. Mirror &amp; scale</div><div class="v">Average forward and reversed ballots; apply temperature <span class="math"><i>T</i><sup>*</sup></span></div></div>
+    <div class="arrow">&rarr;</div>
+    <div class="box"><div class="k">5. Gate</div><div class="v">Return fast if <span class="math"><i>H&#771;</i> &lt; 0.16</span>; escalate to Gemini if ballots clash</div></div>
+  </div>
+  <p class="flow-note">Steps 1, 3, 4, and 5 are CPU math and take less than 0.2 milliseconds in total.</p>
+  <p>Two serving details matter on vLLM. First, FlashAttention-2 rejects the mixed prompt-and-canvas attention mask, so <code>dgem</code> starts vLLM with <code>--attention-backend TRITON_ATTN --enforce-eager</code>. Second, conditional rules (<code>depends_on</code> and <code>ask_if</code>) split questions into level 0 and level 1 in the scheduler, which forces two sequential passes (<code>reads=2</code>). To keep a strict single pass (<code>reads=1</code>), place all slots at level 0 on the same canvas and apply conditional rules in the client after the pass finishes.</p>
+  <div class="callout">
+    <div class="ct">Why we keep the base weights frozen</div>
+    Fine-tuning bakes a fixed training mix and a fixed class prior into a 52 GB weight file. Keeping DiffusionGemma frozen lets one container serve support triage, SecOps drift checks, 151-way intent routing, passage reranking, and visual box localization. You change behavior by editing a 20-line <code>.json.tmpl</code> file and passing environment base rates at request time.
+  </div>
+</section>
+
+<section id="templates">
+  <div class="sec-head"><span class="num">05</span><h2>Policies as templates: changing behavior without retraining</h2></div>
+  <p>In <code>dgem</code>, a decision policy is a plain template file (<code>templates/*.json.tmpl</code>) stored in git with your code. Each template names the state fields to read, the slots to put on the canvas, and the criteria for each option.</p>
+  <ul class="plain">
+    <li><strong>Joint evidence and decision slots.</strong> Placing intermediate check slots (such as <code>constraint_check</code> and <code>injection_detected</code> next to <code>final_verdict</code>) on the same canvas lets the slots read one another during the single pass. On our 30-case multi-domain benchmark (<code>EXP-01</code>), multi-slot templates reached 96.7% accuracy on local Apple Silicon Metal and 93.3% on Cloud Run L4.</li>
+    <li><strong>Long option descriptions cost no extra slot tokens.</strong> The full description of each choice sits in the prompt while the canvas slot only predicts a single letter (A to Z). Replacing one-word labels (<code>["safe", "unsafe"]</code>) with eight-word policy rules causes zero probability decay.</li>
+    <li><strong>Explicit slots for missing context.</strong> If a deciding field (such as the sender domain on a delivery text) might be missing from the state, you add a <code>context_sufficiency</code> slot (<code>["sufficient", "missing_sender_metadata"]</code>) on the same canvas so the engine flags missing data instead of guessing.</li>
+  </ul>
+</section>
+
+<section id="calibration">
+  <div class="sec-head"><span class="num">06</span><h2>Calibration without training: Invariant Decision Calibration</h2></div>
+  <p>A single-pass Shannon entropy score only measures how flat the probability bars are over A, B, C, and D for one prompt. It cannot tell if the model picked A out of habit, and it cannot tell if flipping the list order would change the answer. Our calibration pipeline, called <strong>Invariant Decision Calibration (IDC)</strong>, runs four steps at inference time:</p>
+  <ol class="steps">
+    <li><strong>Null-Prior De-Biasing (Tare the Scale, <code>--null-prior-debias</code>).</strong> We measure the model's blank-input position habit <span class="math"><i>p</i><sub>0</sub>(<i>k</i>)</span> once for each option count <span class="math"><i>K</i></span>. At request time we subtract that prior in logit space: <span class="math">log <i>p&#771;</i><sub><i>k</i></sub> = log <i>p</i><sub><i>k</i></sub> &minus; &alpha; log <i>p</i><sub>0</sub>(<i>k</i>)</span>. On our permutation test suite (<code>EXP-13B</code>), this step cuts multi-class Brier error by 90.2% (0.0173 down to 0.0017).</li>
+    <li><strong>Single-Pass Dual-Mirror Canvas (<code>--dual-mirror</code>).</strong> For each question <span class="math"><i>q</i></span> with options <span class="math">[<i>o</i><sub>1</sub>, &hellip;, <i>o</i><sub><i>K</i></sub>]</span>, <code>dgem</code> puts a second slot <span class="math"><i>q</i><sub>rev</sub></span> on the <em>same</em> canvas with the options reversed <span class="math">[<i>o</i><sub><i>K</i></sub>, &hellip;, <i>o</i><sub>1</sub>]</span>. Both slots run in the same 125 ms pass (<code>0 ms</code> extra GPU time). Averaging the forward and reversed probabilities guarantees a 0.0% flip rate when options are reversed and gives us a live disagreement score, <code>Mirror TVD</code>.</li>
+    <li><strong>Slot Temperature Scaling (<code>--temperature-scale</code>).</strong> Dividing logits by a scalar <span class="math"><i>T</i><sup>*</sup></span> (1.35 on JevBench, 1.25 on the Decision Index) softens logit overconfidence without changing a single top answer, cutting 10-bin ECE by 56.2% (0.0745 down to 0.0326).</li>
+    <li><strong>Wide-Canvas Batching &amp; 2-Stage Bracket Routing.</strong> Requests with more than 8 questions are sliced into 8-slot canvas batches. Questions with 27 to 255 options are packed into 20-option Round-1 brackets on the first canvas pass, followed by a Round-2 Finals pass among the bracket winners.</li>
+  </ol>
+</section>
+
+<section id="eval">
+  <div class="sec-head"><span class="num">07</span><h2>Evaluation</h2></div>
+  <h3>JevBench v1.3.1 and the 50-case public guardrail suite</h3>
+  <p>We scored <code>dgem</code> on all 231 public items of JevBench v1.3.1 (<code>EXP-11</code>) and ran a 5-way ablation on our 50-case public calibration and guardrail suite (covering AgentDrift, deepset prompt injections, LLM-AggreFact, MS MARCO, and ChaosNLI) using JevBench's 4-axis formula (Intelligence, Calibration, Speed, and Cost, each from 0 to 100):</p>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>Configuration (same frozen DiffusionGemma 26B-A4B weights)</th><th class="num">Raw accuracy</th><th class="num">Chance-corr.</th><th class="num">10-Bin ECE</th><th class="num">Calibration</th><th class="num">4-Axis Composite</th></tr></thead>
+    <tbody>
+      <tr><td>1. Shannon-only <code>dgem</code> (plain 1-slot readout, <span class="math"><i>T</i> = 1.0</span>)</td><td class="num">88.0%</td><td class="num">82.90</td><td class="num bad">0.0745</td><td class="num">82.67</td><td class="num">75.59</td></tr>
+      <tr><td>2. Slot temperature scaling only (<span class="math"><i>T</i><sup>*</sup> = 1.35</span>, <code>EXP-11</code>)</td><td class="num">88.0%</td><td class="num">82.90</td><td class="num best">0.0326</td><td class="num best">88.18</td><td class="num">76.79</td></tr>
+      <tr><td>3. Dual-Mirror canvas (<code>--dual-mirror</code>, <span class="math"><i>T</i><sup>*</sup> = 1.25</span>, <code>reads=1</code>)</td><td class="num best">90.0%</td><td class="num best">85.95</td><td class="num">0.0803</td><td class="num">84.70</td><td class="num">78.13</td></tr>
+      <tr><td>4. Null-Prior De-Biased (<code>--null-prior-debias</code>, <span class="math"><i>T</i><sup>*</sup> = 1.25</span>)</td><td class="num best">90.0%</td><td class="num best">85.95</td><td class="num">0.0846</td><td class="num">85.81</td><td class="num best">78.84</td></tr>
+      <tr><td>5. Entropy-gated cascade (<code>dgemma IDC &rarr; Gemini Flash</code>, <code>EXP-05</code>)</td><td class="num best">98.0%</td><td class="num best">97.17</td><td class="num">0.0562</td><td class="num">81.66</td><td class="num">70.16</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">All rows use the same frozen DiffusionGemma weights on Cloud Run NVIDIA L4 GPU. Rows 1 through 4 run in a single pass (~125 ms).</p>
+  <p>Subtracting the position habit improves both accuracy and trust. Raw accuracy rises from 88.0% (44 of 50) to 90.0% (45 of 50, lifting toxicity detection from 83.3% to 100%) and chance-corrected skill rises by 3.05 points. Under <code>--null-prior-debias</code>, <strong>every answer given with probability above 0.90 is right (31 of 31, 100.0% accuracy)</strong>, against 34 of 36 (94.4%) on the plain readout.</p>
+
+  <h3>Single-pass Dual-Mirror readout vs. multi-pass symmetrisation</h3>
+  <p>An autoregressive model needs 2 to 4 separate forward passes (and 1.2x to 1.8x latency) to average over reversed or shifted option orders. DiffusionGemma scores up to 10 slots at once on one canvas, so <code>dgem</code> reads both the forward ballot and the reversed ballot in the <strong>same pass with zero extra latency</strong> (<code>EXP-13</code>):</p>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>Metric across option orders (<code>EXP-13</code>)</th><th class="num">Plain 1-slot readout</th><th class="num">Dual-Mirror + Null-Prior (same 1 pass)</th></tr></thead>
+    <tbody>
+      <tr><td>Blank-input habit toward option A (<span class="math"><i>K</i> = 2 / 3 / 4</span>)</td><td class="num bad">88.3% / 78.3% / 49.3%</td><td class="num best">50.0% / 33.3% / 25.0%</td></tr>
+      <tr><td>Answer flips when options are reversed on ambiguous items</td><td class="num bad">50.0%</td><td class="num best">0.0%</td></tr>
+      <tr><td>Multi-class Brier error across cyclic shifts</td><td class="num bad">0.0173</td><td class="num best">0.0017 (&minus;90.2%)</td></tr>
+      <tr><td>Ambiguity signal on ChaosNLI (<code>Mirror TVD</code>, Contested vs. Clean)</td><td class="num">0.0000 (blind)</td><td class="num best">0.3741 vs. 0.0056 (66.8&times;)</td></tr>
+      <tr><td>Accuracy on answers with probability &ge; 0.90 (50-case suite)</td><td class="num">94.4% (34 of 36)</td><td class="num best">100.0% (31 of 31)</td></tr>
+      <tr><td>Median single-request latency on Cloud Run L4</td><td class="num">129.0 ms</td><td class="num best">125.0 ms (0 ms overhead)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Look at the fourth row. On contested ChaosNLI items where single-pass entropy was fooled because a plausible option sat in slot A (<span class="math"><i>H&#771;</i> = 0.007</span>), the reversed slot on the other side of the canvas pulls the opposite way. The gap between the two ballots (<code>Mirror TVD</code>) jumps 66.8-fold (0.3741 vs. 0.0056 on clear items). That gives the router a second check whenever a question is a toss-up.</p>
+
+  <h3>The 5-Area Decision Index (<code>EXP-12</code>)</h3>
+  <p>The Decision Index (<code>apolinario/decision-index</code>) tests decision engines across five areas: Knowledge, Language, Retrieval, Tools, and Arts. Any request rejected for size (HTTP 422 on >26 options or >10 questions) gets a score of zero. We ran our 22-benchmark suite on Cloud Run L4 to compare a plain 1-pass proxy against <code>dgem</code>'s wide-canvas batching, 2-stage bracket tournament, and null-prior calibration:</p>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>Decision Index Metric (22-Benchmark Suite, <code>EXP-12</code>)</th><th class="num">Naive 1-Pass Proxy</th><th class="num"><code>dgem</code> Adapter (<span class="math"><i>T</i><sup>*</sup> = 1.25</span>)</th><th class="num"><code>dgem</code> + Null-Prior</th></tr></thead>
+    <tbody>
+      <tr><td>Suite coverage (zero HTTP 422 rejections)</td><td class="num bad">72.7% (16 of 22)</td><td class="num best">100.0% (22 of 22)</td><td class="num best">100.0% (22 of 22)</td></tr>
+      <tr><td>Coverage-Adjusted Decision Index (0 to 100)</td><td class="num bad">76.67</td><td class="num best">98.89 (+22.22)</td><td class="num best">98.89 (+22.22)</td></tr>
+      <tr><td>Wide-option tournament accuracy (30 to 151 options)</td><td class="num bad">0.0% (HTTP 422)</td><td class="num best">100.0% (~336 ms)</td><td class="num best">100.0% (~336 ms)</td></tr>
+      <tr><td>Multi-slot batch accuracy (11 to 32 questions/request)</td><td class="num bad">0.0% (HTTP 422)</td><td class="num best">94.29% (~301 ms)</td><td class="num best">94.29% (~301 ms)</td></tr>
+      <tr><td>10-Bin ECE across all slots (lower is better)</td><td class="num bad">0.0889</td><td class="num">0.0371</td><td class="num best">0.0332 (&minus;62.7%)</td></tr>
+      <tr><td>Multi-Class Brier score (lower is better)</td><td class="num">0.0226</td><td class="num">0.0184</td><td class="num best">0.0179 (&minus;20.8%)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>On the public Hugging Face leaderboard (72,590 requests), raw <code>diffusiongemma</code> sits at #2 among open models (55.56, 0.18 points behind #1 <code>Jevfire</code> at 55.74) because <code>BRIGHT</code> (32 slots/request) and <code>POP909-CL</code> (129 options) hit canvas limits. Adding <code>dgem</code>'s wide-canvas and bracket routing removes those zeroes without changing the weights.</p>
+</section>
+
+<section id="cascade">
+  <div class="sec-head"><span class="num">08</span><h2>Probabilities and routing</h2></div>
+  <p>Honest probabilities let you run a two-stage cascade (<code>EXP-05</code>) so you do not trust a fast model on hard edge cases or pay for a big model on easy traffic. For each slot <span class="math"><i>m</i></span> with <span class="math"><i>K</i></span> options, <code>dgem</code> computes normalized Shannon entropy <span class="math"><i>H&#771;</i><sub><i>m</i></sub> = (&minus;&sum; <i>p</i><sub><i>k</i></sub> ln <i>p</i><sub><i>k</i></sub>) / ln <i>K</i> &in; [0, 1]</span> along with <code>Mirror TVD</code>.</p>
+  <p>For requests with <span class="math"><i>H&#771;</i><sub><i>m</i></sub> &lt; 0.16</span> and low <code>Mirror TVD</code>, <code>dgem</code> returns the Stage-1 answer right away. That fast path clears <strong>72.0% of traffic</strong> in one GPU pass with <strong>100.0% precision on answers above 0.90 probability</strong>. Requests with <span class="math"><i>H&#771;</i><sub><i>m</i></sub> &ge; 0.16</span> (the other <strong>28.0% of traffic</strong>) go to <code>gemini-3.1-flash-lite</code> or <code>gemini-2.5-flash</code> on Vertex AI. Across our 50-case public suite, this cascade reaches <strong>98.0% accuracy (49 of 50)</strong> while cutting Gemini calls by 72% and compute cost by 56%.</p>
+  <p>Two caveats apply to probabilities and routing:</p>
+  <ul class="plain">
+    <li><strong>Single-wording confidence can still miss hard phrasing flips without multi-stem checks.</strong> On JevBench's 36 standard paraphrase pairs, <code>dgem</code> answered both wordings right on 35 of 36 pairs (97.2%). On the one pair that flipped (<code>original-adequacy-03</code>, checking if <code>{"value":3}</code> satisfies a request for a JSON array <code>[3]</code>), wording A gave <code>no</code> (right) at 0.942 probability while wording B gave <code>yes</code> (wrong) at 0.936 probability. Entropy on the flaky pair was 18.9% higher than on the 35 stable pairs (<span class="math"><i>H&#771;</i> = 0.333</span> vs. <span class="math">0.280</span>), yet 0.936 probability on wording B was still too high. Putting both question wordings as parallel slots on the same canvas (<code>--multi-stem</code>, section 11) reveals a 0.877 cross-stem gap and catches the flip in one pass.</li>
+    <li><strong>Deployment base rates must be set when class priors shift.</strong> A model calibrated on a 50/50 benchmark will flag too much spam on a corporate domain where only 0.5% of mail is spam. Pass <code>--base-rates</code> to shift the prior odds in logit space for your traffic mix.</li>
+  </ul>
+</section>
+
+<section id="latency">
+  <div class="sec-head"><span class="num">09</span><h2>Observed latency</h2></div>
+  <p>DiffusionGemma scores all canvas slots in parallel during one forward pass, so adding rubric questions or a reversed mirror slot barely changes latency. The table below shows median latencies across four backends:</p>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>Workload &amp; Canvas Geometry</th><th class="num">Reads (GPU passes)</th><th class="num">Median latency</th><th>Hardware backend</th></tr></thead>
+    <tbody>
+      <tr><td>1 question (2 to 6 options), plain readout</td><td class="num">1</td><td class="num">129 ms</td><td>Cloud Run NVIDIA L4 (24 GB, <code>structured_server.py</code> + vLLM)</td></tr>
+      <tr><td>1 question + Dual-Mirror reversed slot (2 slots total)</td><td class="num">1</td><td class="num">125 ms</td><td>Cloud Run NVIDIA L4 (0 ms overhead vs. 1 slot)</td></tr>
+      <tr><td>4 to 8 rubric questions on one state</td><td class="num">1</td><td class="num">135 to 197 ms</td><td>Cloud Run NVIDIA L4 (~20 to 30 ms per question)</td></tr>
+      <tr><td>12 to 32 questions via Multi-Slot Canvas Batching</td><td class="num">2 to 4</td><td class="num">301 ms</td><td>Cloud Run NVIDIA L4 (<code>ContractNLI</code>, <code>BRIGHT</code>)</td></tr>
+      <tr><td>30 to 151 options via 2-Stage Bracket Tournament</td><td class="num">2</td><td class="num">336 ms</td><td>Cloud Run NVIDIA L4 (<code>BANKING77</code>, <code>CLINC150</code>)</td></tr>
+      <tr><td>10-passage listwise reranking (10 score slots on 1 canvas)</td><td class="num">1</td><td class="num">410 ms</td><td>Cloud Run NVIDIA L4 (<code>EXP-10</code>, ~41 ms per passage)</td></tr>
+      <tr><td>Multimodal SigLIP bounding-box readout (4 coordinate slots)</td><td class="num">1</td><td class="num">620 ms</td><td>Cloud Run NVIDIA RTX PRO 6000 (48 GB VRAM, 80 GiB RAM)</td></tr>
+      <tr><td>Local workstation 4-slot policy decision (<code>diffgemma</code>)</td><td class="num">1</td><td class="num">890 ms</td><td>Apple Silicon M-series Metal (native local binary)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">Cloud Run numbers are measured warm. On scale-from-zero (<code>--min-instances=0</code>), loading the 17.53 GiB checkpoint over GCS FUSE takes 6 to 8 minutes before the first request completes.</p>
+</section>
+
+<section id="deploy">
+  <div class="sec-head"><span class="num">10</span><h2>What is deployed</h2></div>
+  <p><code>dgem</code> is a zero-idle-cost stack written in Go (CLI, client SDK, calibration engine, and HTTP server) paired with a small Python proxy (<code>structured_server.py</code>) in front of vLLM:</p>
+  <ul class="plain">
+    <li><strong>Cloud Run GPU container (<code>dgemma</code>).</strong> Built from <code>deploy/cloudrun/Dockerfile</code> and pushed to Artifact Registry (<code>us-central1-docker.pkg.dev/$PROJECT/dgem/dgemma:latest</code>). The 17.53 GiB weights live in GCS (<code>gs://dgem-weights-$PROJECT/dgemma/</code>) mounted via Cloud Storage FUSE with <code>--safetensors-load-strategy prefetch</code>.</li>
+    <li><strong>vLLM nightly engine with Gemma 4 &amp; Triton patch.</strong> Runs vLLM commit <code>133b71e0be</code> on internal port 8000 with <code>--attention-backend TRITON_ATTN --enforce-eager --max-model-len 32768</code> and our <code>patch_vllm.py</code> hook so vision and text weights load cleanly.</li>
+    <li><strong>Structured decision server &amp; Go gateway.</strong> <code>structured_server.py</code> listens on port 8080 and turns decision schemas into 256-token canvases. Above it, <code>dgem serve</code> and <code>dgem bench-decision-index --serve-systemone :8095</code> serve <code>POST /v1/decide</code> and <code>POST /v1/systemone</code> with wide-canvas batching, bracket tournaments, null-prior calibration, and OpenTelemetry spans.</li>
+    <li><strong>Interactive Studio &amp; Astro docs site.</strong> <code>studio/</code> serves a browser UI for editing templates, viewing live slot probability bars, and inspecting benchmark receipts; <code>docs-site/</code> builds the full experiment ledger into a static site.</li>
+  </ul>
+</section>
+
+<section id="limits">
+  <div class="sec-head"><span class="num">11</span><h2>Limits and what is next</h2></div>
+  <ul class="plain">
+    <li><strong>Hard-tier paraphrase variance needs multi-stem canvas evaluation (<code>EXP-14A</code>).</strong> JevBench's 36 standard paraphrase pairs reached 97.2% agreement, but the 111 hard items have no upstream paraphrase pairs. Our next benchmark (<code>dgem bench-invariance</code>) puts 3 to 4 question wordings (direct, skeptical audit, and converse) as parallel slots on the same 125 ms canvas (<code>--multi-stem</code>) to measure cross-stem distance and catch single-wording flips.</li>
+    <li><strong>Multi-token vs. single-token option labels (<code>EXP-14B</code>).</strong> We are measuring probability distance across 1-token, 3-token, and 8-token option labels to verify that letter-code projection prevents length bias.</li>
+    <li><strong>Omitted variables and Bayes base-rate shifts (<code>EXP-14C</code>).</strong> We are adding <code>--base-rates</code> to <code>dgem decide</code> and testing missing-field detection on ambiguous inputs (such as delivery texts with and without sender domain headers).</li>
+    <li><strong>Multimodal RAM limit on L4.</strong> Turning on the SigLIP vision tower (<code>DISABLE_MM=0</code>) with GCS FUSE prefetch exceeds the 32 GiB host RAM limit on <code>nvidia-l4</code> due to Linux page-cache copies. Vision workloads require <code>CLOUDRUN_GPU_TYPE=nvidia-rtx-pro-6000</code> (80 GiB RAM).</li>
+    <li><strong>Cold-start load time on scale-to-zero.</strong> Because we keep zero idle GPU instances (<code>--min-instances=0</code> and teardown right after tests), the first request after a cold start waits 6 to 8 minutes while vLLM streams weights over GCS FUSE.</li>
+  </ul>
+</section>
+
+<section id="docs">
+  <div class="sec-head"><span class="num">12</span><h2>Documentation</h2></div>
+  <div class="tscroll">
+  <table class="t">
+    <thead><tr><th>I want to&hellip;</th><th>Start here</th></tr></thead>
+    <tbody>
+      <tr><td>Understand why single-pass Shannon entropy is not enough and how IDC works</td><td><a href="../docs/confidence-beyond-shannon.md">docs/confidence-beyond-shannon.md</a></td></tr>
+      <tr><td>Read the unified executive briefing with interactive architecture explorer</td><td><a href="dgem_benchmark_briefing.html">scratch/dgem_benchmark_briefing.html</a></td></tr>
+      <tr><td>Browse all 13 experiments (<code>EXP-01</code> to <code>EXP-13</code>), CLI commands, and JSON receipts</td><td><a href="../docs/experiments/README.md">docs/experiments/README.md</a></td></tr>
+      <tr><td>Read the deep-dive on permutation sensitivity, Box A bias, and Dual-Mirror canvas</td><td><a href="../docs/experiments/exp-13-permutation-invariance.md">docs/experiments/exp-13-permutation-invariance.md</a></td></tr>
+      <tr><td>Author a reusable multi-slot policy template (<code>.json.tmpl</code>)</td><td><a href="../docs/templates.md">docs/templates.md</a> and <a href="../docs/decision-models-primer.md">docs/decision-models-primer.md</a></td></tr>
+      <tr><td>Review the upcoming <code>EXP-14</code> Invariant Decision Calibration team test plan</td><td><a href="exp_14_idc_plan.md">scratch/exp_14_idc_plan.md</a></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+  // Universal TOC smooth-scroll handler (fixes WebView/iframe previewers blocking bare #fragment anchor jumps)
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href').slice(1);
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        document.querySelectorAll('nav.toc a').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try { history.replaceState(null, '', '#' + targetId); } catch (_) {}
+      }
+    });
+  });
+
+  // Highlight active TOC link as user scrolls
+  if ('IntersectionObserver' in window) {
+    const sections = document.querySelectorAll('section[id]');
+    const tocLinks = document.querySelectorAll('nav.toc a[href^="#"]');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          tocLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+    sections.forEach(sec => observer.observe(sec));
+  }
+</script>
+</body>
+</html>
