@@ -195,13 +195,30 @@ var mcpRemoteURL string
 // runRemoteMCPProxy bridges stdio JSON-RPC messages to a remote Streamable HTTP MCP endpoint
 // (such as https://dgemma.aaie.cloud/mcp), automatically attaching Application Default Credentials
 // (ADC) OIDC id_token (or OAuth2 access token) and MCP Streamable HTTP headers (Mcp-Method, Mcp-Protocol-Version).
+//
+// Crucially, MCP clients (such as Antigravity / Jetski using go-sdk v1.8+) send "subscriptions/listen"
+// (SEP-2575 long-lived SSE stream) immediately after "notifications/initialized" and before "tools/list".
+// To prevent "subscriptions/listen" from head-of-line blocking "tools/list" for 180s (httpClient.Timeout),
+// non-initialization requests are dispatched concurrently and SSE streams are read line-by-line.
 func runRemoteMCPProxy(remoteURL string) error {
 	httpClient := &http.Client{Timeout: 180 * time.Second}
+	sseClient := &http.Client{Timeout: 0} // Long-lived SSE streams (subscriptions/listen) have no fixed client timeout
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 64*1024), 16*1024*1024)
 
+	var stateMu sync.RWMutex
 	sessionProtoVer := ""
 	sessionID := ""
+
+	var stdoutMu sync.Mutex
+	writeStdoutLine := func(b []byte) {
+		stdoutMu.Lock()
+		defer stdoutMu.Unlock()
+		os.Stdout.Write(b)
+		if len(b) == 0 || b[len(b)-1] != '\n' {
+			os.Stdout.Write([]byte("\n"))
+		}
+	}
 
 	writeRPCError := func(id *json.RawMessage, code int, msg string) {
 		if id == nil || len(*id) == 0 || string(*id) == "null" {
@@ -216,17 +233,109 @@ func runRemoteMCPProxy(remoteURL string) error {
 			},
 		}
 		if b, err := json.Marshal(errObj); err == nil {
-			os.Stdout.Write(append(b, '\n'))
+			writeStdoutLine(b)
 		}
 	}
 
-	for scanner.Scan() {
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
+	handleLine := func(line []byte, reqID *json.RawMessage, method string) {
+		stateMu.RLock()
+		protoVer := sessionProtoVer
+		sid := sessionID
+		stateMu.RUnlock()
+
+		req, err := http.NewRequest(http.MethodPost, remoteURL, bytes.NewReader(line))
+		if err != nil {
+			writeRPCError(reqID, -32603, fmt.Sprintf("failed to construct remote MCP request: %v", err))
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json, text/event-stream")
+		if method != "" {
+			req.Header.Set("Mcp-Method", method)
+		}
+		if protoVer != "" {
+			req.Header.Set("Mcp-Protocol-Version", protoVer)
+		}
+		if sid != "" {
+			req.Header.Set("Mcp-Session-Id", sid)
 		}
 
-		// Extract id, method, and protocolVersion (_meta["io.modelcontextprotocol/protocolVersion"] or params.protocolVersion)
+		tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), remoteURL)
+		if tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+
+		isListen := method == "subscriptions/listen"
+		clientToUse := httpClient
+		if isListen {
+			clientToUse = sseClient
+		}
+
+		resp, err := clientToUse.Do(req)
+		if err != nil {
+			if !isListen {
+				writeRPCError(reqID, -32000, fmt.Sprintf("remote MCP endpoint unreachable (%s): %v", remoteURL, err))
+			}
+			return
+		}
+		if newSid := strings.TrimSpace(resp.Header.Get("Mcp-Session-Id")); newSid != "" {
+			stateMu.Lock()
+			sessionID = newSid
+			stateMu.Unlock()
+		}
+
+		contentType := strings.ToLower(resp.Header.Get("Content-Type"))
+		if strings.HasPrefix(contentType, "text/event-stream") {
+			defer resp.Body.Close()
+			sseScanner := bufio.NewScanner(resp.Body)
+			sseScanner.Buffer(make([]byte, 64*1024), 16*1024*1024)
+			for sseScanner.Scan() {
+				sLine := strings.TrimSpace(sseScanner.Text())
+				if strings.HasPrefix(sLine, "data:") {
+					payload := bytes.TrimSpace([]byte(strings.TrimPrefix(sLine, "data:")))
+					if len(payload) > 0 && bytes.HasPrefix(payload, []byte("{")) {
+						var compactBuf bytes.Buffer
+						if json.Compact(&compactBuf, payload) == nil {
+							writeStdoutLine(compactBuf.Bytes())
+						} else {
+							writeStdoutLine(payload)
+						}
+					}
+				}
+			}
+			return
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		trimmed := bytes.TrimSpace(body)
+		if resp.StatusCode >= 300 {
+			snippet := string(trimmed)
+			if len(snippet) > 240 {
+				snippet = snippet[:240] + "..."
+			}
+			writeRPCError(reqID, -32000, fmt.Sprintf("remote MCP endpoint returned HTTP %d: %s", resp.StatusCode, snippet))
+			return
+		}
+		if len(trimmed) > 0 && bytes.HasPrefix(trimmed, []byte("{")) {
+			var compactBuf bytes.Buffer
+			if json.Compact(&compactBuf, trimmed) == nil {
+				writeStdoutLine(compactBuf.Bytes())
+			} else {
+				writeStdoutLine(trimmed)
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	for scanner.Scan() {
+		rawLine := bytes.TrimSpace(scanner.Bytes())
+		if len(rawLine) == 0 {
+			continue
+		}
+		line := append([]byte(nil), rawLine...)
+
 		var rpcEnv struct {
 			ID     *json.RawMessage `json:"id"`
 			Method string           `json:"method"`
@@ -236,9 +345,10 @@ func runRemoteMCPProxy(remoteURL string) error {
 			} `json:"params"`
 		}
 		_ = json.Unmarshal(line, &rpcEnv)
-		// Also handle _meta where values include non-strings (e.g. clientCapabilities object)
 		if rpcEnv.Params.ProtocolVersion != "" {
+			stateMu.Lock()
 			sessionProtoVer = rpcEnv.Params.ProtocolVersion
+			stateMu.Unlock()
 		} else {
 			var rawEnv struct {
 				ID     *json.RawMessage `json:"id"`
@@ -255,64 +365,31 @@ func runRemoteMCPProxy(remoteURL string) error {
 					rpcEnv.Method = rawEnv.Method
 				}
 				if pv, ok := rawEnv.Params.Meta["io.modelcontextprotocol/protocolVersion"].(string); ok && pv != "" {
+					stateMu.Lock()
 					sessionProtoVer = pv
+					stateMu.Unlock()
 				}
 			}
 		}
 
-		req, err := http.NewRequest(http.MethodPost, remoteURL, bytes.NewReader(line))
-		if err != nil {
-			writeRPCError(rpcEnv.ID, -32603, fmt.Sprintf("failed to construct remote MCP request: %v", err))
-			continue
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json, text/event-stream")
-		if rpcEnv.Method != "" {
-			req.Header.Set("Mcp-Method", rpcEnv.Method)
-		}
-		if sessionProtoVer != "" {
-			req.Header.Set("Mcp-Protocol-Version", sessionProtoVer)
-		}
-		if sessionID != "" {
-			req.Header.Set("Mcp-Session-Id", sessionID)
-		}
-
-		tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), remoteURL)
-		if tok != "" {
-			req.Header.Set("Authorization", "Bearer "+tok)
-		}
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			writeRPCError(rpcEnv.ID, -32000, fmt.Sprintf("remote MCP endpoint unreachable (%s): %v", remoteURL, err))
-			continue
-		}
-		if sid := strings.TrimSpace(resp.Header.Get("Mcp-Session-Id")); sid != "" {
-			sessionID = sid
-		}
-		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		trimmed := bytes.TrimSpace(body)
-		if resp.StatusCode >= 300 {
-			snippet := string(trimmed)
-			if len(snippet) > 240 {
-				snippet = snippet[:240] + "..."
-			}
-			writeRPCError(rpcEnv.ID, -32000, fmt.Sprintf("remote MCP endpoint returned HTTP %d: %s", resp.StatusCode, snippet))
-			continue
-		}
-		if len(trimmed) > 0 && bytes.HasPrefix(trimmed, []byte("{")) {
-			var compactBuf bytes.Buffer
-			if json.Compact(&compactBuf, trimmed) == nil {
-				os.Stdout.Write(compactBuf.Bytes())
-				os.Stdout.Write([]byte("\n"))
+		// Execute "initialize" and "notifications/initialized" synchronously so sessionProtoVer and sessionID
+		// are guaranteed to be set before subsequent calls; dispatch all other methods ("subscriptions/listen",
+		// "tools/list", "tools/call") concurrently so "subscriptions/listen" never blocks "tools/list"!
+		if rpcEnv.Method == "initialize" || rpcEnv.Method == "notifications/initialized" {
+			handleLine(line, rpcEnv.ID, rpcEnv.Method)
+		} else {
+			if rpcEnv.Method == "subscriptions/listen" {
+				go handleLine(line, rpcEnv.ID, rpcEnv.Method)
 			} else {
-				os.Stdout.Write(trimmed)
-				os.Stdout.Write([]byte("\n"))
+				wg.Add(1)
+				go func(l []byte, id *json.RawMessage, m string) {
+					defer wg.Done()
+					handleLine(l, id, m)
+				}(line, rpcEnv.ID, rpcEnv.Method)
 			}
 		}
 	}
+	wg.Wait()
 	return scanner.Err()
 }
 
