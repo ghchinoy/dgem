@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -187,25 +190,175 @@ func inferWarmupPhaseAndLabel(elapsedSec int, ewmaSec int, phaseHint string, byt
 	return "phase_4_triton_jit", "Stage 4/4: First Decision Readout & Triton Kernel JIT"
 }
 
+var mcpRemoteURL string
+
+// runRemoteMCPProxy bridges stdio JSON-RPC messages to a remote Streamable HTTP MCP endpoint
+// (such as https://dgemma.aaie.cloud/mcp), automatically attaching Application Default Credentials
+// (ADC) OIDC id_token (or OAuth2 access token) and MCP Streamable HTTP headers (Mcp-Method, Mcp-Protocol-Version).
+func runRemoteMCPProxy(remoteURL string) error {
+	httpClient := &http.Client{Timeout: 180 * time.Second}
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, 64*1024), 16*1024*1024)
+
+	sessionProtoVer := ""
+	sessionID := ""
+
+	writeRPCError := func(id *json.RawMessage, code int, msg string) {
+		if id == nil || len(*id) == 0 || string(*id) == "null" {
+			return
+		}
+		errObj := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      *id,
+			"error": map[string]interface{}{
+				"code":    code,
+				"message": msg,
+			},
+		}
+		if b, err := json.Marshal(errObj); err == nil {
+			os.Stdout.Write(append(b, '\n'))
+		}
+	}
+
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
+			continue
+		}
+
+		// Extract id, method, and protocolVersion (_meta["io.modelcontextprotocol/protocolVersion"] or params.protocolVersion)
+		var rpcEnv struct {
+			ID     *json.RawMessage `json:"id"`
+			Method string           `json:"method"`
+			Params struct {
+				ProtocolVersion string            `json:"protocolVersion"`
+				Meta            map[string]string `json:"_meta"`
+			} `json:"params"`
+		}
+		_ = json.Unmarshal(line, &rpcEnv)
+		// Also handle _meta where values include non-strings (e.g. clientCapabilities object)
+		if rpcEnv.Params.ProtocolVersion != "" {
+			sessionProtoVer = rpcEnv.Params.ProtocolVersion
+		} else {
+			var rawEnv struct {
+				ID     *json.RawMessage `json:"id"`
+				Method string           `json:"method"`
+				Params struct {
+					Meta map[string]interface{} `json:"_meta"`
+				} `json:"params"`
+			}
+			if json.Unmarshal(line, &rawEnv) == nil {
+				if rpcEnv.ID == nil {
+					rpcEnv.ID = rawEnv.ID
+				}
+				if rpcEnv.Method == "" {
+					rpcEnv.Method = rawEnv.Method
+				}
+				if pv, ok := rawEnv.Params.Meta["io.modelcontextprotocol/protocolVersion"].(string); ok && pv != "" {
+					sessionProtoVer = pv
+				}
+			}
+		}
+
+		req, err := http.NewRequest(http.MethodPost, remoteURL, bytes.NewReader(line))
+		if err != nil {
+			writeRPCError(rpcEnv.ID, -32603, fmt.Sprintf("failed to construct remote MCP request: %v", err))
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json, text/event-stream")
+		if rpcEnv.Method != "" {
+			req.Header.Set("Mcp-Method", rpcEnv.Method)
+		}
+		if sessionProtoVer != "" {
+			req.Header.Set("Mcp-Protocol-Version", sessionProtoVer)
+		}
+		if sessionID != "" {
+			req.Header.Set("Mcp-Session-Id", sessionID)
+		}
+
+		tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), remoteURL)
+		if tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			writeRPCError(rpcEnv.ID, -32000, fmt.Sprintf("remote MCP endpoint unreachable (%s): %v", remoteURL, err))
+			continue
+		}
+		if sid := strings.TrimSpace(resp.Header.Get("Mcp-Session-Id")); sid != "" {
+			sessionID = sid
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		trimmed := bytes.TrimSpace(body)
+		if resp.StatusCode >= 300 {
+			snippet := string(trimmed)
+			if len(snippet) > 240 {
+				snippet = snippet[:240] + "..."
+			}
+			writeRPCError(rpcEnv.ID, -32000, fmt.Sprintf("remote MCP endpoint returned HTTP %d: %s", resp.StatusCode, snippet))
+			continue
+		}
+		if len(trimmed) > 0 && bytes.HasPrefix(trimmed, []byte("{")) {
+			var compactBuf bytes.Buffer
+			if json.Compact(&compactBuf, trimmed) == nil {
+				os.Stdout.Write(compactBuf.Bytes())
+				os.Stdout.Write([]byte("\n"))
+			} else {
+				os.Stdout.Write(trimmed)
+				os.Stdout.Write([]byte("\n"))
+			}
+		}
+	}
+	return scanner.Err()
+}
+
 var mcpCmd = &cobra.Command{
 	Use:     "mcp",
 	GroupID: "core",
-	Short:   "Start the dgem Model Context Protocol (MCP) server over stdio",
+	Short:   "Start the dgem Model Context Protocol (MCP) server over stdio (with automatic ADC)",
 	Long: `mcp starts a Model Context Protocol (MCP) server over standard input/output (stdio),
 exposing DiffusionGemma zero-shot multi-slot decision policies, multimodal SigLIP bounding-box
 localization (EXP-09), GPU health/availability checks, and scale-from-zero GPU warmup tools
-to AI agents (Gemini CLI, Claude Desktop, Cursor, etc.).
+to AI agents (Gemini CLI, Claude Desktop, Cursor, Antigravity, etc.).
 
-Note: 'dgem serve' also mounts this exact MCP server over Streamable HTTP at POST /mcp.`,
-	Example: `  # Run stdio MCP server pointing at Cloud Run gateway or GPU backend
-  dgem mcp -u https://dgemma-gateway-882920967572.us-central1.run.app/v1 --gcp-auth`,
+Application Default Credentials (ADC: ~/.config/gcloud/application_default_credentials.json)
+are automatically discovered and used to authenticate against Vertex AI Dedicated Endpoints
+and Cloud Run IAP / IAM services without requiring manual tokens.
+
+Pass --remote https://dgemma.aaie.cloud/mcp to bridge stdio directly to the hosted Cloud Run
+MCP gateway using ADC.`,
+	Example: `  # Bridge stdio to the hosted Cloud Run MCP gateway using ADC automatically
+  dgem mcp --remote https://dgemma.aaie.cloud/mcp
+
+  # Run local stdio MCP server with automatic ADC (vertex_first -> Cloud Run failover)
+  dgem mcp`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if strings.TrimSpace(mcpRemoteURL) != "" {
+			return runRemoteMCPProxy(strings.TrimSpace(mcpRemoteURL))
+		}
+		viper.Set("gcp_auth", true)
+		if viper.GetString("url") == "http://127.0.0.1:8080/v1" {
+			viper.Set("url", "https://dgemma-882920967572.us-central1.run.app/v1")
+		}
+		if _, err := os.Stat(serveTemplatesDir); err != nil {
+			if exe, exErr := os.Executable(); exErr == nil {
+				candidate := filepath.Join(filepath.Dir(filepath.Dir(exe)), "templates")
+				if _, stErr := os.Stat(candidate); stErr == nil {
+					serveTemplatesDir = candidate
+				}
+			}
+		}
 		srv := buildMCPServer()
 		return srv.Run(context.Background(), &mcp.StdioTransport{})
 	},
 }
 
 func init() {
+	mcpCmd.Flags().StringVar(&mcpRemoteURL, "remote", "", "Remote Streamable HTTP MCP endpoint URL (e.g. https://dgemma.aaie.cloud/mcp) to proxy over stdio using ADC")
 	RootCmd.AddCommand(mcpCmd)
 }
 
@@ -823,7 +976,9 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 
 // MCP Tool Input/Output Structs
 
-type StatusToolInput struct{}
+type StatusToolInput struct {
+	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint 4217256562927861760), or 'cloudrun' (Serverless Cloud Run GPU)."`
+}
 
 type DecidePolicyToolInput struct {
 	Template          string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'taxonomy_discovery', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge')."`
@@ -944,9 +1099,9 @@ func buildMCPServer() *mcp.Server {
 	// Tool 1: get_health_and_gpu_status
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "get_health_and_gpu_status",
-		Description: "Returns live health status of the dgem gateway and availability/warmup state of the Cloud Run NVIDIA RTX Pro 6000 GPU engine (warm_and_ready, warming_up, or scaled_to_zero), plus estimated wakeup time.",
+		Description: "Returns live health status of the dgem gateway and availability/warmup state of the selected inference backend ('vertex_first', 'vertex' 1x NVIDIA L4, or 'cloudrun' 1x NVIDIA RTX Pro 6000), plus readout latency and estimated wakeup time.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input StatusToolInput) (*mcp.CallToolResult, HealthAndGPUStatusOutput, error) {
-		return nil, CheckHealthAndGPUStatus(ctx, ""), nil
+		return nil, CheckHealthAndGPUStatusForBackend(ctx, "", input.Backend), nil
 	})
 
 	// Tool 2: warmup_gpu

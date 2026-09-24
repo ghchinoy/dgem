@@ -95,31 +95,46 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 1. **Standard Input/Output (`stdio`) via `dgem mcp`**: Ideal for local AI coding assistants (`Gemini CLI`, `Claude Desktop`, `Cursor`, `Antigravity`).
 2. **Streamable HTTP via `POST /mcp` on `dgem serve`**: Ideal for remote Cloud Run deployments and multi-agent cloud orchestrators (`Stateless: true, JSONResponse: true`).
 
-### 3.1 Configuring `dgem mcp` in `Gemini CLI` (`~/.gemini/settings.json`) or `Claude Desktop`
+### 3.1 Configuring `dgem mcp` (Automatic ADC Auth) in `Antigravity` (`~/.gemini/config/mcp_config.json`), `Gemini CLI` (`~/.gemini/settings.json`), or `Claude Desktop`
 
+`dgem mcp` automatically reads **Application Default Credentials (ADC: `~/.config/gcloud/application_default_credentials.json`)** in pure Go to mint and cache both OIDC `id_token`s (accepted by Cloud Run IAP `programmaticClients` on `https://dgemma.aaie.cloud`) and OAuth2 `access_token`s (for Vertex AI Dedicated Endpoint `4217256562927861760`).
+
+#### Option A: Connect to the Hosted `https://dgemma.aaie.cloud/mcp` Gateway via ADC (`--remote`)
 ```json
 {
   "mcpServers": {
-    "dgem-decision-studio": {
+    "dgem-remote": {
       "command": "/Users/ghchinoy/projects/dgem/bin/dgem",
       "args": [
         "mcp",
-        "-u",
-        "https://dgemma-882920967572.us-central1.run.app/v1",
-        "--gcp-auth"
+        "--remote",
+        "https://dgemma.aaie.cloud/mcp"
       ]
     }
   }
 }
 ```
 
-Or connect directly to a running `dgem serve` gateway over **Streamable HTTP**:
-
+#### Option B: Local `stdio` with Automatic ADC & `vertex_first` Routing
 ```json
 {
   "mcpServers": {
-    "dgem-remote-http": {
-      "url": "http://localhost:8090/mcp"
+    "dgem": {
+      "command": "/Users/ghchinoy/projects/dgem/bin/dgem",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Option C: Direct Streamable HTTP (`dgem serve` on localhost)
+```json
+{
+  "mcpServers": {
+    "dgem-local-http": {
+      "serverUrl": "http://localhost:8090/mcp"
     }
   }
 }

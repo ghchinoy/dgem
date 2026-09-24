@@ -99,8 +99,72 @@ func initConfig() {
 	_ = viper.ReadInConfig()
 }
 
+// fetchADCTokens reads Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS
+// or ~/.config/gcloud/application_default_credentials.json) and exchanges the authorized_user
+// refresh_token directly with https://oauth2.googleapis.com/token for both an OAuth2 access_token
+// and an OIDC id_token (accepted by Cloud Run IAP via programmaticClients).
+func fetchADCTokens() (accessToken string, idToken string) {
+	adcPath := strings.TrimSpace(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+	if adcPath == "" {
+		if home, err := os.UserHomeDir(); err == nil {
+			adcPath = home + "/.config/gcloud/application_default_credentials.json"
+		}
+	}
+	if adcPath == "" {
+		return "", ""
+	}
+	raw, err := os.ReadFile(adcPath)
+	if err != nil {
+		return "", ""
+	}
+	var cred struct {
+		ClientID     string `json:"client_id"`
+		ClientSecret string `json:"client_secret"`
+		RefreshToken string `json:"refresh_token"`
+		Type         string `json:"type"`
+	}
+	if err := json.Unmarshal(raw, &cred); err != nil || cred.RefreshToken == "" || cred.ClientID == "" {
+		return "", ""
+	}
+	form := url.Values{}
+	form.Set("client_id", cred.ClientID)
+	form.Set("client_secret", cred.ClientSecret)
+	form.Set("refresh_token", cred.RefreshToken)
+	form.Set("grant_type", "refresh_token")
+
+	httpClient := &http.Client{Timeout: 4 * time.Second}
+	resp, err := httpClient.PostForm("https://oauth2.googleapis.com/token", form)
+	if err != nil {
+		return "", ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", ""
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", ""
+	}
+	var tokResp struct {
+		AccessToken string `json:"access_token"`
+		IDToken     string `json:"id_token"`
+	}
+	if err := json.Unmarshal(body, &tokResp); err != nil {
+		return "", ""
+	}
+	return strings.TrimSpace(tokResp.AccessToken), strings.TrimSpace(tokResp.IDToken)
+}
+
+// isRemoteGCPURL returns true if u targets Cloud Run (*.run.app), the IAP gateway (dgemma.aaie.cloud), or Vertex AI.
+func isRemoteGCPURL(u string) bool {
+	lower := strings.ToLower(strings.TrimSpace(u))
+	return strings.Contains(lower, ".run.app") ||
+		strings.Contains(lower, "dgemma.aaie.cloud") ||
+		client.IsVertexEndpointURL(u)
+}
+
 // FetchGCPAccessToken mints an OAuth2 access token (cloud-platform scope) for Vertex AI Endpoints (:rawPredict).
-// On Cloud Run / GCE, it queries the local metadata server (/token); on workstations, it invokes gcloud auth print-access-token.
+// It checks (1) GOOGLE_OAUTH_ACCESS_TOKEN, (2) GCP Metadata Server, (3) pure-Go ADC (application_default_credentials.json), and (4) gcloud CLI.
 func FetchGCPAccessToken() string {
 	const cacheKey = "oauth2_access_token|cloud-platform"
 	tokenCacheMu.Lock()
@@ -131,6 +195,22 @@ func FetchGCPAccessToken() string {
 					}
 				}
 			}
+		}
+	}
+
+	// Pure-Go ADC fast path (~80ms, caches both access_token and id_token)
+	if token == "" {
+		accTok, idTok := fetchADCTokens()
+		if accTok != "" {
+			token = accTok
+		}
+		if idTok != "" {
+			tokenCacheMu.Lock()
+			tokenCache["adc_id_token"] = cachedToken{
+				token:   idTok,
+				expires: time.Now().Add(45 * time.Minute),
+			}
+			tokenCacheMu.Unlock()
 		}
 	}
 
@@ -169,6 +249,12 @@ func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
 		tokenCacheMu.Unlock()
 		return cached.token
 	}
+	if explicitAudience == "" {
+		if cached, ok := tokenCache["adc_id_token"]; ok && time.Now().Before(cached.expires) {
+			tokenCacheMu.Unlock()
+			return cached.token
+		}
+	}
 	tokenCacheMu.Unlock()
 
 	aud := strings.TrimSpace(explicitAudience)
@@ -179,8 +265,28 @@ func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
 	}
 
 	var token string
-	// 1. Try GCP Metadata Server first (fast path inside Cloud Run / GCE containers)
-	if aud != "" {
+	// 1. Pure-Go Application Default Credentials (ADC) fast path on workstations
+	if os.Getenv("K_SERVICE") == "" && explicitAudience == "" {
+		accTok, idTok := fetchADCTokens()
+		if idTok != "" {
+			token = idTok
+			tokenCacheMu.Lock()
+			tokenCache["adc_id_token"] = cachedToken{
+				token:   idTok,
+				expires: time.Now().Add(45 * time.Minute),
+			}
+			if accTok != "" {
+				tokenCache["oauth2_access_token|cloud-platform"] = cachedToken{
+					token:   accTok,
+					expires: time.Now().Add(45 * time.Minute),
+				}
+			}
+			tokenCacheMu.Unlock()
+		}
+	}
+
+	// 2. Try GCP Metadata Server inside Cloud Run / GCE containers
+	if token == "" && aud != "" {
 		metaURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=" + url.QueryEscape(aud)
 		req, err := http.NewRequest("GET", metaURL, nil)
 		if err == nil {
@@ -197,7 +303,7 @@ func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
 		}
 	}
 
-	// 2. Fall back to gcloud CLI on developer workstations
+	// 3. Fall back to gcloud CLI on developer workstations
 	if token == "" {
 		args := []string{"auth", "print-identity-token"}
 		if explicitAudience != "" {
@@ -230,7 +336,7 @@ func GetClient() *client.Client {
 }
 
 // GetClientForURL returns a configured API client targeting an explicit upstream URL
-// (either a Cloud Run /v1 URL or a Vertex AI :rawPredict endpoint URL).
+// (either a Cloud Run /v1 URL, IAP Gateway URL, or Vertex AI :rawPredict endpoint URL).
 func GetClientForURL(targetURL string) *client.Client {
 	if strings.TrimSpace(targetURL) == "" {
 		targetURL = viper.GetString("url")
@@ -240,7 +346,7 @@ func GetClientForURL(targetURL string) *client.Client {
 	token := viper.GetString("token")
 	iapAud := viper.GetString("iap_client_id")
 
-	if token == "" && (viper.GetBool("gcp_auth") || iapAud != "" || client.IsVertexEndpointURL(targetURL)) {
+	if token == "" && (viper.GetBool("gcp_auth") || iapAud != "" || isRemoteGCPURL(targetURL)) {
 		aud := iapAud
 		if client.IsVertexEndpointURL(targetURL) {
 			aud = ""
