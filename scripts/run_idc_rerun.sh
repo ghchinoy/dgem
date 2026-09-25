@@ -10,7 +10,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%d)-vertex-idc}"
-ENDPOINT="${ENDPOINT:-4217256562927861760}"
+ENDPOINT="${ENDPOINT:-4423577720856772608}"
 GEMINI="${GEMINI:-gemini-3.8-flash}"
 WORKERS="${WORKERS:-4}"
 STEPS="${STEPS:-calibration permutation jevbench gemini}"

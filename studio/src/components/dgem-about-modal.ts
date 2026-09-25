@@ -301,7 +301,7 @@ export class DgemAboutModal extends LitElement {
               </div>
               <div class="spec-item">
                 <div class="spec-label">Primary &amp; Failover Backends</div>
-                <div class="spec-val">Vertex AI Dedicated L4 (0s wakeup) + Cloud Run</div>
+                <div class="spec-val">Vertex AI Dedicated G4 · RTX PRO 6000 (0s wakeup) + Cloud Run</div>
               </div>
               <div class="spec-item">
                 <div class="spec-label">Model Checkpoint</div>

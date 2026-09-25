@@ -54,7 +54,7 @@ gcloud builds submit "${TMP_CTX}" \
   --quiet
 
 GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"
-VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-4217256562927861760}"
+VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-4423577720856772608}"
 
 echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID})..."
 gcloud run deploy "${GATEWAY_SERVICE}" \
@@ -73,7 +73,7 @@ gcloud run deploy "${GATEWAY_SERVICE}" \
   --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1,DGEM_GPU_IDLE_TTL=${GPU_IDLE_TTL},DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID}" \
   --quiet
 
-# Ensure Gateway SA has Vertex AI User role to query/invoke Dedicated Endpoint 4217256562927861760
+# Ensure Gateway SA has Vertex AI User role to query/invoke Dedicated Endpoint ${VERTEX_ENDPOINT_ID}
 gcloud projects add-iam-policy-binding "${PROJECT}" \
   --member="serviceAccount:${GATEWAY_SA}" \
   --role="roles/aiplatform.user" \

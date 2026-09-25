@@ -223,7 +223,7 @@ export class DgemStudio extends LitElement {
 
   // Inference Backend Target ('vertex_first' vs 'cloudrun' vs 'vertex' /invoke/*)
   @state() private backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' = 'vertex_first';
-  @state() private vertexUrl = '4217256562927861760';
+  @state() private vertexUrl = '4423577720856772608';
   @state() private backendSettingsOpen = false;
   @state() private vertexStatus: {
     endpoint_id: string;
@@ -1050,7 +1050,7 @@ export class DgemStudio extends LitElement {
 
   private async saveBackendConfig(backend: 'vertex_first' | 'cloudrun' | 'vertex', vertexUrl: string) {
     this.backendTarget = backend;
-    this.vertexUrl = (vertexUrl || '4217256562927861760').trim();
+    this.vertexUrl = (vertexUrl || '4423577720856772608').trim();
     localStorage.setItem('dgem-backend-v2', this.backendTarget);
     localStorage.setItem('dgem-vertex-url', this.vertexUrl);
     try {
@@ -1085,7 +1085,7 @@ export class DgemStudio extends LitElement {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          endpoint_id: '4217256562927861760',
+          endpoint_id: '4423577720856772608',
           model_id: '2976360933959401472',
         }),
       });
@@ -1095,7 +1095,7 @@ export class DgemStudio extends LitElement {
       }
       this.warmupToast =
         data.message ||
-        'Started provisioning 1x NVIDIA L4 replica on Vertex AI Dedicated Endpoint 4217256562927861760 (~12-15 min)...';
+        'Started provisioning a G4 (RTX PRO 6000) replica on Vertex AI Dedicated Endpoint 4423577720856772608 (~10 min)...';
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : 'Failed to start Vertex AI deployment';
     } finally {
@@ -1112,7 +1112,7 @@ export class DgemStudio extends LitElement {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          endpoint_id: '4217256562927861760',
+          endpoint_id: '4423577720856772608',
         }),
       });
       const data = await resp.json();
@@ -1121,7 +1121,7 @@ export class DgemStudio extends LitElement {
       }
       this.warmupToast =
         data.message ||
-        'Tearing down Vertex AI replica on 4217256562927861760 ($0.00/hr idle state restored)...';
+        'Tearing down Vertex AI replica on 4423577720856772608 ($0.00/hr idle state restored)...';
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : 'Failed to teardown Vertex AI replica';
     } finally {
@@ -1606,10 +1606,10 @@ export class DgemStudio extends LitElement {
     const dotClass = isWarm ? 'dot--ready' : isWarming ? 'dot--warming' : 'dot--cold';
     const stateLabel = isVertexBackend
       ? isWarm
-        ? 'Vertex L4 Warm & Ready'
+        ? 'Vertex G4 Warm & Ready'
         : isWarming
-          ? phaseLabel || 'Vertex L4 Scaling Up...'
-          : 'Vertex L4 Quiesced (0 Replicas)'
+          ? phaseLabel || 'Vertex G4 Scaling Up...'
+          : 'Vertex G4 Quiesced (0 Replicas)'
       : isWarm
         ? this.backendTarget === 'vertex_first'
           ? 'Cloud Run Failover Warm'
@@ -1622,10 +1622,10 @@ export class DgemStudio extends LitElement {
 
     const subDetail = isVertexBackend
       ? isWarm
-        ? `(1× L4 · ~${lastReadoutMs > 0 ? lastReadoutMs : 490}ms readout · 0s wake)`
+        ? `(RTX PRO 6000 · ~${lastReadoutMs > 0 ? lastReadoutMs : 100}ms readout · 0s wake)`
         : isWarming
-          ? `(0 → 1 replica · g2-standard-16)`
-          : `($0/hr idle · 1× L4 unprovisioned)`
+          ? `(0 → 1 replica · g4-standard-48)`
+          : `($0/hr idle · G4 unprovisioned)`
       : isWarm
         ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
         : isWarming
@@ -1703,7 +1703,7 @@ export class DgemStudio extends LitElement {
                         type="button"
                         style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex_first' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex_first' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                         @click=${async () => {
-                          await this.saveBackendConfig('vertex_first', this.vertexUrl || '4217256562927861760');
+                          await this.saveBackendConfig('vertex_first', this.vertexUrl || '4423577720856772608');
                           this.backendSettingsOpen = false;
                         }}
                       >
@@ -1712,7 +1712,7 @@ export class DgemStudio extends LitElement {
                           <span>Vertex First · Cloud Run Failover (Recommended)</span>
                         </div>
                         <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                          Routes to Vertex AI Dedicated Endpoint (<code>4217256562927861760</code>) when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
+                          Routes to Vertex AI Dedicated Endpoint (<code>4423577720856772608</code>) when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
                         </div>
                       </button>
 
@@ -1738,7 +1738,7 @@ export class DgemStudio extends LitElement {
                           type="button"
                           style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                           @click=${async () => {
-                            await this.saveBackendConfig('vertex', this.vertexUrl || '4217256562927861760');
+                            await this.saveBackendConfig('vertex', this.vertexUrl || '4423577720856772608');
                           }}
                         >
                           <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
@@ -1746,7 +1746,7 @@ export class DgemStudio extends LitElement {
                             <span>Vertex AI Strict (/invoke/*)</span>
                           </div>
                           <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                            Dedicated Endpoint · <code>4217256562927861760</code>
+                            Dedicated Endpoint · <code>4423577720856772608</code>
                           </div>
                         </button>
                       </div>
@@ -1762,15 +1762,15 @@ export class DgemStudio extends LitElement {
                             style="font-size:0.66rem; font-weight:700; padding:0.12rem 0.45rem; border-radius:999px; background:${this.vertexStatus?.state === 'deployed' ? 'rgba(22, 163, 74, 0.16)' : this.vertexStatus?.state === 'deploying' ? 'rgba(217, 119, 6, 0.18)' : 'rgba(100, 116, 139, 0.18)'}; color:${this.vertexStatus?.state === 'deployed' ? '#16a34a' : this.vertexStatus?.state === 'deploying' ? '#d97706' : (this.resolvedTheme === 'dark' ? '#cbd5e1' : '#475569')};"
                           >
                             ${this.vertexStatus?.state === 'deployed'
-                              ? 'ACTIVE · 1× L4'
+                              ? 'ACTIVE · RTX PRO 6000'
                               : this.vertexStatus?.state === 'deploying'
-                                ? 'PROVISIONING L4...'
+                                ? 'PROVISIONING G4...'
                                 : 'QUIESCED · $0.00/hr'}
                           </span>
                         </div>
                         <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.35;">
                           ${this.vertexStatus?.message ||
-                          'Endpoint 4217256562927861760 (Model 2976360933959401472, invokeRoutePrefix="/*") is registered in us-central1.'}
+                          'Endpoint 4423577720856772608 (Model 5387194109486170112, invokeRoutePrefix="/*") is registered in us-central1.'}
                         </div>
                         <div style="display:flex; gap:0.45rem; margin-top:0.15rem;">
                           ${this.vertexStatus?.state === 'deployed' || this.vertexStatus?.state === 'deploying'
@@ -1791,7 +1791,7 @@ export class DgemStudio extends LitElement {
                                   @click=${() => this.handleProvisionVertex()}
                                 >
                                   <span class="material-symbols-outlined">bolt</span>
-                                  <span>${this.vertexActionBusy ? 'Starting...' : 'Provision Vertex GPU (1× L4)'}</span>
+                                  <span>${this.vertexActionBusy ? 'Starting...' : 'Provision Vertex GPU (G4)'}</span>
                                 </button>
                               `}
                           <button
@@ -1813,11 +1813,11 @@ export class DgemStudio extends LitElement {
                         </label>
                         <input
                           type="text"
-                          .value=${this.vertexUrl || '4217256562927861760'}
+                          .value=${this.vertexUrl || '4423577720856772608'}
                           @input=${(e: Event) => {
                             this.vertexUrl = (e.target as HTMLInputElement).value;
                           }}
-                          placeholder="4217256562927861760"
+                          placeholder="4423577720856772608"
                           style="width:100%; box-sizing:border-box; font-family:'JetBrains Mono', monospace; font-size:0.72rem; padding:0.45rem 0.6rem; border-radius:6px; border:1px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                         />
                       </div>
@@ -1826,7 +1826,7 @@ export class DgemStudio extends LitElement {
                         <span style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
                           Active: <strong>${this.backendTarget === 'vertex_first'
                             ? isVertexBackend
-                              ? 'Vertex First → Vertex AI L4 (/invoke/*)'
+                              ? 'Vertex First → Vertex AI G4 (/invoke/*)'
                               : 'Vertex First → Cloud Run GPU (Failover)'
                             : this.backendTarget === 'vertex'
                               ? 'Vertex AI Strict (/invoke/*)'
@@ -1835,7 +1835,7 @@ export class DgemStudio extends LitElement {
                         <button
                           class="btn btn--sm btn--brand"
                           @click=${async () => {
-                            await this.saveBackendConfig(this.backendTarget, this.vertexUrl || '4217256562927861760');
+                            await this.saveBackendConfig(this.backendTarget, this.vertexUrl || '4423577720856772608');
                             this.backendSettingsOpen = false;
                           }}
                         >
@@ -1862,10 +1862,10 @@ export class DgemStudio extends LitElement {
                   : this.handleWarmupGPU(false)}
               title=${isVertexBackend
                 ? isWarm
-                  ? 'Vertex AI Dedicated Endpoint 4217256562927861760 (1× L4 · g2-standard-16) is warm and ready'
+                  ? 'Vertex AI Dedicated Endpoint 4423577720856772608 (RTX PRO 6000 · g4-standard-48) is warm and ready'
                   : isWarming
                     ? 'Vertex AI Dedicated Endpoint replica is currently scaling up (0 → 1)'
-                    : 'Provision 1× NVIDIA L4 replica on Vertex AI Dedicated Endpoint 4217256562927861760'
+                    : 'Provision a G4 (RTX PRO 6000) replica on Vertex AI Dedicated Endpoint 4423577720856772608'
                 : isWarm
                   ? 'Cloud Run GPU vLLM EngineCore & SigLIP are warm and ready'
                   : isWarming
@@ -1879,8 +1879,8 @@ export class DgemStudio extends LitElement {
                 ? isWarm
                   ? 'Vertex Ready'
                   : isWarming
-                    ? 'Scaling L4...'
-                    : 'Provision L4'
+                    ? 'Scaling G4...'
+                    : 'Provision G4'
                 : isWarm
                   ? 'Cloud Run Ready'
                   : isWarming

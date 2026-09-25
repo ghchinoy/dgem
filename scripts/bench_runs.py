@@ -20,7 +20,7 @@ Commands
 Examples
 --------
   scripts/bench_runs.py exec --run 20260925-vertex-idc --suite calibration --config baseline -- \
-      ./bin/dgem bench-calibration --vertex-url 4217256562927861760 --gcp-auth -w 4 -o {out}
+      ./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 4 -o {out}
   scripts/bench_runs.py compare --suite calibration
 """
 

@@ -345,9 +345,16 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 	return client.NormalizeVertexEndpointURL(v), nil
 }
 
+// Default Vertex AI Dedicated Endpoint (primary "run" tier). Switched from the 1x L4 endpoint
+// (4217256562927861760, g2-standard-16) to G4 + RTX PRO 6000 on 2026-09-25 after the serving speed
+// review (benchmarks/runs/20260925-serving-speed). The L4 endpoint remains usable via --vertex-url.
 const (
-	defaultVertexEndpointID = "4217256562927861760"
-	defaultVertexModelID    = "3753231869680812032"
+	defaultVertexEndpointID   = "4423577720856772608"
+	defaultVertexModelID      = "5387194109486170112"
+	defaultVertexMachineType  = "g4-standard-48"
+	defaultVertexAccelerator  = "NVIDIA_RTX_PRO_6000"
+	defaultVertexMachineLabel = "g4-standard-48 (NVIDIA RTX PRO 6000)"
+	defaultVertexMaxReplicas  = 2
 )
 
 type vertexEndpointLiveStatus struct {
@@ -426,7 +433,7 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 				hCancel()
 				st.State = "deployed"
 				st.ReplicaCount = 1
-				st.MachineType = "g2-standard-16 (NVIDIA L4)"
+				st.MachineType = defaultVertexMachineLabel
 				st.Message = fmt.Sprintf("Active & Ready (1 replica · %s · /invoke/*)", st.MachineType)
 				vertexStatusCacheMu.Lock()
 				vertexStatusCached = st
@@ -473,7 +480,7 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 						st.DeployedModel = dm.ID
 						st.MachineType = dm.DedicatedResources.MachineSpec.MachineType
 						if st.MachineType == "" {
-							st.MachineType = "g2-standard-16 (NVIDIA L4)"
+							st.MachineType = defaultVertexMachineLabel
 						}
 						st.ReplicaCount = dm.Status.AvailableReplicaCount
 						if st.ReplicaCount > 0 {
@@ -515,7 +522,7 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 				for _, op := range opsData.Operations {
 					if !op.Done && strings.Contains(op.Name, "/endpoints/"+epID+"/") {
 						st.State = "deploying"
-						st.Message = "Provisioning NVIDIA L4 GPU replica on Vertex AI (g2-standard-16 · 64 GB RAM · /invoke/*)..."
+						st.Message = "Provisioning GPU replica on Vertex AI (" + defaultVertexMachineLabel + " · /invoke/*)..."
 						break
 					}
 				}
@@ -574,10 +581,10 @@ func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requeste
 		}
 		vStatus := inspectVertexEndpointState(ctx, normURL)
 		if vStatus.State == "quiesced" {
-			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently quiesced at 0 GPU replicas ($0.00/hr zero-idle-cost state). Switch to 'Vertex First (Auto-Failover)' or 'Cloud Run GPU', or click 'Provision Vertex GPU (1x L4)' in the Backend Target menu.", vStatus.DisplayName, vStatus.EndpointID)
+			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently quiesced at 0 GPU replicas ($0.00/hr zero-idle-cost state). Switch to 'Vertex First (Auto-Failover)' or 'Cloud Run GPU', or click 'Provision Vertex GPU' in the Backend Target menu.", vStatus.DisplayName, vStatus.EndpointID)
 		}
 		if vStatus.State == "deploying" {
-			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently provisioning an NVIDIA L4 replica (g2-standard-16). Switch to 'Vertex First (Auto-Failover)' or 'Cloud Run GPU' while Vertex AI finishes deploying.", vStatus.DisplayName, vStatus.EndpointID)
+			return "vertex", normURL, fmt.Errorf("Vertex AI Dedicated Endpoint '%s' (%s) is currently provisioning a GPU replica. Switch to 'Vertex First (Auto-Failover)' or 'Cloud Run GPU' while Vertex AI finishes deploying.", vStatus.DisplayName, vStatus.EndpointID)
 		}
 		return "vertex", normURL, nil
 	}
@@ -896,20 +903,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 		payload := fmt.Sprintf(`{
   "deployedModel": {
     "model": "projects/882920967572/locations/us-central1/models/%s",
-    "displayName": "dgemma-l4-invoke-v2",
+    "displayName": "dgemma-invoke-g4-deployment",
     "serviceAccount": "dgemma-gpu-sa@genai-blackbelt-fishfooding.iam.gserviceaccount.com",
     "dedicatedResources": {
       "machineSpec": {
-        "machineType": "g2-standard-16",
-        "acceleratorType": "NVIDIA_L4",
+        "machineType": "%s",
+        "acceleratorType": "%s",
         "acceleratorCount": 1
       },
       "minReplicaCount": 1,
-      "maxReplicaCount": 1
+      "maxReplicaCount": %d
     }
   },
   "trafficSplit": { "0": 100 }
-}`, defaultVertexModelID)
+}`, defaultVertexModelID, defaultVertexMachineType, defaultVertexAccelerator, defaultVertexMaxReplicas)
 		req, _ := http.NewRequestWithContext(r.Context(), http.MethodPost, deployURL, strings.NewReader(payload))
 		req.Header.Set("Authorization", "Bearer "+tok)
 		req.Header.Set("Content-Type", "application/json")
@@ -927,7 +934,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"endpoint_id": epID,
 			"model_id":    defaultVertexModelID,
 			"operation":   opRes,
-			"message":     "Started provisioning NVIDIA L4 replica (g2-standard-8) on Vertex AI Dedicated Endpoint " + epID,
+			"message":     "Started provisioning " + defaultVertexMachineLabel + " replica on Vertex AI Dedicated Endpoint " + epID,
 		})
 	})
 

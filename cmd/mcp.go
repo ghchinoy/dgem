@@ -1263,7 +1263,7 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 // MCP Tool Input/Output Structs
 
 type StatusToolInput struct {
-	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint 4217256562927861760), or 'cloudrun' (Serverless Cloud Run GPU)."`
+	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint 4423577720856772608), or 'cloudrun' (Serverless Cloud Run GPU)."`
 }
 
 type DecidePolicyToolInput struct {
@@ -1271,7 +1271,7 @@ type DecidePolicyToolInput struct {
 	Variables         map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
 	Image             string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
 	Backend           string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
-	VertexURL         string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4217256562927861760)."`
+	VertexURL         string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4423577720856772608)."`
 	CascadeMode       string                 `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
 	CascadeThreshold  float64                `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
 	CascadeModel      string                 `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`

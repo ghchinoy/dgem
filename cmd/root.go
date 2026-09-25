@@ -69,7 +69,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&authToken, "token", "k", "", "Authorization Bearer token / API key")
 	RootCmd.PersistentFlags().BoolVar(&gcpAuth, "gcp-auth", false, "Automatically obtain GCP IAM identity token via gcloud auth print-identity-token or Cloud Run metadata server")
 	RootCmd.PersistentFlags().StringVar(&iapClientID, "iap-client-id", "", "OAuth 2.0 Client ID / Audience for Identity-Aware Proxy (IAP) protected endpoints (env: DGEM_IAP_CLIENT_ID)")
-	RootCmd.PersistentFlags().StringVar(&serveVertexURL, "vertex-url", "4217256562927861760", "Vertex AI Dedicated Endpoint ID or /invoke/* URL (env: DGEM_VERTEX_URL)")
+	RootCmd.PersistentFlags().StringVar(&serveVertexURL, "vertex-url", "4423577720856772608", "Vertex AI Dedicated Endpoint ID or /invoke/* URL (env: DGEM_VERTEX_URL)")
 
 	viper.BindPFlag("url", RootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("model", RootCmd.PersistentFlags().Lookup("model"))
