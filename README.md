@@ -13,7 +13,7 @@
 | **Entropy-gated cascade** | Answers low-uncertainty decisions directly and escalates the rest to Vertex AI `gemini-3.8-flash` with the Stage-1 probabilities attached. | [EXP-05](docs/experiments/exp-05-roadmap-cascades-and-dags.md) |
 | **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/studio-mcp-api.md) · [CLI reference](docs/cli-reference.md) |
 | **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-13`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
-| **Serving** | Vertex AI Dedicated Endpoint (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [Vertex AI vs. Cloud Run](docs/vertex-ai-vs-cloudrun.md) |
+| **Serving** | Vertex AI Dedicated Endpoint on RTX PRO 6000 (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [Path to Production](docs/path-to-production.md) · [Vertex AI vs. Cloud Run](docs/vertex-ai-vs-cloudrun.md) |
 
 ## Quick start
 
@@ -284,6 +284,7 @@ Evaluates 30-way to 151-way intent routing and Out-of-Scope (`oos`) rejection on
 
 All pages below are also published on the docs site: [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/).
 
+* **[Path to Production](docs/path-to-production.md)**: Crawl → walk → run tiers, measured latency and concurrency scaling, hardware and serving recommendations, and a deploy/verify/rollback checklist.
 * **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, the G4 (RTX PRO 6000) default, and the crawl-walk-run serving recommendation.
 * **[Experiment Authoring Guide & Backend Target Selection](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
 * **[CLI, HTTP Gateway & MCP Reference](docs/cli-reference.md)**: Complete flag and tool parameter reference (`--vertex-url`, `dgem serve --default-backend vertex_first`, `/v1/systemone`, and MCP tools).

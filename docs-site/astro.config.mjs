@@ -264,6 +264,7 @@ export default defineConfig({
           label: 'Deployment & Cloud',
           items: [
             { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
+            { label: 'Path to Production (Scaling & Recommendations)', slug: 'path-to-production' },
             { label: 'Vertex AI (/invoke/*) vs. Cloud Run', slug: 'vertex-ai-vs-cloudrun' },
             { label: 'Cloud Run Architecture & Lessons', slug: 'cloudrun-lessons-learned' },
             { label: 'OTel Traces & Cloud Observability', slug: 'observability-traces' },

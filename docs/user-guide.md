@@ -62,7 +62,7 @@ export DGEM_TOKEN="Bearer <your-token>"
 
 ### Global CLI Flags
 * `--url`, `-u`: Base URL of the running server (default: `http://127.0.0.1:8080/v1`, or Cloud Run GPU / Gateway URL).
-* `--vertex-url`: Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4217256562927861760`, resolving to `https://4217256562927861760.us-central1-882920967572.prediction.vertexai.goog/v1/projects/882920967572/locations/us-central1/endpoints/4217256562927861760/invoke/v1`). When passed, `dgem` automatically mints an OAuth2 `cloud-platform` access token (`gcloud auth print-access-token`) and routes directly to `/invoke/v1/*`.
+* `--vertex-url`: Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4423577720856772608`, resolving to `https://4423577720856772608.us-central1-882920967572.prediction.vertexai.goog/v1/projects/882920967572/locations/us-central1/endpoints/4423577720856772608/invoke/v1`). When passed, `dgem` automatically mints an OAuth2 `cloud-platform` access token (`gcloud auth print-access-token`) and routes directly to `/invoke/v1/*`.
 * `--model`, `-m`: Model identifier (`diffgemma-26b-a4b-it-q4` on local Metal; `/model` on Cloud Run / Vertex AI / vLLM).
 * `--timeout`: HTTP timeout duration (default: `120s`).
 * `--stats`, `-s`: Print comprehensive timing, KV cache reuse, raw Shannon entropy $H_m$, and cardinality-normalized entropy $\tilde{H}_m$.
@@ -89,7 +89,7 @@ dgem serve [flags]
   - `vertex_first`: Routes to the warm Vertex AI Dedicated Endpoint (`--vertex-url`) for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically fails over to Serverless Cloud Run GPU (`-u`) if Vertex is updating or scaled to zero.
   - `vertex`: Strictly pins requests to the Vertex AI Dedicated Endpoint (`/invoke/*`).
   - `cloudrun`: Strictly pins requests to Serverless Cloud Run GPU (`dgemma`).
-* `--vertex-url string`: Default Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4217256562927861760`).
+* `--vertex-url string`: Default Vertex AI Dedicated Endpoint ID or `/invoke/v1` base URL (default: `4423577720856772608`).
 * `--cascade-model string`: Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash` [default], `gemini-3.7-flash`, or `gemini-3.5-flash-lite`; env: `DGEM_CASCADE_MODEL`).
 * `--cascade-models string`: Comma-separated list of selectable Stage 2 Gemini 3.x models (`gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite`; env: `DGEM_CASCADE_MODELS`).
 * `-u`, `--url string`: Upstream Cloud Run GPU `/v1` base URL for `cloudrun` routing and `vertex_first` failover.
@@ -101,7 +101,7 @@ dgem serve [flags]
 * `POST /v1/chat/completions` & `POST /v1/raw/chat/completions`: OpenAI-compatible structured envelope and raw vLLM pass-through proxies with `vertex_first` auto-failover.
 * `POST /mcp`: Stateless Streamable HTTP Model Context Protocol endpoint. Specifically, the MCP inference tools (`decide_policy`, `decide_custom_questions`, `locate_bounding_boxes`) accept:
   - `backend`: `"vertex_first"` (default) | `"vertex"` | `"cloudrun"`
-  - `vertex_url`: Optional Vertex AI Dedicated Endpoint ID (`"4217256562927861760"`) or `/invoke/v1` URL override
+  - `vertex_url`: Optional Vertex AI Dedicated Endpoint ID (`"4423577720856772608"`) or `/invoke/v1` URL override
   - `cascade_mode`: `"off"` (default) | `"entropy"` | `"on_miss"`
   - `cascade_threshold`: `0.35` (default Shannon entropy $H$ threshold in nats)
   - `cascade_model`: `"gemini-3.8-flash"` (default), `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`

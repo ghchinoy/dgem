@@ -17,8 +17,8 @@ See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-
 
 | Serving Target | Engine & Hardware Shape | Cold-Start / Wakeup | Verified GPU Denoise / Wall Time | Primary Use Case |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `structured_server.py` + vLLM (`TRITON_ATTN`) on **`g2-standard-16` (`1× NVIDIA L4` `24GB` VRAM, `64GB` RAM, ID `4217256562927861760`)** | **`0.0 s`** (`minReplicaCount=1`, permanently warm) | **`490.0 ms` avg GPU** (`536.0 ms` wall for `N=4`; `195 ms` for `N=1`) | **Recommended Primary Target (`vertex_first` default)**: Zero cold-start SLA, interactive agents, synchronous CI/CD gates, and multimodal `SigLIP` headroom (`64 GB` RAM). |
-| **2. Serverless Cloud Run GPU (`dgemma`)** | `structured_server.py` + vLLM on **`1× NVIDIA RTX Pro 6000` (`48GB` VRAM, `80Gi` RAM)** or **`1× L4` (`24GB`)** | **`~121.8 s`** (`0 → 1` scale-from-zero, `$0.00/hr` idle) | **`427.3 ms` avg GPU** (`459.0 ms` warm wall) | **Scale-to-Zero & Auto-Failover Standby (`cloudrun`)**: Episodic batch evaluations, research experiments, and `$0.00/hr` idle sandboxes. |
+| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `structured_server.py` + vLLM (`TRITON_ATTN`) on **`g4-standard-48` + `1× NVIDIA RTX PRO 6000`** (ID `4423577720856772608`, SigLIP on); legacy `g2-standard-16` + `1× L4` | **`0.0 s`** (min 1 replica, autoscale to 2) | **`57.5 ms`** denoise / `143 ms` wall (`N=1`); `97.9 ms` / `181 ms` (`N=4`) | **Primary target (`vertex_first` default)**: always warm, interactive agents, CI/CD gates, multimodal. |
+| **2. Serverless Cloud Run GPU (`dgemma`)** | `structured_server.py` + vLLM on **`1× NVIDIA RTX PRO 6000`** or **`1× L4`** | **`~90–120 s`** (`0 → 1`, `$0.00/hr` idle) | **`65.0 ms`** / `144 ms` (`N=1`); `107.7 ms` / `187 ms` (`N=4`) | **Scale-to-zero failover and batch (`cloudrun`)**: episodic evaluations, research, sandboxes. |
 | **3. Google Compute Engine VM (`1× L4` / `2× A100`)** | Raw vLLM + Triton Attention (`TRITON_ATTN`) on `g2-standard-8` (`1× L4` `NVFP4`) or `a2-highgpu-2g` (`2× A100` `bfloat16`) | **`0.0 s`** (dedicated VM) | **`~1,968.7 ms`** (`L4`) / **`~2,733 ms`** (`2× A100`) | High-throughput continuous batching (`Banking77` / `CLINC150`) and 16-bit unquantized `bfloat16` baselines. |
 | **4. Local Apple Silicon (`Metal`)** | Native Rust Metal (`diffgemma`) with `diffgemma-26b-a4b-it-q4` (`~18.8 GB` Unified RAM) | **`0.0 s`** (local daemon) | **`892.0 ms` avg GPU** (`898.5 ms` wall; `210 ms` for `N=1`) | Local development, offline privacy, `$0.00/hr` cloud cost. |
 
@@ -29,6 +29,7 @@ See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-
 * **[Decision Studio Web App, MCP Server & HTTP Gateway API](studio-mcp-api.md)**
 * **[Experiment Authoring Guide & Backend Target Selection (`vertex_first` vs. `vertex` vs. `cloudrun`)](experiment-authoring-guide.md)**
 * **[CLI, HTTP Gateway & MCP Reference (`--vertex-url`, `dgem serve`, `/v1/systemone`)](cli-reference.md)**
+* **[Path to Production (Scaling & Recommendations)](path-to-production.md)**
 * **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**
 * **[Custom Dataset & Experiment Cookbook](custom-dataset-guide.md)**
 * **[The Journey to Decision Models](decision-models-primer.md)**

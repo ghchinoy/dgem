@@ -20,8 +20,8 @@ This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)*
 
 | Backend Mode (`backend` / `X-DGem-Backend`) | Target Infrastructure | Cold-Start / Wakeup | Warm GPU Denoise / Wall Time | Cost Profile | Recommended Use Case |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`vertex_first`** *(Recommended Default — High-Availability Hybrid)* | Primary: **Vertex AI Dedicated Endpoint (`4217256562927861760`, `g2-standard-16` `1× NVIDIA L4`, `64 GB` RAM)**<br/>Auto-Failover: **Serverless Cloud Run GPU (`dgemma`)** | **`0.0 s`** cold-start wakeup (`auto-failover` if Vertex is updating or scaled to zero) | **`~490 ms` GPU denoise** (`~536 ms` wall time for `N=4`; `~195 ms` single-pass) | Dedicated L4 (`~$1.12/hr`) while active; `$0.00/hr` Cloud Run standby | **Recommended default for Web Studio, MCP agents, and production APIs.** Routes to the warm Vertex AI Dedicated Endpoint for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically fails over to Serverless Cloud Run GPU if Vertex is ever updating or scaled to zero. |
-| **`vertex`** *(Strict Production SLA / Zero-Downtime Priority)* | **Vertex AI Dedicated Endpoint (`4217256562927861760`, `/invoke/v1/*`)** (`g2-standard-16`, `1× NVIDIA L4`, `64 GB` RAM) | **`0.0 s`** (`minReplicaCount >= 1`, permanently warm) | **`~490 ms` GPU denoise** (`~536 ms` wall time) | **`~$1.12/hr`** (`1× L4` on `g2-standard-16`) until undeployed via `make vertex-teardown` | **Recommended for production pipelines, synchronous CI/CD gates, interactive agents, and shared internal platform services** where zero cold-start latency (`0.0 s`) and `64 GB` host RAM headroom (for multimodal `SigLIP` workloads) take priority over idle GPU reservation cost (`~$1.12/hr` for `1× L4`). |
+| **`vertex_first`** *(Recommended Default — High-Availability Hybrid)* | Primary: **Vertex AI Dedicated Endpoint (`4423577720856772608`, `g2-standard-16` `1× NVIDIA L4`, `64 GB` RAM)**<br/>Auto-Failover: **Serverless Cloud Run GPU (`dgemma`)** | **`0.0 s`** cold-start wakeup (`auto-failover` if Vertex is updating or scaled to zero) | **`~490 ms` GPU denoise** (`~536 ms` wall time for `N=4`; `~195 ms` single-pass) | Dedicated L4 (`~$1.12/hr`) while active; `$0.00/hr` Cloud Run standby | **Recommended default for Web Studio, MCP agents, and production APIs.** Routes to the warm Vertex AI Dedicated Endpoint for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically fails over to Serverless Cloud Run GPU if Vertex is ever updating or scaled to zero. |
+| **`vertex`** *(Strict Production SLA / Zero-Downtime Priority)* | **Vertex AI Dedicated Endpoint (`4423577720856772608`, `/invoke/v1/*`)** (`g2-standard-16`, `1× NVIDIA L4`, `64 GB` RAM) | **`0.0 s`** (`minReplicaCount >= 1`, permanently warm) | **`~490 ms` GPU denoise** (`~536 ms` wall time) | **`~$1.12/hr`** (`1× L4` on `g2-standard-16`) until undeployed via `make vertex-teardown` | **Recommended for production pipelines, synchronous CI/CD gates, interactive agents, and shared internal platform services** where zero cold-start latency (`0.0 s`) and `64 GB` host RAM headroom (for multimodal `SigLIP` workloads) take priority over idle GPU reservation cost (`~$1.12/hr` for `1× L4`). |
 | **`cloudrun`** *(Strict Scale-to-Zero / Cost-Sensitive & Ad-Hoc Batch)* | **Serverless Cloud Run GPU (`dgemma`)** (`1× NVIDIA RTX Pro 6000` `48GB` or `1× NVIDIA L4` `24GB`, `min-instances=0`) | **`6–8 min`** first-request cold start from `0 → 1` (`0.0 s` while warm) | **`~427 ms` GPU denoise** (`~459 ms` wall time once warm) | **`$0.00/hr` idle cost** (`min-instances=0`); billed per-second only during active traffic | **Recommended for episodic batch jobs, research experiments, and dev/test sandboxes** where **`$0.00/hr` idle cost** (`min-instances=0`) is the primary requirement and a `6–8 minute` first-request cold start is acceptable. |
 
 ---
@@ -33,7 +33,7 @@ This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)*
   - **`Vertex First (Auto)`** *(Recommended Default)*
   - **`Cloud Run GPU (Strict)`**
   - **`Vertex AI Strict (/invoke/*)`**
-- The Backend Target popover displays live replica state for Vertex AI Dedicated Endpoint `4217256562927861760` (`g2-standard-16` `1× NVIDIA L4`) alongside 1-click **Provision Vertex GPU (`1× L4`)** and **Teardown Replica (`$0/hr`)** actions.
+- The Backend Target popover displays live replica state for Vertex AI Dedicated Endpoint `4423577720856772608` (`g2-standard-16` `1× NVIDIA L4`) alongside 1-click **Provision Vertex GPU (`1× L4`)** and **Teardown Replica (`$0/hr`)** actions.
 
 #### 2. HTTP Gateway API (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)
 - Specify the backend via any of three mechanisms:
@@ -64,7 +64,7 @@ curl -sS "https://<your-dgem-gateway>/api/decide/support_triage" \
   "name": "decide_custom_questions",
   "arguments": {
     "backend": "vertex_first",
-    "vertex_url": "4217256562927861760",
+    "vertex_url": "4423577720856772608",
     "context": "Customer reports duplicate $500 annual renewal charge on enterprise account.",
     "questions": [
       { "id": "urgent", "type": "boolean", "question": "Does this ticket require urgent billing escalation?" },
@@ -75,11 +75,11 @@ curl -sS "https://<your-dgem-gateway>/api/decide/support_triage" \
 ```
 
 #### 4. CLI (`dgem`)
-- Pass `--vertex-url 4217256562927861760 --gcp-auth` to point any `dgem` subcommand (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-bbox`, `bench-jev`) directly at the Vertex AI Dedicated Endpoint `/invoke/v1` route, or pass `-u https://<your-dgem-gateway>/v1 --gcp-auth` to route via the Cloud Run Gateway:
+- Pass `--vertex-url 4423577720856772608 --gcp-auth` to point any `dgem` subcommand (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-bbox`, `bench-jev`) directly at the Vertex AI Dedicated Endpoint `/invoke/v1` route, or pass `-u https://<your-dgem-gateway>/v1 --gcp-auth` to route via the Cloud Run Gateway:
 
 ```bash
 # Direct Vertex AI Dedicated Endpoint (/invoke/v1):
-./bin/dgem decide --vertex-url 4217256562927861760 --gcp-auth \
+./bin/dgem decide --vertex-url 4423577720856772608 --gcp-auth \
   -t templates/support_triage.json.tmpl \
   -v 'ticket=Charged twice on invoice #9481' --stats
 

@@ -413,7 +413,7 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 	st := vertexEndpointLiveStatus{
 		EndpointID:  epID,
 		ModelID:     defaultVertexModelID,
-		DisplayName: "dgemma-dedicated",
+		DisplayName: "dgemma-dedicated-g4",
 		State:       "quiesced",
 		Message:     fmt.Sprintf("Quiesced at 0 GPU replicas ($0.00/hr idle) on Endpoint %s", epID),
 	}

@@ -10,7 +10,7 @@ description: "Architectural comparison of Google Cloud Vertex AI Dedicated Endpo
 1. **Local Apple Silicon Metal (`diffgemma`)** — Developer laptop prototyping & offline eval.
 2. **GCE VM (`g2-standard-8` L4 / `a2-highgpu-2g` A100)** — Raw VM benchmarking & custom kernel profiling.
 3. **Serverless Cloud Run GPU (`dgemma`)** — Scale-to-zero failover and batch backend (`--min-instances=0`, `$0/hr` idle, NVIDIA RTX PRO 6000 or L4).
-4. **Vertex AI Dedicated Endpoints (`invokeRoutePrefix: "/*"`)** — **Default production backend** (`vertex_first`): `dgemma-dedicated-g4` (`4423577720856772608`, RTX PRO 6000) with the L4 `dgemma-dedicated` (`4217256562927861760`) as a legacy fallback.
+4. **Vertex AI Dedicated Endpoints (`invokeRoutePrefix: "/*"`)** — **Default production backend** (`vertex_first`): `dgemma-dedicated-g4` (`4423577720856772608`, RTX PRO 6000) (the L4 endpoint `4217256562927861760` was retired on 2026-09-25; Cloud Run provides failover).
 
 ---
 
@@ -21,7 +21,7 @@ description: "Architectural comparison of Google Cloud Vertex AI Dedicated Endpo
 | **Crawl** | Apple Silicon Metal (`diffgemma`, q4) | Offline development and template authoring | ~0.9 s; different engine from production, so numbers don't transfer |
 | **Walk → run** | Cloud Run GPU (`dgemma`, 1× RTX PRO 6000) | Batch evaluation, research, scale-to-zero failover | 65 ms denoise / 144 ms wall (p50); 90–120 s cold start |
 | **Run (default)** | Vertex AI Dedicated Endpoint **`4423577720856772608`** (`g4-standard-48` + 1× RTX PRO 6000) | Production: always warm, IAM, replica autoscaling (1–2), multimodal | **57.5 ms denoise / 143 ms wall (p50)**; images 66.5 ms |
-| Legacy | Vertex AI `4217256562927861760` (`g2-standard-16` + 1× L4) | Cheapest always-warm fallback; text only | 188 ms / 271 ms; **crashes under load** (see below) |
+| Retired (2026-09-25) | Vertex AI `4217256562927861760` (`g2-standard-16` + 1× L4) | Model undeployed; endpoint kept empty (redeploy with `VERTEX_PROFILE=l4`) | 188 ms / 271 ms; crashed under load (see below) |
 
 Measurements: [`benchmarks/runs/20260925-serving-speed`](../benchmarks/runs/20260925-serving-speed/README.md)
 (50 requests per cell, same session). Why G4 rather than A100/H100: the checkpoint is NVFP4 (4-bit), which
@@ -35,7 +35,7 @@ Blackwell GPUs (RTX PRO 6000) execute natively; L4 and A100 do not.
   (150.6 ms vs 97.9 ms for a fixed 4 on G4).
 - **Concurrency.** The G4 image caps decisions in flight at `MAX_INFLIGHT=8` and queues the rest, so a
   32-client burst completed with 0 errors (≈60 decisions/s at 1 sample, ≈36/s at 4 samples on one replica).
-  The L4 endpoint has no limiter: 4 samples × 8 concurrent clients crashed vLLM's engine and the replica
+  The retired L4 endpoint had no limiter: 4 samples × 8 concurrent clients crashed vLLM's engine and the replica
   restarted for ~2 minutes. The gateway's `vertex_first` routing fails over to Cloud Run during such events.
 - **Dual-mirror** adds ~4 ms at 1 sample on G4, but see [EXP-14](experiments/exp-14-idc-rerun.md) for why it
   is not recommended in production.
@@ -178,7 +178,7 @@ All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`*
 ```
 
 ### D. Via `dgem` CLI (`--vertex-url`)
-Pass `--vertex-url 4423577720856772608` (the default; use `4217256562927861760` for the legacy L4) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
+Pass `--vertex-url 4423577720856772608` (the default) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
 
 ```bash
 # Single decision against the default Vertex AI Dedicated Endpoint (G4, 4423577720856772608):
