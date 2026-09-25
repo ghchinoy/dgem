@@ -31,7 +31,7 @@
         "levels": ["furious", "dissatisfied", "neutral", "satisfied", "delighted"]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "call_duration_seconds": {{ default 180 .duration | toJson }},

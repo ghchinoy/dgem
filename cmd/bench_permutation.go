@@ -15,13 +15,13 @@ import (
 )
 
 var (
-	permDatasetPath   string
-	permOutPath       string
-	permFromReceipt   string
-	permGateNormH     float64
-	permPriorAlpha    float64
-	permWorkers       int
-	permJSON          bool
+	permDatasetPath string
+	permOutPath     string
+	permFromReceipt string
+	permGateNormH   float64
+	permPriorAlpha  float64
+	permWorkers     int
+	permJSON        bool
 
 	permStyleAccent = lipgloss.NewStyle().Foreground(lipgloss.Color("#38BDF8")).Bold(true)
 	permStylePass   = lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E")).Bold(true)

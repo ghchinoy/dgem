@@ -302,6 +302,52 @@ else
   VLLM_EXTRA_ARGS+=(--safetensors-load-strategy prefetch)
 fi
 
+# Self-warmup: once vLLM answers /health, send samples=1, samples=4 and (with SigLIP enabled) one image
+# decision through the local structured server so the first user request doesn't pay kernel/JIT warmup.
+if [ "${SELF_WARMUP:-1}" = "1" ]; then
+  (
+    while ! python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1)' >/dev/null 2>&1; do
+      sleep 2
+    done
+    WARM_T0="$(date +%s.%N)"
+    PORT="$PORT" DISABLE_MM="${DISABLE_MM:-0}" python3 - <<'PYWARM' || true
+import base64, json, os, struct, time, urllib.request, zlib
+port = os.environ["PORT"]
+def png(w=64, h=64):
+    raw = b"".join(b"\x00" + bytes([200, 60, 60]) * w for _ in range(h))
+    def chunk(t, d): return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+q = [{"id": "urgent", "type": "boolean", "instructions": "Is this urgent?"},
+     {"id": "team", "type": "choice", "instructions": "Which team?", "options": [{"name": "billing", "description": "charges"}, {"name": "technical", "description": "outages"}, {"name": "account", "description": "profile"}]}]
+jobs = [(1, "Production API is down for all customers."), (4, "I was charged twice for my plan.")]
+for n, text in jobs:
+    body = {"model": "dgemma", "messages": [{"role": "system", "content": json.dumps({"instructions": "Triage.", "samples": n, "think": 0, "questions": q})}, {"role": "user", "content": json.dumps({"ticket": text})}]}
+    if n == 1 and os.environ.get("DISABLE_MM", "0") == "0":
+        img = "data:image/png;base64," + base64.b64encode(png()).decode()
+        warm_img = dict(body); warm_img["messages"] = [body["messages"][0], {"role": "user", "content": [{"type": "text", "text": json.dumps({"ticket": "Describe the image."})}, {"type": "image_url", "image_url": {"url": img}}]}]
+        jobs_img = [warm_img]
+    else:
+        jobs_img = []
+    for b in [body] + jobs_img:
+        t = time.time()
+        try:
+            urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", json.dumps(b).encode(), {"content-type": "application/json"}), timeout=300).read()
+            print(f"[warmup] ok samples={n} image={isinstance(b['messages'][1]['content'], list)} {time.time()-t:.1f}s", flush=True)
+        except Exception as e:
+            print(f"[warmup] failed samples={n}: {e!r}", flush=True)
+PYWARM
+    python3 - "$WARM_T0" <<'PYSTATE' || true
+import json, sys, time
+p = "/tmp/dgemma/warmup_state.json"
+try: st = json.load(open(p))
+except Exception: st = {}
+st.update({"warmed": True, "warmup_s": round(time.time() - float(sys.argv[1]), 1)})
+json.dump(st, open(p, "w"))
+PYSTATE
+    echo "[init] Self-warmup complete."
+  ) &
+fi
+
 echo "[init] Launching vLLM engine core on port 8000 (overlapped with /tmp/dgemma staging)..."
 exec vllm serve "$MODEL" \
   --host 127.0.0.1 \

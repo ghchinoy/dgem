@@ -24,7 +24,7 @@
         "levels": ["calm", "frustrated", "furious"]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 4 .samples | toJson }}
   },
   "state": {
     "ticket": {{ default "No ticket text provided" .ticket | toJson }}

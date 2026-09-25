@@ -79,6 +79,15 @@ func init() {
 	viper.BindPFlag("gcp_auth", RootCmd.PersistentFlags().Lookup("gcp-auth"))
 	viper.BindPFlag("iap_client_id", RootCmd.PersistentFlags().Lookup("iap-client-id"))
 	viper.BindPFlag("vertex_url", RootCmd.PersistentFlags().Lookup("vertex-url"))
+	RootCmd.PersistentFlags().Int("http-retries", 0, "Retry HTTP 429/503 responses up to N times with backoff (default 0; serve and mcp default to 3)")
+	viper.BindPFlag("http_retries", RootCmd.PersistentFlags().Lookup("http-retries"))
+}
+
+// defaultRetriesForLongRunning enables HTTP 429/503 retries for serve/mcp unless the user set --http-retries.
+func defaultRetriesForLongRunning() {
+	if f := RootCmd.PersistentFlags().Lookup("http-retries"); f != nil && !f.Changed {
+		viper.Set("http_retries", 3)
+	}
 }
 
 func initConfig() {
@@ -355,6 +364,7 @@ func GetClientForURL(targetURL string) *client.Client {
 	}
 
 	c := client.NewClient(targetURL, model, to)
+	c.MaxRetries = viper.GetInt("http_retries")
 	if token != "" {
 		c.WithAuthToken(token)
 	}

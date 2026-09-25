@@ -165,11 +165,11 @@ type ThoughtDiagnostic struct {
 
 // Diagnostics contains server-side timing, sampling, thought channel, and slot entropy data.
 type Diagnostics struct {
-	Hole      string                       `json:"hole,omitempty"`
-	Steps     int                          `json:"steps"`
-	Thought   *ThoughtDiagnostic           `json:"thought,omitempty"`
-	Timing    TimingStats                  `json:"timing"`
-	Samples   SampleStats                  `json:"samples"`
+	Hole      string                        `json:"hole,omitempty"`
+	Steps     int                           `json:"steps"`
+	Thought   *ThoughtDiagnostic            `json:"thought,omitempty"`
+	Timing    TimingStats                   `json:"timing"`
+	Samples   SampleStats                   `json:"samples"`
 	Questions map[string]QuestionDiagnostic `json:"questions"`
 }
 
@@ -303,6 +303,7 @@ type RequestStats struct {
 	DenoiseSteps int
 	SamplesN     int
 	Extended     bool
+	Retries      int
 	Diagnostics  *Diagnostics
 }
 

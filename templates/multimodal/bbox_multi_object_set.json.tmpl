@@ -168,7 +168,7 @@
         ]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "target": {{ default "all matching instances" .target | toJson }}

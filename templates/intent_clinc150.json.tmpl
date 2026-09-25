@@ -23,7 +23,7 @@
         ]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "user_utterance": {{ .text | toJson }}

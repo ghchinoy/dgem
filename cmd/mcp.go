@@ -622,6 +622,7 @@ MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
   # Run local stdio MCP server with automatic ADC (vertex_first -> Cloud Run failover)
   dgem mcp`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		defaultRetriesForLongRunning()
 		if strings.TrimSpace(mcpRemoteURL) != "" {
 			return runRemoteMCPProxy(strings.TrimSpace(mcpRemoteURL))
 		}
@@ -818,29 +819,29 @@ func MarkGPUWarm(latencyMs ...int64) {
 
 // HealthAndGPUStatusOutput is returned by GET /api/status and the get_health_and_gpu_status MCP tool.
 type HealthAndGPUStatusOutput struct {
-	GatewayHealthy        bool    `json:"gateway_healthy"`
-	GPUAvailable          bool    `json:"gpu_available"`
-	GPUState              string  `json:"gpu_state"` // "warm_and_ready", "warming_up", "scaled_to_zero"
-	ActiveBackend         string  `json:"active_backend"`    // "vertex" or "cloudrun"
-	RequestedBackend      string  `json:"requested_backend"` // "vertex_first", "vertex", or "cloudrun"
-	ContainerReachable    bool    `json:"container_reachable"`
-	WarmupInProgress      bool    `json:"warmup_in_progress"`
-	WarmupElapsedSeconds  int     `json:"warmup_elapsed_seconds,omitempty"`
-	WarmupPhase           string  `json:"warmup_phase,omitempty"`
-	WarmupPhaseLabel      string  `json:"warmup_phase_label,omitempty"`
-	WarmupBytesStagedGB   float64 `json:"warmup_bytes_staged_gb,omitempty"`
-	EWMAWakeSeconds       int     `json:"ewma_wake_seconds"`
-	SecondsSinceLastRead  int     `json:"seconds_since_last_read,omitempty"`
-	IdleRemainingSeconds  int     `json:"idle_remaining_seconds,omitempty"`
-	IdleTTLSeconds        int     `json:"idle_ttl_seconds,omitempty"`
-	LastReadoutMs         int64   `json:"last_readout_ms,omitempty"`
-	EstimatedWakeSeconds  int     `json:"estimated_wake_seconds"`
-	UpstreamURL           string  `json:"upstream_url"`
-	Model                 string  `json:"model"`
-	GPUTier               string  `json:"gpu_tier"`
-	TemplatesAvailable    int     `json:"templates_available"`
-	AuthenticatedUser     string  `json:"authenticated_user,omitempty"`
-	Detail                string  `json:"detail"`
+	GatewayHealthy       bool    `json:"gateway_healthy"`
+	GPUAvailable         bool    `json:"gpu_available"`
+	GPUState             string  `json:"gpu_state"`         // "warm_and_ready", "warming_up", "scaled_to_zero"
+	ActiveBackend        string  `json:"active_backend"`    // "vertex" or "cloudrun"
+	RequestedBackend     string  `json:"requested_backend"` // "vertex_first", "vertex", or "cloudrun"
+	ContainerReachable   bool    `json:"container_reachable"`
+	WarmupInProgress     bool    `json:"warmup_in_progress"`
+	WarmupElapsedSeconds int     `json:"warmup_elapsed_seconds,omitempty"`
+	WarmupPhase          string  `json:"warmup_phase,omitempty"`
+	WarmupPhaseLabel     string  `json:"warmup_phase_label,omitempty"`
+	WarmupBytesStagedGB  float64 `json:"warmup_bytes_staged_gb,omitempty"`
+	EWMAWakeSeconds      int     `json:"ewma_wake_seconds"`
+	SecondsSinceLastRead int     `json:"seconds_since_last_read,omitempty"`
+	IdleRemainingSeconds int     `json:"idle_remaining_seconds,omitempty"`
+	IdleTTLSeconds       int     `json:"idle_ttl_seconds,omitempty"`
+	LastReadoutMs        int64   `json:"last_readout_ms,omitempty"`
+	EstimatedWakeSeconds int     `json:"estimated_wake_seconds"`
+	UpstreamURL          string  `json:"upstream_url"`
+	Model                string  `json:"model"`
+	GPUTier              string  `json:"gpu_tier"`
+	TemplatesAvailable   int     `json:"templates_available"`
+	AuthenticatedUser    string  `json:"authenticated_user,omitempty"`
+	Detail               string  `json:"detail"`
 }
 
 // CheckHealthAndGPUStatus inspects both the gateway, the Vertex AI Dedicated Endpoint (when vertex_first
@@ -1026,15 +1027,15 @@ type WarmupGPUInput struct {
 
 // WarmupGPUOutput is returned by warmup_gpu and POST /api/warmup.
 type WarmupGPUOutput struct {
-	Status                string `json:"status"` // "warm_and_ready", "warming_up_started", or "warming_up_in_progress"
-	GPUAvailable          bool   `json:"gpu_available"`
-	Coalesced             bool   `json:"coalesced"`
-	WarmupElapsedSeconds  int    `json:"warmup_elapsed_seconds,omitempty"`
-	EWMAWakeSeconds       int    `json:"ewma_wake_seconds,omitempty"`
-	WarmupAttempts        int    `json:"warmup_attempts,omitempty"`
-	ElapsedMs             int64  `json:"elapsed_ms"`
-	UpstreamURL           string `json:"upstream_url"`
-	Message               string `json:"message"`
+	Status               string `json:"status"` // "warm_and_ready", "warming_up_started", or "warming_up_in_progress"
+	GPUAvailable         bool   `json:"gpu_available"`
+	Coalesced            bool   `json:"coalesced"`
+	WarmupElapsedSeconds int    `json:"warmup_elapsed_seconds,omitempty"`
+	EWMAWakeSeconds      int    `json:"ewma_wake_seconds,omitempty"`
+	WarmupAttempts       int    `json:"warmup_attempts,omitempty"`
+	ElapsedMs            int64  `json:"elapsed_ms"`
+	UpstreamURL          string `json:"upstream_url"`
+	Message              string `json:"message"`
 }
 
 // TriggerGPUWarmup delegates to TriggerGPUWarmupWithSource with default source.

@@ -8,7 +8,7 @@
         "instructions": "Does the document fully support every part of the claim?"
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "document": {{ default "" .document | toJson }},

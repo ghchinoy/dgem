@@ -74,7 +74,7 @@
         ]
       }
     ],
-    "samples": "auto"
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "domain": {{ default "enterprise_saas_operations" .domain | toJson }},

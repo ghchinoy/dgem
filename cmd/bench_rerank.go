@@ -24,19 +24,19 @@ var (
 
 // RerankMethodMetrics represents the IR & governance metrics for a single reranking strategy.
 type RerankMethodMetrics struct {
-	Label                  string  `json:"label"`
-	NDCG3                  float64 `json:"nDCG@3"`
-	NDCG5                  float64 `json:"nDCG@5"`
-	NDCG10                 float64 `json:"nDCG@10"`
-	MRR10                  float64 `json:"MRR@10"`
-	MAP10                  float64 `json:"MAP@10"`
-	SpearmanRho            float64 `json:"Spearman_rho"`
-	ExactTieRatePct        float64 `json:"Exact_Tie_Rate_pct"`
-	NevIRPairwiseAccPct    float64 `json:"S1_NevIR_Pairwise_Acc_pct"`
-	HotpotQARecall2Pct     float64 `json:"S3_HotpotQA_Recall@2_pct"`
-	FollowIRPMRR           float64 `json:"S4_FollowIR_p_MRR"`
-	PoisonQuarantinePct    float64 `json:"S5_Poison_Quarantine_pct"`
-	AbstentionAccPct       float64 `json:"S5_Abstention_Acc_pct"`
+	Label               string  `json:"label"`
+	NDCG3               float64 `json:"nDCG@3"`
+	NDCG5               float64 `json:"nDCG@5"`
+	NDCG10              float64 `json:"nDCG@10"`
+	MRR10               float64 `json:"MRR@10"`
+	MAP10               float64 `json:"MAP@10"`
+	SpearmanRho         float64 `json:"Spearman_rho"`
+	ExactTieRatePct     float64 `json:"Exact_Tie_Rate_pct"`
+	NevIRPairwiseAccPct float64 `json:"S1_NevIR_Pairwise_Acc_pct"`
+	HotpotQARecall2Pct  float64 `json:"S3_HotpotQA_Recall@2_pct"`
+	FollowIRPMRR        float64 `json:"S4_FollowIR_p_MRR"`
+	PoisonQuarantinePct float64 `json:"S5_Poison_Quarantine_pct"`
+	AbstentionAccPct    float64 `json:"S5_Abstention_Acc_pct"`
 }
 
 // RerankSuiteReceipt represents the serialized EXP-10 reranking benchmark receipt.

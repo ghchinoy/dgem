@@ -46,7 +46,7 @@ Schema (system message):
      {"id": "tone", "type": "score", "instructions": "...",
       "levels": ["calm", "annoyed", "furious"]}],
    "instructions": "optional context",
-   "samples": "auto" | N, "auto_threshold": 0.1, "auto_max": 4,
+   "samples": "auto" | N (default $DEFAULT_SAMPLES, 1), "auto_threshold": 0.1, "auto_max": 4,
    "steps": 1, "think": 0}
 
 A question may also declare:
@@ -89,7 +89,16 @@ from transformers import AutoTokenizer
 ARGS = None
 TOK = None
 TEST_PAGE = os.environ.get("TEST_PAGE", "") == "1"  # serve the playground at /
-API_KEY = os.environ.get("API_KEY", "")  # when set, POST routes need "Authorization: Bearer <key>"
+API_KEY = os.environ.get("API_KEY", "")
+# Fallback sample count when a schema omits "samples". 1 = fastest single read; templates opt in to 4
+# (one parallel batch) or "auto" explicitly.
+DEFAULT_SAMPLES = os.environ.get("DEFAULT_SAMPLES", "1")
+# Cap on decisions running concurrently against the engine. Excess requests wait (up to
+# INFLIGHT_WAIT_S) instead of piling onto vLLM; an overloaded engine crashed the replica in testing
+# (1x L4, 16 clients x 4 samples). 0 disables the limiter.
+MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
+INFLIGHT_WAIT_S = float(os.environ.get("INFLIGHT_WAIT_S", "30"))
+_INFLIGHT = threading.BoundedSemaphore(MAX_INFLIGHT) if MAX_INFLIGHT > 0 else None  # when set, POST routes need "Authorization: Bearer <key>"
 PAGES = {  # served with TEST_PAGE=1
     "/": "playground.html",
     "/playground": "playground.html",
@@ -165,7 +174,9 @@ def parse_schema(value):
             if any(v not in names for v in vals):
                 raise SchemaError(f"question {q['id']!r}: ask_if values for {dep!r} must be among {names}")
     schedule(qs)  # refuses a cycle
-    samples = value.get("samples", "auto")
+    samples = value.get("samples", "auto" if DEFAULT_SAMPLES == "auto" else int(DEFAULT_SAMPLES))
+    if isinstance(samples, str) and samples.strip().isdigit():  # template variables arrive as strings
+        samples = int(samples.strip())
     if samples == "auto":
         policy = {"mode": "auto", "max": int(value.get("auto_max", 4)), "threshold": float(value.get("auto_threshold", 0.1))}
     elif isinstance(samples, int) and samples >= 1:
@@ -948,6 +959,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _decide(self, schema, state, seed):
         """-> (status, body) with the error body already shaped."""
+        if _INFLIGHT is not None and not _INFLIGHT.acquire(timeout=INFLIGHT_WAIT_S):
+            return 503, {"error": {"message": f"server busy: {MAX_INFLIGHT} decisions in flight", "type": "overloaded"}}
         try:
             return 200, decide(schema, state, seed)
         except SchemaError as e:
@@ -956,6 +969,9 @@ class Handler(BaseHTTPRequestHandler):
             return 502, {"error": {"message": f"upstream {e.code}: {e.read()[:300].decode(errors='replace')}", "type": "server_error"}}
         except Exception as e:
             return 500, {"error": {"message": repr(e), "type": "server_error"}}
+        finally:
+            if _INFLIGHT is not None:
+                _INFLIGHT.release()
 
     def _systemone(self, req, images):
         try:

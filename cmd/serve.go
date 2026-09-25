@@ -142,11 +142,11 @@ func resolveTemplateFile(rootDir, name string) (string, string) {
 		cleanID = "support_triage"
 	}
 	aliases := map[string]string{
-		"factuality_grounding":   "calibration/grounding_claim_check",
-		"bbox_single":            "multimodal/bbox_localization",
-		"bbox_detr_multi":        "multimodal/bbox_multi_object_detr",
-		"tn_polysemy_router":     "security_incident",
-		"listwise_rerank":        "rerank/listwise_decision_rerank",
+		"factuality_grounding":     "calibration/grounding_claim_check",
+		"bbox_single":              "multimodal/bbox_localization",
+		"bbox_detr_multi":          "multimodal/bbox_multi_object_detr",
+		"tn_polysemy_router":       "security_incident",
+		"listwise_rerank":          "rerank/listwise_decision_rerank",
 		"listwise_decision_rerank": "rerank/listwise_decision_rerank",
 	}
 	if mapped, ok := aliases[cleanID]; ok {
@@ -351,14 +351,14 @@ const (
 )
 
 type vertexEndpointLiveStatus struct {
-	EndpointID     string `json:"endpoint_id"`
-	ModelID        string `json:"model_id"`
-	DisplayName    string `json:"display_name"`
-	State          string `json:"state"` // "deployed", "deploying", "quiesced"
-	ReplicaCount   int    `json:"replica_count"`
-	DeployedModel  string `json:"deployed_model_id,omitempty"`
-	MachineType    string `json:"machine_type,omitempty"`
-	Message        string `json:"message"`
+	EndpointID    string `json:"endpoint_id"`
+	ModelID       string `json:"model_id"`
+	DisplayName   string `json:"display_name"`
+	State         string `json:"state"` // "deployed", "deploying", "quiesced"
+	ReplicaCount  int    `json:"replica_count"`
+	DeployedModel string `json:"deployed_model_id,omitempty"`
+	MachineType   string `json:"machine_type,omitempty"`
+	Message       string `json:"message"`
 }
 
 func extractEndpointIDFromURL(raw string) string {
@@ -762,6 +762,7 @@ func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent st
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
+	defaultRetriesForLongRunning()
 	if envPort := os.Getenv("PORT"); envPort != "" && !cmd.Flags().Changed("port") {
 		if p, err := fmt.Sscanf(envPort, "%d", &servePort); err == nil && p == 1 {
 			// parsed from PORT

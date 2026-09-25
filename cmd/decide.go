@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	decideTemplate        string
-	decideVars            []string
-	decideDataFile        string
-	decideFormat          string
-	decideSchema          string
-	decideState           string
+	decideTemplate          string
+	decideVars              []string
+	decideDataFile          string
+	decideFormat            string
+	decideSchema            string
+	decideState             string
 	decideImages            []string
 	decideDualMirror        bool
 	decideNullPriorDebias   bool

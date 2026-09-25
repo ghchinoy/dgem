@@ -26,7 +26,7 @@
         "levels": ["safe", "cautionary_advisory", "imminent_hazard_stop_work"]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "zone_id": {{ default "Dock-Door-12" .zone | toJson }},

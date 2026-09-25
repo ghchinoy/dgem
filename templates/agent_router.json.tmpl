@@ -15,7 +15,7 @@
         ]
       }
     ],
-    "samples": "auto"
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "prompt": {{ default "No prompt provided" .prompt | toJson }},

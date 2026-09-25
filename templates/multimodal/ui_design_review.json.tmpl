@@ -25,7 +25,7 @@
         "levels": ["sparse", "balanced_modern", "cramped_cluttered"]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "viewport": {{ default "desktop-1440px" .viewport | toJson }},

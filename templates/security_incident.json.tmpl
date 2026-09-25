@@ -25,7 +25,7 @@
         "levels": ["p3_low", "p2_medium", "p1_high", "p0_critical"]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 4 .samples | toJson }}
   },
   "state": {
     "alert": {{ default "No alert details" .alert | toJson }}

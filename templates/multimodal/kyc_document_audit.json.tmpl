@@ -30,7 +30,7 @@
         "levels": ["unusable", "poor", "acceptable", "pristine"]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "country_code": {{ default "US" .country | toJson }},

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -65,6 +66,9 @@ type CaseResult struct {
 	SlotWallTimeMs float64                `json:"slot_wall_time_ms"`
 	SlotSamples    int                    `json:"slot_samples"`
 	SlotExtended   bool                   `json:"slot_extended"`
+	SlotRetries    int                    `json:"slot_retries,omitempty"`
+	Error          string                 `json:"error,omitempty"`
+	HTTPStatus     int                    `json:"http_status,omitempty"`
 	SlotAnswers    map[string]interface{} `json:"slot_answers,omitempty"`
 
 	GenWallTimeMs float64 `json:"gen_wall_time_ms,omitempty"`
@@ -79,6 +83,8 @@ type BenchmarkReport struct {
 	TargetURL       string       `json:"target_url"`
 	TargetModel     string       `json:"target_model"`
 	TotalCases      int          `json:"total_cases"`
+	FailedCases     int          `json:"failed_cases"`
+	TotalRetries    int          `json:"total_retries"`
 	Workers         int          `json:"workers"`
 	TotalElapsedSec float64      `json:"total_elapsed_sec"`
 	Mode            string       `json:"mode"`
@@ -249,11 +255,29 @@ func runBench(cmd *cobra.Command, args []string) error {
 
 				if mode == "slot" || mode == "both" {
 					rendered, err := localEngine.RenderFile(tc.Template, tc.Variables)
+					if err != nil {
+						cr.Error = "render: " + err.Error()
+					}
 					if err == nil {
 						schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, tc.Variables)
+						if err != nil {
+							cr.Error = "parse: " + err.Error()
+						}
 						if err == nil {
 							resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
+							if err != nil {
+								cr.Error = err.Error()
+								if len(cr.Error) > 500 {
+									cr.Error = cr.Error[:500]
+								}
+								var he *client.HTTPError
+								if errors.As(err, &he) {
+									cr.HTTPStatus = he.StatusCode
+									cr.SlotRetries = he.Retries
+								}
+							}
 							if err == nil {
+								cr.SlotRetries = stats.Retries
 								cr.SlotDenoiseMs = stats.DenoiseMs
 								cr.SlotPrefillMs = stats.PrefillMs
 								cr.SlotWallTimeMs = float64(stats.WallTime.Milliseconds())
@@ -324,9 +348,17 @@ func runBench(cmd *cobra.Command, args []string) error {
 				if !cr.SlotAccurate {
 					matchStr = "FAIL"
 				}
+				status := "OK"
+				if cr.Error != "" {
+					matchStr = "ERR"
+					status = cr.Error
+					if len(status) > 80 {
+						status = status[:80]
+					}
+				}
 				printMu.Lock()
 				fmt.Printf("%-8s | %-12s | %-12s | %-6s | %7d | %6.0fms | %6.0fms | %s\n",
-					cr.ID, cr.Domain, cr.Tier, matchStr, cr.SlotSamples, cr.SlotDenoiseMs, cr.SlotWallTimeMs, "OK")
+					cr.ID, cr.Domain, cr.Tier, matchStr, cr.SlotSamples, cr.SlotDenoiseMs, cr.SlotWallTimeMs, status)
 				printMu.Unlock()
 			}
 		}()
@@ -376,6 +408,23 @@ func runBench(cmd *cobra.Command, args []string) error {
 		SlotAccuracy:    float64(correctCount) / n * 100,
 		SlotMultiReads:  multiReads,
 		Cases:           results,
+	}
+	// Latency averages exclude failed requests (which have no timing); failures are counted separately.
+	var okDenoise, okWall float64
+	okN := 0
+	for _, r := range results {
+		report.TotalRetries += r.SlotRetries
+		if r.Error != "" {
+			report.FailedCases++
+			continue
+		}
+		okDenoise += r.SlotDenoiseMs
+		okWall += r.SlotWallTimeMs
+		okN++
+	}
+	if okN > 0 {
+		report.SlotAvgDenoise = okDenoise / float64(okN)
+		report.SlotAvgWall = okWall / float64(okN)
 	}
 
 	if mode == "generative" || mode == "both" {

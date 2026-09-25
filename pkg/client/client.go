@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -22,6 +23,9 @@ type Client struct {
 	HTTPClient *http.Client
 	Model      string
 	AuthToken  string
+	// MaxRetries is the number of retries for HTTP 429/503 responses (0 = no retry). Retries use
+	// exponential backoff with jitter and are reported in RequestStats.Retries.
+	MaxRetries int
 }
 
 // NewClient creates a new DiffGemma client.
@@ -104,42 +108,61 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 		return nil, nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payloadBytes))
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create http request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(httpReq.Header))
-	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
-		spanBytes := sc.SpanID()
-		spanDec := binary.BigEndian.Uint64(spanBytes[:])
-		httpReq.Header.Set("X-Cloud-Trace-Context", fmt.Sprintf("%s/%d;o=1", sc.TraceID().String(), spanDec))
-	}
-
-	if c.AuthToken != "" {
-		token := c.AuthToken
-		if !strings.HasPrefix(strings.ToLower(token), "bearer ") {
-			token = "Bearer " + token
+	var (
+		resp      *http.Response
+		bodyBytes []byte
+		wallTime  time.Duration
+		retries   int
+	)
+	for attempt := 0; ; attempt++ {
+		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payloadBytes))
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create http request: %w", err)
 		}
-		httpReq.Header.Set("Authorization", token)
-	}
+		httpReq.Header.Set("Content-Type", "application/json")
 
-	start := time.Now()
-	resp, err := c.HTTPClient.Do(httpReq)
-	if err != nil {
-		return nil, nil, fmt.Errorf("http request failed to %s: %w", endpoint, err)
-	}
-	defer resp.Body.Close()
-	wallTime := time.Since(start)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(httpReq.Header))
+		if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
+			spanBytes := sc.SpanID()
+			spanDec := binary.BigEndian.Uint64(spanBytes[:])
+			httpReq.Header.Set("X-Cloud-Trace-Context", fmt.Sprintf("%s/%d;o=1", sc.TraceID().String(), spanDec))
+		}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read response body: %w", err)
+		if c.AuthToken != "" {
+			token := c.AuthToken
+			if !strings.HasPrefix(strings.ToLower(token), "bearer ") {
+				token = "Bearer " + token
+			}
+			httpReq.Header.Set("Authorization", token)
+		}
+
+		start := time.Now()
+		resp, err = c.HTTPClient.Do(httpReq)
+		if err != nil {
+			return nil, nil, fmt.Errorf("http request failed to %s: %w", endpoint, err)
+		}
+		bodyBytes, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		wallTime = time.Since(start)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+		if (resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable) && attempt < c.MaxRetries {
+			retries++
+			backoff := time.Duration(150*(1<<attempt)) * time.Millisecond
+			backoff += time.Duration(rand.Int63n(int64(backoff / 2)))
+			select {
+			case <-ctx.Done():
+				return nil, nil, ctx.Err()
+			case <-time.After(backoff):
+			}
+			continue
+		}
+		break
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, nil, fmt.Errorf("server returned error HTTP %d: %s", resp.StatusCode, string(bodyBytes))
+		return nil, nil, &HTTPError{StatusCode: resp.StatusCode, Body: string(bodyBytes), Retries: retries}
 	}
 
 	var chatResp ChatCompletionResponse
@@ -148,6 +171,7 @@ func (c *Client) Complete(ctx context.Context, req ChatCompletionRequest) (*Chat
 	}
 
 	stats := &RequestStats{
+		Retries:      retries,
 		Model:        chatResp.Model,
 		Endpoint:     endpoint,
 		WallTime:     wallTime,
@@ -209,4 +233,15 @@ func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent str
 	}
 
 	return structured, stats, nil
+}
+
+// HTTPError is returned for non-2xx responses so callers can record the status code.
+type HTTPError struct {
+	StatusCode int
+	Body       string
+	Retries    int
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("server returned error HTTP %d: %s", e.StatusCode, e.Body)
 }

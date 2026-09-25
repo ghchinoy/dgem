@@ -8,7 +8,7 @@
         "instructions": "Does this passage directly answer the user query?"
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "query": {{ default "" .query | toJson }},

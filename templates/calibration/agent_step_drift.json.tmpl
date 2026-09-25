@@ -14,7 +14,7 @@
         ]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "task": {{ default "" .task | toJson }},

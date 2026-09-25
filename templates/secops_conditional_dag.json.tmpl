@@ -97,7 +97,7 @@
         ]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 4 .samples | toJson }}
   },
   "state": {
     "alert_payload": {{ default "No security telemetry payload provided." .alert_payload | toJson }}

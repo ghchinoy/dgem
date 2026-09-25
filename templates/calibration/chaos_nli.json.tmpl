@@ -13,7 +13,7 @@
         ]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 4 .samples | toJson }}
   },
   "state": {
     "premise": {{ default "" .premise | toJson }},

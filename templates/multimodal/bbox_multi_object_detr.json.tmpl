@@ -121,7 +121,7 @@
         ]
       }
     ],
-    "samples": {{ default "auto" .samples | toJson }}
+    "samples": {{ default 1 .samples | toJson }}
   },
   "state": {
     "scene_description": {{ default "Dialog modal containing two distinct interactive controls" .scene_description | toJson }}
