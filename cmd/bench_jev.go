@@ -116,6 +116,7 @@ func init() {
 	benchJevCmd.Flags().BoolVar(&jevDualMirror, "dual-mirror", false, "IDC: add a reversed-order mirror slot on the same canvas and record Mirror TVD")
 	benchJevCmd.Flags().Float64Var(&jevPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for null-prior de-biasing")
 	benchJevCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
+	benchJevCmd.Flags().StringVar(&permutation.MirrorSlotSuffix, "mirror-slot-suffix", "__rev", "Dual-mirror: suffix for the reversed slot id (legacy runs used __mirror_rev)")
 	benchJevCmd.Flags().StringVarP(&jevOutput, "output", "o", "", "Export structured JSON benchmark report to file")
 	benchJevCmd.Flags().BoolVar(&jevJSON, "json", false, "Output structured JSON report directly to stdout")
 

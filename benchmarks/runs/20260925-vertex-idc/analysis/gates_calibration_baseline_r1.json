@@ -1,0 +1,43 @@
+{
+  "stage1": "benchmarks/runs/20260925-vertex-idc/calibration__baseline_r1.json",
+  "stage2": "benchmarks/runs/20260925-vertex-idc/calibration__gemini38_standalone.json",
+  "rows": [
+    {
+      "tau": 0.1,
+      "tvd_tau": null,
+      "escalated": 24,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": null,
+      "escalated": 17,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": null,
+      "escalated": 13,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": null,
+      "escalated": 11,
+      "correct": 47,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": null,
+      "escalated": 5,
+      "correct": 47,
+      "n": 50
+    }
+  ],
+  "stage1_correct": 44,
+  "stage2_correct": 48
+}

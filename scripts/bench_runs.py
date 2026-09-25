@@ -60,7 +60,7 @@ def load_manifest(run_id, create=False):
         "run_id": run_id,
         "created": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "git_commit": git("rev-parse", "HEAD"),
-        "git_dirty": bool(git("status", "--porcelain", "--", "cmd", "pkg", "templates", "benchmarks/*.jsonl")),
+        "git_dirty_paths": [l[3:] for l in git("status", "--porcelain", "--", "cmd", "pkg", "templates").splitlines()],
         "notes": "",
         "receipts": [],
     }
@@ -199,7 +199,7 @@ def cmd_list(args):
         if os.path.exists(mp):
             with open(mp) as f:
                 m = json.load(f)
-            print(f"{run_id}  commit={m.get('git_commit', '')[:8]}{' (dirty)' if m.get('git_dirty') else ''}  {m.get('notes', '')}")
+            print(f"{run_id}  commit={m.get('git_commit', '')[:8]}{' (dirty)' if m.get('git_dirty_paths') or m.get('git_dirty') else ''}  {m.get('notes', '')}")
             for r in m["receipts"]:
                 print(f"    {r['suite']:<14} {r['config']:<22} {r['path']}")
 

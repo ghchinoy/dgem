@@ -904,12 +904,18 @@ func ExtractSchemaSlotOptions(schemaJSON string) map[string][]OptionItem {
 }
 
 // InjectDualMirrorSchema transforms a dgem JSON schema by adding a companion reversed-option slot
-// (`<id>__mirror_rev`) for every choice/boolean slot so both forward and reversed option orderings
+// (`<id>` + MirrorSlotSuffix, default `<id>__rev`) for every choice/boolean slot so both forward and reversed option orderings
 // are evaluated simultaneously on the SAME bidirectional diffusion canvas (reads=1).
 // MirrorAliasNames controls how the reversed mirror slot names its options. When true (the historical
 // default), options are renamed item_1..item_K with "name: description" text. When false, the reversed
 // slot keeps the real option names and descriptions, matching the EXP-13 bench-permutation setup.
 var MirrorAliasNames = true
+
+// MirrorSlotSuffix is appended to a question id to name its reversed mirror slot. Slot ids are visible to the
+// model: the historical suffix "__mirror_rev" measurably degraded both the mirror and the forward readings on
+// the Vertex endpoint (EXP-14), while neutral suffixes such as "__rev" did not. Kept configurable so older
+// receipts can be reproduced with --mirror-slot-suffix=__mirror_rev.
+var MirrorSlotSuffix = "__rev"
 
 func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem, bool) {
 	slotOpts := ExtractSchemaSlotOptions(schemaJSON)
@@ -966,7 +972,7 @@ func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem,
 			}
 			instr, _ := qMap["instructions"].(string)
 			mirrorQ := map[string]any{
-				"id":           qID + "__mirror_rev",
+				"id":           qID + MirrorSlotSuffix,
 				"type":         "choice",
 				"instructions": instr,
 				"options":      revObjs,
@@ -1054,7 +1060,7 @@ func PostProcessDecisionResponseDetailed(
 		det.FwdProbs = copyProbs(probsFwd)
 
 		finalProbs := probsFwd
-		revID := qID + "__mirror_rev"
+		revID := qID + MirrorSlotSuffix
 		if enableDualMirror {
 			if qaRev, hasRev := resp.Answers[revID]; hasRev {
 				revOpts := ReverseOptions(opts)

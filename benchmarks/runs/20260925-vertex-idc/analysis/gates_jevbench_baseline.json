@@ -1,0 +1,43 @@
+{
+  "stage1": "benchmarks/runs/20260925-vertex-idc/jevbench__baseline.json",
+  "stage2": "benchmarks/runs/20260925-vertex-idc/jevbench__gemini_all_prior_guided.json",
+  "rows": [
+    {
+      "tau": 0.1,
+      "tvd_tau": null,
+      "escalated": 115,
+      "correct": 222,
+      "n": 231
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": null,
+      "escalated": 90,
+      "correct": 221,
+      "n": 231
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": null,
+      "escalated": 73,
+      "correct": 218,
+      "n": 231
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": null,
+      "escalated": 62,
+      "correct": 214,
+      "n": 231
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": null,
+      "escalated": 46,
+      "correct": 210,
+      "n": 231
+    }
+  ],
+  "stage1_correct": 187,
+  "stage2_correct": 225
+}

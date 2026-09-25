@@ -1,0 +1,46 @@
+{
+  "receipt": "benchmarks/runs/20260925-vertex-idc/calibration__dual_mirror.json",
+  "stage": "raw_",
+  "rules": [
+    {
+      "rule": "forward_only",
+      "n": 40,
+      "correct": 35,
+      "brier": 0.20742710102278944,
+      "ece": 0.05413880604568808,
+      "hi": "22/24"
+    },
+    {
+      "rule": "reversed_only",
+      "n": 40,
+      "correct": 30,
+      "brier": 0.3597540648047707,
+      "ece": 0.10230806320574352,
+      "hi": "13/15"
+    },
+    {
+      "rule": "mean_50_50",
+      "n": 40,
+      "correct": 33,
+      "brier": 0.24585998346021234,
+      "ece": 0.12735859903976787,
+      "hi": "19/19"
+    },
+    {
+      "rule": "geometric",
+      "n": 40,
+      "correct": 32,
+      "brier": 0.26734443455524026,
+      "ece": 0.10157384586140573,
+      "hi": "25/26"
+    },
+    {
+      "rule": "fwd70_rev30",
+      "n": 40,
+      "correct": 35,
+      "brier": 0.22143148661638695,
+      "ece": 0.13426523204961988,
+      "hi": "19/19"
+    }
+  ]
+}

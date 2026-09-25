@@ -1,0 +1,113 @@
+{
+  "stage1": "benchmarks/runs/20260925-vertex-idc/calibration__dual_mirror_realnames.json",
+  "stage2": "benchmarks/runs/20260925-vertex-idc/calibration__gemini38_standalone.json",
+  "rows": [
+    {
+      "tau": 0.1,
+      "tvd_tau": null,
+      "escalated": 44,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.1,
+      "tvd_tau": 0.15,
+      "escalated": 44,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.1,
+      "tvd_tau": 0.25,
+      "escalated": 44,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": null,
+      "escalated": 38,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": 0.15,
+      "escalated": 39,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": 0.25,
+      "escalated": 39,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": null,
+      "escalated": 27,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": 0.15,
+      "escalated": 29,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": 0.25,
+      "escalated": 29,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": null,
+      "escalated": 19,
+      "correct": 47,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": 0.15,
+      "escalated": 25,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": 0.25,
+      "escalated": 22,
+      "correct": 47,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": null,
+      "escalated": 9,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": 0.15,
+      "escalated": 22,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": 0.25,
+      "escalated": 16,
+      "correct": 47,
+      "n": 50
+    }
+  ],
+  "stage1_correct": 45,
+  "stage2_correct": 48
+}

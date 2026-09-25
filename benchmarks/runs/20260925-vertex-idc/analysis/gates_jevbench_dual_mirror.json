@@ -1,0 +1,113 @@
+{
+  "stage1": "benchmarks/runs/20260925-vertex-idc/jevbench__dual_mirror.json",
+  "stage2": "benchmarks/runs/20260925-vertex-idc/jevbench__gemini_all_prior_guided.json",
+  "rows": [
+    {
+      "tau": 0.1,
+      "tvd_tau": null,
+      "escalated": 229,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.1,
+      "tvd_tau": 0.15,
+      "escalated": 229,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.1,
+      "tvd_tau": 0.25,
+      "escalated": 229,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": null,
+      "escalated": 228,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": 0.15,
+      "escalated": 228,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": 0.25,
+      "escalated": 228,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": null,
+      "escalated": 221,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": 0.15,
+      "escalated": 222,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": 0.25,
+      "escalated": 221,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": null,
+      "escalated": 217,
+      "correct": 223,
+      "n": 230
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": 0.15,
+      "escalated": 221,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": 0.25,
+      "escalated": 219,
+      "correct": 223,
+      "n": 230
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": null,
+      "escalated": 199,
+      "correct": 221,
+      "n": 230
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": 0.15,
+      "escalated": 219,
+      "correct": 224,
+      "n": 230
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": 0.25,
+      "escalated": 212,
+      "correct": 222,
+      "n": 230
+    }
+  ],
+  "stage1_correct": 145,
+  "stage2_correct": 224
+}

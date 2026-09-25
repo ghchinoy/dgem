@@ -1,0 +1,113 @@
+{
+  "stage1": "benchmarks/runs/20260925-vertex-idc/calibration__dual_mirror.json",
+  "stage2": "benchmarks/runs/20260925-vertex-idc/calibration__gemini38_standalone.json",
+  "rows": [
+    {
+      "tau": 0.1,
+      "tvd_tau": null,
+      "escalated": 42,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.1,
+      "tvd_tau": 0.15,
+      "escalated": 42,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.1,
+      "tvd_tau": 0.25,
+      "escalated": 42,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": null,
+      "escalated": 37,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": 0.15,
+      "escalated": 37,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.16,
+      "tvd_tau": 0.25,
+      "escalated": 37,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": null,
+      "escalated": 28,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": 0.15,
+      "escalated": 30,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.25,
+      "tvd_tau": 0.25,
+      "escalated": 30,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": null,
+      "escalated": 19,
+      "correct": 47,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": 0.15,
+      "escalated": 24,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.35,
+      "tvd_tau": 0.25,
+      "escalated": 23,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": null,
+      "escalated": 11,
+      "correct": 47,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": 0.15,
+      "escalated": 21,
+      "correct": 48,
+      "n": 50
+    },
+    {
+      "tau": 0.5,
+      "tvd_tau": 0.25,
+      "escalated": 17,
+      "correct": 48,
+      "n": 50
+    }
+  ],
+  "stage1_correct": 45,
+  "stage2_correct": 48
+}

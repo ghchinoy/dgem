@@ -85,7 +85,7 @@ positional letter-token bias (P('A') > P('B')) and single-pass Shannon entropy b
 		if !permJSON {
 			fmt.Printf("\n%s %s\n", permStyleAccent.Render("━━━ EXP-13: Permutation Sensitivity, Prior De-Biasing & O(1) Dual-Mirror Canvas ━━━"),
 				permStyleMuted.Render(fmt.Sprintf("(%d cases, gate H̃=%.2f, alpha=%.2f)", len(cases), permGateNormH, permPriorAlpha)))
-			fmt.Printf("  Endpoint: %s | Workers: %d\n", permStyleID.Render(serverURL), permWorkers)
+			fmt.Printf("  Endpoint: %s | Workers: %d\n", permStyleID.Render(cli.BaseURL), permWorkers)
 		}
 
 		// Step 1: Measure content-free positional letter prior p_0 in 1 pass (Experiment 13B)
@@ -147,7 +147,7 @@ positional letter-token bias (P('A') > P('B')) and single-pass Shannon entropy b
 			return fmt.Errorf("benchmark evaluation error: %w", firstErr)
 		}
 
-		rep := permutation.BuildPermutationReport(serverURL, modelName, permGateNormH, permPriorAlpha, np, results)
+		rep := permutation.BuildPermutationReport(cli.BaseURL, modelName, permGateNormH, permPriorAlpha, np, results)
 		if permOutPath != "" {
 			_ = os.MkdirAll(filepath.Dir(permOutPath), 0o755)
 			if b, err := json.MarshalIndent(rep, "", "  "); err == nil {

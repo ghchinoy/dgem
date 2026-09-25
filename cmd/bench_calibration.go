@@ -114,6 +114,7 @@ func init() {
 	benchCalibrationCmd.Flags().BoolVar(&calNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
 	benchCalibrationCmd.Flags().Float64Var(&calPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
 	benchCalibrationCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
+	benchCalibrationCmd.Flags().StringVar(&permutation.MirrorSlotSuffix, "mirror-slot-suffix", "__rev", "Dual-mirror: suffix for the reversed slot id (legacy runs used __mirror_rev)")
 
 	RootCmd.AddCommand(benchCalibrationCmd)
 }
