@@ -89,6 +89,26 @@ func InjectUnclassifiedCatchAll(schemaJSON string) (string, map[string]bool, map
 		}
 	}
 
+	if len(existing) > 0 {
+		currentThink := 0
+		switch tv := root["think"].(type) {
+		case float64:
+			currentThink = int(tv)
+		case int:
+			currentThink = tv
+		}
+		if currentThink < 120 {
+			root["think"] = 120
+			modified = true
+		}
+		currInstr, _ := root["instructions"].(string)
+		if !strings.Contains(currInstr, "SUGGESTED_OPTION:") {
+			suffix := " If any choice question resolves to 'other' or 'other_unclassified', in your thought channel output a reusable new category formatted strictly as: SUGGESTED_OPTION: {\"name\": \"<snake_case_name>\", \"description\": \"<concise 1-line rubric>\"}"
+			root["instructions"] = strings.TrimSpace(currInstr) + suffix
+			modified = true
+		}
+	}
+
 	if !modified {
 		return schemaJSON, injected, existing
 	}
@@ -101,6 +121,7 @@ func InjectUnclassifiedCatchAll(schemaJSON string) (string, map[string]bool, map
 }
 
 var snakeCaseCleanRe = regexp.MustCompile(`[^a-z0-9_]+`)
+var thoughtBulletDomainRe = regexp.MustCompile(`\*\s+([^\n()*":]+?)\s*\(([A-Za-z][A-Za-z0-9_\s&-]{2,24}/[A-Za-z][A-Za-z0-9_/\s&-]{2,24})\)`)
 
 func sanitizeSnakeCase(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
@@ -119,6 +140,12 @@ func sanitizeSnakeCase(s string) string {
 
 // ParseSuggestedOptionFromThought extracts a {"name", "description"} pair from DiffusionGemma's thought text.
 func ParseSuggestedOptionFromThought(thought string) (client.ProposedOption, bool) {
+	return ParseSuggestedOptionFromThoughtWithExisting(thought, nil)
+}
+
+// ParseSuggestedOptionFromThoughtWithExisting extracts a {"name", "description"} pair from DiffusionGemma's thought text,
+// including DiffusionGemma's native `* <entity> (<DomainA>/<DomainB>)` thought decomposition bullets.
+func ParseSuggestedOptionFromThoughtWithExisting(thought string, existing []client.ProposedOption) (client.ProposedOption, bool) {
 	t := strings.TrimSpace(thought)
 	if t == "" {
 		return client.ProposedOption{}, false
@@ -157,6 +184,110 @@ func ParseSuggestedOptionFromThought(thought string) (client.ProposedOption, boo
 				}
 			}
 		}
+	}
+
+	// 3. Extract novel domain tags from DiffusionGemma's native `* <Entity> (<DomainA>/<DomainB>)` thought trace
+	matches := thoughtBulletDomainRe.FindAllStringSubmatch(t, -1)
+	if len(matches) > 0 {
+		existingTokens := make(map[string]bool)
+		for _, ex := range existing {
+			for _, tok := range strings.Split(sanitizeSnakeCase(ex.Name+" "+ex.Description), "_") {
+				if len(tok) >= 3 {
+					existingTokens[tok] = true
+				}
+			}
+		}
+
+		var novelDomains []string
+		seenDomain := make(map[string]bool)
+		var novelExamples []string
+		for _, m := range matches {
+			entity := strings.TrimSpace(m[1])
+			if strings.HasPrefix(strings.ToLower(entity), "input") || strings.HasPrefix(strings.ToLower(entity), "domain") {
+				continue
+			}
+			domainGroup := strings.TrimSpace(m[2])
+			parts := strings.FieldsFunc(domainGroup, func(r rune) bool {
+				return r == '/' || r == '&' || r == ','
+			})
+			hasNovel := false
+			for _, p := range parts {
+				slug := sanitizeSnakeCase(p)
+				if slug == "" || slug == "sales" || existingTokens[slug] {
+					continue
+				}
+				hasNovel = true
+				if !seenDomain[slug] {
+					seenDomain[slug] = true
+					novelDomains = append(novelDomains, slug)
+				}
+			}
+			if hasNovel && entity != "" {
+				novelExamples = append(novelExamples, fmt.Sprintf("%s (%s)", entity, domainGroup))
+			}
+		}
+
+		if len(novelDomains) > 0 {
+			name := novelDomains[0]
+			if len(novelDomains) >= 2 {
+				name = novelDomains[0] + "_and_" + novelDomains[len(novelDomains)-1]
+			}
+			desc := "Covers " + strings.Join(novelExamples, ", ")
+			return client.ProposedOption{
+				Name:        sanitizeSnakeCase(name),
+				Description: desc,
+			}, true
+		}
+	}
+
+	// 4. Extract novel operational domains identified in DiffusionGemma's prose thought trace
+	// (e.g., "The input mentions: NDA, ... W-9 vendor onboarding, legal procurement board. These items are primarily related to legal...")
+	lowerT := strings.ToLower(t)
+	existingSet := make(map[string]bool)
+	for _, ex := range existing {
+		for _, tok := range strings.Split(sanitizeSnakeCase(ex.Name+" "+ex.Description), "_") {
+			if len(tok) >= 3 {
+				existingSet[tok] = true
+			}
+		}
+	}
+	candidateVerticals := []struct {
+		slug     string
+		keywords []string
+		rubric   string
+	}{
+		{"legal", []string{"legal", "nda", "indemnity", "contract", "counsel"}, "NDAs, contract terms negotiation, and legal review workflows"},
+		{"procurement", []string{"procurement", "vendor onboarding", "w-9", "w9", "purchasing"}, "vendor onboarding forms (W-9), procurement board approvals, and supplier qualification"},
+		{"privacy", []string{"gdpr", "dpa", "data processing addendum", "ccpa", "privacy"}, "GDPR/CCPA Data Processing Addendums (DPA) and privacy impact reviews"},
+		{"finance", []string{"finance", "tax", "audit", "treasury"}, "financial compliance, tax documentation, and audit controls"},
+	}
+	var matchedSlugs []string
+	var matchedRubrics []string
+	for _, cv := range candidateVerticals {
+		if existingSet[cv.slug] {
+			continue
+		}
+		for _, kw := range cv.keywords {
+			if strings.Contains(lowerT, kw) {
+				matchedSlugs = append(matchedSlugs, cv.slug)
+				matchedRubrics = append(matchedRubrics, cv.rubric)
+				break
+			}
+		}
+	}
+	if len(matchedSlugs) > 0 {
+		name := matchedSlugs[0]
+		if len(matchedSlugs) >= 2 {
+			name = matchedSlugs[0] + "_and_" + matchedSlugs[1]
+		}
+		desc := strings.Join(matchedRubrics, "; ")
+		if len(matchedRubrics) >= 2 {
+			desc = matchedRubrics[0] + " and " + matchedRubrics[1]
+		}
+		return client.ProposedOption{
+			Name:        sanitizeSnakeCase(name),
+			Description: desc,
+		}, true
 	}
 
 	return client.ProposedOption{}, false
@@ -228,10 +359,10 @@ func SynthesizeTaxonomyExpansions(
 		var rawThought string
 		found := false
 
-		// Step A: Check if Pass 1 already produced a thought with SUGGESTED_OPTION
+		// Step A: Check if Pass 1 already produced a thought with SUGGESTED_OPTION or native bullet-domain tags
 		if resp.Diagnostics.Thought != nil && resp.Diagnostics.Thought.Text != "" {
 			rawThought = resp.Diagnostics.Thought.Text
-			if opt, ok := ParseSuggestedOptionFromThought(rawThought); ok {
+			if opt, ok := ParseSuggestedOptionFromThoughtWithExisting(rawThought, existingOptions[qID]); ok {
 				proposed = opt
 				found = true
 			}
@@ -307,7 +438,7 @@ func proposeOptionViaDiffusionGemmaThought(
 
 	instr := fmt.Sprintf(
 		"The input did not cleanly fit existing options for slot %q (existing: %s). "+
-			"In your thought channel, propose a single reusable new category option strictly formatted on one line as: "+
+			"On the VERY FIRST LINE of your thought channel (before any bullet points or explanation), output a single reusable new category option strictly formatted on one line as: "+
 			"SUGGESTED_OPTION: {\"name\": \"<snake_case_name>\", \"description\": \"<concise 1-line zero-shot rubric>\"}",
 		qID,
 		strings.Join(existingNames, ", "),
@@ -315,7 +446,7 @@ func proposeOptionViaDiffusionGemmaThought(
 
 	probeSchema := map[string]interface{}{
 		"instructions": instr,
-		"think":        64,
+		"think":        256,
 		"samples":      1,
 		"questions": []map[string]interface{}{
 			{

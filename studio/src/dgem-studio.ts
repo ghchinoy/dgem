@@ -3027,6 +3027,16 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
         .resolvedTheme=${this.resolvedTheme}
         .policyCount=${this.templates.length || 26}
         @close-about=${() => (this.aboutOpen = false)}
+        @open-glossary=${() => {
+          this.aboutOpen = false;
+          this.activeTab = 'concepts';
+          setTimeout(() => {
+            const viz = this.shadowRoot?.querySelector('dgem-concept-visualizer') as any;
+            if (viz && typeof viz.openScene === 'function') {
+              viz.openScene(5);
+            }
+          }, 50);
+        }}
       ></dgem-about-modal>
     `;
   }

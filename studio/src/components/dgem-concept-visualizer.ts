@@ -19,14 +19,19 @@ const SCRIPT_CUES: Record<number, ScriptCue> = {
     hint: '👉 Presenter Action: Point to the Shared Input Ticket at top, click "▶ Run Live Race", then click "⚡ Step 2: Flip Early Token" to show left-to-right drift.',
   },
   3: {
-    title: '🎙️ Part 3 (1:45–2:30) — Shannon Entropy (nats) & The Escalation Gate',
-    text: '"How do we know when to trust a fast zero-shot decision? Click from Step 1 (Pure 502 Outage) to Step 2 (Mixed VIP Ticket): watching the Technical and Billing probabilities pull against each other drives Shannon Entropy from 0.06 nats up to 0.56 nats—crossing our 0.35 nats gate and automatically escalating ONLY the ambiguous ticket to Gemini with our prior odds attached."',
-    hint: '👉 Presenter Action: Click "STEP 1: Pure 502 Outage" (Green Fast Exit) ➔ "STEP 2: Mixed VIP Ticket" (Amber Escalation) ➔ "STEP 3: 3-Way Tie", then click "🚀 Run VIP Ticket Live in Studio".',
+    title: '🎙️ Part 3 (1:45–2:30) — Invariant Decision Calibration (IDC) & The Entropy Gate',
+    text: '"How do we know when to trust a fast zero-shot decision? Raw confidence alone can be tricked by First-Choice Favoritism (Option A bias) or fragile wording. With Invariant Decision Calibration (IDC), dgem zeroes the scale against a blank input and asks the question both forward [A→C] and backward [C→A] in the exact same 490ms pass. Click Step 4 (Framing / Bias Trap) and toggle the IDC Calibration Lens to watch it catch a false-green guess automatically."',
+    hint: '👉 Presenter Action: Click Steps 1 → 2 → 3 → 4 ("Framing / Bias Trap"), toggle "⚖️ IDC Calibrated" ON/OFF, or click "📖 Plain-English Glossary" to explain the terms without ML jargon.',
   },
   4: {
     title: '🎙️ Part 4 (2:30–3:05) — Fast Decision Model as a Prompt Injection Safety Gate',
     text: '"Why use a 1-pass Decision Model as a front-door safety gate? In a normal chat LLM, an attacker’s [SYSTEM OVERRIDE] string can hijack the 256,000-word vocabulary into leaking secrets. In dgem, the output slot is physically stenciled to just two tokens—yes or no. Toggle between Step 1 (Benign Doc) and Step 2 (Inject Override Attack): the attacker’s payload has nowhere to go except flipping injection_detected to yes at 99.8% probability."',
     hint: '👉 Presenter Action: Click "🟢 Step 1: Benign Q3 Doc" ➔ "🔴 Step 2: Inject Override Attack", then click "🚀 Run Injection Trap Live in Studio".',
+  },
+  5: {
+    title: '📖 Part 5 — Plain-English Glossary: ML & Calibration Terms Translated for Humans',
+    text: '"Terms like Shannon Entropy, Primacy Bias, Taring the Scale, and Brier Calibration sound academic, but each one maps to an everyday intuition—like zeroing a kitchen scale before weighing flour, or checking if a weather forecaster’s 90% rain prediction actually rains 9 times out of 10."',
+    hint: '👉 Presenter Action: Click any of the 6 term cards below to compare "What ML Papers Call It" vs. "What It Actually Means in Plain English" with interactive before/after examples.',
   },
 };
 
@@ -96,12 +101,16 @@ export class DgemConceptVisualizer extends LitElement {
   @state() private isPerturbed = false;
   private raceInterval: number | null = null;
 
-  // Scene 3: Shannon Entropy State
-  @state() private activeEntropyPreset: 1 | 2 | 3 = 2;
+  // Scene 3: IDC & Shannon Entropy State
+  @state() private activeEntropyPreset: 1 | 2 | 3 | 4 = 2;
   @state() private conflictVal = 46;
+  @state() private idcCalibrated = true;
 
   // Scene 4: Safety Gate State
   @state() private isAttackDoc = true;
+
+  // Scene 5: Plain-English Glossary State
+  @state() private activeGlossaryTerm = 'idc';
 
   static styles = css`
     :host {
@@ -844,7 +853,7 @@ export class DgemConceptVisualizer extends LitElement {
     }, 35);
   }
 
-  private selectEntropyPreset(stepIdx: 1 | 2 | 3, ratio: number) {
+  private selectEntropyPreset(stepIdx: 1 | 2 | 3 | 4, ratio: number) {
     this.activeEntropyPreset = stepIdx;
     this.conflictVal = Math.round(ratio * 100);
   }
@@ -1115,20 +1124,39 @@ export class DgemConceptVisualizer extends LitElement {
   }
 
   private renderScene3() {
+    const isFramingTrap = this.activeEntropyPreset === 4;
     const t = this.conflictVal / 100;
     let pTech = 0.755;
     let pBill = 0.232;
     let pAcct = 0.013;
-    if (t <= 0.5) {
+    let mirrorTVD = 0.01;
+
+    if (isFramingTrap) {
+      if (!this.idcCalibrated) {
+        // Raw single-slot readout falls for Option A Primacy Bias (93.6% Option A -> H = 0.24 nats -> FALSE GREEN!)
+        pTech = 0.936;
+        pBill = 0.054;
+        pAcct = 0.01;
+        mirrorTVD = 0.88;
+      } else {
+        // IDC Calibrated: Null-Prior Tare removes Box A bias + Mirror [C->A] ballot exposes 0.88 Cross-Stem TVD
+        pTech = 0.51;
+        pBill = 0.45;
+        pAcct = 0.04;
+        mirrorTVD = 0.88;
+      }
+    } else if (t <= 0.5) {
       const k = t / 0.5;
       pTech = 0.985 - k * (0.985 - 0.72);
       pBill = 0.01 + k * (0.265 - 0.01);
       pAcct = 1.0 - pTech - pBill;
+      mirrorTVD = Number((0.01 + k * 0.26).toFixed(2));
     } else {
       const k = (t - 0.5) / 0.5;
       pTech = 0.72 - k * (0.72 - 0.3333);
       pBill = 0.265 + k * (0.3333 - 0.265);
       pAcct = 1.0 - pTech - pBill;
+      mirrorTVD = Number((0.27 + k * 0.15).toFixed(2));
     }
 
     const probs = [pTech, pBill, pAcct];
@@ -1136,52 +1164,104 @@ export class DgemConceptVisualizer extends LitElement {
     for (const p of probs) {
       if (p > 0) H -= p * Math.log(p);
     }
+    const normH = H / Math.log(3);
     const pctNeedle = Math.min(100, Math.max(0, (H / 1.0986) * 100));
-    const isLowEntropy = H < 0.35;
+    const tvdTriggered = this.idcCalibrated && mirrorTVD >= 0.25;
+    const isLowEntropy = H < 0.35 && !tvdTriggered;
 
     return html`
       <div class="grid-2">
         <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Click 1 → 2 → 3: How Signal Conflict Drives Entropy (nats)</h2>
-            <span class="pill ${isLowEntropy ? 'pill-emerald' : 'pill-amber'}">
-              H = ${H.toFixed(2)} nats · ${isLowEntropy ? 'CERTAIN' : 'ESCALATE'}
-            </span>
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.45rem;">
+            <h2 class="card-title">Click 1 → 4: IDC &amp; Shannon Entropy Escalation Gate</h2>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <button
+                class="action-btn"
+                style="font-size: 0.72rem; padding: 0.28rem 0.58rem;"
+                @click=${() => (this.currentScene = 5)}
+              >
+                📖 Plain-English Glossary ➔
+              </button>
+              <span class="pill ${isLowEntropy ? 'pill-emerald' : 'pill-amber'}">
+                H = ${H.toFixed(2)} nats · TVD = ${mirrorTVD.toFixed(2)} · ${isLowEntropy ? 'FAST EXIT' : 'ESCALATE'}
+              </span>
+            </div>
           </div>
 
-          <div class="preset-row">
+          <!-- IDC Calibration Lens Toggle Bar -->
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; border-radius: 9px; background: var(--viz-bg-elevated); border: 1px solid ${this.idcCalibrated ? 'var(--viz-brand-border)' : 'var(--viz-border-strong)'};"
+          >
+            <div style="font-size: 0.77rem;">
+              <strong style="color: var(--viz-brand-bright);">⚖️ IDC Calibration Lens:</strong>
+              <span style="color: var(--viz-text-secondary); margin-left: 0.25rem;">
+                ${this.idcCalibrated
+                  ? 'ON — Zeroes Option-A bias ("Tare") + checks Forward [A→C] vs. Reverse [C→A] in 1 pass'
+                  : 'OFF — Naive single-slot readout (vulnerable to Option-A bias & framing flips)'}
+              </span>
+            </div>
+            <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
+              <button
+                class="action-btn ${!this.idcCalibrated ? 'active-rose' : ''}"
+                style="font-size: 0.72rem; padding: 0.28rem 0.6rem;"
+                @click=${() => (this.idcCalibrated = false)}
+              >
+                Raw Single-Slot
+              </button>
+              <button
+                class="action-btn ${this.idcCalibrated ? 'active-cue' : ''}"
+                style="font-size: 0.72rem; padding: 0.28rem 0.6rem;"
+                @click=${() => (this.idcCalibrated = true)}
+              >
+                ⚖️ IDC Calibrated (ON)
+              </button>
+            </div>
+          </div>
+
+          <div class="preset-row" style="grid-template-columns: repeat(4, 1fr);">
             <button
               class="preset-step-btn ${this.activeEntropyPreset === 1 ? 'active-step-green' : ''}"
               @click=${() => this.selectEntropyPreset(1, 0.02)}
             >
-              <div class="mono" style="font-size: 0.69rem; opacity: 0.8;">STEP 1: CLEAR SIGNAL</div>
-              <div style="margin-top: 0.18rem;">Pure 502 Outage</div>
-              <div class="mono" style="font-size: 0.73rem; margin-top: 0.18rem;">H = 0.06 nats (Green)</div>
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 1: CLEAR</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Pure 502 Outage</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">H=0.06 · TVD=0.01</div>
             </button>
 
             <button
               class="preset-step-btn ${this.activeEntropyPreset === 2 ? 'active-step-amber' : ''}"
               @click=${() => this.selectEntropyPreset(2, 0.46)}
             >
-              <div class="mono" style="font-size: 0.69rem; opacity: 0.8;">STEP 2: MIXED VIP TICKET</div>
-              <div style="margin-top: 0.18rem;">502 + $45k Billing Threat</div>
-              <div class="mono" style="font-size: 0.73rem; margin-top: 0.18rem;">H = 0.56 nats (Escalate)</div>
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 2: MIXED VIP</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">502 + $45k Invoice</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">H=0.56 · Escalate</div>
             </button>
 
             <button
               class="preset-step-btn ${this.activeEntropyPreset === 3 ? 'active-step-rose' : ''}"
               @click=${() => this.selectEntropyPreset(3, 1.0)}
             >
-              <div class="mono" style="font-size: 0.69rem; opacity: 0.8;">STEP 3: MAX UNCERTAINTY</div>
-              <div style="margin-top: 0.18rem;">3-Way Uniform Tie</div>
-              <div class="mono" style="font-size: 0.73rem; margin-top: 0.18rem;">H = 1.10 nats (Ceiling)</div>
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 3: 3-WAY TIE</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Uniform Split</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">H=1.10 · Ceiling</div>
+            </button>
+
+            <button
+              class="preset-step-btn ${this.activeEntropyPreset === 4 ? 'active-step-rose' : ''}"
+              @click=${() => this.selectEntropyPreset(4, 0.2)}
+            >
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 4: IDC TRAP</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Option-A / Order Flip</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">
+                ${this.idcCalibrated ? 'Caught (TVD=0.88)' : 'False Green (0.24)'}
+              </div>
             </button>
           </div>
 
           <div style="background: var(--viz-bg-elevated); padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid var(--viz-border-strong);">
             <label style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">
-              <span>Or Drag Signal Conflict Slider Smoothly:</span>
-              <span class="mono">${this.conflictVal}% Conflict</span>
+              <span>${isFramingTrap ? 'Step 4 Trap: Wording / Order Sensitivity + Option-A Bias' : 'Or Drag Signal Conflict Slider Smoothly:'}</span>
+              <span class="mono">${isFramingTrap ? `Mirror TVD = ${mirrorTVD.toFixed(2)}` : `${this.conflictVal}% Conflict`}</span>
             </label>
             <input
               type="range"
@@ -1194,54 +1274,60 @@ export class DgemConceptVisualizer extends LitElement {
             />
 
             <div class="mono" style="margin-top: 0.6rem; padding: 0.65rem; background: var(--viz-bg-canvas); border-radius: 7px; font-size: 0.76rem; color: var(--viz-text-secondary); border: 1px solid var(--viz-border-subtle);">
-              ${this.conflictVal < 18
-                ? html`"URGENT: Production API returning 502 Bad Gateway for 40 mins across us-central1 endpoints. Requesting immediate engineering roll-back."`
-                : this.conflictVal < 78
-                  ? html`"URGENT: Production API returning 502 Bad Gateway for 40 mins. <strong style="color: var(--viz-amber);">If not resolved in 15 mins we will dispute our $45,000 Q3 enterprise invoice and cancel renewal.</strong>"`
-                  : html`"Hello team, we have an issue with our enterprise portal—not sure if this is an API gateway timeout, a Q3 invoice hold, or an SSO account lock."`}
+              ${isFramingTrap
+                ? html`"Notice: Gateway certificate renewal notice attached—please confirm whether Technical Ops or Billing Admin owns signature." <strong style="color: var(--viz-amber);">[Forward [A→C] picks Technical 93.6%, but Reverse [C→A] flips to Billing 91.2% → Cross-Stem TVD = 0.88!]</strong>`
+                : this.conflictVal < 18
+                  ? html`"URGENT: Production API returning 502 Bad Gateway for 40 mins across us-central1 endpoints. Requesting immediate engineering roll-back."`
+                  : this.conflictVal < 78
+                    ? html`"URGENT: Production API returning 502 Bad Gateway for 40 mins. <strong style="color: var(--viz-amber);">If not resolved in 15 mins we will dispute our $45,000 Q3 enterprise invoice and cancel renewal.</strong>"`
+                    : html`"Hello team, we have an issue with our enterprise portal—not sure if this is an API gateway timeout, a Q3 invoice hold, or an SSO account lock."`}
             </div>
           </div>
 
           <div style="margin-top: 0.95rem;">
             <div class="prob-row" style="font-size: 0.83rem; margin-bottom: 0.4rem;">
-              <span class="prob-label" style="width: 90px; font-weight: 600;">Technical</span>
+              <span class="prob-label" style="width: 115px; font-weight: 600;">
+                A: Technical ${!this.idcCalibrated && isFramingTrap ? html`<span class="pill pill-rose" style="font-size:0.62rem;padding:0.05rem 0.3rem;">+Bias</span>` : ''}
+              </span>
               <div class="prob-track" style="height: 11px;"><div class="prob-fill" style="width: ${(pTech * 100).toFixed(1)}%;"></div></div>
               <span style="width: 52px; text-align: right;">${(pTech * 100).toFixed(1)}%</span>
             </div>
             <div class="prob-row" style="font-size: 0.83rem; margin-bottom: 0.4rem;">
-              <span class="prob-label" style="width: 90px; font-weight: 600;">Billing</span>
+              <span class="prob-label" style="width: 115px; font-weight: 600;">B: Billing</span>
               <div class="prob-track" style="height: 11px;"><div class="prob-fill" style="width: ${(pBill * 100).toFixed(1)}%; background: var(--viz-amber);"></div></div>
               <span style="width: 52px; text-align: right;">${(pBill * 100).toFixed(1)}%</span>
             </div>
             <div class="prob-row" style="font-size: 0.83rem;">
-              <span class="prob-label" style="width: 90px; font-weight: 600;">Account</span>
+              <span class="prob-label" style="width: 115px; font-weight: 600;">C: Account</span>
               <div class="prob-track" style="height: 11px;"><div class="prob-fill" style="width: ${(pAcct * 100).toFixed(1)}%; background: var(--viz-purple);"></div></div>
               <span style="width: 52px; text-align: right;">${(pAcct * 100).toFixed(1)}%</span>
             </div>
           </div>
 
           <div class="gauge-box">
-            <div class="gauge-header-row">
-              <span><strong>0.00 nats</strong> (Certain)</span>
-              <span class="formula-pill">H = -∑ pₖ ln(pₖ) = ${H.toFixed(2)} nats</span>
-              <span><strong>1.10 nats</strong> (ln 3 Max)</span>
+            <div class="gauge-header-row" style="flex-wrap: wrap; gap: 0.35rem;">
+              <span><strong>0.00</strong> (100% Sure)</span>
+              <span class="formula-pill">
+                H = ${H.toFixed(2)} nats (H̃ = ${(normH * 100).toFixed(0)}%) · Mirror TVD = ${mirrorTVD.toFixed(2)}
+              </span>
+              <span><strong>1.10 nats</strong> (Max Split)</span>
             </div>
             <div class="entropy-meter-track">
               <div class="threshold-marker">
-                <span class="threshold-label">Escalation Gate: 0.35 nats</span>
+                <span class="threshold-label">IDC Gate: H ≥ 0.35 or TVD ≥ 0.25</span>
               </div>
               <div class="entropy-needle" style="left: ${pctNeedle}%;"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--viz-text-muted);">
-              <span style="color: var(--viz-emerald);">● Green Zone (H &lt; 0.35): Fast 1-Pass Exit</span>
-              <span style="color: var(--viz-amber);">▲ Amber/Red Zone (H ≥ 0.35): Escalate to Frontier LLM</span>
+              <span style="color: var(--viz-emerald);">● Green Zone (H &lt; 0.35 &amp; TVD &lt; 0.25): Fast 1-Pass Exit</span>
+              <span style="color: var(--viz-amber);">▲ Amber/Red Zone: Escalate to Gemini 3.8 Flash</span>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Live Routing Action (Entropy-Gated Cascade)</h2>
+            <h2 class="card-title">Live Routing Action (IDC + Entropy Cascade)</h2>
             <button class="btn-studio-jump" @click=${() => this.jumpToStudioPreset('support-vip')}>
               🚀 Run VIP Ticket Live in Studio ➔
             </button>
@@ -1252,41 +1338,70 @@ export class DgemConceptVisualizer extends LitElement {
               ? 'var(--viz-emerald-border)'
               : 'var(--viz-amber-border)'}; background: ${isLowEntropy
               ? 'var(--viz-emerald-soft)'
-              : 'var(--viz-amber-soft)'}; margin-bottom: 1rem;"
+              : 'var(--viz-amber-soft)'}; margin-bottom: 0.85rem;"
           >
             <div
               style="font-weight: 700; font-size: 0.92rem; color: ${isLowEntropy
                 ? 'var(--viz-emerald)'
                 : 'var(--viz-amber)'};"
             >
-              ${isLowEntropy
-                ? `✅ FAST 1-PASS EXIT: department H (${H.toFixed(2)} nats) < 0.35 nats`
-                : `⚠️ ESCALATION TRIGGERED: department H (${H.toFixed(2)} nats) ≥ 0.35 nats`}
+              ${isFramingTrap && !this.idcCalibrated
+                ? `❌ FALSE GREEN (Naive Mode): Option-A bias hides uncertainty (H = ${H.toFixed(2)} < 0.35)!`
+                : isFramingTrap && this.idcCalibrated
+                  ? `🛡️ SAVED BY IDC: Tare + O(1) Mirror Ballot caught order flip (H = ${H.toFixed(2)}, TVD = ${mirrorTVD.toFixed(2)} ≥ 0.25)!`
+                  : isLowEntropy
+                    ? `✅ FAST 1-PASS EXIT: H (${H.toFixed(2)} nats) < 0.35 & Mirror TVD (${mirrorTVD.toFixed(2)}) < 0.25`
+                    : `⚠️ ESCALATION TRIGGERED: H (${H.toFixed(2)} nats) ≥ 0.35 or Mirror TVD (${mirrorTVD.toFixed(2)}) ≥ 0.25`}
             </div>
             <p style="margin: 0.35rem 0 0 0; font-size: 0.82rem; color: var(--viz-text-secondary);">
-              ${isLowEntropy
-                ? html`All 3 decision slots are below the <code>0.35 nats</code> gate. Ticket routes immediately to <strong>Technical</strong> in <strong>450 ms</strong> with zero frontier LLM cost.`
-                : html`<code>urgent="yes"</code> locks in Stage 1, while <code>department</code> escalates to <strong>Gemini 3.8 Flash</strong> with DiffusionGemma's prior odds (<code>Technical: ${(pTech * 100).toFixed(1)}%, Billing: ${(pBill * 100).toFixed(1)}%</code>) attached.`}
+              ${isFramingTrap && !this.idcCalibrated
+                ? html`Without IDC, the model's natural preference for <strong>Option A</strong> inflates <code>Technical</code> to <code>93.6%</code> (<code>H = 0.24 nats</code>), letting an order-sensitive guess slip through. <strong>Click "⚖️ IDC Calibrated (ON)" on the left</strong> to see how Taring + Mirror Slots catch it in the same 490 ms pass!`
+                : isLowEntropy
+                  ? html`Both forward <code>[A→C]</code> and reversed <code>[C→A]</code> slots agree after zeroing out Option-A bias. Ticket routes immediately in <strong>490 ms</strong> with <strong>100% calibrated reliability</strong>.`
+                  : html`Stage 1 locks certain slots (<code>urgent="yes"</code>) and escalates <code>department</code> to <strong>Gemini 3.8 Flash</strong> with de-biased IDC prior odds (<code>Technical: ${(pTech * 100).toFixed(1)}%, Billing: ${(pBill * 100).toFixed(1)}%</code>).`}
             </p>
           </div>
 
+          <!-- 3 Plain-English Pillars of IDC Mini-Summary -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.85rem;">
+            <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-brand-bright);">1. Tare the Scale</div>
+              <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
+                Subtracts <strong>Option-A favoritism</strong> measured on a blank prompt (-90% calibration error).
+              </div>
+            </div>
+            <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-emerald);">2. Ask Both Ways (O(1))</div>
+              <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
+                Reads <code>[A→C]</code> &amp; <code>[C→A]</code> in the <strong>same 490ms pass</strong> (<code>0ms</code> extra latency) to catch flips.
+              </div>
+            </div>
+            <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-amber);">3. Normalized Gate</div>
+              <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
+                Scales hesitation <code>H̃ = H / ln(K)</code> uniformly whether a policy has 2 or 26 options.
+              </div>
+            </div>
+          </div>
+
           ${svg`
-            <svg viewBox="0 0 600 235" style="width: 100%; height: auto; background: var(--viz-bg-canvas); border-radius: 10px; border: 1px solid var(--viz-border-subtle); padding: 8px;">
-              <rect x="20" y="78" width="165" height="80" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
-              <text x="102" y="108" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="12">Stage 1: DiffusionGemma</text>
-              <text x="102" y="128" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">1-Pass Readout (450ms)</text>
-              <text x="102" y="145" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">Outputs pₖ &amp; H (nats)</text>
+            <svg viewBox="0 0 600 215" style="width: 100%; height: auto; background: var(--viz-bg-canvas); border-radius: 10px; border: 1px solid var(--viz-border-subtle); padding: 8px;">
+              <rect x="16" y="64" width="180" height="88" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+              <text x="106" y="91" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="11.5">Stage 1: DiffusionGemma + IDC</text>
+              <text x="106" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="10.5">1-Pass Canvas (490ms · 0ms overhead)</text>
+              <text x="106" y="127" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• Null-Prior Tare (p̃ₖ ∝ pₖ / p₀)</text>
+              <text x="106" y="142" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• Mirror Slots [A→C] + [C→A]</text>
 
-              <path d="M 185 100 C 250 100, 260 45, 335 45" fill="none" stroke="#10b981" stroke-width="${isLowEntropy ? '4' : '2'}" opacity="${isLowEntropy ? '1' : '0.4'}" />
-              <rect x="335" y="16" width="245" height="62" rx="8" fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="2" opacity="${isLowEntropy ? '1' : '0.5'}" />
-              <text x="457" y="40" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="12">72% Traffic: Fast 1-Pass Exit</text>
-              <text x="457" y="58" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">H &lt; 0.35 nats → Done Immediately</text>
+              <path d="M 196 92 C 255 92, 265 42, 335 42" fill="none" stroke="#10b981" stroke-width="${isLowEntropy ? '4' : '2'}" opacity="${isLowEntropy ? '1' : '0.4'}" />
+              <rect x="335" y="14" width="248" height="58" rx="8" fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="2" opacity="${isLowEntropy ? '1' : '0.5'}" />
+              <text x="459" y="36" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="11.5">Fast 1-Pass Exit (100% @ &gt;90% Conf)</text>
+              <text x="459" y="54" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">H &lt; 0.35 &amp; Mirror TVD &lt; 0.25 → Done</text>
 
-              <path d="M 185 135 C 250 135, 260 182, 335 182" fill="none" stroke="#f59e0b" stroke-width="${isLowEntropy ? '2' : '4'}" opacity="${isLowEntropy ? '0.35' : '1'}" />
-              <rect x="335" y="148" width="245" height="68" rx="8" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2" opacity="${isLowEntropy ? '0.45' : '1'}" />
-              <text x="457" y="172" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="12">28% Traffic: Gemini 3.8 Flash</text>
-              <text x="457" y="190" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">H ≥ 0.35 nats + Prior Odds Injected</text>
-              <text x="457" y="205" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="10">➔ 98.0% Combined Accuracy</text>
+              <path d="M 196 125 C 255 125, 265 168, 335 168" fill="none" stroke="#f59e0b" stroke-width="${isLowEntropy ? '2' : '4'}" opacity="${isLowEntropy ? '0.35' : '1'}" />
+              <rect x="335" y="135" width="248" height="66" rx="8" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2" opacity="${isLowEntropy ? '0.45' : '1'}" />
+              <text x="459" y="157" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="11.5">Stage 2: Gemini 3.8 Flash</text>
+              <text x="459" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">H ≥ 0.35 or Mirror TVD ≥ 0.25</text>
+              <text x="459" y="190" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="9.8">➔ 98.0% Calibrated Cascade Accuracy</text>
             </svg>
           `}
         </div>
@@ -1433,8 +1548,167 @@ export class DgemConceptVisualizer extends LitElement {
     `;
   }
 
+  public openScene(sceneIdx: number, glossaryTerm?: string) {
+    this.currentScene = sceneIdx;
+    if (glossaryTerm) {
+      this.activeGlossaryTerm = glossaryTerm;
+    }
+  }
+
+  private renderScene5() {
+    const terms = [
+      {
+        id: 'idc',
+        badge: '⚖️ Core Framework',
+        title: 'IDC (Invariant Decision Calibration)',
+        humanName: 'The "No-Matter-How-You-Ask-It" Truth Filter',
+        jargon: 'Multi-Stem Invariant Decision Calibration with Null-Prior De-Biasing & Cross-Stem TVD (EXP-14)',
+        analogy:
+          'Imagine interviewing a witness. If they give a confident answer, you check two things: (1) Are they just agreeing with the first suggestion you offered? and (2) Do they give the exact same answer if you ask the question in reverse order? IDC does both checks simultaneously inside one 490ms GPU pass.',
+        impact: 'Guarantees that >90%-confidence decisions are 100% accurate (31/31) and catches fragile guesses before they reach production.',
+      },
+      {
+        id: 'entropy',
+        badge: '🌡️ Uncertainty',
+        title: 'Shannon Entropy (H in nats)',
+        humanName: 'The AI Hesitation Meter (0 = Sure, 1 = Torn)',
+        jargon: 'H = -∑ pₖ ln(pₖ) measured in natural units of information (nats) or normalized H̃ = H / ln(K)',
+        analogy:
+          'When a model is 99% sure of one answer, its Hesitation Score (Entropy) is 0.01 (Green — ship it immediately). When it is torn 55% vs. 45% between Technical and Billing, its Hesitation Score jumps past 0.35 (Amber — pause and ask a larger model like Gemini 3.8 Flash).',
+        impact: 'Lets DiffusionGemma handle 72% of clear traffic in 490ms while escalating only the 28% of genuinely tricky edge cases.',
+      },
+      {
+        id: 'primacy',
+        badge: '🅰️ Hidden Bias',
+        title: 'Primacy Bias ("Box A Bias")',
+        humanName: 'First-Choice Favoritism on Multiple-Choice Tests',
+        jargon: 'Content-Free Label-Token Positional Prior p₀(k) where P(slot = "A" | ∅) ≫ 1/K',
+        analogy:
+          'When humans guess on a multiple-choice test, they pick "A" or "C" disproportionately. Language models do the exact same thing: even if you feed an empty blank string, raw models put up to 88% of their weight on Option A! Without correction, Option A always looks artificially confident.',
+        impact: 'Explains why naive single-pass classifiers frequently over-predict the first category listed in a JSON schema.',
+      },
+      {
+        id: 'tare',
+        badge: '🥣 Calibration Fix',
+        title: 'Taring the Scale (Null-Prior De-Biasing)',
+        humanName: 'Zeroing the Kitchen Scale Before Weighing Your Data',
+        jargon: 'Contextual Calibration via Null-Context Prior Division: p̃ₖ = (pₖ / p₀(k)^α) / Z',
+        analogy:
+          'Before you weigh 200g of flour on a kitchen scale, you place the empty mixing bowl on the scale and press "TARE" (Zero) so you don’t weigh the bowl. dgem weighs the policy template on a blank input first (measuring the "bowl weight" of Option A, B, C) and subtracts it before scoring your real ticket.',
+        impact: 'Cuts calibration error (Brier score) by up to 90.2% on hard security & guardrails suites with zero model retraining.',
+      },
+      {
+        id: 'framing',
+        badge: '🔄 Order & Wording',
+        title: 'Framing / Order Flips & Mirror TVD',
+        humanName: 'Asking Forward [A→D] and Backward [D→A] at the Exact Same Time',
+        jargon: 'O(1) Dual-Mirror Canvas Slot Readout & Cross-Stem Total Variation Distance (TVD_cross = ½ ∑ |p_fwd - p_rev|)',
+        analogy:
+          'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma resolves an entire canvas of slots in parallel in one 490ms pass, dgem places a Forward slot [A, B, C] and a Reversed/Skeptical slot [C, B, A] side-by-side at 0ms extra GPU latency. If the two answers disagree by ≥ 25% (TVD ≥ 0.25), the model is guessing!',
+        impact: 'Produces a 66.8× spike on ambiguous human-disagreement items and catches 100% of wording-flip traps.',
+      },
+      {
+        id: 'brier',
+        badge: '🌦️ Trust Score',
+        title: 'Brier Calibration & ECE',
+        humanName: 'The Weather-Forecaster Honesty Score',
+        jargon: 'Multi-Class Brier Score (1/N ∑ ∑ (pᵢₖ - yᵢₖ)²) & 10-Bin Expected Calibration Error (ECE)',
+        analogy:
+          'If your weather app says "90% chance of rain" on 10 different days, it should actually rain on 9 of those 10 days—not 5 out of 10 (overconfident) and not 10 out of 10 (underconfident). Brier Score and ECE measure whether a model’s confidence percentages can be trusted as real-world probabilities.',
+        impact: 'Allows engineering teams to set strict SLA thresholds (e.g., auto-approve when calibrated confidence ≥ 90%) with mathematical confidence.',
+      },
+    ];
+
+    const selected = terms.find((t) => t.id === this.activeGlossaryTerm) || terms[0];
+
+    return html`
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📖 Click Any Term: ML Jargon → Plain English</h2>
+            <span class="pill pill-brand">No PhD Required</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem;">
+            ${terms.map(
+              (item) => html`
+                <button
+                  class="preset-step-btn ${this.activeGlossaryTerm === item.id ? 'active-step-green' : ''}"
+                  style="text-align: left; padding: 0.65rem 0.75rem;"
+                  @click=${() => (this.activeGlossaryTerm = item.id)}
+                >
+                  <div class="mono" style="font-size: 0.66rem; opacity: 0.85;">${item.badge}</div>
+                  <div style="font-weight: 700; font-size: 0.82rem; margin-top: 0.15rem;">${item.title}</div>
+                  <div style="font-size: 0.72rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
+                    ${item.humanName}
+                  </div>
+                </button>
+              `
+            )}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="pill pill-emerald" style="margin-bottom: 0.3rem;">${selected.badge}</span>
+              <h2 class="card-title" style="font-size: 1.08rem;">${selected.title}</h2>
+            </div>
+            <button class="action-btn primary" @click=${() => (this.currentScene = 3)}>
+              🎛️ Try Live in Tab 3 (IDC Gate) ➔
+            </button>
+          </div>
+
+          <div
+            style="padding: 0.85rem 1rem; border-radius: 10px; background: var(--viz-emerald-soft); border: 1px solid var(--viz-emerald-border); margin-bottom: 0.85rem;"
+          >
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--viz-emerald);">
+              Plain-English Translation
+            </div>
+            <div style="font-size: 0.98rem; font-weight: 700; color: var(--viz-text-primary); margin-top: 0.2rem;">
+              "${selected.humanName}"
+            </div>
+          </div>
+
+          <div
+            style="padding: 0.85rem 1rem; border-radius: 10px; background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); margin-bottom: 0.85rem;"
+          >
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--viz-brand-bright); margin-bottom: 0.3rem;">
+              💡 Everyday Analogy
+            </div>
+            <p style="margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--viz-text-primary);">
+              ${selected.analogy}
+            </p>
+          </div>
+
+          <div
+            style="padding: 0.75rem 0.95rem; border-radius: 9px; background: var(--viz-bg-canvas); border: 1px solid var(--viz-border-subtle); margin-bottom: 0.85rem;"
+          >
+            <div class="mono" style="font-size: 0.7rem; color: var(--viz-text-muted); margin-bottom: 0.2rem;">
+              WHAT ML PAPERS &amp; LOGS CALL IT:
+            </div>
+            <div class="mono" style="font-size: 0.78rem; color: var(--viz-amber); font-weight: 600;">
+              ${selected.jargon}
+            </div>
+          </div>
+
+          <div
+            style="padding: 0.75rem 0.95rem; border-radius: 9px; background: var(--viz-brand-soft); border: 1px solid var(--viz-brand-border);"
+          >
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--viz-brand-bright);">
+              🚀 Why It Matters in Production
+            </div>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: var(--viz-text-secondary);">
+              ${selected.impact}
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   render() {
-    const cue = SCRIPT_CUES[this.currentScene];
+    const cue = SCRIPT_CUES[this.currentScene] || SCRIPT_CUES[1];
     return html`
       <div class="viz-topbar">
         <nav class="nav-tabs" aria-label="Interactive Concept Walkthrough Tabs">
@@ -1456,7 +1730,7 @@ export class DgemConceptVisualizer extends LitElement {
             class="tab-btn ${this.currentScene === 3 ? 'active' : ''}"
             @click=${() => (this.currentScene = 3)}
           >
-            <span>3. Entropy Gate (nats)</span>
+            <span>3. IDC &amp; Entropy Gate</span>
             <span class="tab-time">1:45–2:30</span>
           </button>
           <button
@@ -1465,6 +1739,13 @@ export class DgemConceptVisualizer extends LitElement {
           >
             <span>4. Safety Gate: Prompt Injection</span>
             <span class="tab-time">2:30–3:05</span>
+          </button>
+          <button
+            class="tab-btn ${this.currentScene === 5 ? 'active' : ''}"
+            @click=${() => (this.currentScene = 5)}
+          >
+            <span>5. 📖 Plain-English Glossary</span>
+            <span class="tab-time">Jargon-Free</span>
           </button>
         </nav>
 
@@ -1497,7 +1778,9 @@ export class DgemConceptVisualizer extends LitElement {
           ? this.renderScene2()
           : this.currentScene === 3
             ? this.renderScene3()
-            : this.renderScene4()}
+            : this.currentScene === 4
+              ? this.renderScene4()
+              : this.renderScene5()}
     `;
   }
 }

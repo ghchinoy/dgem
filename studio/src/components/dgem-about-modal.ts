@@ -63,15 +63,16 @@ export class DgemAboutModal extends LitElement {
       padding: 1.25rem;
     }
 
-    .dialog {
+      .dialog {
       width: 100%;
-      max-width: 620px;
+      max-width: 680px;
+      max-height: 88vh;
+      overflow-y: auto;
       background: var(--modal-bg);
       color: var(--modal-body);
       border: 1px solid var(--modal-border);
       border-radius: 12px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
-      overflow: hidden;
     }
 
     .dialog-header {
@@ -158,11 +159,67 @@ export class DgemAboutModal extends LitElement {
     .pillar-list li {
       margin-bottom: 0.35rem;
     }
+
+    .glossary-box {
+      margin-top: 1rem;
+      padding: 0.9rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--modal-brand-border);
+      background: var(--modal-brand-soft);
+    }
+
+    .glossary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 0.6rem;
+    }
+
+    .glossary-card {
+      background: var(--modal-bg);
+      border: 1px solid var(--modal-border);
+      border-radius: 7px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.76rem;
+    }
+
+    .glossary-card strong {
+      color: var(--modal-heading);
+      display: block;
+      font-size: 0.78rem;
+      margin-bottom: 0.12rem;
+    }
+
+    .glossary-btn {
+      margin-top: 0.75rem;
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      border-radius: 7px;
+      border: 1px solid var(--modal-brand);
+      background: var(--modal-brand);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .glossary-btn:hover {
+      opacity: 0.92;
+    }
   `;
 
   private closeModal() {
     this.dispatchEvent(
       new CustomEvent('close-about', {
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private openGlossaryTab() {
+    this.dispatchEvent(
+      new CustomEvent('open-glossary', {
         bubbles: true,
         composed: true,
       })
@@ -195,10 +252,46 @@ export class DgemAboutModal extends LitElement {
             <p style="margin-top:0">
               <strong>DiffusionGemma (<code>dgemma</code>)</strong> is a Zero-Shot Decision Model that
               evaluates structured multi-slot policies (<code>.json.tmpl</code>) jointly in
-              <strong>O(1) forward passes</strong> on a bidirectional discrete-diffusion canvas,
-              returning calibrated slot probabilities and epistemic
-              <strong>Shannon entropy (H)</strong> without conversational token overhead.
+              <strong>O(1) forward passes (~490ms)</strong> on a bidirectional discrete-diffusion canvas,
+              returning calibrated slot probabilities and a hesitation score
+              (<strong>Shannon entropy H</strong>) without conversational token overhead.
             </p>
+
+            <div class="glossary-box">
+              <div style="font-weight:700;color:var(--modal-heading);font-size:0.83rem;display:flex;justify-content:space-between;align-items:center;">
+                <span>📖 Plain-English Glossary (ML Terms Translated for Humans)</span>
+                <span style="font-size:0.7rem;color:var(--modal-brand);">Jargon-Free Guide</span>
+              </div>
+              <div class="glossary-grid">
+                <div class="glossary-card">
+                  <strong>⚖️ IDC (Invariant Decision Calibration)</strong>
+                  The "No-Matter-How-You-Ask-It" Truth Filter: zeroes out first-choice bias and checks forward + reverse option order in one 490ms pass.
+                </div>
+                <div class="glossary-card">
+                  <strong>🌡️ Shannon Entropy (H in nats)</strong>
+                  The AI Hesitation Meter: <code>0.00</code> = 100% sure (ship immediately); <code>≥ 0.35</code> = torn between choices (escalate to Gemini 3.8 Flash).
+                </div>
+                <div class="glossary-card">
+                  <strong>🅰️ Primacy Bias ("Box A Bias")</strong>
+                  First-Choice Favoritism: like humans on a multiple-choice test, raw models naturally favor Option A when guessing.
+                </div>
+                <div class="glossary-card">
+                  <strong>🥣 Taring the Scale (Null-Prior)</strong>
+                  Zeroing a kitchen scale with the empty bowl first: subtracts Option-A bias measured on a blank input (-90% error).
+                </div>
+                <div class="glossary-card">
+                  <strong>🔄 Framing / Order Flips (Mirror TVD)</strong>
+                  Asks <code>[A→D]</code> and <code>[D→A]</code> simultaneously at <code>0ms</code> extra wait; flags any answer that flips (<code>TVD ≥ 0.25</code>).
+                </div>
+                <div class="glossary-card">
+                  <strong>🌦️ Brier Calibration &amp; ECE</strong>
+                  Weather-Forecaster Honesty: when the model says 90% confidence, it actually gets the right answer 9+ times out of 10.
+                </div>
+              </div>
+              <button class="glossary-btn" @click=${this.openGlossaryTab}>
+                📖 Open Interactive Plain-English Glossary &amp; IDC Walkthrough in Concepts ➔
+              </button>
+            </div>
 
             <div class="spec-grid">
               <div class="spec-item">
@@ -206,10 +299,8 @@ export class DgemAboutModal extends LitElement {
                 <div class="spec-val">vLLM (TRITON_ATTN) + Gemma 4 SigLIP</div>
               </div>
               <div class="spec-item">
-                <div class="spec-label">Cloud Run GPU Hardware</div>
-                <div class="spec-val">
-                  ${this.gpuStatus?.gpu_hardware || '1× NVIDIA RTX Pro 6000 · 48GB VRAM'}
-                </div>
+                <div class="spec-label">Primary &amp; Failover Backends</div>
+                <div class="spec-val">Vertex AI Dedicated L4 (0s wakeup) + Cloud Run</div>
               </div>
               <div class="spec-item">
                 <div class="spec-label">Model Checkpoint</div>
@@ -219,39 +310,7 @@ export class DgemAboutModal extends LitElement {
                 <div class="spec-label">Embedded Policy Templates</div>
                 <div class="spec-val">${this.templateCount} (.json.tmpl policies)</div>
               </div>
-              <div class="spec-item">
-                <div class="spec-label">Upstream GPU Endpoint</div>
-                <div class="spec-val">${this.gpuStatus?.upstream_url || '/v1'}</div>
-              </div>
-              <div class="spec-item">
-                <div class="spec-label">Observability &amp; Tracing</div>
-                <div class="spec-val">OpenTelemetry + Google Cloud Trace</div>
-              </div>
             </div>
-
-            <div style="font-weight:600;color:var(--modal-heading);font-size:0.8rem">
-              Ways to Access:
-            </div>
-            <ul class="pillar-list">
-              <li>
-                <strong>Lit WebComponents Decision Studio</strong>: Interactive single-pass policy
-                evaluator, multimodal <code>EXP-09</code> Softmax Expectation bounding-box canvas, and
-                <code>EXP-05</code> Entropy Cascade simulator.
-              </li>
-              <li>
-                <strong>HTTP REST &amp; OpenAI Gateway</strong>: Idempotent single-flight cold-start
-                wakeup coordinator (<code>/api/warmup</code>, <code>/api/status</code>,
-                <code>/api/decide/{template}</code>).
-              </li>
-              <li>
-                <strong>Model Context Protocol (MCP) Server</strong>: 6 MCP tools over Streamable HTTP
-                (<code>POST /mcp</code>) and stdio (<code>dgem mcp</code>).
-              </li>
-              <li>
-                <strong><code>dgem</code> CLI &amp; Benchmark Suites</strong>: Direct
-                <code>--gcp-auth</code> CLI execution and reproducible evaluation suites.
-              </li>
-            </ul>
           </div>
         </div>
       </div>
