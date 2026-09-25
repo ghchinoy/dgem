@@ -20,8 +20,8 @@ const SCRIPT_CUES: Record<number, ScriptCue> = {
   },
   3: {
     title: '🎙️ Part 3 (1:45–2:30) — Invariant Decision Calibration (IDC) & The Entropy Gate',
-    text: '"How do we know when to trust a fast zero-shot decision? Raw confidence alone can be tricked by First-Choice Favoritism (Option A bias) or fragile wording. With Invariant Decision Calibration (IDC), dgem zeroes the scale against a blank input and asks the question both forward [A→C] and backward [C→A] in the exact same 490ms pass. Click Step 4 (Framing / Bias Trap) and toggle the IDC Calibration Lens to watch it catch a false-green guess automatically."',
-    hint: '👉 Presenter Action: Click Steps 1 → 2 → 3 → 4 ("Framing / Bias Trap"), toggle "⚖️ IDC Calibrated" ON/OFF, or click "📖 Plain-English Glossary" to explain the terms without ML jargon.',
+    text: '"How do we know when to trust a fast zero-shot decision? Raw confidence alone can be tricked by First-Choice Favoritism (Option A bias): on a borderline question it can make a coin flip look certain. With Invariant Decision Calibration (IDC), dgem zeroes the scale against a blank input and reads the options both forward [A→C] and backward [C→A] in the same forward pass. Click Step 4 (Order / Bias Trap) and toggle the IDC Calibration Lens to see, in this illustration, how it flags a false-green guess. Early measured results are promising but small, and the mirror does not catch every order flip."',
+    hint: '👉 Presenter Action: Click Steps 1 → 2 → 3 → 4 ("Order / Bias Trap"), toggle "⚖️ IDC Calibrated" ON/OFF, or click "📖 Plain-English Glossary" to explain the terms without ML jargon.',
   },
   4: {
     title: '🎙️ Part 4 (2:30–3:05) — Fast Decision Model as a Prompt Injection Safety Gate',
@@ -897,7 +897,7 @@ export class DgemConceptVisualizer extends LitElement {
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">Three Generations of Classification</h2>
-            <span class="pill pill-emerald">Zero-Shot + Calibrated</span>
+            <span class="pill pill-emerald">Zero-Shot + Per-Field Uncertainty</span>
           </div>
 
           <div class="gen-stack">
@@ -1197,7 +1197,7 @@ export class DgemConceptVisualizer extends LitElement {
               <span style="color: var(--viz-text-secondary); margin-left: 0.25rem;">
                 ${this.idcCalibrated
                   ? 'ON — Zeroes Option-A bias ("Tare") + checks Forward [A→C] vs. Reverse [C→A] in 1 pass'
-                  : 'OFF — Naive single-slot readout (vulnerable to Option-A bias & framing flips)'}
+                  : 'OFF — Naive single-slot readout (vulnerable to Option-A bias & order flips)'}
               </span>
             </div>
             <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
@@ -1216,6 +1216,13 @@ export class DgemConceptVisualizer extends LitElement {
                 ⚖️ IDC Calibrated (ON)
               </button>
             </div>
+          </div>
+
+          <div style="font-size: 0.72rem; color: var(--viz-text-muted); margin: -0.35rem 0 0.7rem 0;">
+            ℹ️ <strong>Illustrative simulation:</strong> the tickets, probabilities and TVD gate below are made up to
+            show the mechanism. For measured results (small samples, including cases the mirror misses), see
+            <em>Confidence Beyond Shannon (IDC)</em> in the docs. IDC is CLI-only today (<code>--null-prior-debias</code>,
+            <code>--dual-mirror</code>); live Studio runs do not apply it yet.
           </div>
 
           <div class="preset-row" style="grid-template-columns: repeat(4, 1fr);">
@@ -1260,7 +1267,7 @@ export class DgemConceptVisualizer extends LitElement {
 
           <div style="background: var(--viz-bg-elevated); padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid var(--viz-border-strong);">
             <label style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">
-              <span>${isFramingTrap ? 'Step 4 Trap: Wording / Order Sensitivity + Option-A Bias' : 'Or Drag Signal Conflict Slider Smoothly:'}</span>
+              <span>${isFramingTrap ? 'Step 4 Trap: Order Sensitivity + Option-A Bias' : 'Or Drag Signal Conflict Slider Smoothly:'}</span>
               <span class="mono">${isFramingTrap ? `Mirror TVD = ${mirrorTVD.toFixed(2)}` : `${this.conflictVal}% Conflict`}</span>
             </label>
             <input
@@ -1314,7 +1321,7 @@ export class DgemConceptVisualizer extends LitElement {
             </div>
             <div class="entropy-meter-track">
               <div class="threshold-marker">
-                <span class="threshold-label">IDC Gate: H ≥ 0.35 or TVD ≥ 0.25</span>
+                <span class="threshold-label">Example gate: H ≥ 0.35 or TVD ≥ 0.25</span>
               </div>
               <div class="entropy-needle" style="left: ${pctNeedle}%;"></div>
             </div>
@@ -1355,9 +1362,9 @@ export class DgemConceptVisualizer extends LitElement {
             </div>
             <p style="margin: 0.35rem 0 0 0; font-size: 0.82rem; color: var(--viz-text-secondary);">
               ${isFramingTrap && !this.idcCalibrated
-                ? html`Without IDC, the model's natural preference for <strong>Option A</strong> inflates <code>Technical</code> to <code>93.6%</code> (<code>H = 0.24 nats</code>), letting an order-sensitive guess slip through. <strong>Click "⚖️ IDC Calibrated (ON)" on the left</strong> to see how Taring + Mirror Slots catch it in the same 490 ms pass!`
+                ? html`Without IDC, the model's natural preference for <strong>Option A</strong> inflates <code>Technical</code> to <code>93.6%</code> (<code>H = 0.24 nats</code>), letting an order-sensitive guess slip through. <strong>Click "⚖️ IDC Calibrated (ON)" on the left</strong> to see how Taring + Mirror Slots can catch it in the same forward pass. (The mirror only tests the reversed order, so it can miss other order flips.)`
                 : isLowEntropy
-                  ? html`Both forward <code>[A→C]</code> and reversed <code>[C→A]</code> slots agree after zeroing out Option-A bias. Ticket routes immediately in <strong>490 ms</strong> with <strong>100% calibrated reliability</strong>.`
+                  ? html`Both forward <code>[A→C]</code> and reversed <code>[C→A]</code> slots agree after zeroing out Option-A bias. Ticket routes immediately in one pass, with no escalation.`
                   : html`Stage 1 locks certain slots (<code>urgent="yes"</code>) and escalates <code>department</code> to <strong>Gemini 3.8 Flash</strong> with de-biased IDC prior odds (<code>Technical: ${(pTech * 100).toFixed(1)}%, Billing: ${(pBill * 100).toFixed(1)}%</code>).`}
             </p>
           </div>
@@ -1367,13 +1374,13 @@ export class DgemConceptVisualizer extends LitElement {
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
               <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-brand-bright);">1. Tare the Scale</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
-                Subtracts <strong>Option-A favoritism</strong> measured on a blank prompt (-90% calibration error).
+                Divides out <strong>Option-A favoritism</strong> measured on a blank prompt. Needs no labeled data.
               </div>
             </div>
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
               <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-emerald);">2. Ask Both Ways (O(1))</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
-                Reads <code>[A→C]</code> &amp; <code>[C→A]</code> in the <strong>same 490ms pass</strong> (<code>0ms</code> extra latency) to catch flips.
+                Reads <code>[A→C]</code> &amp; <code>[C→A]</code> in the <strong>same forward pass</strong> (no second GPU call) to flag order-dependent answers.
               </div>
             </div>
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
@@ -1388,20 +1395,20 @@ export class DgemConceptVisualizer extends LitElement {
             <svg viewBox="0 0 600 215" style="width: 100%; height: auto; background: var(--viz-bg-canvas); border-radius: 10px; border: 1px solid var(--viz-border-subtle); padding: 8px;">
               <rect x="16" y="64" width="180" height="88" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
               <text x="106" y="91" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="11.5">Stage 1: DiffusionGemma + IDC</text>
-              <text x="106" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="10.5">1-Pass Canvas (490ms · 0ms overhead)</text>
+              <text x="106" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="10.5">1-Pass Canvas (no extra pass)</text>
               <text x="106" y="127" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• Null-Prior Tare (p̃ₖ ∝ pₖ / p₀)</text>
               <text x="106" y="142" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• Mirror Slots [A→C] + [C→A]</text>
 
               <path d="M 196 92 C 255 92, 265 42, 335 42" fill="none" stroke="#10b981" stroke-width="${isLowEntropy ? '4' : '2'}" opacity="${isLowEntropy ? '1' : '0.4'}" />
               <rect x="335" y="14" width="248" height="58" rx="8" fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="2" opacity="${isLowEntropy ? '1' : '0.5'}" />
-              <text x="459" y="36" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="11.5">Fast 1-Pass Exit (100% @ &gt;90% Conf)</text>
+              <text x="459" y="36" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="11.5">Fast 1-Pass Exit</text>
               <text x="459" y="54" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">H &lt; 0.35 &amp; Mirror TVD &lt; 0.25 → Done</text>
 
               <path d="M 196 125 C 255 125, 265 168, 335 168" fill="none" stroke="#f59e0b" stroke-width="${isLowEntropy ? '2' : '4'}" opacity="${isLowEntropy ? '0.35' : '1'}" />
               <rect x="335" y="135" width="248" height="66" rx="8" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2" opacity="${isLowEntropy ? '0.45' : '1'}" />
               <text x="459" y="157" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="11.5">Stage 2: Gemini 3.8 Flash</text>
               <text x="459" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">H ≥ 0.35 or Mirror TVD ≥ 0.25</text>
-              <text x="459" y="190" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="9.8">➔ 98.0% Calibrated Cascade Accuracy</text>
+              <text x="459" y="190" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="9.8">EXP-05b entropy gate: 88% → 98% (n=50)</text>
             </svg>
           `}
         </div>
@@ -1561,11 +1568,11 @@ export class DgemConceptVisualizer extends LitElement {
         id: 'idc',
         badge: '⚖️ Core Framework',
         title: 'IDC (Invariant Decision Calibration)',
-        humanName: 'The "No-Matter-How-You-Ask-It" Truth Filter',
-        jargon: 'Multi-Stem Invariant Decision Calibration with Null-Prior De-Biasing & Cross-Stem TVD (EXP-14)',
+        humanName: 'The "Does-the-Order-Matter?" Check',
+        jargon: 'Invariant Decision Calibration: Null-Prior De-Biasing + Dual-Mirror Canvas (Mirror TVD) + optional Temperature Scaling (EXP-13)',
         analogy:
-          'Imagine interviewing a witness. If they give a confident answer, you check two things: (1) Are they just agreeing with the first suggestion you offered? and (2) Do they give the exact same answer if you ask the question in reverse order? IDC does both checks simultaneously inside one 490ms GPU pass.',
-        impact: 'Guarantees that >90%-confidence decisions are 100% accurate (31/31) and catches fragile guesses before they reach production.',
+          'Imagine interviewing a witness. If they give a confident answer, you check two things: (1) Are they just agreeing with the first suggestion you offered? and (2) Do they give the same answer if you list the choices in reverse order? IDC does both checks inside one GPU pass.',
+        impact: 'Flags answers whose confidence depends on list order. Early results are promising but small (16–50 items): de-biasing gave 34/34 correct high-confidence answers on the calibration suite; the mirror caught one 99.9%-"certain" toss-up and missed another.',
       },
       {
         id: 'entropy',
@@ -1575,7 +1582,7 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'H = -∑ pₖ ln(pₖ) measured in natural units of information (nats) or normalized H̃ = H / ln(K)',
         analogy:
           'When a model is 99% sure of one answer, its Hesitation Score (Entropy) is 0.01 (Green — ship it immediately). When it is torn 55% vs. 45% between Technical and Billing, its Hesitation Score jumps past 0.35 (Amber — pause and ask a larger model like Gemini 3.8 Flash).',
-        impact: 'Lets DiffusionGemma handle 72% of clear traffic in 490ms while escalating only the 28% of genuinely tricky edge cases.',
+        impact: 'On a 50-item public suite, escalating only high-entropy items to Gemini (28–34% of items) raised accuracy from 88% to 94–98%.',
       },
       {
         id: 'primacy',
@@ -1584,7 +1591,7 @@ export class DgemConceptVisualizer extends LitElement {
         humanName: 'First-Choice Favoritism on Multiple-Choice Tests',
         jargon: 'Content-Free Label-Token Positional Prior p₀(k) where P(slot = "A" | ∅) ≫ 1/K',
         analogy:
-          'When humans guess on a multiple-choice test, they pick "A" or "C" disproportionately. Language models do the exact same thing: even if you feed an empty blank string, raw models put up to 88% of their weight on Option A! Without correction, Option A always looks artificially confident.',
+          'Like voters who tick the first name on a ballot, language models lean toward the first option. Given a blank question with meaningless options, DiffusionGemma still picks Option A 88% of the time (2 options), 78% (3) or 49% (4). On borderline questions this can make Option A look artificially confident.',
         impact: 'Explains why naive single-pass classifiers frequently over-predict the first category listed in a JSON schema.',
       },
       {
@@ -1595,17 +1602,17 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'Contextual Calibration via Null-Context Prior Division: p̃ₖ = (pₖ / p₀(k)^α) / Z',
         analogy:
           'Before you weigh 200g of flour on a kitchen scale, you place the empty mixing bowl on the scale and press "TARE" (Zero) so you don’t weigh the bowl. dgem weighs the policy template on a blank input first (measuring the "bowl weight" of Option A, B, C) and subtracts it before scoring your real ticket.',
-        impact: 'Cuts calibration error (Brier score) by up to 90.2% on hard security & guardrails suites with zero model retraining.',
+        impact: 'Improved the Brier score from 0.186 to 0.149 on the 50-item calibration suite with no labeled data. It removes the average first-choice habit, not every order effect.',
       },
       {
         id: 'framing',
-        badge: '🔄 Order & Wording',
-        title: 'Framing / Order Flips & Mirror TVD',
+        badge: '🔄 Order',
+        title: 'Order Flips & Mirror TVD',
         humanName: 'Asking Forward [A→D] and Backward [D→A] at the Exact Same Time',
         jargon: 'O(1) Dual-Mirror Canvas Slot Readout & Cross-Stem Total Variation Distance (TVD_cross = ½ ∑ |p_fwd - p_rev|)',
         analogy:
-          'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma resolves an entire canvas of slots in parallel in one 490ms pass, dgem places a Forward slot [A, B, C] and a Reversed/Skeptical slot [C, B, A] side-by-side at 0ms extra GPU latency. If the two answers disagree by ≥ 25% (TVD ≥ 0.25), the model is guessing!',
-        impact: 'Produces a 66.8× spike on ambiguous human-disagreement items and catches 100% of wording-flip traps.',
+          'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma fills every slot on the canvas at once, dgem can place a Forward slot [A, B, C] and a Reversed slot [C, B, A] side by side without a second forward pass. If the two readings disagree a lot (large TVD), the confidence depends on how the list was printed.',
+        impact: 'Caught a toss-up the single reading called 99.9% certain (TVD 0.26), but missed another: it only tests the reversed order, and the two slots can see each other. It does not check rewording. CLI-only for now.',
       },
       {
         id: 'brier',
@@ -1615,7 +1622,7 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'Multi-Class Brier Score (1/N ∑ ∑ (pᵢₖ - yᵢₖ)²) & 10-Bin Expected Calibration Error (ECE)',
         analogy:
           'If your weather app says "90% chance of rain" on 10 different days, it should actually rain on 9 of those 10 days—not 5 out of 10 (overconfident) and not 10 out of 10 (underconfident). Brier Score and ECE measure whether a model’s confidence percentages can be trusted as real-world probabilities.',
-        impact: 'Allows engineering teams to set strict SLA thresholds (e.g., auto-approve when calibrated confidence ≥ 90%) with mathematical confidence.',
+        impact: 'Tells you whether a rule like "auto-approve at ≥ 90% confidence" is safe. Measure it on your own labeled data; 10-bin ECE needs roughly 200+ items to be reliable.',
       },
     ];
 

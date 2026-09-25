@@ -57,7 +57,7 @@ const PRESETS: PresetSample[] = [
     title: 'Hallucinated Financial Figure',
     badge: 'RAG Grounding · AggreFact',
     template: 'grounding_claim_check',
-    description: 'Verifies whether a synthesized claim is strictly supported by the source document with calibrated entropy.',
+    description: 'Verifies whether a synthesized claim is strictly supported by the source document, with per-slot entropy.',
     variables: {
       document:
         'In Q3 2026, Acme Cloud reported $142.4M in ARR (up 28% YoY) with net dollar retention of 118% across 640 enterprise customers.',
@@ -121,7 +121,7 @@ const MCP_TOOLS: MCPToolSpec[] = [
     name: 'decide_policy',
     badge: 'Policy-as-Template',
     description:
-      'Executes any of the 24 embedded .json.tmpl Decision Policies in a single discrete-diffusion forward pass with calibrated logprobs and Shannon entropy H.',
+      'Executes any of the 24 embedded .json.tmpl Decision Policies in a single discrete-diffusion forward pass with per-slot logprobs and Shannon entropy H.',
     defaultArgs: {
       template: 'support_triage',
       variables: {
@@ -2160,7 +2160,7 @@ export class DgemStudio extends LitElement {
                     <div style="font-size:0.8rem">
                       Select any preset on the left and click
                       <strong>Evaluate Decision Policy</strong> to inspect joint slot probabilities and
-                      calibrated Shannon entropy (H).
+                      per-slot Shannon entropy (H).
                     </div>
                   </div>
                 `
@@ -2531,12 +2531,25 @@ export class DgemStudio extends LitElement {
       return catMatch && textMatch;
     });
 
-    // EXP-05 Empirical Cascade Curve simulation from benchmarks/results_calibration_cascade.json
+    // EXP-05 cascade curve computed from receipts (50 items): Stage 1 = results_calibration_cloudrun.json
+    // (entropy at T=1), Stage 2 = results_calibration_gemini38.json (standalone Gemini answers, no prior
+    // forwarding). At tau = 0.35 this reproduces results_calibration_cascade.json exactly (14 escalated, 47/50).
+    // Rows: [tau, escalatedOf50, correctOf50, meanLatencyMs]
+    const CASCADE_CURVE: ReadonlyArray<readonly [number, number, number, number]> = [
+      [0.05, 30, 49, 2707], [0.1, 25, 49, 2419], [0.15, 20, 49, 2202], [0.2, 17, 48, 1964],
+      [0.25, 14, 47, 1774], [0.3, 14, 47, 1774], [0.35, 14, 47, 1774], [0.4, 14, 47, 1774],
+      [0.45, 12, 46, 1650], [0.5, 10, 45, 1452], [0.55, 9, 46, 1333], [0.6, 7, 46, 1196],
+      [0.65, 6, 46, 1126], [0.7, 6, 46, 1126], [0.75, 5, 46, 1057], [0.8, 2, 45, 833],
+      [0.85, 1, 44, 750], [0.9, 1, 44, 750],
+    ];
     const tau = this.cascadeTau;
-    const escalatePct = Math.max(6, Math.min(88, Math.round(62 * Math.exp(-2.25 * tau))));
+    const curveRow =
+      CASCADE_CURVE.find((r) => Math.abs(r[0] - tau) < 0.001) ||
+      CASCADE_CURVE.reduce((best, r) => (Math.abs(r[0] - tau) < Math.abs(best[0] - tau) ? r : best));
+    const escalatePct = Math.round((curveRow[1] / 50) * 100);
     const stage1ExitPct = 100 - escalatePct;
-    const blendedAccuracy = (84.0 + 10.0 * (1 - Math.abs(tau - 0.35))).toFixed(1);
-    const blendedLatencyMs = Math.round(712 + (escalatePct / 100) * 1450);
+    const blendedAccuracy = ((curveRow[2] / 50) * 100).toFixed(1);
+    const blendedLatencyMs = curveRow[3];
 
     const activeInspected =
       (this.inspectedTemplate &&
@@ -2554,7 +2567,7 @@ export class DgemStudio extends LitElement {
             <span class="material-symbols-outlined">alt_route</span>
             EXP-05 Entropy-Gated Escalation Cascade Simulator (Stage 1 dgemma → Stage 2 Vertex Gemini)
           </h2>
-          <span class="pill tabular">Receipt: benchmarks/results_calibration_cascade.json</span>
+          <span class="pill tabular">Receipts: results_calibration_cloudrun.json + results_calibration_gemini38.json (n=50)</span>
         </div>
         <div class="card-body">
           <div class="workspace-grid">
@@ -2578,8 +2591,11 @@ export class DgemStudio extends LitElement {
                 <strong>Stage 1 (<code>dgemma</code> on Cloud Run GPU, 712 ms)</strong>. Only high-entropy
                 ambiguous items (H ≥ τ) escalate to
                 <strong>Stage 2 (<code>Vertex AI gemini-3.8-flash</code>)</strong>. At τ = 0.35 nats,
-                72% of traffic exits early at Stage 1 while overall accuracy jumps from
-                <strong>84.0% → 94.0%</strong>.
+                72% of items exit early at Stage 1 and accuracy goes from
+                <strong>88.0% → 94.0%</strong> (47/50). Values come from the committed 50-item receipts
+                (Stage 1 alone: 44/50; Gemini alone: 49/50), so small differences are only one or two
+                items. The raw-nats threshold is not size-normalized and does not use IDC order-bias
+                checks; see <em>Confidence Beyond Shannon (IDC)</em> in the docs.
               </p>
             </div>
 

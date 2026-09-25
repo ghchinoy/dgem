@@ -253,8 +253,9 @@ export class DgemAboutModal extends LitElement {
               <strong>DiffusionGemma (<code>dgemma</code>)</strong> is a Zero-Shot Decision Model that
               evaluates structured multi-slot policies (<code>.json.tmpl</code>) jointly in
               <strong>O(1) forward passes (~490ms)</strong> on a bidirectional discrete-diffusion canvas,
-              returning calibrated slot probabilities and a hesitation score
-              (<strong>Shannon entropy H</strong>) without conversational token overhead.
+              returning per-slot probabilities and a hesitation score
+              (<strong>Shannon entropy H</strong>) without conversational token overhead. These scores are a
+              strong uncertainty signal, not automatically calibrated probabilities for your traffic.
             </p>
 
             <div class="glossary-box">
@@ -265,11 +266,11 @@ export class DgemAboutModal extends LitElement {
               <div class="glossary-grid">
                 <div class="glossary-card">
                   <strong>⚖️ IDC (Invariant Decision Calibration)</strong>
-                  The "No-Matter-How-You-Ask-It" Truth Filter: zeroes out first-choice bias and checks forward + reverse option order in one 490ms pass.
+                  The "Does-the-Order-Matter?" check: removes the model's first-choice habit and reads the options forward and reversed in the same GPU pass. CLI-only today (<code>--null-prior-debias</code>, <code>--dual-mirror</code>).
                 </div>
                 <div class="glossary-card">
                   <strong>🌡️ Shannon Entropy (H in nats)</strong>
-                  The AI Hesitation Meter: <code>0.00</code> = 100% sure (ship immediately); <code>≥ 0.35</code> = torn between choices (escalate to Gemini 3.8 Flash).
+                  The AI Hesitation Meter: near <code>0</code> = one answer dominates; <code>≥ 0.35</code> = torn between choices (escalate to Gemini 3.8 Flash). Option order can hide hesitation, which IDC checks for.
                 </div>
                 <div class="glossary-card">
                   <strong>🅰️ Primacy Bias ("Box A Bias")</strong>
@@ -277,15 +278,15 @@ export class DgemAboutModal extends LitElement {
                 </div>
                 <div class="glossary-card">
                   <strong>🥣 Taring the Scale (Null-Prior)</strong>
-                  Zeroing a kitchen scale with the empty bowl first: subtracts Option-A bias measured on a blank input (-90% error).
+                  Zeroing a kitchen scale with the empty bowl first: divides out the Option-A habit measured on a blank input. Needs no labeled data.
                 </div>
                 <div class="glossary-card">
-                  <strong>🔄 Framing / Order Flips (Mirror TVD)</strong>
-                  Asks <code>[A→D]</code> and <code>[D→A]</code> simultaneously at <code>0ms</code> extra wait; flags any answer that flips (<code>TVD ≥ 0.25</code>).
+                  <strong>🔄 Order Flips (Mirror TVD)</strong>
+                  Reads <code>[A→D]</code> and <code>[D→A]</code> in the same pass (no second GPU call); a large gap means the answer depends on list order. It checks only the reversed order, so it can miss other flips.
                 </div>
                 <div class="glossary-card">
                   <strong>🌦️ Brier Calibration &amp; ECE</strong>
-                  Weather-Forecaster Honesty: when the model says 90% confidence, it actually gets the right answer 9+ times out of 10.
+                  Weather-Forecaster Honesty: measures whether "90% confident" really means right about 9 times out of 10. Check it on your own labeled data.
                 </div>
               </div>
               <button class="glossary-btn" @click=${this.openGlossaryTab}>
