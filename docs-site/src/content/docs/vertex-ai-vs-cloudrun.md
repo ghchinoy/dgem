@@ -97,7 +97,7 @@ We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/ev
 | **`vertex` (Strict Pin)** | Routes strictly to **Vertex AI (`/invoke/*`)**. Never falls back to Cloud Run. | **Pure Vertex AI Benchmarking** (`dgem bench`). |
 | **`cloudrun` (Strict Pin)** | Routes strictly to **Serverless Cloud Run GPU (`dgemma`)**. | **Pure Cloud Run Benchmarking** & scale-to-zero testing. |
 
-### A. In the Web Studio UI (`https://dgemma.aaie.cloud`)
+### A. In the Web Studio UI (`https://<your-dgem-gateway>`)
 1. Click the **`Vertex First (Auto)` / `Cloud Run GPU` / `Vertex AI (/invoke/*)`** selector in the top header bar to open the solid opaque Backend Target panel.
 2. Choose **Vertex First · Cloud Run Failover (Recommended)**, **Cloud Run GPU (Strict)**, or **Vertex AI Strict (`/invoke/*`)**.
 3. The panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated` · `4217256562927861760`)** with 1-click **Provision Vertex GPU (1× L4)** and **Teardown Replica ($0/hr)** buttons.
@@ -107,7 +107,7 @@ Pass `X-DGem-Backend: vertex_first | vertex | cloudrun` (or query parameter `?ba
 
 ```bash
 # 1. Policy-as-Template Decision (/api/decide)
-curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
+curl -sS "https://<your-dgem-gateway>/api/decide/support_triage" \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -H "X-DGem-Backend: vertex_first" \
@@ -118,7 +118,7 @@ curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
   }' | jq .
 
 # 2. Direct SystemOne Ad-Hoc Schema Evaluation (/v1/systemone)
-curl -sS "https://dgemma.aaie.cloud/v1/systemone?backend=vertex" \
+curl -sS "https://<your-dgem-gateway>/v1/systemone?backend=vertex" \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -d '{
@@ -130,7 +130,7 @@ curl -sS "https://dgemma.aaie.cloud/v1/systemone?backend=vertex" \
   }' | jq .
 ```
 
-### C. Via MCP Server (`https://dgemma.aaie.cloud/mcp`)
+### C. Via MCP Server (`https://<your-dgem-gateway>/mcp`)
 All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`** — the MCP equivalent of `/v1/systemone`, and **`locate_bounding_boxes`**) accept an optional `backend` parameter (`"vertex_first"` | `"vertex"` | `"cloudrun"`):
 
 ```json

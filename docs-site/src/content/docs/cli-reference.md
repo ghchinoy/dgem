@@ -67,7 +67,7 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `mcp`, `bench`, `bench-calibra
 
 ## 3. HTTP Gateway Endpoints (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)
 
-Every inference endpoint on `dgem serve` (`https://dgemma.aaie.cloud`) accepts backend selection via HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun`, query parameter `?backend=vertex_first`, or JSON body field `"backend": "vertex_first"`, and returns the **`X-DGem-Backend-Used: vertex | cloudrun`** response header.
+Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts backend selection via HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun`, query parameter `?backend=vertex_first`, or JSON body field `"backend": "vertex_first"`, and returns the **`X-DGem-Backend-Used: vertex | cloudrun`** response header.
 
 | Route | Method | Description |
 | :--- | :---: | :--- |

@@ -6,7 +6,7 @@ description: Step-by-step guide for designing .json.tmpl decision policies, sele
 # Experiment Authoring Guide & Backend Target Selection
 
 > **Target Audience**: Applied AI Engineers, Researchers & Domain Experts (`group:aaie-decision-model@google.com`)  
-> **Live IAP-Protected Studio & API Gateway**: **`https://dgemma.aaie.cloud`** *(or `https://dgemma-gateway-882920967572.us-central1.run.app`)*
+> **Studio & API Gateway**: run `./bin/dgem serve --port 8090` locally (`http://localhost:8090`) or deploy your own gateway (`./scripts/deploy_cloudrun_gateway.sh`). Examples below use `https://<your-dgem-gateway>` as a placeholder for your gateway URL.
 
 This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)** decision schemas, select the optimal GPU serving backend (**`vertex_first` vs. `vertex` vs. `cloudrun`**), and configure **Stage 2 Gemini Cascades (`gemini-3.8-flash` default)** across the Web Studio, HTTP Gateway API, MCP Server, and `dgem` CLI.
 
@@ -14,7 +14,7 @@ This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)*
 
 ## 1. Choosing an Inference Backend Target & Recommended Configuration (`vertex_first` vs. `vertex` vs. `cloudrun`)
 
-`dgem` and `dgemma-gateway` (`https://dgemma.aaie.cloud`) support routing any policy template, ad-hoc `/v1/systemone` query, or batch evaluation across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown and empirical benchmark receipts, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**.
+`dgem` and `dgemma-gateway` (`https://<your-dgem-gateway>`) support routing any policy template, ad-hoc `/v1/systemone` query, or batch evaluation across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown and empirical benchmark receipts, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**.
 
 ### Backend Target Decision Matrix
 
@@ -28,7 +28,7 @@ This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)*
 
 ### Selecting the Backend Across All 4 Surfaces
 
-#### 1. Web Studio (`https://dgemma.aaie.cloud`)
+#### 1. Web Studio (`https://<your-dgem-gateway>`)
 - Click the topbar **Backend Target** selector to choose between:
   - **`Vertex First (Auto)`** *(Recommended Default)*
   - **`Cloud Run GPU (Strict)`**
@@ -44,7 +44,7 @@ This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)*
 
 ```bash
 # Route to Vertex First (Auto-Failover) via /api/decide:
-curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
+curl -sS "https://<your-dgem-gateway>/api/decide/support_triage" \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -H "X-DGem-Backend: vertex_first" \
@@ -56,7 +56,7 @@ curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
   }' | jq .
 ```
 
-#### 3. MCP Server (`https://dgemma.aaie.cloud/mcp` or `dgem mcp`)
+#### 3. MCP Server (`https://<your-dgem-gateway>/mcp` or `dgem mcp`)
 - Pass `"backend": "vertex_first" | "vertex" | "cloudrun"` (and optional `"vertex_url"`) in the arguments to **`decide_policy`**, **`decide_custom_questions`**, and **`locate_bounding_boxes`**:
 
 ```json
@@ -75,7 +75,7 @@ curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
 ```
 
 #### 4. CLI (`dgem`)
-- Pass `--vertex-url 4217256562927861760 --gcp-auth` to point any `dgem` subcommand (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-bbox`, `bench-jev`) directly at the Vertex AI Dedicated Endpoint `/invoke/v1` route, or pass `-u https://dgemma.aaie.cloud/v1 --gcp-auth` to route via the Cloud Run Gateway:
+- Pass `--vertex-url 4217256562927861760 --gcp-auth` to point any `dgem` subcommand (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-bbox`, `bench-jev`) directly at the Vertex AI Dedicated Endpoint `/invoke/v1` route, or pass `-u https://<your-dgem-gateway>/v1 --gcp-auth` to route via the Cloud Run Gateway:
 
 ```bash
 # Direct Vertex AI Dedicated Endpoint (/invoke/v1):
@@ -84,7 +84,7 @@ curl -sS "https://dgemma.aaie.cloud/api/decide/support_triage" \
   -v 'ticket=Charged twice on invoice #9481' --stats
 
 # Via Cloud Run Gateway (uses vertex_first by default):
-./bin/dgem decide -u "https://dgemma.aaie.cloud/v1" --gcp-auth \
+./bin/dgem decide -u "https://<your-dgem-gateway>/v1" --gcp-auth \
   -t templates/support_triage.json.tmpl \
   -v 'ticket=Charged twice on invoice #9481' --stats
 ```
@@ -107,7 +107,7 @@ When Stage 1 (`DiffusionGemma`) encounters an ambiguous input (where restricted-
 ### Example: Calling `/api/decide` and MCP with `cascade_mode: "entropy"`
 
 ```bash
-curl -sS "https://dgemma.aaie.cloud/api/decide/calibration/nli_calibration" \
+curl -sS "https://<your-dgem-gateway>/api/decide/calibration/nli_calibration" \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -H "X-DGem-Backend: vertex_first" \

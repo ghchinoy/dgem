@@ -97,18 +97,18 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 
 ### 3.1 Configuring `dgem mcp` (Automatic ADC Auth) in `Antigravity` (`~/.gemini/config/mcp_config.json`), `Gemini CLI` (`~/.gemini/settings.json`), or `Claude Desktop`
 
-`dgem mcp` automatically reads **Application Default Credentials (ADC: `~/.config/gcloud/application_default_credentials.json`)** in pure Go to mint and cache both OIDC `id_token`s (accepted by Cloud Run IAP `programmaticClients` on `https://dgemma.aaie.cloud`) and OAuth2 `access_token`s (for Vertex AI Dedicated Endpoint `4217256562927861760`).
+`dgem mcp` automatically reads **Application Default Credentials (ADC: `~/.config/gcloud/application_default_credentials.json`)** in pure Go to mint and cache both OIDC `id_token`s (accepted by Cloud Run IAP `programmaticClients` on your gateway) and OAuth2 `access_token`s (for Vertex AI Dedicated Endpoint `4217256562927861760`).
 
-#### Option A: Connect to the Hosted `https://dgemma.aaie.cloud/mcp` Gateway via ADC (`--remote`)
+#### Option A: Connect to a Remote `dgem serve` Gateway via ADC (`--remote`)
 ```json
 {
   "mcpServers": {
     "dgem-remote": {
-      "command": "/Users/ghchinoy/projects/dgem/bin/dgem",
+      "command": "/path/to/dgem/bin/dgem",
       "args": [
         "mcp",
         "--remote",
-        "https://dgemma.aaie.cloud/mcp"
+        "https://<your-dgem-gateway>/mcp"
       ]
     }
   }
@@ -120,7 +120,7 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 {
   "mcpServers": {
     "dgem": {
-      "command": "/Users/ghchinoy/projects/dgem/bin/dgem",
+      "command": "/path/to/dgem/bin/dgem",
       "args": [
         "mcp"
       ]
@@ -155,7 +155,7 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 
 ## 4. HTTP Gateway REST API Reference (`dgem serve`)
 
-Any service or script can query `dgem serve` (`https://dgemma.aaie.cloud`) using standard HTTP/JSON. Pass `X-DGem-Backend: vertex_first | vertex | cloudrun` (or `?backend=vertex_first` / JSON `"backend": "vertex_first"`) to select the GPU target; every response returns `X-DGem-Backend-Used: vertex | cloudrun`.
+Any service or script can query `dgem serve` (`https://<your-dgem-gateway>`) using standard HTTP/JSON. Pass `X-DGem-Backend: vertex_first | vertex | cloudrun` (or `?backend=vertex_first` / JSON `"backend": "vertex_first"`) to select the GPU target; every response returns `X-DGem-Backend-Used: vertex | cloudrun`.
 
 | Endpoint | Method | Description |
 | :--- | :---: | :--- |

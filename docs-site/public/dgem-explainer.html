@@ -124,7 +124,6 @@
   <div class="status-line">
     <span class="pill">Base: DiffusionGemma 26B-A4B (frozen weights)</span>
     <span class="pill">Method: Zero-shot canvas readout + Invariant Decision Calibration</span>
-    <span class="pill live">Decision Studio: <a href="https://dgemma.aaie.cloud/" style="color:inherit;border-bottom-color:currentColor">dgemma.aaie.cloud</a></span>
     <span class="pill live">Scores: 78.84 JevBench Composite &middot; 98.89 Decision Index &middot; 98.0% Cascade</span>
   </div>
 </header>
@@ -149,7 +148,7 @@
   <div class="sec-head"><span class="num">00</span><h2>Updates</h2></div>
   <ul class="plain updates">
     <li><span class="d">23 Sep 2026</span>Shipped Invariant Decision Calibration (<code>EXP-13</code>) in the CLI (<code>dgem decide</code>, <code>dgem bench-calibration</code>, <code>dgem bench-decision-index</code>). On the 50-case suite, null-prior de-biasing gave 90.0% accuracy (vs 88.0%) and 34 of 34 correct answers above 0.90 probability (separate runs, small sample). The reversed-ballot check caught one hidden toss-up and missed another (section 7). <em>Corrected 25 Sep 2026: earlier figures (31 of 31, 0% flips, 66.8&times;) did not match the receipts.</em></li>
-    <li><span class="d">23 Sep 2026</span>Launched <a href="https://dgemma.aaie.cloud/">Decision Studio</a> (<code>https://dgemma.aaie.cloud/</code>) and added OpenTelemetry tracing (<code>cmd/otel.go</code>) with live slot probability bars, calibration plots, and escalation views (section 10).</li>
+    <li><span class="d">23 Sep 2026</span>Launched Decision Studio (<code>dgem serve</code>) and added OpenTelemetry tracing (<code>cmd/otel.go</code>) with live slot probability bars, calibration plots, and escalation views (section 10).</li>
     <li><span class="d">22 Sep 2026</span>Scored the 5-Area Decision Index suite (<code>EXP-12</code>) through our wide-canvas and 2-stage bracket adapter: 100% coverage on a 22-request panel (one request per benchmark, including 32-question requests and 151-option lists), lifting the index from 76.67 to 98.89 (section 7).</li>
     <li><span class="d">22 Sep 2026</span>Ran the 231 public JevBench v1.3.1 items (<code>EXP-11</code>) and 50-case guardrail suite : the upstream DiffusionGemma (djev) reference scores 84.0% (194 of 231) with 35 of 36 standard paraphrase pairs answered consistently; an entropy cascade to Gemini reaches 92.2% (213 of 231, 28% escalated) (section 7).</li>
     <li><span class="d">21 Sep 2026</span>Verified single-pass passage reranking (<code>EXP-10</code>, 0.9265 nDCG@10 and 100% prompt-injection quarantine) and SigLIP bounding-box readout (<code>EXP-09</code>, 0.377 mean IoU with softmax expectation vs 0.290 argmax on 12 live cases, section 1).</li>
@@ -188,7 +187,7 @@
 
 <section id="try">
   <div class="sec-head"><span class="num">02</span><h2>Try it</h2></div>
-  <p>The quickest way is Decision Studio: <a href="https://dgemma.aaie.cloud/">dgemma.aaie.cloud</a>. It has a live editor for the state and policy templates, probability bars and entropy readouts for every slot on the canvas, reliability diagrams, and benchmark replay tabs across our evaluation suites.</p>
+  <p>The quickest way is Decision Studio: run <code>./bin/dgem serve --port 8090</code> and open <code>http://localhost:8090</code>. It has a live editor for the state and policy templates, probability bars and entropy readouts for every slot on the canvas, reliability diagrams, and benchmark replay tabs across our evaluation suites.</p>
   <p>From a shell, you can run <code>dgem</code> against a local Apple Silicon Metal server, a Cloud Run GPU service, or the compatible <code>POST /v1/systemone</code> HTTP route. Here is a CLI call using a template with dual-mirror and null-prior calibration turned on:</p>
 <pre><code>./bin/dgem decide \
   -u "https://dgemma-uc.a.run.app/v1" --gcp-auth \
@@ -377,7 +376,7 @@
     <li><strong>Cloud Run GPU container (<code>dgemma</code>).</strong> Built from <code>deploy/cloudrun/Dockerfile</code> and pushed to Artifact Registry (<code>us-central1-docker.pkg.dev/$PROJECT/dgem/dgemma:latest</code>). The 17.53 GiB weights live in GCS (<code>gs://dgem-weights-$PROJECT/dgemma/</code>) mounted via Cloud Storage FUSE with <code>--safetensors-load-strategy prefetch</code>.</li>
     <li><strong>vLLM nightly engine with Gemma 4 &amp; Triton patch.</strong> Runs vLLM commit <code>133b71e0be</code> on internal port 8000 with <code>--attention-backend TRITON_ATTN --enforce-eager --max-model-len 32768</code> and our <code>patch_vllm.py</code> hook so vision and text weights load cleanly.</li>
     <li><strong>Structured decision server &amp; Go gateway.</strong> <code>structured_server.py</code> listens on port 8080 and turns decision schemas into 256-token canvases. Above it, <code>dgem serve</code> and <code>dgem bench-decision-index --serve-systemone :8095</code> serve <code>POST /v1/decide</code> and <code>POST /v1/systemone</code> with wide-canvas batching, bracket tournaments, null-prior calibration, and OpenTelemetry spans.</li>
-    <li><strong>Decision Studio &amp; Astro docs site.</strong> Hosted at <a href="https://dgemma.aaie.cloud/">dgemma.aaie.cloud</a> (<code>studio/</code>), Decision Studio serves a browser UI for editing templates, viewing live slot probability bars, and inspecting benchmark receipts; <code>docs-site/</code> builds the full experiment ledger into a static site.</li>
+    <li><strong>Decision Studio &amp; Astro docs site.</strong> Embedded in <code>dgem serve</code> (<code>studio/</code>), Decision Studio serves a browser UI for editing templates, viewing live slot probability bars, and inspecting benchmark receipts; <code>docs-site/</code> builds the full experiment ledger into a static site.</li>
   </ul>
 </section>
 
@@ -398,7 +397,7 @@
   <table class="t">
     <thead><tr><th>I want to&hellip;</th><th>Start here</th></tr></thead>
     <tbody>
-      <tr><td>Try <code>dgem</code> interactively in the browser (Decision Studio)</td><td><a href="https://dgemma.aaie.cloud/">https://dgemma.aaie.cloud/</a></td></tr>
+      <tr><td>Try <code>dgem</code> interactively in the browser (Decision Studio)</td><td><code>./bin/dgem serve --port 8090</code> &rarr; <code>http://localhost:8090</code></td></tr>
       <tr><td>Understand why single-pass Shannon entropy is not enough and how IDC works</td><td><a href="../docs/confidence-beyond-shannon.md">docs/confidence-beyond-shannon.md</a></td></tr>
       <tr><td>Read the unified executive briefing with interactive architecture explorer</td><td><a href="dgem_benchmark_briefing.html">scratch/dgem_benchmark_briefing.html</a></td></tr>
       <tr><td>Browse all 13 experiments (<code>EXP-01</code> to <code>EXP-13</code>), CLI commands, and JSON receipts</td><td><a href="../docs/experiments/README.md">docs/experiments/README.md</a></td></tr>

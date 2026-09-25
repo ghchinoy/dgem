@@ -6,7 +6,7 @@ description: Step-by-step colleague guide for turning any .jsonl or .csv dataset
 # "I Have a Dataset — How Do I Build a Policy Template & Run an Experiment?"
 
 > **Target Audience**: Applied AI Engineers, Researchers & Domain Experts (`group:aaie-decision-model@google.com`)  
-> **Live IAP-Protected Studio & API Gateway**: **`https://dgemma.aaie.cloud`** *(or `https://dgemma-gateway-882920967572.us-central1.run.app`)*
+> **Studio & API Gateway**: run `./bin/dgem serve --port 8090` locally (`http://localhost:8090`) or deploy your own gateway (`./scripts/deploy_cloudrun_gateway.sh`). Examples below use `https://<your-dgem-gateway>` as a placeholder for your gateway URL.
 
 When you have a new `.jsonl` or `.csv` dataset (e.g., customer support tickets, legal contract clauses, RAG passages, agent trajectories, or safety guardrails) and want to evaluate **DiffusionGemma (`dgemma`)** as a **Zero-Shot Decision Model**, you do **not** need to modify the `dgem` Go codebase or redeploy Cloud Run.
 
@@ -17,7 +17,7 @@ flowchart TD
     Data["Your Dataset (.jsonl or .csv)<br/>e.g. 50–5,000 rows + optional ground truth"]
 
     subgraph Design["Phase 1: Design & Test Your Policy (.json.tmpl)"]
-        M1["Option A: Web Studio Visual Template Builder<br/>(https://dgemma.aaie.cloud → Batch Eval → 🛠️ Custom)"]
+        M1["Option A: Web Studio Visual Template Builder<br/>(dgem serve → Batch Eval → 🛠️ Custom)"]
         M2["Option B: MCP Agent Co-Design<br/>(Gemini CLI / Claude calling decide_custom_questions)"]
     end
 
@@ -108,7 +108,7 @@ If you use **Gemini CLI**, **Claude Code**, or **Cursor**, you can connect the `
       "args": [
         "mcp",
         "-u",
-        "https://dgemma.aaie.cloud/v1",
+        "https://<your-dgem-gateway>/v1",
         "--gcp-auth"
       ]
     }
@@ -128,11 +128,11 @@ I have a dataset in ./my_dataset.jsonl.
 
 ---
 
-## Step 3: Run Your Dataset in the Web Studio (`https://dgemma.aaie.cloud`)
+## Step 3: Run Your Dataset in the Web Studio (`https://<your-dgem-gateway>`)
 
 For interactive datasets (**10 to 250 rows**), you can build your template, upload your `.jsonl` or `.csv` file, watch real-time evaluation, and export `.csv` / `.jsonl` receipts directly in the browser:
 
-1. Open **`https://dgemma.aaie.cloud`** and click **Batch Eval** in the left navigation rail.
+1. Open **`https://<your-dgem-gateway>`** and click **Batch Eval** in the left navigation rail.
 2. Select the **🛠️ Custom Template & Dataset (`.jsonl` / `.csv`)** card.
 3. **Build or Paste Your Template**:
    - Use the **Visual Template Builder** (`+ Add Question Slot`) to define `boolean`, `choice`, or `score` slots and generate the `.json.tmpl` automatically, **or** switch to **Raw `.json.tmpl`** to paste an existing template.
@@ -149,7 +149,7 @@ For interactive datasets (**10 to 250 rows**), you can build your template, uplo
 
 ## Choosing an Inference Backend Target & Recommended Configuration (`vertex_first` vs. `vertex` vs. `cloudrun`)
 
-`dgem` and `dgemma-gateway` (`https://dgemma.aaie.cloud`) support routing any policy template or batch experiment across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**.
+`dgem` and `dgemma-gateway` (`https://<your-dgem-gateway>`) support routing any policy template or batch experiment across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**.
 
 ### Backend Target Decision Matrix
 
@@ -161,16 +161,16 @@ For interactive datasets (**10 to 250 rows**), you can build your template, uplo
 
 ### Selecting the Backend Across All 4 Surfaces
 
-1. **Web Studio (`https://dgemma.aaie.cloud`)**:
+1. **Web Studio (`https://<your-dgem-gateway>`)**:
    - Use the topbar **Backend Target** selector to switch between **`Vertex First (Auto)`**, **`Cloud Run GPU (Strict)`**, and **`Vertex AI Strict (/invoke/*)`**.
    - You can also inspect live Vertex AI replica health (`4217256562927861760`) and trigger 1-click **Provision Vertex GPU (`1× L4`)** or **Teardown Replica (`$0/hr`)**.
 2. **HTTP Gateway API (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)**:
    - Pass the HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun`, the query parameter `?backend=vertex_first`, or the JSON request field `"backend": "vertex_first"`.
    - Every response includes the `X-DGem-Backend-Used: vertex | cloudrun` response header and `"backend_used"` telemetry field confirming which GPU tier served the decision.
-3. **MCP Server (`https://dgemma.aaie.cloud/mcp` or `dgem mcp`)**:
+3. **MCP Server (`https://<your-dgem-gateway>/mcp` or `dgem mcp`)**:
    - Pass `"backend": "vertex_first" | "vertex" | "cloudrun"` (and an optional custom `"vertex_url"`) in the tool arguments for **`decide_policy`**, **`decide_custom_questions`**, and **`locate_bounding_boxes`**.
 4. **CLI (`dgem`)**:
-   - Pass `--vertex-url 4217256562927861760 --gcp-auth` to route directly to the Vertex AI Dedicated Endpoint `/invoke/v1` route (or `-u https://dgemma.aaie.cloud/v1 --gcp-auth` to route via the gateway).
+   - Pass `--vertex-url 4217256562927861760 --gcp-auth` to route directly to the Vertex AI Dedicated Endpoint `/invoke/v1` route (or `-u https://<your-dgem-gateway>/v1 --gcp-auth` to route via the gateway).
 
 ---
 
@@ -191,7 +191,7 @@ When a single-pass Stage 1 `DiffusionGemma` decision exhibits high epistemic unc
 
 ```bash
 # HTTP Gateway API (/api/decide/{template}) with vertex_first & Stage 2 Entropy Cascade:
-curl -sS "https://dgemma.aaie.cloud/api/decide/calibration/nli_calibration" \
+curl -sS "https://<your-dgem-gateway>/api/decide/calibration/nli_calibration" \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -H "X-DGem-Backend: vertex_first" \
@@ -228,13 +228,13 @@ curl -sS "https://dgemma.aaie.cloud/api/decide/calibration/nli_calibration" \
 
 ## Step 4: Run Large Datasets (`100–10,000+` Rows) from Python
 
-For larger benchmark runs, notebooks, or CI pipelines, use `POST https://dgemma.aaie.cloud/api/decide` with an inline `custom_template`. Every request automatically emits OpenTelemetry spans and Cloud Logging metrics (`dgem_surface = "python_batch"`, `dgem_template = "<your_experiment_name>"`).
+For larger benchmark runs, notebooks, or CI pipelines, use `POST https://<your-dgem-gateway>/api/decide` with an inline `custom_template`. Every request automatically emits OpenTelemetry spans and Cloud Logging metrics (`dgem_surface = "python_batch"`, `dgem_template = "<your_experiment_name>"`).
 
 ### `run_dgem_dataset.py` (Zero Dependencies Beyond Standard Library)
 
 ```python
 #!/usr/bin/env python3
-"""Evaluate any .jsonl dataset against https://dgemma.aaie.cloud/api/decide."""
+"""Evaluate any .jsonl dataset against https://<your-dgem-gateway>/api/decide."""
 import concurrent.futures
 import json
 import math
@@ -244,7 +244,7 @@ import subprocess
 import time
 import urllib.request
 
-GATEWAY_URL = "https://dgemma.aaie.cloud/api/decide"
+GATEWAY_URL = "https://<your-dgem-gateway>/api/decide"
 EXPERIMENT_NAME = "batch/contract_audit_v1"
 TEMPLATE_PATH = "my_experiment.json.tmpl"
 DATASET_PATH = "my_dataset.jsonl"

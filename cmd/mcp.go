@@ -193,7 +193,7 @@ func inferWarmupPhaseAndLabel(elapsedSec int, ewmaSec int, phaseHint string, byt
 var mcpRemoteURL string
 
 // runRemoteMCPProxy bridges stdio JSON-RPC messages to a remote Streamable HTTP MCP endpoint
-// (such as https://dgemma.aaie.cloud/mcp), automatically attaching Application Default Credentials
+// (such as https://<your-dgem-gateway>/mcp), automatically attaching Application Default Credentials
 // (ADC) OIDC id_token (or OAuth2 access token) and MCP Streamable HTTP headers (Mcp-Method, Mcp-Protocol-Version).
 //
 // Crucially, MCP clients (such as Antigravity / Jetski using go-sdk v1.8+) send "subscriptions/listen"
@@ -614,10 +614,10 @@ Application Default Credentials (ADC: ~/.config/gcloud/application_default_crede
 are automatically discovered and used to authenticate against Vertex AI Dedicated Endpoints
 and Cloud Run IAP / IAM services without requiring manual tokens.
 
-Pass --remote https://dgemma.aaie.cloud/mcp to bridge stdio directly to the hosted Cloud Run
-MCP gateway using ADC.`,
-	Example: `  # Bridge stdio to the hosted Cloud Run MCP gateway using ADC automatically
-  dgem mcp --remote https://dgemma.aaie.cloud/mcp
+Pass --remote https://<your-dgem-gateway>/mcp to bridge stdio directly to a remote dgem serve
+MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
+	Example: `  # Bridge stdio to a remote dgem serve MCP gateway using ADC automatically
+  dgem mcp --remote https://<your-dgem-gateway>/mcp
 
   # Run local stdio MCP server with automatic ADC (vertex_first -> Cloud Run failover)
   dgem mcp`,
@@ -643,7 +643,7 @@ MCP gateway using ADC.`,
 }
 
 func init() {
-	mcpCmd.Flags().StringVar(&mcpRemoteURL, "remote", "", "Remote Streamable HTTP MCP endpoint URL (e.g. https://dgemma.aaie.cloud/mcp) to proxy over stdio using ADC")
+	mcpCmd.Flags().StringVar(&mcpRemoteURL, "remote", "", "Remote Streamable HTTP MCP endpoint URL (e.g. https://<your-dgem-gateway>/mcp) to proxy over stdio using ADC")
 	RootCmd.AddCommand(mcpCmd)
 }
 

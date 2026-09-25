@@ -191,7 +191,7 @@ cat <<EOF
     ./bin/dgem decide -u "${INVOKE_BASE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v ticket="Double billed"
 
   Use with dgemma-gateway (Header or Web Studio Settings):
-    curl -sS https://dgemma.aaie.cloud/api/decide/support_triage \\
+    curl -sS "${GATEWAY_URL:-https://<your-dgem-gateway>}"/api/decide/support_triage \\
       -H "X-DGem-Backend: vertex" \\
       -H "X-DGem-Vertex-Url: ${ENDPOINT_ID}" \\
       -H "Content-Type: application/json" \\

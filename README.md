@@ -2,7 +2,7 @@
 
 **`dgem`** turns Google DeepMind's **DiffusionGemma** (`26B-A4B-it`, a discrete-diffusion Gemma 4) into a **decision engine**. You describe a decision as a small template of typed questions (`boolean`, `choice`, `score`). `dgem` places every question on the model's bidirectional canvas and reads **a probability for every allowed answer, for every question, in one forward pass**. There is no free-text generation to parse, and every answer comes with a per-question uncertainty score you can use to decide when to act automatically and when to escalate.
 
-📖 **Docs site:** [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/) · 🖥️ **Decision Studio:** [dgemma.aaie.cloud](https://dgemma.aaie.cloud/)
+📖 **Docs site:** [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/)
 
 ## What's in this repo
 
@@ -67,7 +67,7 @@ See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-
 
 | Interaction Surface | Command / Endpoint | Description |
 | :--- | :--- | :--- |
-| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090`<br>`https://dgemma.aaie.cloud` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, a plain-English **Concepts** tab (including an IDC walkthrough), and **OpenTelemetry Trace Waterfall** inspection. |
+| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, a plain-English **Concepts** tab (including an IDC walkthrough), and **OpenTelemetry Trace Waterfall** inspection. |
 | **2. 🤖 Model Context Protocol (`MCP`)** | `./bin/dgem mcp` (`stdio`)<br>`POST /mcp` (`Streamable HTTP`) | Native MCP server exposing **6 tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) with `backend` (`vertex_first` \| `vertex` \| `cloudrun`) and Stage 2 Gemini Cascade support (`cascade_mode`, `cascade_threshold`, `cascade_model`). |
 | **3. 🌐 HTTP Gateway REST API** | `POST /api/decide/{template}`<br>`POST /v1/systemone`, `GET /api/templates` | Execute any `.json.tmpl` decision policy or `/v1/systemone` schema with `X-DGem-Backend: vertex_first \| vertex \| cloudrun` (`X-DGem-Backend-Used` returned on every response) and optional Stage 2 `gemini-3.8-flash` cascade. |
 | **4. ⌨️ CLI & 9 Benchmark Harnesses** | `./bin/dgem decide --vertex-url ...`<br>`./bin/dgem bench-*` | Direct single-pass decisions (`--stats`, `--null-prior-debias`, `--dual-mirror`) and nine reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`, `bench-decision-index`, `bench-permutation`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-13`). |
