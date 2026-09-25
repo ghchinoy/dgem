@@ -16,8 +16,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ghchinoy/dgem/pkg/client"
-	"github.com/spf13/cobra"
 	"github.com/ghchinoy/dgem/pkg/permutation"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/genai"
 )
@@ -113,6 +113,7 @@ func init() {
 	benchCalibrationCmd.Flags().BoolVar(&calDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
 	benchCalibrationCmd.Flags().BoolVar(&calNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
 	benchCalibrationCmd.Flags().Float64Var(&calPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
+	benchCalibrationCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
 
 	RootCmd.AddCommand(benchCalibrationCmd)
 }
@@ -129,32 +130,33 @@ type CalibrationCase struct {
 
 // CalibrationCaseResult holds the evaluated decision and uncertainty telemetry for one item.
 type CalibrationCaseResult struct {
-	ID                     string             `json:"id"`
-	Metric                 string             `json:"metric"`
-	Category               string             `json:"category"`
-	Tier                   string             `json:"tier"`
-	Expected               string             `json:"expected"`
-	Actual                 string             `json:"actual"`
-	Accurate               bool               `json:"accurate"`
-	Confidence             float64            `json:"confidence"`
-	Entropy                float64            `json:"entropy_nats"`
-	NormalizedEntropy      float64            `json:"normalized_entropy,omitempty"`
-	VocabCardinality       int                `json:"vocab_cardinality,omitempty"`
-	ChanceBaseline         float64            `json:"chance_baseline,omitempty"`
-	BrierScore             float64            `json:"brier_score,omitempty"`
-	TVDGold                float64            `json:"tvd_gold,omitempty"`
-	Stderr                 float64            `json:"stderr,omitempty"`
-	WallTimeMs             float64            `json:"wall_time_ms"`
-	Escalated              bool               `json:"escalated,omitempty"`
-	PriorGuided            bool               `json:"prior_guided,omitempty"`
-	Pass1Actual            string             `json:"pass1_actual,omitempty"`
-	Pass1Accurate          bool               `json:"pass1_accurate,omitempty"`
-	Pass1Entropy           float64            `json:"pass1_entropy_nats,omitempty"`
-	Pass1NormalizedEntropy float64            `json:"pass1_normalized_entropy,omitempty"`
-	Pass1LatencyMs         float64            `json:"pass1_latency_ms,omitempty"`
-	Pass2LatencyMs         float64            `json:"pass2_latency_ms,omitempty"`
-	TopProbabilities       map[string]float64 `json:"top_probabilities,omitempty"`
-	Error                  string             `json:"error,omitempty"`
+	ID                     string                     `json:"id"`
+	Metric                 string                     `json:"metric"`
+	Category               string                     `json:"category"`
+	Tier                   string                     `json:"tier"`
+	Expected               string                     `json:"expected"`
+	Actual                 string                     `json:"actual"`
+	Accurate               bool                       `json:"accurate"`
+	Confidence             float64                    `json:"confidence"`
+	Entropy                float64                    `json:"entropy_nats"`
+	NormalizedEntropy      float64                    `json:"normalized_entropy,omitempty"`
+	VocabCardinality       int                        `json:"vocab_cardinality,omitempty"`
+	ChanceBaseline         float64                    `json:"chance_baseline,omitempty"`
+	BrierScore             float64                    `json:"brier_score,omitempty"`
+	TVDGold                float64                    `json:"tvd_gold,omitempty"`
+	Stderr                 float64                    `json:"stderr,omitempty"`
+	WallTimeMs             float64                    `json:"wall_time_ms"`
+	Escalated              bool                       `json:"escalated,omitempty"`
+	PriorGuided            bool                       `json:"prior_guided,omitempty"`
+	Pass1Actual            string                     `json:"pass1_actual,omitempty"`
+	Pass1Accurate          bool                       `json:"pass1_accurate,omitempty"`
+	Pass1Entropy           float64                    `json:"pass1_entropy_nats,omitempty"`
+	Pass1NormalizedEntropy float64                    `json:"pass1_normalized_entropy,omitempty"`
+	Pass1LatencyMs         float64                    `json:"pass1_latency_ms,omitempty"`
+	Pass2LatencyMs         float64                    `json:"pass2_latency_ms,omitempty"`
+	TopProbabilities       map[string]float64         `json:"top_probabilities,omitempty"`
+	IDC                    *permutation.SlotIDCDetail `json:"idc,omitempty"`
+	Error                  string                     `json:"error,omitempty"`
 }
 
 // CalibrationGroupSummary aggregates accuracy and uncertainty metrics for a category or tier.
@@ -198,6 +200,7 @@ type CascadeSummary struct {
 // CalibrationReport represents the full exported JSON report.
 type CalibrationReport struct {
 	Timestamp             string                    `json:"timestamp"`
+	IDCConfig             string                    `json:"idc_config,omitempty"`
 	TargetURL             string                    `json:"target_url"`
 	TargetModel           string                    `json:"target_model"`
 	Workers               int                       `json:"workers"`
@@ -499,6 +502,7 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 	report := buildCalibrationReport(results, totalElapsed)
 	report.TargetURL = targetEndpointDisplay
 	report.TargetModel = targetModelDisplay
+	report.IDCConfig = idcConfigLabel(calNullPriorDebias, calDualMirror, calPriorAlpha)
 
 	if isCascadeRun {
 		pass2Label := calVertexModel
@@ -598,8 +602,9 @@ func evaluateCalibrationCaseWithThink(ctx context.Context, c *client.Client, tc 
 	}
 	res.WallTimeMs = float64(stats.WallTime.Milliseconds())
 
+	var idcDetails map[string]permutation.SlotIDCDetail
 	if calDualMirror || calNullPriorDebias {
-		permutation.PostProcessDecisionResponse(resp, slotOpts, calDualMirror, calNullPriorDebias, calPriorAlpha)
+		idcDetails = permutation.PostProcessDecisionResponseDetailed(resp, slotOpts, calDualMirror, calNullPriorDebias, calPriorAlpha)
 	}
 
 	qa, ok := resp.Answers[qID]
@@ -614,6 +619,11 @@ func evaluateCalibrationCaseWithThink(ctx context.Context, c *client.Client, tc 
 	if !ok {
 		res.Error = "missing decision slot in response"
 		return res
+	}
+
+	if d, ok := idcDetails[qID]; ok {
+		dd := d
+		res.IDC = &dd
 	}
 
 	// Compute calibrated confidence, Shannon entropy H (nats), and Cardinality-Normalized Entropy H_norm in [0, 1]
@@ -1426,7 +1436,7 @@ func evaluateCalibrationCaseVertex(ctx context.Context, genaiClient *genai.Clien
 	}
 
 	t0 := time.Now()
-	resp, err := genaiClient.Models.GenerateContent(ctx, model, genai.Text(prompt), cfg)
+	resp, err := generateContentWithRetry(ctx, genaiClient, model, prompt, cfg)
 	res.WallTimeMs = float64(time.Since(t0).Milliseconds())
 	if err != nil {
 		res.Error = err.Error()
@@ -1487,4 +1497,19 @@ func evaluateCalibrationCaseVertex(ctx context.Context, genaiClient *genai.Clien
 		}
 	}
 	return res
+}
+
+// idcConfigLabel describes which IDC post-processing steps produced a receipt.
+func idcConfigLabel(nullPrior, dualMirror bool, alpha float64) string {
+	parts := []string{}
+	if nullPrior {
+		parts = append(parts, fmt.Sprintf("null_prior(alpha=%.2f)", alpha))
+	}
+	if dualMirror {
+		parts = append(parts, "dual_mirror")
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, "+")
 }

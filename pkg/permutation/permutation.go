@@ -32,23 +32,23 @@ type PermutationCase struct {
 // NullPrior holds the measured content-free positional probability distribution p_0(pos_0 .. pos_{K-1})
 // for each cardinality K (e.g. K=2, 3, 4).
 type NullPrior struct {
-	ByCardinality map[int][]float64 `json:"by_cardinality"`
-	EntropyByK    map[int]float64   `json:"entropy_by_k"`
-	UniformEntropy map[int]float64  `json:"uniform_entropy_by_k"`
-	MaxBiasRatio  map[int]float64   `json:"max_bias_ratio_by_k"` // max(p_0) / (1/K)
+	ByCardinality  map[int][]float64 `json:"by_cardinality"`
+	EntropyByK     map[int]float64   `json:"entropy_by_k"`
+	UniformEntropy map[int]float64   `json:"uniform_entropy_by_k"`
+	MaxBiasRatio   map[int]float64   `json:"max_bias_ratio_by_k"` // max(p_0) / (1/K)
 }
 
-//PermPassTelemetry records the outcome of evaluating one specific permutation pi_r of a question.
+// PermPassTelemetry records the outcome of evaluating one specific permutation pi_r of a question.
 type PermPassTelemetry struct {
-	PermIndex       int                `json:"perm_index"`
-	OptionOrder     []string           `json:"option_order"` // Order of option keys bound to [A, B, C, ...]
-	RawProbs        map[string]float64 `json:"raw_probs"`    // Keyed by semantic OptionItem.Name
-	DebiasedProbs   map[string]float64 `json:"debiased_probs,omitempty"`
-	RawWinner       string             `json:"raw_winner"`
-	DebiasedWinner  string             `json:"debiased_winner,omitempty"`
-	RawEntropy      float64            `json:"raw_entropy"`
-	NormalizedH     float64            `json:"normalized_entropy"`
-	WallTimeMs      float64            `json:"wall_time_ms"`
+	PermIndex      int                `json:"perm_index"`
+	OptionOrder    []string           `json:"option_order"` // Order of option keys bound to [A, B, C, ...]
+	RawProbs       map[string]float64 `json:"raw_probs"`    // Keyed by semantic OptionItem.Name
+	DebiasedProbs  map[string]float64 `json:"debiased_probs,omitempty"`
+	RawWinner      string             `json:"raw_winner"`
+	DebiasedWinner string             `json:"debiased_winner,omitempty"`
+	RawEntropy     float64            `json:"raw_entropy"`
+	NormalizedH    float64            `json:"normalized_entropy"`
+	WallTimeMs     float64            `json:"wall_time_ms"`
 }
 
 // DualMirrorResult records the O(1) Single-Pass Dual-Mirror Canvas readout (slot_fwd + slot_rev in 1 pass).
@@ -61,11 +61,11 @@ type DualMirrorResult struct {
 	EnsembleWinner    string             `json:"ensemble_winner"`
 	MirrorDisagreed   bool               `json:"mirror_disagreed"` // True if FwdWinner != RevWinner
 	MeanPassEntropy   float64            `json:"mean_pass_entropy"`
-	TotalEntropy      float64            `json:"total_entropy"`       // H(EnsembleProbs) = MeanPassEntropy + JSDivergence
-	NormalizedTotalH  float64            `json:"normalized_total_h"`  // H(EnsembleProbs) / ln(K)
-	JSDivergence      float64            `json:"js_divergence_nats"`  // Epistemic permutation disagreement I(Y; Pi | X)
-	NormalizedJSD     float64            `json:"normalized_jsd"`      // JSD / ln(2) in [0, 1]
-	TVD               float64            `json:"tvd"`                 // 0.5 * sum |p_fwd - p_rev|
+	TotalEntropy      float64            `json:"total_entropy"`      // H(EnsembleProbs) = MeanPassEntropy + JSDivergence
+	NormalizedTotalH  float64            `json:"normalized_total_h"` // H(EnsembleProbs) / ln(K)
+	JSDivergence      float64            `json:"js_divergence_nats"` // Epistemic permutation disagreement I(Y; Pi | X)
+	NormalizedJSD     float64            `json:"normalized_jsd"`     // JSD / ln(2) in [0, 1]
+	TVD               float64            `json:"tvd"`                // 0.5 * sum |p_fwd - p_rev|
 	Accurate          bool               `json:"accurate"`
 	EscalatedBySingle bool               `json:"escalated_by_single"` // H_norm(fwd) >= threshold
 	EscalatedByMirror bool               `json:"escalated_by_mirror"` // MirrorDisagreed || NormalizedTotalH >= threshold || NormalizedJSD >= 0.08
@@ -74,53 +74,53 @@ type DualMirrorResult struct {
 
 // CasePermutationResult aggregates all K cyclic permutations + Prior De-biasing + O(1) Dual-Mirror readout for one case.
 type CasePermutationResult struct {
-	ID                     string              `json:"id"`
-	Regime                 string              `json:"regime"`
-	Title                  string              `json:"title"`
-	Cardinality            int                 `json:"cardinality"`
-	Expected               string              `json:"expected"`
-	CanonicalWinner        string              `json:"canonical_winner"`
-	CanonicalAccurate      bool                `json:"canonical_accurate"`
-	CanonicalConfidence    float64             `json:"canonical_confidence"`
-	CanonicalEntropy       float64             `json:"canonical_entropy"`
-	CanonicalNormalizedH   float64             `json:"canonical_normalized_h"`
-	CanonicalBrier         float64             `json:"canonical_brier"`
+	ID                   string  `json:"id"`
+	Regime               string  `json:"regime"`
+	Title                string  `json:"title"`
+	Cardinality          int     `json:"cardinality"`
+	Expected             string  `json:"expected"`
+	CanonicalWinner      string  `json:"canonical_winner"`
+	CanonicalAccurate    bool    `json:"canonical_accurate"`
+	CanonicalConfidence  float64 `json:"canonical_confidence"`
+	CanonicalEntropy     float64 `json:"canonical_entropy"`
+	CanonicalNormalizedH float64 `json:"canonical_normalized_h"`
+	CanonicalBrier       float64 `json:"canonical_brier"`
 	// Cyclic K-permutation metrics (Raw)
-	CyclicPasses           []PermPassTelemetry `json:"cyclic_passes"`
-	RawFlipOccurred        bool                `json:"raw_flip_occurred"`       // Did argmax change across any cyclic shift?
-	RawDistinctWinners     int                 `json:"raw_distinct_winners"`
-	RawMajorityAgreement   float64             `json:"raw_majority_agreement"`  // Fraction of K shifts agreeing with mode
-	RawMeanEntropy         float64             `json:"raw_mean_entropy"`        // E_pi[H(p_pi)] (Aleatoric / Within-pass)
-	RawEntropyStdDev       float64             `json:"raw_entropy_stddev"`
-	RawTotalEntropy        float64             `json:"raw_total_entropy"`       // H(E_pi[p_pi]) (Total uncertainty)
-	RawJSDivergence        float64             `json:"raw_js_divergence_nats"`  // I(Y; Pi | X) = H(bar_p) - bar_H (Epistemic)
-	RawMaxTVD              float64             `json:"raw_max_tvd"`
-	RawEnsembleWinner      string              `json:"raw_ensemble_winner"`
-	RawEnsembleAccurate    bool                `json:"raw_ensemble_accurate"`
-	RawEnsembleBrier       float64             `json:"raw_ensemble_brier"`
+	CyclicPasses         []PermPassTelemetry `json:"cyclic_passes"`
+	RawFlipOccurred      bool                `json:"raw_flip_occurred"` // Did argmax change across any cyclic shift?
+	RawDistinctWinners   int                 `json:"raw_distinct_winners"`
+	RawMajorityAgreement float64             `json:"raw_majority_agreement"` // Fraction of K shifts agreeing with mode
+	RawMeanEntropy       float64             `json:"raw_mean_entropy"`       // E_pi[H(p_pi)] (Aleatoric / Within-pass)
+	RawEntropyStdDev     float64             `json:"raw_entropy_stddev"`
+	RawTotalEntropy      float64             `json:"raw_total_entropy"`      // H(E_pi[p_pi]) (Total uncertainty)
+	RawJSDivergence      float64             `json:"raw_js_divergence_nats"` // I(Y; Pi | X) = H(bar_p) - bar_H (Epistemic)
+	RawMaxTVD            float64             `json:"raw_max_tvd"`
+	RawEnsembleWinner    string              `json:"raw_ensemble_winner"`
+	RawEnsembleAccurate  bool                `json:"raw_ensemble_accurate"`
+	RawEnsembleBrier     float64             `json:"raw_ensemble_brier"`
 	// Content-Free Prior De-Biased metrics (13B)
-	DebiasedFlipOccurred   bool                `json:"debiased_flip_occurred"`
-	DebiasedJSDivergence   float64             `json:"debiased_js_divergence_nats"`
-	DebiasedCanonicalAcc   bool                `json:"debiased_canonical_accurate"`
-	DebiasedCanonicalBrier float64             `json:"debiased_canonical_brier"`
+	DebiasedFlipOccurred   bool    `json:"debiased_flip_occurred"`
+	DebiasedJSDivergence   float64 `json:"debiased_js_divergence_nats"`
+	DebiasedCanonicalAcc   bool    `json:"debiased_canonical_accurate"`
+	DebiasedCanonicalBrier float64 `json:"debiased_canonical_brier"`
 	// O(1) Single-Pass Dual-Mirror Canvas metrics (13C)
-	DualMirror             DualMirrorResult    `json:"dual_mirror"`
+	DualMirror DualMirrorResult `json:"dual_mirror"`
 }
 
 // RegimeSummary aggregates permutation stability and error-detection metrics for one regime.
 type RegimeSummary struct {
-	Regime                 string  `json:"regime"`
-	Cases                  int     `json:"cases"`
-	CanonicalAccuracyPct   float64 `json:"canonical_accuracy_pct"`
-	DualMirrorAccuracyPct  float64 `json:"dual_mirror_accuracy_pct"`
-	RawFlipRatePct         float64 `json:"raw_flip_rate_pct"`
-	DebiasedFlipRatePct    float64 `json:"debiased_flip_rate_pct"`
-	MeanSingleNormalizedH  float64 `json:"mean_single_normalized_h"`
-	MeanCyclicJSD          float64 `json:"mean_cyclic_jsd_nats"`
-	MeanMirrorJSD          float64 `json:"mean_mirror_jsd_nats"`
-	MeanMirrorTVD          float64 `json:"mean_mirror_tvd"`
-	SingleGateRecallOnErr  float64 `json:"single_gate_recall_on_errors_pct"`
-	MirrorGateRecallOnErr  float64 `json:"mirror_gate_recall_on_errors_pct"`
+	Regime                string  `json:"regime"`
+	Cases                 int     `json:"cases"`
+	CanonicalAccuracyPct  float64 `json:"canonical_accuracy_pct"`
+	DualMirrorAccuracyPct float64 `json:"dual_mirror_accuracy_pct"`
+	RawFlipRatePct        float64 `json:"raw_flip_rate_pct"`
+	DebiasedFlipRatePct   float64 `json:"debiased_flip_rate_pct"`
+	MeanSingleNormalizedH float64 `json:"mean_single_normalized_h"`
+	MeanCyclicJSD         float64 `json:"mean_cyclic_jsd_nats"`
+	MeanMirrorJSD         float64 `json:"mean_mirror_jsd_nats"`
+	MeanMirrorTVD         float64 `json:"mean_mirror_tvd"`
+	SingleGateRecallOnErr float64 `json:"single_gate_recall_on_errors_pct"`
+	MirrorGateRecallOnErr float64 `json:"mirror_gate_recall_on_errors_pct"`
 }
 
 // PermutationReport is the top-level EXP-13 JSON receipt.
@@ -906,6 +906,11 @@ func ExtractSchemaSlotOptions(schemaJSON string) map[string][]OptionItem {
 // InjectDualMirrorSchema transforms a dgem JSON schema by adding a companion reversed-option slot
 // (`<id>__mirror_rev`) for every choice/boolean slot so both forward and reversed option orderings
 // are evaluated simultaneously on the SAME bidirectional diffusion canvas (reads=1).
+// MirrorAliasNames controls how the reversed mirror slot names its options. When true (the historical
+// default), options are renamed item_1..item_K with "name: description" text. When false, the reversed
+// slot keeps the real option names and descriptions, matching the EXP-13 bench-permutation setup.
+var MirrorAliasNames = true
+
 func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem, bool) {
 	slotOpts := ExtractSchemaSlotOptions(schemaJSON)
 	if len(slotOpts) == 0 || len(slotOpts) > 5 {
@@ -943,7 +948,12 @@ func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem,
 			for i, ro := range revOpts {
 				aliasName := fmt.Sprintf("item_%d", i+1)
 				desc := ro.Description
-				if desc == "" {
+				if !MirrorAliasNames {
+					aliasName = ro.Name
+					if desc == "" {
+						desc = ro.Name
+					}
+				} else if desc == "" {
 					desc = ro.Name
 				} else if len(ro.Name) > 1 && !strings.HasPrefix(strings.ToLower(ro.Name), "opt_") {
 					desc = ro.Name + ": " + desc
@@ -976,6 +986,18 @@ func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem,
 	return string(updatedBytes), slotOpts, true
 }
 
+// SlotIDCDetail records the raw and post-processed distributions for one slot so that receipts can be
+// re-scored offline (merge rules, prior strength, mirror gates) without re-running the model.
+type SlotIDCDetail struct {
+	RawFwdProbs map[string]float64 `json:"raw_fwd_probs,omitempty"`
+	RawRevProbs map[string]float64 `json:"raw_rev_probs,omitempty"`
+	FwdProbs    map[string]float64 `json:"fwd_probs,omitempty"`
+	RevProbs    map[string]float64 `json:"rev_probs,omitempty"`
+	MirrorTVD   float64            `json:"mirror_tvd"`
+	MirrorJSD   float64            `json:"mirror_jsd"`
+	HasMirror   bool               `json:"has_mirror"`
+}
+
 // PostProcessDecisionResponse applies EXP-13B Null-Prior De-Biasing and/or EXP-13C O(1) Dual-Mirror Canvas
 // distribution merging in-place on a StructuredDecisionResponse, returning per-slot Mirror TVD and Mirror JSD.
 func PostProcessDecisionResponse(
@@ -985,10 +1007,29 @@ func PostProcessDecisionResponse(
 	enableNullPrior bool,
 	alpha float64,
 ) (map[string]float64, map[string]float64) {
+	details := PostProcessDecisionResponseDetailed(resp, slotOpts, enableDualMirror, enableNullPrior, alpha)
 	mirrorTVD := make(map[string]float64)
 	mirrorJSD := make(map[string]float64)
+	for q, d := range details {
+		if d.HasMirror {
+			mirrorTVD[q] = d.MirrorTVD
+			mirrorJSD[q] = d.MirrorJSD
+		}
+	}
+	return mirrorTVD, mirrorJSD
+}
+
+// PostProcessDecisionResponseDetailed is PostProcessDecisionResponse plus per-slot raw/processed distributions.
+func PostProcessDecisionResponseDetailed(
+	resp *client.StructuredDecisionResponse,
+	slotOpts map[string][]OptionItem,
+	enableDualMirror bool,
+	enableNullPrior bool,
+	alpha float64,
+) map[string]SlotIDCDetail {
+	details := make(map[string]SlotIDCDetail)
 	if resp == nil || len(resp.Answers) == 0 || len(slotOpts) == 0 {
-		return mirrorTVD, mirrorJSD
+		return details
 	}
 	if alpha <= 0 {
 		alpha = 0.50 // Conservative default damping factor so weak priors don't over-invert
@@ -1006,9 +1047,11 @@ func PostProcessDecisionResponse(
 		}
 
 		probsFwd := normalizeAnswerProbs(qaFwd, opts)
+		det := SlotIDCDetail{RawFwdProbs: copyProbs(probsFwd)}
 		if enableNullPrior {
 			probsFwd, _ = ApplyPriorDeBiasing(probsFwd, opts, &np, alpha)
 		}
+		det.FwdProbs = copyProbs(probsFwd)
 
 		finalProbs := probsFwd
 		revID := qID + "__mirror_rev"
@@ -1018,15 +1061,20 @@ func PostProcessDecisionResponse(
 				aliasOpts := make([]OptionItem, len(revOpts))
 				for i, ro := range revOpts {
 					aliasOpts[i] = OptionItem{Name: fmt.Sprintf("item_%d", i+1), Description: ro.Description}
+					if !MirrorAliasNames {
+						aliasOpts[i].Name = ro.Name
+					}
 				}
 				probsAlias := normalizeAnswerProbs(qaRev, aliasOpts)
 				probsRev := make(map[string]float64, len(revOpts))
 				for i, ro := range revOpts {
-					probsRev[ro.Name] = probsAlias[fmt.Sprintf("item_%d", i+1)]
+					probsRev[ro.Name] = probsAlias[aliasOpts[i].Name]
 				}
+				det.RawRevProbs = copyProbs(probsRev)
 				if enableNullPrior {
 					probsRev, _ = ApplyPriorDeBiasing(probsRev, revOpts, &np, alpha)
 				}
+				det.RevProbs = copyProbs(probsRev)
 				_, _, _, _, mJSD := ComputeBALDDecomposition([]map[string]float64{probsFwd, probsRev}, optKeys)
 				mTVD := ComputeTVD(probsFwd, probsRev, optKeys)
 
@@ -1083,8 +1131,9 @@ func PostProcessDecisionResponse(
 				}
 
 				finalProbs = comb
-				mirrorTVD[qID] = mTVD
-				mirrorJSD[qID] = mJSD
+				det.MirrorTVD = mTVD
+				det.MirrorJSD = mJSD
+				det.HasMirror = true
 				delete(resp.Answers, revID)
 			}
 		}
@@ -1112,8 +1161,17 @@ func PostProcessDecisionResponse(
 			qaFwd.Noul = finalProbs[optKeys[0]]
 		}
 		resp.Answers[qID] = qaFwd
+		details[qID] = det
 	}
-	return mirrorTVD, mirrorJSD
+	return details
+}
+
+func copyProbs(in map[string]float64) map[string]float64 {
+	out := make(map[string]float64, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func normalizeAnswerProbs(qa client.QuestionAnswer, orderedOpts []OptionItem) map[string]float64 {
@@ -1145,4 +1203,3 @@ func normalizeAnswerProbs(qa client.QuestionAnswer, orderedOpts []OptionItem) ma
 	}
 	return out
 }
-

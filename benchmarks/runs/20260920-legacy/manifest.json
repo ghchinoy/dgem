@@ -1,0 +1,213 @@
+{
+  "run_id": "20260920-legacy",
+  "created": "2026-09-25T21:00:02+00:00",
+  "git_commit": "3e5c6830e5148d3c38486bf413a0d2679274dd57",
+  "git_dirty": true,
+  "notes": "Receipts produced before versioned runs (Sep 20-24, 2026). Mixed endpoints/revisions; see each receipt's target_url/target_model.",
+  "receipts": [
+    {
+      "suite": "calibration",
+      "config": "baseline",
+      "path": "../../results_calibration_cloudrun.json",
+      "sha256": "e31f6a7fca43a973d34539b9d517217298bfc9c55e9aefeefcd4cf9bc7926f2d",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-20T21:23:29Z",
+        "target_model": "/mnt/gcs/dgemma",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.1859514440646067,
+        "ece10_t1": 0.07452217777037758,
+        "hi_conf": "34/36",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "null_prior",
+      "path": "../../results_calibration_null_prior.json",
+      "sha256": "3082d90fc17a712833bd328d980bbcfa0cfa14754c927ee5fd59913a4103a917",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-23T16:41:29Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.1493478673362748,
+        "ece10_t1": 0.0612340856182683,
+        "hi_conf": "34/34",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "dual_mirror",
+      "path": "../../results_calibration_dual_mirror.json",
+      "sha256": "63acc5d7d07181d09797062c7c57d0d74ce0cba273f7b55d0c04d3688dfa45cd",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-23T16:40:57Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.22078451989848147,
+        "ece10_t1": 0.08103250554812706,
+        "hi_conf": "23/24",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cascade_raw035",
+      "path": "../../results_calibration_cascade.json",
+      "sha256": "56856bb5c2913e4f158c6cd38e2bf9779fc6636afded5f83f0313c5957e45da7",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-20T21:57:35Z",
+        "target_model": "DiffusionGemma [H<0.35] -> gemini-3.8-flash [H>=0.35]",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 47,
+        "accuracy": 0.94,
+        "brier_t1": 0.2592703386936545,
+        "ece10_t1": 0.029200403566545737,
+        "hi_conf": "40/42",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cascade_norm016",
+      "path": "../../results_calibration_cascade_normalized.json",
+      "sha256": "a6d0d86b4540d7faa18ca0a1dabfa9448045778ca44adb897d16c01a3faf2ebf",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-21T02:18:36Z",
+        "target_model": "DiffusionGemma [H_norm<0.16] -> gemini-3.8-flash [H_norm>=0.16, prior-guided]",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 49,
+        "accuracy": 0.98,
+        "brier_t1": 0.0324990628760302,
+        "ece10_t1": 0.02041441200622448,
+        "hi_conf": "41/41",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "gemini38",
+      "path": "../../results_calibration_gemini38.json",
+      "sha256": "ba6ba3521f88997ce085da47287ee9c7c93acc68b3fa8c22af20b8cf009bbe89",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-20T21:58:26Z",
+        "target_model": "gemini-3.8-flash",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 49,
+        "accuracy": 0.98,
+        "brier_t1": 0.02677173129848484,
+        "ece10_t1": 0.023035999999999862,
+        "hi_conf": "43/43",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "vertex_baseline",
+      "path": "../../results_calibration_vertex_l4.json",
+      "sha256": "16d95c36b7b3bcdca7a153e6ae1d168ca938694c47dff6cafb5758b2a58eb8bc",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-24T01:03:28Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.1943895676580383,
+        "ece10_t1": 0.046955079427843466,
+        "hi_conf": "33/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "djev_upstream_ref",
+      "path": "../../jevbench/results_djev_upstream_ref.json",
+      "sha256": "6b75080f3d5dfc80f2db55ac9a06809af54b75a2a6903818e5a0d2a15be722d2",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-22T15:08:39Z",
+        "target_model": "google/diffusiongemma-26B-A4B-it (djev)",
+        "idc_config": null,
+        "n": 231,
+        "errors": 0,
+        "correct": 194,
+        "accuracy": 0.8398268398268398,
+        "brier_t1": 0.2428275914862915,
+        "ece10_t1": 0.07738961038961117,
+        "hi_conf": "119/120",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "permutation",
+      "config": "exp13",
+      "path": "../../results_permutation_cloudrun.json",
+      "sha256": "7c2648d20a933e4e400d255f7cfc580de07f67dbaa92846799bc0a23efafc775",
+      "recorded": "2026-09-25T21:00:02+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-23T15:09:45Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 16,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "djev_cascade_h50",
+      "path": "../../jevbench/results_djev_cascade_h50.json",
+      "sha256": "fba98cd1fc9b4cbffa17676a484b16a85cc802bcf2721b799eb78c6c61ba2260",
+      "recorded": "2026-09-25T21:00:11+00:00",
+      "command": "legacy receipt (pre-versioning)",
+      "summary": {
+        "timestamp": "2026-09-22T16:13:54Z",
+        "target_model": "DiffusionGemma [H_norm<0.50] -> gemini-3.8-flash [H_norm>=0.50, prior-guided]",
+        "idc_config": null,
+        "n": 231,
+        "errors": 14,
+        "correct": 213,
+        "accuracy": 0.922077922077922,
+        "brier_t1": 0.13002372871923154,
+        "ece10_t1": 0.058709956709958544,
+        "hi_conf": "161/162",
+        "mean_mirror_tvd": null
+      }
+    }
+  ]
+}

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
+	"github.com/ghchinoy/dgem/pkg/permutation"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/genai"
@@ -48,6 +49,9 @@ var (
 	jevAutoTemp          bool
 	jevFlipOptions       bool
 	jevMultiSlotEvidence bool
+	jevNullPriorDebias   bool
+	jevDualMirror        bool
+	jevPriorAlpha        float64
 	jevOutput            string
 	jevJSON              bool
 )
@@ -108,6 +112,10 @@ func init() {
 	benchJevCmd.Flags().BoolVar(&jevAutoTemp, "auto-temperature", false, "Automatically fit optimal temperature T* to maximize JevBench Calibration Score")
 	benchJevCmd.Flags().BoolVar(&jevFlipOptions, "flip-options", false, "Reverse option order to test Option-Order Permutation Invariance")
 	benchJevCmd.Flags().BoolVar(&jevMultiSlotEvidence, "multi-slot-evidence", false, "Co-allocate a companion 'evidence_focus' slot on the diffusion canvas in the same forward pass")
+	benchJevCmd.Flags().BoolVar(&jevNullPriorDebias, "null-prior-debias", false, "IDC: divide out the content-free positional ('A') prior before scoring")
+	benchJevCmd.Flags().BoolVar(&jevDualMirror, "dual-mirror", false, "IDC: add a reversed-order mirror slot on the same canvas and record Mirror TVD")
+	benchJevCmd.Flags().Float64Var(&jevPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for null-prior de-biasing")
+	benchJevCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
 	benchJevCmd.Flags().StringVarP(&jevOutput, "output", "o", "", "Export structured JSON benchmark report to file")
 	benchJevCmd.Flags().BoolVar(&jevJSON, "json", false, "Output structured JSON report directly to stdout")
 
@@ -187,41 +195,43 @@ type JevManifestLock struct {
 
 // JevCaseResult records per-item evaluation telemetry on JevBench.
 type JevCaseResult struct {
-	ID                 string             `json:"id"`
-	Tier               string             `json:"tier"`
-	Family             string             `json:"family"`
-	Topic              string             `json:"topic,omitempty"`
-	Group              string             `json:"group,omitempty"`
-	QuestionType       string             `json:"question_type"`
-	VocabCardinality   int                `json:"vocab_cardinality"`
-	ChanceBaseline     float64            `json:"chance_baseline"`
-	Expected           string             `json:"expected"`
-	Actual             string             `json:"actual"`
-	Accurate           bool               `json:"accurate"`
-	Confidence         float64            `json:"confidence"`
-	Entropy            float64            `json:"entropy_nats"`
-	NormalizedEnt      float64            `json:"normalized_entropy"`
-	BrierScore         float64            `json:"brier_score"`
-	TVDGold            float64            `json:"tvd_gold,omitempty"`
-	HasGoldProbs       bool               `json:"has_gold_probs,omitempty"`
-	EvidenceFocus      string             `json:"evidence_focus,omitempty"`
-	WallTimeMs         float64            `json:"wall_time_ms"`
-	Escalated          bool               `json:"escalated,omitempty"`
-	PriorGuided        bool               `json:"prior_guided,omitempty"`
-	Pass1Actual        string             `json:"pass1_actual,omitempty"`
-	Pass1Accurate      bool               `json:"pass1_accurate,omitempty"`
-	Pass1Entropy       float64            `json:"pass1_entropy,omitempty"`
-	Pass1NormalizedEnt float64            `json:"pass1_normalized_entropy,omitempty"`
-	Pass1LatencyMs     float64            `json:"pass1_latency_ms,omitempty"`
-	Pass2LatencyMs     float64            `json:"pass2_latency_ms,omitempty"`
-	TopProbabilities   map[string]float64 `json:"top_probabilities,omitempty"`
-	GoldProbs          map[string]float64 `json:"gold_probs,omitempty"`
-	Error              string             `json:"error,omitempty"`
+	ID                 string                     `json:"id"`
+	Tier               string                     `json:"tier"`
+	Family             string                     `json:"family"`
+	Topic              string                     `json:"topic,omitempty"`
+	Group              string                     `json:"group,omitempty"`
+	QuestionType       string                     `json:"question_type"`
+	VocabCardinality   int                        `json:"vocab_cardinality"`
+	ChanceBaseline     float64                    `json:"chance_baseline"`
+	Expected           string                     `json:"expected"`
+	Actual             string                     `json:"actual"`
+	Accurate           bool                       `json:"accurate"`
+	Confidence         float64                    `json:"confidence"`
+	Entropy            float64                    `json:"entropy_nats"`
+	NormalizedEnt      float64                    `json:"normalized_entropy"`
+	BrierScore         float64                    `json:"brier_score"`
+	TVDGold            float64                    `json:"tvd_gold,omitempty"`
+	HasGoldProbs       bool                       `json:"has_gold_probs,omitempty"`
+	EvidenceFocus      string                     `json:"evidence_focus,omitempty"`
+	WallTimeMs         float64                    `json:"wall_time_ms"`
+	Escalated          bool                       `json:"escalated,omitempty"`
+	PriorGuided        bool                       `json:"prior_guided,omitempty"`
+	Pass1Actual        string                     `json:"pass1_actual,omitempty"`
+	Pass1Accurate      bool                       `json:"pass1_accurate,omitempty"`
+	Pass1Entropy       float64                    `json:"pass1_entropy,omitempty"`
+	Pass1NormalizedEnt float64                    `json:"pass1_normalized_entropy,omitempty"`
+	Pass1LatencyMs     float64                    `json:"pass1_latency_ms,omitempty"`
+	Pass2LatencyMs     float64                    `json:"pass2_latency_ms,omitempty"`
+	TopProbabilities   map[string]float64         `json:"top_probabilities,omitempty"`
+	IDC                *permutation.SlotIDCDetail `json:"idc,omitempty"`
+	GoldProbs          map[string]float64         `json:"gold_probs,omitempty"`
+	Error              string                     `json:"error,omitempty"`
 }
 
 // JevReport represents the full exported JevBench evaluation report.
 type JevReport struct {
 	Timestamp             string                    `json:"timestamp"`
+	IDCConfig             string                    `json:"idc_config,omitempty"`
 	Source                string                    `json:"source"`
 	TargetURL             string                    `json:"target_url"`
 	TargetModel           string                    `json:"target_model"`
@@ -350,7 +360,8 @@ func runBenchJev(cmd *cobra.Command, args []string) error {
 	if jevAutoTemp {
 		activeTemp = findOptimalJevTemperature(results)
 	}
-	report := buildJevReport(results, "live-evaluation", viper.GetString("url"), viper.GetString("model"), lock.CommitSHA, activeTemp, jevMultiSlotEvidence, jevFlipOptions)
+	report := buildJevReport(results, "live-evaluation", c.BaseURL, viper.GetString("model"), lock.CommitSHA, activeTemp, jevMultiSlotEvidence, jevFlipOptions)
+	report.IDCConfig = idcConfigLabel(jevNullPriorDebias, jevDualMirror, jevPriorAlpha)
 
 	if jevOutput != "" {
 		data, _ := json.MarshalIndent(report, "", "  ")
@@ -998,12 +1009,28 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 		stateStr = string(b)
 	}
 
-	resp, stats, err := c.Decide(ctx, renderedSchema.String(), stateStr)
+	schemaStr := renderedSchema.String()
+	var slotOpts map[string][]permutation.OptionItem
+	if jevDualMirror {
+		schemaStr, slotOpts, _ = permutation.InjectDualMirrorSchema(schemaStr)
+	} else if jevNullPriorDebias {
+		slotOpts = permutation.ExtractSchemaSlotOptions(schemaStr)
+	}
+
+	resp, stats, err := c.Decide(ctx, schemaStr, stateStr)
 	if err != nil {
 		res.Error = err.Error()
 		return res
 	}
 	res.WallTimeMs = float64(stats.WallTime.Milliseconds())
+
+	if jevDualMirror || jevNullPriorDebias {
+		details := permutation.PostProcessDecisionResponseDetailed(resp, slotOpts, jevDualMirror, jevNullPriorDebias, jevPriorAlpha)
+		if d, ok := details["decision"]; ok {
+			dd := d
+			res.IDC = &dd
+		}
+	}
 
 	if evAns, ok := resp.Answers["evidence_focus"]; ok {
 		res.EvidenceFocus = firstNonEmpty(evAns.Choice, evAns.Label)
@@ -1099,21 +1126,21 @@ func toCalibrationCasesFromJev(cases []JevCaseResult) []CalibrationCaseResult {
 	out := make([]CalibrationCaseResult, len(cases))
 	for i, c := range cases {
 		out[i] = CalibrationCaseResult{
-			ID:               c.ID,
-			Metric:           c.Family,
-			Category:         c.Family,
-			Tier:             c.Tier,
-			Expected:         c.Expected,
-			Actual:           c.Actual,
-			Accurate:         c.Accurate,
-			Confidence:       c.Confidence,
-			Entropy:          c.Entropy,
+			ID:                c.ID,
+			Metric:            c.Family,
+			Category:          c.Family,
+			Tier:              c.Tier,
+			Expected:          c.Expected,
+			Actual:            c.Actual,
+			Accurate:          c.Accurate,
+			Confidence:        c.Confidence,
+			Entropy:           c.Entropy,
 			NormalizedEntropy: c.NormalizedEnt,
-			VocabCardinality: c.VocabCardinality,
-			ChanceBaseline:   c.ChanceBaseline,
-			WallTimeMs:       c.WallTimeMs,
-			TopProbabilities: c.TopProbabilities,
-			Error:            c.Error,
+			VocabCardinality:  c.VocabCardinality,
+			ChanceBaseline:    c.ChanceBaseline,
+			WallTimeMs:        c.WallTimeMs,
+			TopProbabilities:  c.TopProbabilities,
+			Error:             c.Error,
 		}
 	}
 	return out
@@ -1690,7 +1717,7 @@ func evaluateJevTaskVertex(ctx context.Context, genaiClient *genai.Client, model
 	}
 
 	t0 := time.Now()
-	resp, err := genaiClient.Models.GenerateContent(ctx, model, genai.Text(prompt), cfg)
+	resp, err := generateContentWithRetry(ctx, genaiClient, model, prompt, cfg)
 	res.WallTimeMs = float64(time.Since(t0).Milliseconds())
 	if err != nil {
 		res.Error = err.Error()

@@ -496,3 +496,26 @@ func ExecuteStage2GeminiCascade(
 
 	return summary
 }
+
+// generateContentWithRetry retries transient Vertex AI errors (HTTP 429/500/503) up to 3 attempts with
+// backoff so benchmark receipts do not score infrastructure failures as wrong answers.
+func generateContentWithRetry(ctx context.Context, c *genai.Client, model, prompt string, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		resp, err := c.Models.GenerateContent(ctx, model, genai.Text(prompt), cfg)
+		if err == nil {
+			return resp, nil
+		}
+		lastErr = err
+		msg := err.Error()
+		if !strings.Contains(msg, "500") && !strings.Contains(msg, "503") && !strings.Contains(msg, "429") && !strings.Contains(msg, "INTERNAL") && !strings.Contains(msg, "UNAVAILABLE") {
+			return nil, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Duration(2*(attempt+1)) * time.Second):
+		}
+	}
+	return nil, lastErr
+}
