@@ -56,6 +56,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 * **Under the Hood**: Raw Shannon entropy $H_m = -\sum_{k \in \mathcal{V}_m} p_{m,k} \ln p_{m,k}$ has a theoretical maximum of $\ln|\mathcal{V}_m|$ (`0.693 nats` for binary vs. `3.258 nats` for 26-way `choice`). Dividing by $\ln|\mathcal{V}_m|$ yields the dimensionless normalized entropy:
   $$\tilde{H}_m = \frac{H_m}{\ln|\mathcal{V}_m|} \in [0, 1]$$
 * **Where You See It in `dgem`**: `--normalize-entropy --cascade-threshold 0.16` in `dgem bench-calibration` (`cmd/bench_calibration.go`).
+* **In Decision Studio**: shown as **Hesitation** (0–100%) on every answer: under 16% is *Clear*, 16–50% *Somewhat unsure*, above 50% *Very unsure*. Hover to see the raw entropy in nats. The 16% line matches the `EXP-05b` cascade gate.
 
 ### Multi-Slot Scale Inversion
 * **In Plain English**: The bug that happens when you apply a single raw entropy cutoff (like `0.35 nats`) to questions with different numbers of choices—causing confident 26-choice questions to falsely escalate while uncertain 3-choice questions slip through!

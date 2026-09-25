@@ -6,6 +6,7 @@ import './components/dgem-preset-selector.js';
 import './components/dgem-policy-composer.js';
 import './components/dgem-concept-visualizer.js';
 import './components/dgem-batch-runner.js';
+import { hesitation, type Hesitation } from './hesitation.js';
 import type { StudioTab, ThemePreference } from './components/dgem-nav-rail.js';
 import type {
   TemplateEntry,
@@ -1937,11 +1938,13 @@ export class DgemStudio extends LitElement {
     const steps = diag?.steps || diag?.timing?.steps_run || 1;
     const wallMs = this.result?.wall_time_ms || diag?.timing?.total_ms || 0;
 
-    let maxEntropy = 0;
+    let maxHes: Hesitation | null = null;
     for (const [qName, ans] of answerEntries) {
       const qDiag = diag?.questions?.[qName];
       const h = ans.entropy ?? qDiag?.first_read_max_entropy ?? 0;
-      if (h > maxEntropy) maxEntropy = h;
+      const k = Object.keys(ans.probabilities || {}).length || 2;
+      const hq = hesitation(h, k);
+      if (!maxHes || hq.normalized > maxHes.normalized) maxHes = hq;
     }
 
     return html`
@@ -2124,21 +2127,21 @@ export class DgemStudio extends LitElement {
             <!-- 4-Box KPI Strip -->
             <div class="kpi-strip">
               <div class="kpi-box">
-                <div class="kpi-label">Forward Reads</div>
+                <div class="kpi-label" title="How many times the model read the input. Usually 1: every question is answered in the same pass.">Model passes</div>
                 <div class="kpi-value">${this.result ? `${reads} pass` : '—'}</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Denoise Steps</div>
+                <div class="kpi-label" title="How many refinement steps the diffusion model ran. Decisions normally need just 1.">Refinement steps</div>
                 <div class="kpi-value">${this.result ? `${steps} step` : '—'}</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Wall Latency</div>
+                <div class="kpi-label" title="Total time for the request, measured by the gateway.">Response time</div>
                 <div class="kpi-value">${this.result ? `${Math.round(wallMs)} ms` : '—'}</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Peak Entropy (Hₘₐₓ)</div>
-                <div class="kpi-value">
-                  ${this.result ? `${maxEntropy.toFixed(3)} nats` : '—'}
+                <div class="kpi-label" title="The most hesitant question in this request (0% = one clear answer, 100% = a perfect tie).">Highest hesitation</div>
+                <div class="kpi-value" title=${maxHes ? maxHes.tooltip : ''}>
+                  ${this.result && maxHes ? `${maxHes.pct}% · ${maxHes.label}` : '—'}
                 </div>
               </div>
             </div>
@@ -2159,8 +2162,8 @@ export class DgemStudio extends LitElement {
                     </div>
                     <div style="font-size:0.8rem">
                       Select any preset on the left and click
-                      <strong>Evaluate Decision Policy</strong> to inspect joint slot probabilities and
-                      per-slot Shannon entropy (H).
+                      <strong>Evaluate Decision Policy</strong> to see the probability of every answer and how
+                      hesitant the model was on each question.
                     </div>
                   </div>
                 `
@@ -2173,18 +2176,13 @@ export class DgemStudio extends LitElement {
                       const confPct = Math.round((ans.confidence || 0) * 1000) / 10;
                       const qDiag = diag?.questions?.[qName];
                       const entropy = ans.entropy ?? qDiag?.first_read_max_entropy ?? 0;
+                      const hes = hesitation(entropy, Object.keys(ans.probabilities || {}).length || 2);
                       const entropyClass =
-                        entropy < 0.25
+                        hes.band === 'clear'
                           ? 'entropy--low'
-                          : entropy < 0.55
+                          : hes.band === 'unsure'
                             ? 'entropy--med'
                             : 'entropy--high';
-                      const entropyTag =
-                        entropy < 0.25
-                          ? 'LOW ENTROPY · STAGE-1 EXIT'
-                          : entropy < 0.55
-                            ? 'MODERATE UNCERTAINTY'
-                            : 'HIGH ENTROPY · ESCALATE';
 
                       const probs = Object.entries(ans.probabilities || {}).sort(
                         (a, b) => b[1] - a[1]
@@ -2203,8 +2201,8 @@ export class DgemStudio extends LitElement {
                           </div>
 
                           <div class="slot-metrics">
-                            <span class="tabular" style="font-weight:600">
-                              P = ${confPct.toFixed(1)}%
+                            <span class="tabular" style="font-weight:600" title="Probability of the chosen answer">
+                              ${confPct.toFixed(1)}%
                             </span>
                             <div class="conf-bar-track">
                               <div
@@ -2212,8 +2210,8 @@ export class DgemStudio extends LitElement {
                                 style="width:${Math.min(100, confPct)}%"
                               ></div>
                             </div>
-                            <span class="entropy-pill ${entropyClass}">
-                              H = ${entropy.toFixed(3)} nats · ${entropyTag}
+                            <span class="entropy-pill ${entropyClass}" title=${hes.tooltip}>
+                              Hesitation ${hes.pct}% · ${hes.label}
                             </span>
                           </div>
 
@@ -2565,15 +2563,15 @@ export class DgemStudio extends LitElement {
         <div class="card-header">
           <h2 class="card-title">
             <span class="material-symbols-outlined">alt_route</span>
-            EXP-05 Entropy-Gated Escalation Cascade Simulator (Stage 1 dgemma → Stage 2 Vertex Gemini)
+            When to hand off to Gemini (cascade simulator)
           </h2>
-          <span class="pill tabular">Receipts: results_calibration_cloudrun.json + results_calibration_gemini38.json (n=50)</span>
+          <span class="pill tabular" title="Computed from benchmarks/results_calibration_cloudrun.json and results_calibration_gemini38.json">Based on a 50-item test</span>
         </div>
         <div class="card-body">
           <div class="workspace-grid">
             <div>
               <div class="field-label">
-                <span>Shannon Entropy Escalation Threshold (τ)</span>
+                <span title="Shannon entropy threshold τ in nats: items at or above it are handed off">Hand-off threshold (how much hesitation triggers a hand-off)</span>
                 <span class="field-var-badge tabular">τ = ${tau.toFixed(2)} nats</span>
               </div>
               <input
@@ -2587,33 +2585,31 @@ export class DgemStudio extends LitElement {
                   (this.cascadeTau = parseFloat((e.target as HTMLInputElement).value))}
               />
               <p style="font-size:0.78rem;color:var(--text-muted);margin:0.5rem 0 0">
-                Items with slot Shannon entropy H &lt; τ exit immediately at
-                <strong>Stage 1 (<code>dgemma</code> on Cloud Run GPU, 712 ms)</strong>. Only high-entropy
-                ambiguous items (H ≥ τ) escalate to
-                <strong>Stage 2 (<code>Vertex AI gemini-3.8-flash</code>)</strong>. At τ = 0.35 nats,
-                72% of items exit early at Stage 1 and accuracy goes from
-                <strong>88.0% → 94.0%</strong> (47/50). Values come from the committed 50-item receipts
-                (Stage 1 alone: 44/50; Gemini alone: 49/50), so small differences are only one or two
-                items. The raw-nats threshold is not size-normalized and does not use IDC order-bias
-                checks; see <em>Confidence Beyond Shannon (IDC)</em> in the docs.
+                Items the model is clear about are answered right away by <strong>dgem</strong> (about 0.7 s
+                each in this test). Items at or above the threshold are handed to
+                <strong>Gemini</strong> (<code>gemini-3.8-flash</code>). At the default setting, 72% of items are
+                answered directly and accuracy rises from <strong>88% to 94%</strong> (47 of 50). For reference,
+                dgem alone got 44 of 50 and Gemini alone 49 of 50, so small changes here are one or two items.
+                The threshold is shown in <em>nats</em>, the raw unit of entropy; this simulator does not
+                include the IDC order check (see <em>Confidence Beyond Shannon (IDC)</em> in the docs).
               </p>
             </div>
 
             <div class="kpi-strip" style="margin-bottom:0">
               <div class="kpi-box">
-                <div class="kpi-label">Stage-1 Fast Exit</div>
+                <div class="kpi-label">Answered directly</div>
                 <div class="kpi-value">${stage1ExitPct}%</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Stage-2 Escalated</div>
+                <div class="kpi-label">Handed to Gemini</div>
                 <div class="kpi-value">${escalatePct}%</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Cascade Accuracy</div>
+                <div class="kpi-label">Overall accuracy</div>
                 <div class="kpi-value">${blendedAccuracy}%</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">Blended Latency</div>
+                <div class="kpi-label">Average time per item</div>
                 <div class="kpi-value">${blendedLatencyMs} ms</div>
               </div>
             </div>

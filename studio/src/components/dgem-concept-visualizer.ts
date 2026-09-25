@@ -1,5 +1,6 @@
 import { LitElement, html, css, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { hesitation } from '../hesitation.js';
 
 interface ScriptCue {
   title: string;
@@ -9,29 +10,29 @@ interface ScriptCue {
 
 const SCRIPT_CUES: Record<number, ScriptCue> = {
   1: {
-    title: '🎙️ Part 1 (0:00–0:25) — Broad Intro: 3 Generations & Diffusion Denoising',
-    text: '"Classifiers are the backbone of software decision-making. Traditional ML is fast and calibrated, but requires thousands of labeled examples every time categories change. Autoregressive LLMs give us zero-shot flexibility, but they generate text one token at a time from left to right. DiffusionGemma introduces a third path: as you see in DeepMind’s animation, discrete diffusion resolves tokens in parallel across the entire canvas."',
+    title: '🎙️ Part 1 — What is a decision model?',
+    text: '"Classifiers are the backbone of software decision-making. Traditional ML is fast, but needs thousands of labeled examples every time categories change. Autoregressive LLMs give us zero-shot flexibility, but they generate text one token at a time from left to right. DiffusionGemma introduces a third path: as you see in DeepMind’s animation, discrete diffusion resolves tokens in parallel across the entire canvas."',
     hint: '👉 Presenter Action: Let the DeepMind video play while introducing the 3 generations on the right, then click Tab 2 ("2. Live Race: Serial vs. 1-Pass").',
   },
   2: {
-    title: '🎙️ Part 2 (0:25–0:55) — The Live Race: Serial Token Spooling vs. 1-Pass Canvas',
-    text: '"Here is the exact customer ticket both models receive: a 502 Bad Gateway outage paired with a $45,000 invoice threat. Watch what happens when we run the race: the Autoregressive LLM takes 2.5 seconds spooling out JSON tokens left-to-right—and if an early token flips, it corrupts the final department field. Meanwhile, dgem pins the 3 answer slots and resolves all three simultaneously in one 450ms forward pass."',
+    title: '🎙️ Part 2 — One pass vs. word-by-word',
+    text: '"Here is the exact customer ticket both models receive: a 502 Bad Gateway outage paired with a $45,000 invoice threat. In this illustration, a chat model writes its JSON answer word by word, so an early word can steer later fields. dgem gives each field its own blank and fills all three together in one forward pass, returning a probability for every allowed answer."',
     hint: '👉 Presenter Action: Point to the Shared Input Ticket at top, click "▶ Run Live Race", then click "⚡ Step 2: Flip Early Token" to show left-to-right drift.',
   },
   3: {
-    title: '🎙️ Part 3 (1:45–2:30) — Invariant Decision Calibration (IDC) & The Entropy Gate',
-    text: '"How do we know when to trust a fast zero-shot decision? Raw confidence alone can be tricked by First-Choice Favoritism (Option A bias): on a borderline question it can make a coin flip look certain. With Invariant Decision Calibration (IDC), dgem zeroes the scale against a blank input and reads the options both forward [A→C] and backward [C→A] in the same forward pass. Click Step 4 (Order / Bias Trap) and toggle the IDC Calibration Lens to see, in this illustration, how it flags a false-green guess. Early measured results are promising but small, and the mirror does not catch every order flip."',
-    hint: '👉 Presenter Action: Click Steps 1 → 2 → 3 → 4 ("Order / Bias Trap"), toggle "⚖️ IDC Calibrated" ON/OFF, or click "📖 Plain-English Glossary" to explain the terms without ML jargon.',
+    title: '🎙️ Part 3 — When to trust an answer (hesitation + IDC)',
+    text: '"How do we know when to trust a fast zero-shot decision? Raw confidence alone can be tricked by First-Choice Favoritism (Option A bias): on a borderline question it can make a coin flip look certain. With Invariant Decision Calibration (IDC), dgem zeroes the scale against a blank input and reads the options both forward [A→C] and backward [C→A] in the same forward pass. Click Step 4 (Order trap) and switch the order check on and off to see, in this illustration, how it flags a falsely confident guess. Early measured results are promising but small, and the mirror does not catch every order flip."',
+    hint: '👉 Presenter Action: Click Steps 1 → 4, switch "With order check (IDC)" on and off, or open the Glossary to explain terms.',
   },
   4: {
-    title: '🎙️ Part 4 (2:30–3:05) — Fast Decision Model as a Prompt Injection Safety Gate',
-    text: '"Why use a 1-pass Decision Model as a front-door safety gate? In a normal chat LLM, an attacker’s [SYSTEM OVERRIDE] string can hijack the 256,000-word vocabulary into leaking secrets. In dgem, the output slot is physically stenciled to just two tokens—yes or no. Toggle between Step 1 (Benign Doc) and Step 2 (Inject Override Attack): the attacker’s payload has nowhere to go except flipping injection_detected to yes at 99.8% probability."',
-    hint: '👉 Presenter Action: Click "🟢 Step 1: Benign Q3 Doc" ➔ "🔴 Step 2: Inject Override Attack", then click "🚀 Run Injection Trap Live in Studio".',
+    title: '🎙️ Part 4 — Built-in guardrails',
+    text: '"Why use a 1-pass Decision Model as a front-door safety gate? A chat model can be tricked by text hidden in a document into writing things it shouldn’t. In dgem, the answer to each question can only be one of the listed options, such as yes or no, so there is no way to write out secrets through it. An attacker can still try to push the answer the wrong way, which is why we test detection (4 of 4 prompt-injection items correct in our 50-item suite). Toggle Step 1 and Step 2 to compare."',
+    hint: '👉 Presenter Action: Click Step 1, then Step 2, then "Run Injection Trap Live in Studio".',
   },
   5: {
-    title: '📖 Part 5 — Plain-English Glossary: ML & Calibration Terms Translated for Humans',
-    text: '"Terms like Shannon Entropy, Primacy Bias, Taring the Scale, and Brier Calibration sound academic, but each one maps to an everyday intuition—like zeroing a kitchen scale before weighing flour, or checking if a weather forecaster’s 90% rain prediction actually rains 9 times out of 10."',
-    hint: '👉 Presenter Action: Click any of the 6 term cards below to compare "What ML Papers Call It" vs. "What It Actually Means in Plain English" with interactive before/after examples.',
+    title: '📖 Part 5 — Glossary',
+    text: '"Terms like hesitation (entropy), first-choice bias, taring the scale, and calibration sound academic, but each maps to an everyday idea—like zeroing a kitchen scale before weighing flour, or checking whether a forecaster’s "90% chance of rain" really means rain 9 days out of 10."',
+    hint: '👉 Presenter Action: Start with the four basics (decision model, question slot, policy template, handing off), then the trust terms.',
   },
 };
 
@@ -94,7 +95,7 @@ export class DgemConceptVisualizer extends LitElement {
   @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'dark';
 
   @state() private currentScene = 1;
-  @state() private showTeleprompter = true;
+  @state() private showTeleprompter = false;
 
   // Scene 2: Live Race State
   @state() private raceTimeMs = 2500;
@@ -110,7 +111,7 @@ export class DgemConceptVisualizer extends LitElement {
   @state() private isAttackDoc = true;
 
   // Scene 5: Plain-English Glossary State
-  @state() private activeGlossaryTerm = 'idc';
+  @state() private activeGlossaryTerm = 'decision-model';
 
   static styles = css`
     :host {
@@ -869,13 +870,48 @@ export class DgemConceptVisualizer extends LitElement {
     }
   }
 
+  private renderIntro(what: string, tryThis: string) {
+    return html`
+      <div
+        style="display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; padding: 0.6rem 0.9rem; margin-bottom: 0.85rem; border-radius: 9px; background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); font-size: 0.82rem;"
+      >
+        <span><strong style="color: var(--viz-brand-bright);">What you'll see:</strong> ${what}</span>
+        <span><strong style="color: var(--viz-emerald);">Try this:</strong> ${tryThis}</span>
+      </div>
+    `;
+  }
+
   private renderScene1() {
     return html`
+      <div class="card" style="margin-bottom: 0.9rem;">
+        <div class="card-header">
+          <h2 class="card-title">What is a decision model?</h2>
+          <span class="pill pill-brand">Start here</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; font-size: 0.86rem; line-height: 1.55;">
+          <div>
+            <strong>1. You describe the situation and the questions.</strong><br />
+            A ticket, a record, a document or an image, plus a few multiple-choice questions:
+            <em>Which team? Is it urgent? How severe, 1–5?</em>
+          </div>
+          <div>
+            <strong>2. It answers every question at once.</strong><br />
+            Instead of writing a reply word by word, the model returns a <strong>probability for every allowed answer</strong>,
+            for every question, in a single pass. It can only pick from the options you listed.
+          </div>
+          <div>
+            <strong>3. Your software decides what to do.</strong><br />
+            When the model is clearly sure, act automatically. When it hesitates, ask a person or a bigger model.
+            The rest of this walkthrough shows how to tell the difference.
+          </div>
+        </div>
+      </div>
+
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Parallel Token Resolution (Google DeepMind DiffusionGemma)</h2>
-            <span class="pill pill-brand">Bidirectional Canvas</span>
+            <h2 class="card-title">How DiffusionGemma fills in text (Google DeepMind)</h2>
+            <span class="pill pill-brand">All at once</span>
           </div>
 
           <div class="video-wrapper">
@@ -889,45 +925,45 @@ export class DgemConceptVisualizer extends LitElement {
               controls
             ></video>
             <div class="video-caption-bar">
-              <span>Instead of typing left-to-right, blocks of tokens resolve simultaneously across the canvas.</span>
+              <span>Instead of typing left to right, the whole page sharpens at once. dgem uses this to fill every answer blank together.</span>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Three Generations of Classification</h2>
-            <span class="pill pill-emerald">Zero-Shot + Per-Field Uncertainty</span>
+            <h2 class="card-title">Three ways software makes these decisions</h2>
+            <span class="pill pill-emerald">No training needed + a probability per answer</span>
           </div>
 
           <div class="gen-stack">
             <div class="gen-card">
               <div class="gen-card-top">
-                <h3>1. Traditional Predictive ML (BERT / XGBoost)</h3>
-                <span class="pill pill-emerald mono">~10 ms · Calibrated</span>
+                <h3>1. Traditional classifiers (e.g. BERT, XGBoost)</h3>
+                <span class="pill pill-emerald mono">Very fast · Needs labeled data</span>
               </div>
               <p>
-                Outputs clean class probabilities, but requires <strong>thousands of labeled examples</strong> and a retraining cycle every time you add or change a category.
+                Fast and cheap, but needs <strong>thousands of labeled examples</strong> and retraining every time you add or change a category.
               </p>
             </div>
 
             <div class="gen-card">
               <div class="gen-card-top">
-                <h3>2. Autoregressive LLMs (Chat / JSON Mode)</h3>
-                <span class="pill pill-amber mono">~2,500 ms · Uncalibrated</span>
+                <h3>2. Chat models (asked to reply in JSON)</h3>
+                <span class="pill pill-amber mono">Seconds · Confidence hidden</span>
               </div>
               <p>
-                Zero-shot flexible at evaluation time, but generates tokens <strong>serially from left to right</strong>. Early tokens bias later fields, and raw text hides whether the model was 99% sure or guessing 51/49.
+                Works from plain-English instructions, but writes its answer <strong>word by word</strong>. Early words can steer later fields, and the text doesn't show whether it was 99% sure or guessing 51/49.
               </p>
             </div>
 
             <div class="gen-card highlight">
               <div class="gen-card-top">
-                <h3>3. Decision Models (dgem + DiffusionGemma)</h3>
-                <span class="pill pill-brand mono">~450 ms · 1-Pass + Entropy (nats)</span>
+                <h3>3. Decision models (dgem + DiffusionGemma)</h3>
+                <span class="pill pill-brand mono">One pass · Probability per answer</span>
               </div>
               <p>
-                Combines <strong>zero-shot flexibility</strong> with <strong>single-pass parallel slot readout</strong>. Evaluates all decision fields simultaneously on a fixed canvas and outputs exact probabilities (pₖ) and Shannon entropy (H).
+                Works from plain-English instructions like a chat model, but answers <strong>all questions together in one pass</strong> and returns a probability for every allowed answer, plus a <strong>hesitation score</strong>. Typical time: ~0.1 s for a short question, up to ~1.5 s for a large multi-question request.
               </p>
             </div>
           </div>
@@ -943,13 +979,17 @@ export class DgemConceptVisualizer extends LitElement {
     const diffLocked = this.raceTimeMs >= 450;
 
     return html`
+      ${this.renderIntro(
+        'the same ticket answered two ways: word by word (chat model) vs. all blanks at once (dgem). The timings are illustrative, not a measured benchmark.',
+        'press ▶ Play, then try "Change an early word" to see how a word-by-word answer can drift.'
+      )}
       <div class="shared-input-banner">
         <div class="input-banner-grid">
           <div>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span class="pill pill-amber">SHARED INPUT TICKET</span>
-                <strong style="font-size: 0.88rem;">What both models receive at t = 0 ms:</strong>
+                <span class="pill pill-amber">SAME TICKET</span>
+                <strong style="font-size: 0.88rem;">What both approaches receive:</strong>
               </div>
               <button class="btn-studio-jump" @click=${() => this.jumpToStudioPreset('support-vip')}>
                 🚀 Open This Ticket Live in Decision Studio ➔
@@ -962,7 +1002,7 @@ export class DgemConceptVisualizer extends LitElement {
 
           <div>
             <div style="font-size: 0.76rem; font-weight: 700; color: var(--viz-text-muted); margin-bottom: 0.35rem; text-transform: uppercase;">
-              Required Output Schema (3 Decision Fields):
+              The 3 questions to answer:
             </div>
             <div class="schema-badges">
               <div class="schema-item">
@@ -984,15 +1024,15 @@ export class DgemConceptVisualizer extends LitElement {
 
       <div class="race-toolbar">
         <button class="btn-studio-jump" @click=${() => this.playRace()}>
-          ▶ Run Live Race (0 → 2,500 ms)
+          ▶ Play (illustration)
         </button>
         <button
           class="action-btn ${this.isPerturbed ? 'active-rose' : ''}"
           @click=${() => (this.isPerturbed = !this.isPerturbed)}
         >
           ${this.isPerturbed
-            ? '⚡ Early Token Flipped ("502" ➔ "$45k invoice") — AR Corrupted!'
-            : '⚡ Step 2: Flip Early Token ("502" ➔ "$45k invoice")'}
+            ? '⚡ Early word changed — the later fields drifted'
+            : '⚡ Change an early word'}
         </button>
         <div class="scrubber-group">
           <span class="mono" style="font-size: 0.78rem; font-weight: 600;">t = ${this.raceTimeMs} ms</span>
@@ -1011,9 +1051,9 @@ export class DgemConceptVisualizer extends LitElement {
         <span class="pill pill-emerald">
           ${diffLocked
             ? this.raceTimeMs < 2480
-              ? `dgem Locked at 450ms! (AR typing... ${2480 - this.raceTimeMs}ms left)`
-              : 'Complete — DiffusionGemma 5.5× Faster'
-            : `Denoising Canvas... (${this.raceTimeMs} / 450 ms)`}
+              ? 'dgem: all 3 answers ready · chat model still writing…'
+              : 'Done — one pass vs. many word-by-word steps'
+            : 'dgem: filling all 3 blanks…'}
         </span>
       </div>
 
@@ -1021,12 +1061,12 @@ export class DgemConceptVisualizer extends LitElement {
         <div class="lane-box">
           <div class="lane-top">
             <div>
-              <h3 style="margin: 0; font-size: 0.96rem;">Autoregressive LLM (Left-to-Right Token Spooling)</h3>
+              <h3 style="margin: 0; font-size: 0.96rem;">Chat model (writes word by word)</h3>
               <div style="font-size: 0.75rem; color: var(--viz-text-muted); margin-top: 0.18rem;">
-                Generates 25+ serial tokens one after another. Early words lock in downstream fields.
+                Writes 25+ pieces of text one after another. Earlier words shape later fields.
               </div>
             </div>
-            <span class="pill pill-amber mono">2,480 ms</span>
+            <span class="pill pill-amber mono">many steps</span>
           </div>
           <div class="token-stream">
             ${visibleTokens.map((t, idx) => {
@@ -1044,12 +1084,12 @@ export class DgemConceptVisualizer extends LitElement {
         <div class="lane-box diffusion-lane">
           <div class="lane-top">
             <div>
-              <h3 style="margin: 0; font-size: 0.96rem;">dgem + DiffusionGemma (1-Pass Decision Canvas)</h3>
+              <h3 style="margin: 0; font-size: 0.96rem;">dgem + DiffusionGemma (all blanks at once)</h3>
               <div style="font-size: 0.75rem; color: var(--viz-text-muted); margin-top: 0.18rem;">
-                Pins 3 <code>[MASK]</code> slots and resolves all 3 simultaneously in 1 forward pass.
+                Gives each question a blank and fills all 3 together in one pass. The blanks can see each other.
               </div>
             </div>
-            <span class="pill pill-emerald mono">450 ms (1 Pass)</span>
+            <span class="pill pill-emerald mono">1 pass</span>
           </div>
 
           ${svg`
@@ -1061,7 +1101,7 @@ export class DgemConceptVisualizer extends LitElement {
               <circle cx="320" cy="30" r="4" fill="#3b82f6" />
               <circle cx="540" cy="30" r="4" fill="#f59e0b" />
               <text x="320" y="13" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">
-                ◄─── Simultaneous Bidirectional Slot Attention ───►
+                ◄─── answers are filled together and inform each other ───►
               </text>
             </svg>
           `}
@@ -1073,7 +1113,7 @@ export class DgemConceptVisualizer extends LitElement {
             <div class="slot-card locked">
               <div class="slot-name">
                 <span>urgent</span>
-                <span style="color: var(--viz-emerald);">0.02 nats</span>
+                <span style="color: var(--viz-emerald);" title="Entropy 0.02 nats">Hesitation 3% · Clear</span>
               </div>
               <div class="slot-val" style="color: var(--viz-emerald);">"yes" (99.7%)</div>
               <div class="prob-row">
@@ -1089,7 +1129,7 @@ export class DgemConceptVisualizer extends LitElement {
             <div class="slot-card locked">
               <div class="slot-name">
                 <span>urgency_score</span>
-                <span style="color: var(--viz-emerald);">0.21 nats</span>
+                <span style="color: var(--viz-emerald);" title="Entropy 0.21 nats over 5 levels">Hesitation 13% · Clear</span>
               </div>
               <div class="slot-val" style="color: var(--viz-brand-bright);">"5" (94.3%)</div>
               <div class="prob-row">
@@ -1105,7 +1145,7 @@ export class DgemConceptVisualizer extends LitElement {
             <div class="slot-card ambiguous">
               <div class="slot-name">
                 <span>department</span>
-                <span style="color: var(--viz-amber);">0.56 nats</span>
+                <span style="color: var(--viz-amber);" title="Entropy 0.56 nats over 3 options">Hesitation 51% · Very unsure</span>
               </div>
               <div class="slot-val" style="color: var(--viz-amber);">"Technical" (75.5%)</div>
               <div class="prob-row">
@@ -1133,10 +1173,10 @@ export class DgemConceptVisualizer extends LitElement {
 
     if (isFramingTrap) {
       if (!this.idcCalibrated) {
-        // Raw single-slot readout falls for Option A Primacy Bias (93.6% Option A -> H = 0.24 nats -> FALSE GREEN!)
-        pTech = 0.936;
-        pBill = 0.054;
-        pAcct = 0.01;
+        // Illustrative: raw single-slot readout inflated by first-option bias (97.5% -> hesitation ~12% -> false "Clear")
+        pTech = 0.975;
+        pBill = 0.02;
+        pAcct = 0.005;
         mirrorTVD = 0.88;
       } else {
         // IDC Calibrated: Null-Prior Tare removes Box A bias + Mirror [C->A] ballot exposes 0.88 Cross-Stem TVD
@@ -1164,26 +1204,30 @@ export class DgemConceptVisualizer extends LitElement {
     for (const p of probs) {
       if (p > 0) H -= p * Math.log(p);
     }
-    const normH = H / Math.log(3);
-    const pctNeedle = Math.min(100, Math.max(0, (H / 1.0986) * 100));
+    const hes = hesitation(H, 3);
+    const pctNeedle = Math.min(100, Math.max(0, hes.normalized * 100));
     const tvdTriggered = this.idcCalibrated && mirrorTVD >= 0.25;
-    const isLowEntropy = H < 0.35 && !tvdTriggered;
+    const isLowEntropy = hes.band === 'clear' && !tvdTriggered;
 
     return html`
+      ${this.renderIntro(
+        'how dgem decides whether to answer directly or hand off, using a hesitation score plus an order check (IDC). Tickets and numbers are illustrative.',
+        'click Steps 1 → 4, then switch the order check off and on in Step 4.'
+      )}
       <div class="grid-2">
         <div class="card">
           <div class="card-header" style="flex-wrap: wrap; gap: 0.45rem;">
-            <h2 class="card-title">Click 1 → 4: IDC &amp; Shannon Entropy Escalation Gate</h2>
+            <h2 class="card-title">When should the model answer on its own?</h2>
             <div style="display: flex; gap: 0.4rem; align-items: center;">
               <button
                 class="action-btn"
                 style="font-size: 0.72rem; padding: 0.28rem 0.58rem;"
                 @click=${() => (this.currentScene = 5)}
               >
-                📖 Plain-English Glossary ➔
+                📖 Glossary ➔
               </button>
               <span class="pill ${isLowEntropy ? 'pill-emerald' : 'pill-amber'}">
-                H = ${H.toFixed(2)} nats · TVD = ${mirrorTVD.toFixed(2)} · ${isLowEntropy ? 'FAST EXIT' : 'ESCALATE'}
+                <span title=${hes.tooltip}>Hesitation ${hes.pct}%</span> · ${isLowEntropy ? 'ANSWER NOW' : 'HAND OFF'}
               </span>
             </div>
           </div>
@@ -1193,11 +1237,11 @@ export class DgemConceptVisualizer extends LitElement {
             style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; border-radius: 9px; background: var(--viz-bg-elevated); border: 1px solid ${this.idcCalibrated ? 'var(--viz-brand-border)' : 'var(--viz-border-strong)'};"
           >
             <div style="font-size: 0.77rem;">
-              <strong style="color: var(--viz-brand-bright);">⚖️ IDC Calibration Lens:</strong>
+              <strong style="color: var(--viz-brand-bright);">⚖️ Order check (IDC):</strong>
               <span style="color: var(--viz-text-secondary); margin-left: 0.25rem;">
                 ${this.idcCalibrated
-                  ? 'ON — Zeroes Option-A bias ("Tare") + checks Forward [A→C] vs. Reverse [C→A] in 1 pass'
-                  : 'OFF — Naive single-slot readout (vulnerable to Option-A bias & order flips)'}
+                  ? 'ON — removes the first-option habit and compares the answer with the list reversed, in the same pass'
+                  : 'OFF — a single reading, which can be fooled by where options are listed'}
               </span>
             </div>
             <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
@@ -1206,19 +1250,23 @@ export class DgemConceptVisualizer extends LitElement {
                 style="font-size: 0.72rem; padding: 0.28rem 0.6rem;"
                 @click=${() => (this.idcCalibrated = false)}
               >
-                Raw Single-Slot
+                Without order check
               </button>
               <button
                 class="action-btn ${this.idcCalibrated ? 'active-cue' : ''}"
                 style="font-size: 0.72rem; padding: 0.28rem 0.6rem;"
                 @click=${() => (this.idcCalibrated = true)}
               >
-                ⚖️ IDC Calibrated (ON)
+                ⚖️ With order check (IDC)
               </button>
             </div>
           </div>
 
-          <div style="font-size: 0.72rem; color: var(--viz-text-muted); margin: -0.35rem 0 0.7rem 0;">
+          <div style="font-size: 0.8rem; color: var(--viz-text-secondary); margin: -0.2rem 0 0.6rem 0;">
+            <strong>IDC</strong> (Invariant Decision Calibration) is our name for a set of checks that make sure an answer reflects
+            the question, not the order the options were listed in.
+          </div>
+          <div style="font-size: 0.72rem; color: var(--viz-text-muted); margin: 0 0 0.7rem 0;">
             ℹ️ <strong>Illustrative simulation:</strong> the tickets, probabilities and TVD gate below are made up to
             show the mechanism. For measured results (small samples, including cases the mirror misses), see
             <em>Confidence Beyond Shannon (IDC)</em> in the docs. IDC is CLI-only today (<code>--null-prior-debias</code>,
@@ -1231,44 +1279,44 @@ export class DgemConceptVisualizer extends LitElement {
               @click=${() => this.selectEntropyPreset(1, 0.02)}
             >
               <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 1: CLEAR</div>
-              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Pure 502 Outage</div>
-              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">H=0.06 · TVD=0.01</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Plain outage ticket</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">Hesitation ~12%</div>
             </button>
 
             <button
               class="preset-step-btn ${this.activeEntropyPreset === 2 ? 'active-step-amber' : ''}"
               @click=${() => this.selectEntropyPreset(2, 0.46)}
             >
-              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 2: MIXED VIP</div>
-              <div style="margin-top: 0.15rem; font-size: 0.78rem;">502 + $45k Invoice</div>
-              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">H=0.56 · Escalate</div>
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 2: MIXED</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Outage + invoice dispute</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">Hesitation ~57% · hand off</div>
             </button>
 
             <button
               class="preset-step-btn ${this.activeEntropyPreset === 3 ? 'active-step-rose' : ''}"
               @click=${() => this.selectEntropyPreset(3, 1.0)}
             >
-              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 3: 3-WAY TIE</div>
-              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Uniform Split</div>
-              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">H=1.10 · Ceiling</div>
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 3: TOSS-UP</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Could be any team</div>
+              <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">Hesitation ~100%</div>
             </button>
 
             <button
               class="preset-step-btn ${this.activeEntropyPreset === 4 ? 'active-step-rose' : ''}"
               @click=${() => this.selectEntropyPreset(4, 0.2)}
             >
-              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 4: IDC TRAP</div>
-              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Option-A / Order Flip</div>
+              <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 4: ORDER TRAP</div>
+              <div style="margin-top: 0.15rem; font-size: 0.78rem;">Looks sure, but isn't</div>
               <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">
-                ${this.idcCalibrated ? 'Caught (TVD=0.88)' : 'False Green (0.24)'}
+                ${this.idcCalibrated ? 'Caught by order check' : 'Falsely "Clear" (~12%)'}
               </div>
             </button>
           </div>
 
           <div style="background: var(--viz-bg-elevated); padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid var(--viz-border-strong);">
             <label style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">
-              <span>${isFramingTrap ? 'Step 4 Trap: Order Sensitivity + Option-A Bias' : 'Or Drag Signal Conflict Slider Smoothly:'}</span>
-              <span class="mono">${isFramingTrap ? `Mirror TVD = ${mirrorTVD.toFixed(2)}` : `${this.conflictVal}% Conflict`}</span>
+              <span>${isFramingTrap ? 'Step 4: the answer depends on the option order' : 'Or drag to mix in more conflicting signals:'}</span>
+              <span class="mono">${isFramingTrap ? `Forward vs. reversed gap = ${Math.round(mirrorTVD * 100)}%` : `${this.conflictVal}% conflict`}</span>
             </label>
             <input
               type="range"
@@ -1282,7 +1330,7 @@ export class DgemConceptVisualizer extends LitElement {
 
             <div class="mono" style="margin-top: 0.6rem; padding: 0.65rem; background: var(--viz-bg-canvas); border-radius: 7px; font-size: 0.76rem; color: var(--viz-text-secondary); border: 1px solid var(--viz-border-subtle);">
               ${isFramingTrap
-                ? html`"Notice: Gateway certificate renewal notice attached—please confirm whether Technical Ops or Billing Admin owns signature." <strong style="color: var(--viz-amber);">[Forward [A→C] picks Technical 93.6%, but Reverse [C→A] flips to Billing 91.2% → Cross-Stem TVD = 0.88!]</strong>`
+                ? html`"Notice: Gateway certificate renewal notice attached—please confirm whether Technical Ops or Billing Admin owns signature." <strong style="color: var(--viz-amber);">[Listed A→C it picks Technical (97.5%); listed C→A it picks Billing (91%). The two readings are 88% apart.]</strong>`
                 : this.conflictVal < 18
                   ? html`"URGENT: Production API returning 502 Bad Gateway for 40 mins across us-central1 endpoints. Requesting immediate engineering roll-back."`
                   : this.conflictVal < 78
@@ -1313,28 +1361,28 @@ export class DgemConceptVisualizer extends LitElement {
 
           <div class="gauge-box">
             <div class="gauge-header-row" style="flex-wrap: wrap; gap: 0.35rem;">
-              <span><strong>0.00</strong> (100% Sure)</span>
-              <span class="formula-pill">
-                H = ${H.toFixed(2)} nats (H̃ = ${(normH * 100).toFixed(0)}%) · Mirror TVD = ${mirrorTVD.toFixed(2)}
+              <span><strong>0%</strong> (one clear answer)</span>
+              <span class="formula-pill" title=${hes.tooltip}>
+                Hesitation ${hes.pct}% · ${hes.label}${this.idcCalibrated ? ` · order gap ${Math.round(mirrorTVD * 100)}%` : ''}
               </span>
-              <span><strong>1.10 nats</strong> (Max Split)</span>
+              <span><strong>100%</strong> (a perfect tie)</span>
             </div>
             <div class="entropy-meter-track">
-              <div class="threshold-marker">
-                <span class="threshold-label">Example gate: H ≥ 0.35 or TVD ≥ 0.25</span>
+              <div class="threshold-marker" style="left: 16%;">
+                <span class="threshold-label">Hand off at 16% hesitation (or a 25% order gap)</span>
               </div>
               <div class="entropy-needle" style="left: ${pctNeedle}%;"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--viz-text-muted);">
-              <span style="color: var(--viz-emerald);">● Green Zone (H &lt; 0.35 &amp; TVD &lt; 0.25): Fast 1-Pass Exit</span>
-              <span style="color: var(--viz-amber);">▲ Amber/Red Zone: Escalate to Gemini 3.8 Flash</span>
+              <span style="color: var(--viz-emerald);">● Clear: answer now</span>
+              <span style="color: var(--viz-amber);">▲ Unsure: hand off to Gemini or a person</span>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Live Routing Action (IDC + Entropy Cascade)</h2>
+            <h2 class="card-title">What happens next</h2>
             <button class="btn-studio-jump" @click=${() => this.jumpToStudioPreset('support-vip')}>
               🚀 Run VIP Ticket Live in Studio ➔
             </button>
@@ -1353,40 +1401,40 @@ export class DgemConceptVisualizer extends LitElement {
                 : 'var(--viz-amber)'};"
             >
               ${isFramingTrap && !this.idcCalibrated
-                ? `❌ FALSE GREEN (Naive Mode): Option-A bias hides uncertainty (H = ${H.toFixed(2)} < 0.35)!`
+                ? `❌ Looks clear, but isn't: the first-option habit hides the doubt (hesitation ${hes.pct}%)`
                 : isFramingTrap && this.idcCalibrated
-                  ? `🛡️ SAVED BY IDC: Tare + O(1) Mirror Ballot caught order flip (H = ${H.toFixed(2)}, TVD = ${mirrorTVD.toFixed(2)} ≥ 0.25)!`
+                  ? `🛡️ Caught by the order check: the reversed list gives a different answer → hand off`
                   : isLowEntropy
-                    ? `✅ FAST 1-PASS EXIT: H (${H.toFixed(2)} nats) < 0.35 & Mirror TVD (${mirrorTVD.toFixed(2)}) < 0.25`
-                    : `⚠️ ESCALATION TRIGGERED: H (${H.toFixed(2)} nats) ≥ 0.35 or Mirror TVD (${mirrorTVD.toFixed(2)}) ≥ 0.25`}
+                    ? `✅ Answer now: hesitation ${hes.pct}% is below 16%`
+                    : `⚠️ Hand off: hesitation ${hes.pct}% is 16% or more`}
             </div>
             <p style="margin: 0.35rem 0 0 0; font-size: 0.82rem; color: var(--viz-text-secondary);">
               ${isFramingTrap && !this.idcCalibrated
-                ? html`Without IDC, the model's natural preference for <strong>Option A</strong> inflates <code>Technical</code> to <code>93.6%</code> (<code>H = 0.24 nats</code>), letting an order-sensitive guess slip through. <strong>Click "⚖️ IDC Calibrated (ON)" on the left</strong> to see how Taring + Mirror Slots can catch it in the same forward pass. (The mirror only tests the reversed order, so it can miss other order flips.)`
+                ? html`Without the order check, the model's habit of favoring <strong>option A</strong> pushes <code>Technical</code> to <code>97.5%</code>, so a guess that depends on the list order slips through. <strong>Switch on "With order check (IDC)"</strong> to see it caught in the same pass. (The check only compares against the reversed order, so it can miss other order effects; in our tests it caught one such case and missed another.)`
                 : isLowEntropy
-                  ? html`Both forward <code>[A→C]</code> and reversed <code>[C→A]</code> slots agree after zeroing out Option-A bias. Ticket routes immediately in one pass, with no escalation.`
-                  : html`Stage 1 locks certain slots (<code>urgent="yes"</code>) and escalates <code>department</code> to <strong>Gemini 3.8 Flash</strong> with de-biased IDC prior odds (<code>Technical: ${(pTech * 100).toFixed(1)}%, Billing: ${(pBill * 100).toFixed(1)}%</code>).`}
+                  ? html`One answer clearly stands out${this.idcCalibrated ? ', and the reversed list agrees' : ''}. The ticket is routed immediately.`
+                  : html`Confident answers (like <code>urgent = yes</code>) are kept, and the uncertain one (<code>department</code>) is handed to <strong>Gemini</strong> along with dgem's odds (<code>Technical ${(pTech * 100).toFixed(0)}%, Billing ${(pBill * 100).toFixed(0)}%</code>) as a hint.`}
             </p>
           </div>
 
           <!-- 3 Plain-English Pillars of IDC Mini-Summary -->
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.85rem;">
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-brand-bright);">1. Tare the Scale</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-brand-bright);">1. Zero the scale</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
                 Divides out <strong>Option-A favoritism</strong> measured on a blank prompt. Needs no labeled data.
               </div>
             </div>
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-emerald);">2. Ask Both Ways (O(1))</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-emerald);">2. Ask both ways</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
-                Reads <code>[A→C]</code> &amp; <code>[C→A]</code> in the <strong>same forward pass</strong> (no second GPU call) to flag order-dependent answers.
+                Reads the options forward and reversed in the <strong>same pass</strong> (no extra cost) and flags answers that change.
               </div>
             </div>
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-amber);">3. Normalized Gate</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-amber);">3. Fair hesitation score</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
-                Scales hesitation <code>H̃ = H / ln(K)</code> uniformly whether a policy has 2 or 26 options.
+                Hesitation is scaled to 0–100% so a 2-option and a 26-option question are judged the same way.
               </div>
             </div>
           </div>
@@ -1394,21 +1442,21 @@ export class DgemConceptVisualizer extends LitElement {
           ${svg`
             <svg viewBox="0 0 600 215" style="width: 100%; height: auto; background: var(--viz-bg-canvas); border-radius: 10px; border: 1px solid var(--viz-border-subtle); padding: 8px;">
               <rect x="16" y="64" width="180" height="88" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
-              <text x="106" y="91" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="11.5">Stage 1: DiffusionGemma + IDC</text>
-              <text x="106" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="10.5">1-Pass Canvas (no extra pass)</text>
-              <text x="106" y="127" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• Null-Prior Tare (p̃ₖ ∝ pₖ / p₀)</text>
-              <text x="106" y="142" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• Mirror Slots [A→C] + [C→A]</text>
+              <text x="106" y="91" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="11.5">Step 1: dgem answers</text>
+              <text x="106" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="10.5">one pass, all questions</text>
+              <text x="106" y="127" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• zero the first-option habit</text>
+              <text x="106" y="142" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• compare with list reversed</text>
 
               <path d="M 196 92 C 255 92, 265 42, 335 42" fill="none" stroke="#10b981" stroke-width="${isLowEntropy ? '4' : '2'}" opacity="${isLowEntropy ? '1' : '0.4'}" />
               <rect x="335" y="14" width="248" height="58" rx="8" fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="2" opacity="${isLowEntropy ? '1' : '0.5'}" />
-              <text x="459" y="36" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="11.5">Fast 1-Pass Exit</text>
-              <text x="459" y="54" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">H &lt; 0.35 &amp; Mirror TVD &lt; 0.25 → Done</text>
+              <text x="459" y="36" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="11.5">Clear → answer now</text>
+              <text x="459" y="54" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">hesitation &lt; 16% and lists agree</text>
 
               <path d="M 196 125 C 255 125, 265 168, 335 168" fill="none" stroke="#f59e0b" stroke-width="${isLowEntropy ? '2' : '4'}" opacity="${isLowEntropy ? '0.35' : '1'}" />
               <rect x="335" y="135" width="248" height="66" rx="8" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2" opacity="${isLowEntropy ? '0.45' : '1'}" />
-              <text x="459" y="157" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="11.5">Stage 2: Gemini 3.8 Flash</text>
-              <text x="459" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">H ≥ 0.35 or Mirror TVD ≥ 0.25</text>
-              <text x="459" y="190" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="9.8">EXP-05b entropy gate: 88% → 98% (n=50)</text>
+              <text x="459" y="157" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="11.5">Unsure → hand off to Gemini</text>
+              <text x="459" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">hesitation ≥ 16% or lists disagree</text>
+              <text x="459" y="190" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="9.8">In tests: 88% → 98% accuracy (50 items)</text>
             </svg>
           `}
         </div>
@@ -1418,28 +1466,32 @@ export class DgemConceptVisualizer extends LitElement {
 
   private renderScene4() {
     return html`
+      ${this.renderIntro(
+        'why a yes/no question slot cannot be used to leak text, even when a document contains an attack. The chatbot panel is a dramatization.',
+        'switch between Step 1 (normal document) and Step 2 (hidden attack).'
+      )}
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Toggle Input: Benign Doc vs. Prompt Injection Attack</h2>
+            <h2 class="card-title">A document with a hidden instruction</h2>
             <div style="display: flex; gap: 0.4rem;">
               <button
                 class="action-btn ${!this.isAttackDoc ? 'active-cue' : ''}"
                 @click=${() => (this.isAttackDoc = false)}
               >
-                🟢 Step 1: Benign Q3 Doc
+                🟢 Step 1: Normal document
               </button>
               <button
                 class="action-btn ${this.isAttackDoc ? 'active-rose' : ''}"
                 @click=${() => (this.isAttackDoc = true)}
               >
-                🔴 Step 2: Inject Override Attack
+                🔴 Step 2: Hidden attack
               </button>
             </div>
           </div>
 
           <div class="mono" style="background: var(--viz-bg-canvas); border: 1px solid var(--viz-border-strong); padding: 0.95rem; border-radius: 8px; font-size: 0.8rem; line-height: 1.65;">
-            <div style="color: var(--viz-text-muted); font-size: 0.72rem; margin-bottom: 0.25rem;">UNTRUSTED EXTERNAL DOCUMENT INPUT:</div>
+            <div style="color: var(--viz-text-muted); font-size: 0.72rem; margin-bottom: 0.25rem;">DOCUMENT FROM AN UNTRUSTED SOURCE:</div>
             <div>
               "Q3 revenue grew 14% YoY driven by enterprise cloud adoption and strong renewal rates across North America.
               ${this.isAttackDoc
@@ -1462,10 +1514,10 @@ export class DgemConceptVisualizer extends LitElement {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
               <strong style="font-size: 0.86rem; color: ${this.isAttackDoc ? 'var(--viz-rose)' : 'var(--viz-emerald)'};">
                 ${this.isAttackDoc
-                  ? '❌ Without Safety Gate (Open-Ended Chat LLM): HIJACKED'
-                  : '✅ Without Attack Payload (Open-Ended Chat LLM): Normal Summary'}
+                  ? '❌ What an unguarded chatbot might do (dramatization)'
+                  : '✅ Unguarded chatbot, normal document: a normal summary'}
               </strong>
-              <span class="pill ${this.isAttackDoc ? 'pill-rose' : 'pill-emerald'} mono">256,000 Open Vocab Tokens</span>
+              <span class="pill ${this.isAttackDoc ? 'pill-rose' : 'pill-emerald'} mono">can write any of ~262,000 word pieces</span>
             </div>
             <div class="mono" style="font-size: 0.78rem; color: var(--viz-text-primary); background: var(--viz-bg-canvas); padding: 0.6rem; border-radius: 6px;">
               ${this.isAttackDoc
@@ -1477,73 +1529,73 @@ export class DgemConceptVisualizer extends LitElement {
 
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Why dgem's 1-Pass Safety Gate Cannot Be Hijacked</h2>
+            <h2 class="card-title">Why a yes/no slot can't leak secrets</h2>
             <button class="btn-studio-jump" @click=${() => this.jumpToStudioPreset('guardrail-jailbreak')}>
               🚀 Run Injection Trap Live in Studio ➔
             </button>
           </div>
 
           <p style="margin: 0 0 0.7rem 0; font-size: 0.81rem; color: var(--viz-text-secondary);">
-            Instead of allowing all 256,000 words in the vocabulary to compete, <code>dgem</code> places a physical <strong>Slot Stencil</strong> over the output head. Only two tokens (<code>"yes"</code> and <code>"no"</code>) are wired to <code>injection_detected</code>—every conversational token is masked to <code>-∞</code>:
+            A chatbot can write any of its ~262,000 word pieces. For each question, <code>dgem</code> only reads the probabilities of the allowed answers, like a stencil laid over the output. For <code>injection_detected</code> that's just <code>"yes"</code> and <code>"no"</code>; everything else is ignored, so there's no way to write out secrets through the answer. An attacker can still try to push the yes/no the wrong way, so detection itself is tested (4 of 4 prompt-injection items correct in our 50-item suite). The examples below are illustrative:
           </p>
 
           <div class="stencil-grid">
             <div class="vocab-cell ${this.isAttackDoc ? 'alert-slot' : ''}">
-              <div>TOKEN #4210</div>
+              <div>allowed answer</div>
               <div style="font-size: 0.96rem; margin: 0.15rem 0;">"yes"</div>
               <div>${this.isAttackDoc ? 'P = 99.8%' : 'P = 0.4%'}</div>
             </div>
             <div class="vocab-cell ${!this.isAttackDoc ? 'active-slot' : ''}">
-              <div>TOKEN #1904</div>
+              <div>allowed answer</div>
               <div style="font-size: 0.96rem; margin: 0.15rem 0;">"no"</div>
               <div>${this.isAttackDoc ? 'P = 0.2%' : 'P = 99.6%'}</div>
             </div>
             <div class="vocab-cell blocked">
-              <div>TOKEN #8812</div>
+              <div>word piece</div>
               <div>"Sure,"</div>
-              <div>MASKED (-∞)</div>
+              <div>ignored</div>
             </div>
             <div class="vocab-cell blocked">
-              <div>TOKEN #19422</div>
+              <div>word piece</div>
               <div>"Bearer"</div>
-              <div>MASKED (-∞)</div>
+              <div>ignored</div>
             </div>
             <div class="vocab-cell blocked">
-              <div>TOKEN #90112</div>
+              <div>word piece</div>
               <div>"eyJhbGci..."</div>
-              <div>MASKED (-∞)</div>
+              <div>ignored</div>
             </div>
             <div class="vocab-cell blocked">
-              <div>TOKEN #31005</div>
+              <div>word piece</div>
               <div>"API_KEY="</div>
-              <div>MASKED (-∞)</div>
+              <div>ignored</div>
             </div>
             <div class="vocab-cell blocked">
-              <div>TOKEN #7741</div>
+              <div>word piece</div>
               <div>"Here"</div>
-              <div>MASKED (-∞)</div>
+              <div>ignored</div>
             </div>
             <div class="vocab-cell blocked">
-              <div>+255,991 more</div>
+              <div>~262,000 more</div>
               <div>All Free Text</div>
-              <div>MASKED (-∞)</div>
+              <div>ignored</div>
             </div>
           </div>
 
           <div style="margin-top: 0.95rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;">
             <div class="slot-card locked">
               <div class="slot-name">
-                <span>SLOT 1: injection_detected</span>
-                <span style="color: var(--viz-emerald);">H = 0.01 nats</span>
+                <span>Question 1: injection_detected</span>
+                <span style="color: var(--viz-emerald);" title="Entropy 0.01 nats">Hesitation ~2% · Clear</span>
               </div>
               <div class="slot-val" style="color: ${this.isAttackDoc ? 'var(--viz-rose)' : 'var(--viz-emerald)'};">
-                ${this.isAttackDoc ? '"yes" (99.8% — BLOCKED)' : '"no" (99.6% — SAFE PASS)'}
+                ${this.isAttackDoc ? '"yes" (99.8%) → block' : '"no" (99.6%) → allow'}
               </div>
             </div>
             <div class="slot-card locked">
               <div class="slot-name">
-                <span>SLOT 2: attack_category</span>
-                <span style="color: var(--viz-emerald);">H = 0.09 nats</span>
+                <span>Question 2: attack_category</span>
+                <span style="color: var(--viz-emerald);" title="Entropy 0.09 nats">Hesitation ~6% · Clear</span>
               </div>
               <div class="slot-val" style="color: ${this.isAttackDoc ? 'var(--viz-amber)' : 'var(--viz-emerald)'};">
                 ${this.isAttackDoc ? '"system_override" (98.4%)' : '"none" (99.5%)'}
@@ -1565,8 +1617,48 @@ export class DgemConceptVisualizer extends LitElement {
   private renderScene5() {
     const terms = [
       {
+        id: 'decision-model',
+        badge: '🧭 Basics',
+        title: 'Decision model',
+        humanName: 'A fast multiple-choice judge for software',
+        jargon: 'Zero-shot structured classifier / "System One" model: restricted-softmax readout over caller-defined options in a single forward pass',
+        analogy:
+          'Think of a very fast, well-read assistant who fills in a multiple-choice form about a situation you hand them, and next to every tick writes how sure they are. They never write an essay; they only tick the boxes you provided.',
+        impact: 'Lets software route, flag and grade things with a clear answer plus a confidence it can act on, without training a new model for each task.',
+      },
+      {
+        id: 'slot',
+        badge: '🧭 Basics',
+        title: 'Question slot',
+        humanName: 'One blank on the form',
+        jargon: 'Masked canvas slot with a restricted vocabulary (boolean / choice / score)',
+        analogy:
+          'Each question gets its own blank, like "Team: ___" or "Urgent? yes / no". The model can only fill a blank with one of the listed answers, and it fills every blank at the same time.',
+        impact: 'Answers always match the format your code expects, and asking several questions costs about the same as asking one.',
+      },
+      {
+        id: 'template',
+        badge: '🧭 Basics',
+        title: 'Policy template',
+        humanName: 'The form, written as a file',
+        jargon: 'Policy-as-Template (.json.tmpl): Go text/template compiled into a typed question schema',
+        analogy:
+          'A short file that lists the questions, the allowed answers and a plain-English description of each. Change the file and the decision changes, like editing a checklist rather than retraining a person.',
+        impact: 'Teams can add a question or a category in minutes, with no training data and no model training job.',
+      },
+      {
+        id: 'cascade',
+        badge: '🧭 Basics',
+        title: 'Handing off (cascade)',
+        humanName: 'Knowing when to ask a specialist',
+        jargon: 'Entropy-gated escalation cascade (Stage 1 dgemma → Stage 2 Gemini with prior forwarding)',
+        analogy:
+          'Like a triage nurse: clear cases are handled on the spot, and unclear ones go to a specialist, along with the nurse\'s notes. dgem answers the clear cases and passes the unsure ones to a larger model (Gemini) or a person.',
+        impact: 'In a 50-item test, answering clear items directly and handing off the rest reached 98% accuracy at 56% lower cost than sending everything to Gemini.',
+      },
+      {
         id: 'idc',
-        badge: '⚖️ Core Framework',
+        badge: '⚖️ Trust',
         title: 'IDC (Invariant Decision Calibration)',
         humanName: 'The "Does-the-Order-Matter?" Check',
         jargon: 'Invariant Decision Calibration: Null-Prior De-Biasing + Dual-Mirror Canvas (Mirror TVD) + optional Temperature Scaling (EXP-13)',
@@ -1576,28 +1668,28 @@ export class DgemConceptVisualizer extends LitElement {
       },
       {
         id: 'entropy',
-        badge: '🌡️ Uncertainty',
-        title: 'Shannon Entropy (H in nats)',
-        humanName: 'The AI Hesitation Meter (0 = Sure, 1 = Torn)',
-        jargon: 'H = -∑ pₖ ln(pₖ) measured in natural units of information (nats) or normalized H̃ = H / ln(K)',
+        badge: '🌡️ Trust',
+        title: 'Hesitation (entropy)',
+        humanName: 'How torn the model is, from 0% to 100%',
+        jargon: 'Shannon entropy H = -∑ pₖ ln(pₖ) in nats; hesitation = normalized entropy H / ln(K)',
         analogy:
-          'When a model is 99% sure of one answer, its Hesitation Score (Entropy) is 0.01 (Green — ship it immediately). When it is torn 55% vs. 45% between Technical and Billing, its Hesitation Score jumps past 0.35 (Amber — pause and ask a larger model like Gemini 3.8 Flash).',
+          'If the model puts nearly all its weight on one answer, hesitation is near 0% (clear). If it splits evenly between options, hesitation is 100% (a toss-up). The Studio treats under 16% as clear, 16–50% as somewhat unsure, and above 50% as very unsure. Low hesitation is a good sign but not a guarantee: see IDC.',
         impact: 'On a 50-item public suite, escalating only high-entropy items to Gemini (28–34% of items) raised accuracy from 88% to 94–98%.',
       },
       {
         id: 'primacy',
-        badge: '🅰️ Hidden Bias',
-        title: 'Primacy Bias ("Box A Bias")',
-        humanName: 'First-Choice Favoritism on Multiple-Choice Tests',
+        badge: '🅰️ Trust',
+        title: 'First-choice bias ("Box A")',
+        humanName: 'Favoring whatever is listed first',
         jargon: 'Content-Free Label-Token Positional Prior p₀(k) where P(slot = "A" | ∅) ≫ 1/K',
         analogy:
           'Like voters who tick the first name on a ballot, language models lean toward the first option. Given a blank question with meaningless options, DiffusionGemma still picks Option A 88% of the time (2 options), 78% (3) or 49% (4). On borderline questions this can make Option A look artificially confident.',
-        impact: 'Explains why naive single-pass classifiers frequently over-predict the first category listed in a JSON schema.',
+        impact: 'Explains why the order of options in a template can change the answer on borderline cases, and why dgem checks for it.',
       },
       {
         id: 'tare',
-        badge: '🥣 Calibration Fix',
-        title: 'Taring the Scale (Null-Prior De-Biasing)',
+        badge: '🥣 Trust',
+        title: 'Zeroing the scale (null-prior de-biasing)',
         humanName: 'Zeroing the Kitchen Scale Before Weighing Your Data',
         jargon: 'Contextual Calibration via Null-Context Prior Division: p̃ₖ = (pₖ / p₀(k)^α) / Z',
         analogy:
@@ -1606,18 +1698,18 @@ export class DgemConceptVisualizer extends LitElement {
       },
       {
         id: 'framing',
-        badge: '🔄 Order',
-        title: 'Order Flips & Mirror TVD',
-        humanName: 'Asking Forward [A→D] and Backward [D→A] at the Exact Same Time',
+        badge: '🔄 Trust',
+        title: 'Asking both ways (Mirror check)',
+        humanName: 'Listing the options forward and backward at the same time',
         jargon: 'O(1) Dual-Mirror Canvas Slot Readout & Cross-Stem Total Variation Distance (TVD_cross = ½ ∑ |p_fwd - p_rev|)',
         analogy:
-          'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma fills every slot on the canvas at once, dgem can place a Forward slot [A, B, C] and a Reversed slot [C, B, A] side by side without a second forward pass. If the two readings disagree a lot (large TVD), the confidence depends on how the list was printed.',
+          'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma fills every slot on the canvas at once, dgem can place a Forward slot [A, B, C] and a Reversed slot [C, B, A] side by side without a second forward pass. If the two readings disagree a lot (the "order gap", or TVD, is large), the confidence depends on how the list was printed.',
         impact: 'Caught a toss-up the single reading called 99.9% certain (TVD 0.26), but missed another: it only tests the reversed order, and the two slots can see each other. It does not check rewording. CLI-only for now.',
       },
       {
         id: 'brier',
-        badge: '🌦️ Trust Score',
-        title: 'Brier Calibration & ECE',
+        badge: '🌦️ Trust',
+        title: 'Calibration (Brier & ECE)',
         humanName: 'The Weather-Forecaster Honesty Score',
         jargon: 'Multi-Class Brier Score (1/N ∑ ∑ (pᵢₖ - yᵢₖ)²) & 10-Bin Expected Calibration Error (ECE)',
         analogy:
@@ -1632,8 +1724,8 @@ export class DgemConceptVisualizer extends LitElement {
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">📖 Click Any Term: ML Jargon → Plain English</h2>
-            <span class="pill pill-brand">No PhD Required</span>
+            <h2 class="card-title">📖 Glossary: click a term</h2>
+            <span class="pill pill-brand">Basics first, then trust terms</span>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem;">
@@ -1662,7 +1754,7 @@ export class DgemConceptVisualizer extends LitElement {
               <h2 class="card-title" style="font-size: 1.08rem;">${selected.title}</h2>
             </div>
             <button class="action-btn primary" @click=${() => (this.currentScene = 3)}>
-              🎛️ Try Live in Tab 3 (IDC Gate) ➔
+              🎛️ See it in "When to trust an answer" ➔
             </button>
           </div>
 
@@ -1670,7 +1762,7 @@ export class DgemConceptVisualizer extends LitElement {
             style="padding: 0.85rem 1rem; border-radius: 10px; background: var(--viz-emerald-soft); border: 1px solid var(--viz-emerald-border); margin-bottom: 0.85rem;"
           >
             <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--viz-emerald);">
-              Plain-English Translation
+              In plain English
             </div>
             <div style="font-size: 0.98rem; font-weight: 700; color: var(--viz-text-primary); margin-top: 0.2rem;">
               "${selected.humanName}"
@@ -1689,26 +1781,26 @@ export class DgemConceptVisualizer extends LitElement {
           </div>
 
           <div
-            style="padding: 0.75rem 0.95rem; border-radius: 9px; background: var(--viz-bg-canvas); border: 1px solid var(--viz-border-subtle); margin-bottom: 0.85rem;"
-          >
-            <div class="mono" style="font-size: 0.7rem; color: var(--viz-text-muted); margin-bottom: 0.2rem;">
-              WHAT ML PAPERS &amp; LOGS CALL IT:
-            </div>
-            <div class="mono" style="font-size: 0.78rem; color: var(--viz-amber); font-weight: 600;">
-              ${selected.jargon}
-            </div>
-          </div>
-
-          <div
-            style="padding: 0.75rem 0.95rem; border-radius: 9px; background: var(--viz-brand-soft); border: 1px solid var(--viz-brand-border);"
+            style="padding: 0.75rem 0.95rem; border-radius: 9px; background: var(--viz-brand-soft); border: 1px solid var(--viz-brand-border); margin-bottom: 0.85rem;"
           >
             <div style="font-size: 0.75rem; font-weight: 700; color: var(--viz-brand-bright);">
-              🚀 Why It Matters in Production
+              🚀 Why it matters
             </div>
             <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: var(--viz-text-secondary);">
               ${selected.impact}
             </p>
           </div>
+
+          <details
+            style="padding: 0.6rem 0.95rem; border-radius: 9px; background: var(--viz-bg-canvas); border: 1px solid var(--viz-border-subtle);"
+          >
+            <summary class="mono" style="font-size: 0.72rem; color: var(--viz-text-muted); cursor: pointer;">
+              Technical name (for engineers)
+            </summary>
+            <div class="mono" style="font-size: 0.78rem; color: var(--viz-amber); font-weight: 600; margin-top: 0.35rem;">
+              ${selected.jargon}
+            </div>
+          </details>
         </div>
       </div>
     `;
@@ -1723,36 +1815,36 @@ export class DgemConceptVisualizer extends LitElement {
             class="tab-btn ${this.currentScene === 1 ? 'active' : ''}"
             @click=${() => (this.currentScene = 1)}
           >
-            <span>1. What is Diffusion?</span>
-            <span class="tab-time">0:00–0:25</span>
+            <span>1. What's a decision model?</span>
+            
           </button>
           <button
             class="tab-btn ${this.currentScene === 2 ? 'active' : ''}"
             @click=${() => (this.currentScene = 2)}
           >
-            <span>2. Live Race: Serial vs. 1-Pass</span>
-            <span class="tab-time">0:25–0:55</span>
+            <span>2. One pass vs. word-by-word</span>
+            
           </button>
           <button
             class="tab-btn ${this.currentScene === 3 ? 'active' : ''}"
             @click=${() => (this.currentScene = 3)}
           >
-            <span>3. IDC &amp; Entropy Gate</span>
-            <span class="tab-time">1:45–2:30</span>
+            <span>3. When to trust an answer</span>
+            
           </button>
           <button
             class="tab-btn ${this.currentScene === 4 ? 'active' : ''}"
             @click=${() => (this.currentScene = 4)}
           >
-            <span>4. Safety Gate: Prompt Injection</span>
-            <span class="tab-time">2:30–3:05</span>
+            <span>4. Built-in guardrails</span>
+            
           </button>
           <button
             class="tab-btn ${this.currentScene === 5 ? 'active' : ''}"
             @click=${() => (this.currentScene = 5)}
           >
-            <span>5. 📖 Plain-English Glossary</span>
-            <span class="tab-time">Jargon-Free</span>
+            <span>5. 📖 Glossary</span>
+            
           </button>
         </nav>
 
@@ -1761,7 +1853,7 @@ export class DgemConceptVisualizer extends LitElement {
             class="action-btn ${this.showTeleprompter ? 'active-cue' : ''}"
             @click=${() => (this.showTeleprompter = !this.showTeleprompter)}
           >
-            🎙️ ${this.showTeleprompter ? 'Script & Click Guide: ON' : 'Script & Click Guide: OFF'}
+            🎙️ ${this.showTeleprompter ? 'Presenter mode: ON' : 'Presenter mode'}
           </button>
         </div>
       </div>
@@ -1771,7 +1863,6 @@ export class DgemConceptVisualizer extends LitElement {
             <div class="teleprompter-bar">
               <div class="teleprompter-header">
                 <span>${cue.title}</span>
-                <span class="mono">Readability: Grade 9.8 · Flesch 58.4</span>
               </div>
               <p class="teleprompter-text">${cue.text}</p>
               <div class="presenter-hint">${cue.hint}</div>

@@ -253,14 +253,14 @@ export class DgemAboutModal extends LitElement {
               <strong>DiffusionGemma (<code>dgemma</code>)</strong> is a Zero-Shot Decision Model that
               evaluates structured multi-slot policies (<code>.json.tmpl</code>) jointly in
               <strong>O(1) forward passes (~490ms)</strong> on a bidirectional discrete-diffusion canvas,
-              returning per-slot probabilities and a hesitation score
-              (<strong>Shannon entropy H</strong>) without conversational token overhead. These scores are a
+              returning a probability for every allowed answer and a <strong>hesitation score</strong>
+              (normalized Shannon entropy) for every question, without writing any text. These scores are a
               strong uncertainty signal, not automatically calibrated probabilities for your traffic.
             </p>
 
             <div class="glossary-box">
               <div style="font-weight:700;color:var(--modal-heading);font-size:0.83rem;display:flex;justify-content:space-between;align-items:center;">
-                <span>📖 Plain-English Glossary (ML Terms Translated for Humans)</span>
+                <span>📖 Glossary</span>
                 <span style="font-size:0.7rem;color:var(--modal-brand);">Jargon-Free Guide</span>
               </div>
               <div class="glossary-grid">
@@ -269,28 +269,28 @@ export class DgemAboutModal extends LitElement {
                   The "Does-the-Order-Matter?" check: removes the model's first-choice habit and reads the options forward and reversed in the same GPU pass. CLI-only today (<code>--null-prior-debias</code>, <code>--dual-mirror</code>).
                 </div>
                 <div class="glossary-card">
-                  <strong>🌡️ Shannon Entropy (H in nats)</strong>
-                  The AI Hesitation Meter: near <code>0</code> = one answer dominates; <code>≥ 0.35</code> = torn between choices (escalate to Gemini 3.8 Flash). Option order can hide hesitation, which IDC checks for.
+                  <strong>🌡️ Hesitation (entropy)</strong>
+                  How torn the model is, from 0% (one clear answer) to 100% (a perfect tie). Under 16% is treated as clear; above that, consider handing off. Option order can hide hesitation, which IDC checks for.
                 </div>
                 <div class="glossary-card">
-                  <strong>🅰️ Primacy Bias ("Box A Bias")</strong>
+                  <strong>🅰️ First-choice bias ("Box A")</strong>
                   First-Choice Favoritism: like humans on a multiple-choice test, raw models naturally favor Option A when guessing.
                 </div>
                 <div class="glossary-card">
-                  <strong>🥣 Taring the Scale (Null-Prior)</strong>
+                  <strong>🥣 Zeroing the scale (null-prior)</strong>
                   Zeroing a kitchen scale with the empty bowl first: divides out the Option-A habit measured on a blank input. Needs no labeled data.
                 </div>
                 <div class="glossary-card">
-                  <strong>🔄 Order Flips (Mirror TVD)</strong>
+                  <strong>🔄 Asking both ways (Mirror check)</strong>
                   Reads <code>[A→D]</code> and <code>[D→A]</code> in the same pass (no second GPU call); a large gap means the answer depends on list order. It checks only the reversed order, so it can miss other flips.
                 </div>
                 <div class="glossary-card">
-                  <strong>🌦️ Brier Calibration &amp; ECE</strong>
+                  <strong>🌦️ Calibration (Brier &amp; ECE)</strong>
                   Weather-Forecaster Honesty: measures whether "90% confident" really means right about 9 times out of 10. Check it on your own labeled data.
                 </div>
               </div>
               <button class="glossary-btn" @click=${this.openGlossaryTab}>
-                📖 Open Interactive Plain-English Glossary &amp; IDC Walkthrough in Concepts ➔
+                📖 Open the full glossary and walkthrough in Concepts ➔
               </button>
             </div>
 
