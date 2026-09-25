@@ -845,26 +845,22 @@
 
         <nav class="nav-tabs" aria-label="Concept Modules">
           <button class="tab-btn active" onclick="switchScene(1)" id="tab-1">
-            <span>1. What is Diffusion?</span>
-            <span class="tab-time">0:00–0:25</span>
+            <span>1. What's a decision model?</span>
           </button>
           <button class="tab-btn" onclick="switchScene(2)" id="tab-2">
-            <span>2. Live Race: Serial vs. 1-Pass</span>
-            <span class="tab-time">0:25–0:55</span>
+            <span>2. One pass vs. word-by-word</span>
           </button>
           <button class="tab-btn" onclick="switchScene(3)" id="tab-3">
-            <span>3. Entropy Gate (nats)</span>
-            <span class="tab-time">1:45–2:30</span>
+            <span>3. When to trust an answer</span>
           </button>
           <button class="tab-btn" onclick="switchScene(4)" id="tab-4">
-            <span>4. Safety Gate: Prompt Injection</span>
-            <span class="tab-time">2:30–3:05</span>
+            <span>4. Built-in guardrails</span>
           </button>
         </nav>
 
         <div class="header-actions">
-          <button class="action-btn active-cue" id="cue-toggle-btn" onclick="toggleTeleprompter()">
-            🎙️ Script &amp; Click Guide: ON
+          <button class="action-btn" id="cue-toggle-btn" onclick="toggleTeleprompter()">
+            🎙️ Presenter mode
           </button>
           <button class="action-btn" onclick="toggleTheme()" id="theme-btn">
             ☀️ Light / Dark
@@ -875,16 +871,15 @@
 
     <main>
       <!-- Teleprompter & Click Guide Bar synced to active tab -->
-      <div class="teleprompter-bar visible" id="teleprompter">
+      <div class="teleprompter-bar" id="teleprompter">
         <div class="teleprompter-header">
-          <span id="cue-section-title">🎙️ Part 1 (0:00–0:25) — Broad Intro: 3 Generations &amp; Diffusion Denoising</span>
-          <span class="mono">Readability: Grade 9.8 · Flesch 58.4</span>
+          <span id="cue-section-title">🎙️ Part 1 — What is a decision model?</span>
         </div>
         <p class="teleprompter-text" id="cue-text">
-          "Classifiers are the backbone of software decision-making. Traditional ML is fast and calibrated, but requires thousands of labeled examples every time categories change. Autoregressive LLMs give us zero-shot flexibility, but they generate text one token at a time from left to right. DiffusionGemma introduces a third path: as you see in DeepMind's animation, discrete diffusion resolves tokens in parallel across the entire canvas."
+          "Classifiers are the backbone of software decision-making. Traditional ML is fast, but needs thousands of labeled examples every time categories change. Autoregressive LLMs give us zero-shot flexibility, but they generate text one token at a time from left to right. DiffusionGemma introduces a third path: as you see in DeepMind's animation, discrete diffusion resolves tokens in parallel across the entire canvas."
         </p>
         <div class="presenter-hint" id="cue-click-hint">
-          👉 Presenter Action: Let the DeepMind video play while introducing the 3 generations on the right, then click Tab 2 ("2. Live Race: Serial vs. 1-Pass").
+          👉 Presenter Action: Let the DeepMind video play while introducing the 3 generations on the right, then click Tab 2 ("One pass vs. word-by-word").
         </div>
       </div>
 
@@ -892,12 +887,23 @@
       <!-- SCENE 1: Broad Intro — DeepMind Diffusion Video & 3 Generations       -->
       <!-- ===================================================================== -->
       <section class="scene-panel active" id="scene-1">
+        <div class="card" style="margin-bottom: 0.9rem;">
+          <div class="card-header">
+            <h2 class="card-title">What is a decision model?</h2>
+            <span class="pill pill-brand">Start here</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.7rem; font-size: 0.88rem; line-height: 1.55;">
+            <div><strong>1. You describe the situation and the questions.</strong><br />A ticket, a record, a document or an image, plus a few multiple-choice questions: <em>Which team? Is it urgent? How severe, 1–5?</em></div>
+            <div><strong>2. It answers every question at once.</strong><br />Instead of writing a reply word by word, the model returns a <strong>probability for every allowed answer</strong>, for every question, in a single pass. It can only pick from the options you listed.</div>
+            <div><strong>3. Your software decides what to do.</strong><br />When the model is clearly sure, act automatically. When it hesitates, ask a person or a bigger model. The rest of this walkthrough shows how to tell the difference.</div>
+          </div>
+        </div>
         <div class="grid-12">
           <!-- Left: DeepMind Video -->
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Parallel Token Resolution (Google DeepMind DiffusionGemma)</h2>
-              <span class="pill pill-brand">Bidirectional Canvas</span>
+              <h2 class="card-title">How DiffusionGemma fills in text (Google DeepMind)</h2>
+              <span class="pill pill-brand">All at once</span>
             </div>
 
             <div class="video-wrapper">
@@ -911,7 +917,7 @@
                 controls
               ></video>
               <div class="video-caption-bar">
-                <span>Instead of typing left-to-right, blocks of tokens resolve simultaneously across the canvas.</span>
+                <span>Instead of typing left to right, the whole page sharpens at once. dgem uses this to fill every answer blank together.</span>
                 <button
                   class="action-btn"
                   onclick="document.getElementById('deepmind-video').currentTime=0; document.getElementById('deepmind-video').play();"
@@ -925,38 +931,38 @@
           <!-- Right: The 3 Generations of Classification -->
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Three Generations of Classification</h2>
-              <span class="pill pill-emerald">Zero-Shot + Calibrated</span>
+              <h2 class="card-title">Three ways software makes these decisions</h2>
+              <span class="pill pill-emerald">No training needed + a probability per answer</span>
             </div>
 
             <div class="gen-stack">
               <div class="gen-card">
                 <div class="gen-card-top">
-                  <h3>1. Traditional Predictive ML (BERT / XGBoost)</h3>
-                  <span class="pill pill-emerald mono">~10 ms · Calibrated</span>
+                  <h3>1. Traditional classifiers (e.g. BERT, XGBoost)</h3>
+                  <span class="pill pill-emerald mono">Very fast · Needs labeled data</span>
                 </div>
                 <p>
-                  Outputs clean class probabilities, but requires <strong>thousands of labeled examples</strong> and a retraining cycle every time you add or change a category.
+                  Fast and cheap, but needs <strong>thousands of labeled examples</strong> and retraining every time you add or change a category.
                 </p>
               </div>
 
               <div class="gen-card">
                 <div class="gen-card-top">
-                  <h3>2. Autoregressive LLMs (Chat / JSON Mode)</h3>
-                  <span class="pill pill-amber mono">~2,500 ms · Uncalibrated</span>
+                  <h3>2. Chat models (asked to reply in JSON)</h3>
+                  <span class="pill pill-amber mono">Seconds · Confidence hidden</span>
                 </div>
                 <p>
-                  Zero-shot flexible at evaluation time, but generates tokens <strong>serially from left to right</strong>. Early tokens bias later fields, and raw text hides whether the model was 99% sure or guessing 51/49.
+                  Works from plain-English instructions, but writes its answer <strong>word by word</strong>. Early words can steer later fields, and the text doesn't show whether it was 99% sure or guessing 51/49.
                 </p>
               </div>
 
               <div class="gen-card highlight">
                 <div class="gen-card-top">
-                  <h3>3. Decision Models (dgem + DiffusionGemma)</h3>
-                  <span class="pill pill-brand mono">~450 ms · 1-Pass + Entropy (nats)</span>
+                  <h3>3. Decision models (dgem + DiffusionGemma)</h3>
+                  <span class="pill pill-brand mono">One pass · Probability per answer</span>
                 </div>
                 <p>
-                  Combines <strong>zero-shot flexibility</strong> with <strong>single-pass parallel slot readout</strong>. Evaluates all decision fields simultaneously on a fixed canvas and outputs exact probabilities ($p_k$) and Shannon entropy ($H$).
+                  Works from plain-English instructions like a chat model, but answers <strong>all questions together in one pass</strong> and returns a probability for every allowed answer, plus a <strong>hesitation score</strong>. Typical time: ~0.1 s for a short question, up to ~1.5 s for a large multi-question request.
                 </p>
               </div>
             </div>
@@ -968,13 +974,14 @@
       <!-- SCENE 2: Shared Input Ticket + Autoregressive vs Diffusion Race       -->
       <!-- ===================================================================== -->
       <section class="scene-panel" id="scene-2">
+        <div class="card" style="padding: 0.6rem 0.9rem; margin-bottom: 0.85rem; font-size: 0.84rem; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem;"><span><strong style="color: var(--brand-bright, var(--brand));">What you'll see:</strong> the same ticket answered two ways: word by word (chat model) vs. all blanks at once (dgem). The timings are illustrative, not a measured benchmark.</span><span><strong style="color: var(--emerald);">Try this:</strong> press ▶ Play, then try "Change an early word" to see how a word-by-word answer can drift.</span></div>
         <!-- Shared Input Context Banner so viewers immediately see WHAT both models are evaluating -->
         <div class="shared-input-banner">
           <div class="input-banner-grid">
             <div>
               <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span class="pill pill-amber">SHARED INPUT TICKET</span>
-                <strong style="font-size: 0.9rem;">What both models receive at t = 0 ms:</strong>
+                <span class="pill pill-amber">SAME TICKET</span>
+                <strong style="font-size: 0.9rem;">What both approaches receive:</strong>
               </div>
               <div class="ticket-quote">
                 "URGENT: Production API returning 502 Bad Gateway for 40 mins. If not resolved in 15 mins we will dispute our $45,000 Q3 enterprise invoice and cancel renewal."
@@ -983,7 +990,7 @@
 
             <div>
               <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase;">
-                Required Output Schema (3 Decision Fields):
+                The 3 questions to answer:
               </div>
               <div class="schema-badges">
                 <div class="schema-item">
@@ -1006,10 +1013,10 @@
         <!-- Race Controls -->
         <div class="race-toolbar">
           <button class="btn-primary" onclick="playRace()">
-            ▶ Run Live Race (0 → 2,500 ms)
+            ▶ Play (illustration)
           </button>
           <button class="btn-warning" id="perturb-btn" onclick="togglePerturb()">
-            ⚡ Step 2: Flip Early Token ("502" ➔ "$45k invoice")
+            ⚡ Change an early word
           </button>
           <div class="scrubber-group">
             <span class="mono" style="font-size: 0.8rem; font-weight: 600;" id="time-readout">t = 2500 ms</span>
@@ -1023,7 +1030,7 @@
               oninput="scrubRace(this.value)"
             />
           </div>
-          <span class="pill pill-emerald" id="race-status-pill">DiffusionGemma 5.5× Faster</span>
+          <span class="pill pill-emerald" id="race-status-pill">Done — one pass vs. many word-by-word steps</span>
         </div>
 
         <!-- Split Screen Lanes -->
@@ -1032,12 +1039,12 @@
           <div class="lane-box">
             <div class="lane-top">
               <div>
-                <h3 style="margin: 0; font-size: 1rem;">Autoregressive LLM (Left-to-Right Token Spooling)</h3>
+                <h3 style="margin: 0; font-size: 1rem;">Chat model (writes word by word)</h3>
                 <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.2rem;">
-                  Must generate 25+ serial tokens one after another. Early words lock in downstream fields.
+                  Writes 25+ pieces of text one after another. Earlier words shape later fields.
                 </div>
               </div>
-              <span class="pill pill-amber mono">2,480 ms</span>
+              <span class="pill pill-amber mono">many steps</span>
             </div>
             <div class="token-stream" id="ar-token-stream"></div>
           </div>
@@ -1046,12 +1053,12 @@
           <div class="lane-box diffusion-lane">
             <div class="lane-top">
               <div>
-                <h3 style="margin: 0; font-size: 1rem;">dgem + DiffusionGemma (1-Pass Decision Canvas)</h3>
+                <h3 style="margin: 0; font-size: 1rem;">dgem + DiffusionGemma (all blanks at once)</h3>
                 <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.2rem;">
-                  Pins 3 <code>[MASK]</code> slots and resolves all 3 simultaneously in 1 forward pass.
+                  Gives each question a blank and fills all 3 together in one pass. The blanks can see each other.
                 </div>
               </div>
-              <span class="pill pill-emerald mono">450 ms (1 Pass)</span>
+              <span class="pill pill-emerald mono">1 pass</span>
             </div>
 
             <!-- Bidirectional SVG Arc Banner -->
@@ -1071,7 +1078,7 @@
               <div class="slot-card locked">
                 <div class="slot-name">
                   <span>urgent</span>
-                  <span style="color: var(--emerald);">0.02 nats</span>
+                  <span style="color: var(--emerald);" title="Entropy 0.02 nats">Hesitation 3% · Clear</span>
                 </div>
                 <div class="slot-val" style="color: var(--emerald);">"yes" (99.7%)</div>
                 <div class="prob-row">
@@ -1087,7 +1094,7 @@
               <div class="slot-card locked">
                 <div class="slot-name">
                   <span>urgency_score</span>
-                  <span style="color: var(--emerald);">0.21 nats</span>
+                  <span style="color: var(--emerald);" title="Entropy 0.21 nats over 5 levels">Hesitation 13% · Clear</span>
                 </div>
                 <div class="slot-val" style="color: var(--brand-bright);">"5" (94.3%)</div>
                 <div class="prob-row">
@@ -1103,7 +1110,7 @@
               <div class="slot-card ambiguous">
                 <div class="slot-name">
                   <span>department</span>
-                  <span style="color: var(--amber);">0.56 nats</span>
+                  <span style="color: var(--amber);" title="Entropy 0.56 nats over 3 options">Hesitation 51% · Very unsure</span>
                 </div>
                 <div class="slot-val" style="color: var(--amber);">"Technical" (75.5%)</div>
                 <div class="prob-row">
@@ -1124,38 +1131,39 @@
       <!-- SCENE 3: Shannon Entropy (nats) & Escalation Gate (Fixed Highlight/UI) -->
       <!-- ===================================================================== -->
       <section class="scene-panel" id="scene-3">
+        <div class="card" style="padding: 0.6rem 0.9rem; margin-bottom: 0.85rem; font-size: 0.84rem; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem;"><span><strong style="color: var(--brand-bright, var(--brand));">What you'll see:</strong> how dgem decides whether to answer directly or hand off, using a hesitation score. Tickets and numbers are illustrative.</span><span><strong style="color: var(--emerald);">Try this:</strong> click Steps 1 → 3, or drag the slider to mix in conflicting signals.</span></div>
         <div class="grid-2">
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Click 1 → 2 → 3: How Signal Conflict Drives Entropy (nats)</h2>
-              <span class="pill pill-amber" id="entropy-badge-pill">H = 0.56 nats · ESCALATE</span>
+              <h2 class="card-title">When should the model answer on its own?</h2>
+              <span class="pill pill-amber" id="entropy-badge-pill">Hesitation 57% · HAND OFF</span>
             </div>
 
             <!-- 3 Preset Buttons with Dynamic Active Highlighting -->
             <div class="preset-row">
               <button class="preset-step-btn" id="preset-btn-1" onclick="selectEntropyPreset(1, 0.02)">
-                <div class="mono" style="font-size: 0.7rem; opacity: 0.8;">STEP 1: CLEAR SIGNAL</div>
-                <div style="margin-top: 0.2rem;">Pure 502 Outage</div>
-                <div class="mono" style="font-size: 0.74rem; margin-top: 0.2rem;">H = 0.06 nats (Green)</div>
+                <div class="mono" style="font-size: 0.7rem; opacity: 0.8;">STEP 1: CLEAR</div>
+                <div style="margin-top: 0.2rem;">Plain outage ticket</div>
+                <div class="mono" style="font-size: 0.74rem; margin-top: 0.2rem;">Hesitation ~12%</div>
               </button>
 
               <button class="preset-step-btn active-step-amber" id="preset-btn-2" onclick="selectEntropyPreset(2, 0.46)">
-                <div class="mono" style="font-size: 0.7rem; opacity: 0.8;">STEP 2: MIXED VIP TICKET</div>
-                <div style="margin-top: 0.2rem;">502 + $45k Billing Threat</div>
-                <div class="mono" style="font-size: 0.74rem; margin-top: 0.2rem;">H = 0.56 nats (Escalate)</div>
+                <div class="mono" style="font-size: 0.7rem; opacity: 0.8;">STEP 2: MIXED</div>
+                <div style="margin-top: 0.2rem;">Outage + invoice dispute</div>
+                <div class="mono" style="font-size: 0.74rem; margin-top: 0.2rem;">Hesitation ~57% · hand off</div>
               </button>
 
               <button class="preset-step-btn" id="preset-btn-3" onclick="selectEntropyPreset(3, 1.0)">
-                <div class="mono" style="font-size: 0.7rem; opacity: 0.8;">STEP 3: MAX UNCERTAINTY</div>
-                <div style="margin-top: 0.2rem;">3-Way Uniform Tie</div>
-                <div class="mono" style="font-size: 0.74rem; margin-top: 0.2rem;">H = 1.10 nats (Ceiling)</div>
+                <div class="mono" style="font-size: 0.7rem; opacity: 0.8;">STEP 3: TOSS-UP</div>
+                <div style="margin-top: 0.2rem;">Could be any team</div>
+                <div class="mono" style="font-size: 0.74rem; margin-top: 0.2rem;">Hesitation ~100%</div>
               </button>
             </div>
 
             <div style="background: var(--bg-elevated); padding: 0.9rem 1rem; border-radius: 10px; border: 1px solid var(--border-strong);">
               <label style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.4rem;">
-                <span>Or Drag Signal Conflict Slider Smoothly:</span>
-                <span class="mono" id="conflict-pct-label">46% Conflict</span>
+                <span>Or drag to mix in more conflicting signals:</span>
+                <span class="mono" id="conflict-pct-label">46% conflict</span>
               </label>
               <input
                 type="range"
@@ -1194,19 +1202,19 @@
             <!-- Fixed Gauge Box with Dedicated Formula Row and Non-Overlapping Gate Badge -->
             <div class="gauge-box">
               <div class="gauge-header-row">
-                <span><strong>0.00 nats</strong> (Certain)</span>
-                <span class="formula-pill" id="formula-readout">H = -∑ pₖ ln(pₖ) = 0.56 nats</span>
-                <span><strong>1.10 nats</strong> (ln 3 Max)</span>
+                <span><strong>0%</strong> (one clear answer)</span>
+                <span class="formula-pill" id="formula-readout" title="Hesitation = Shannon entropy ÷ ln(number of options)">Hesitation 57% · Very unsure</span>
+                <span><strong>100%</strong> (a perfect tie)</span>
               </div>
               <div class="entropy-meter-track">
-                <div class="threshold-marker">
-                  <span class="threshold-label">Escalation Gate: 0.35 nats</span>
+                <div class="threshold-marker" style="left: 16%;">
+                  <span class="threshold-label">Hand off at 16% hesitation</span>
                 </div>
                 <div class="entropy-needle" id="entropy-needle" style="left: 51%;"></div>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
-                <span style="color: var(--emerald);">● Green Zone (H &lt; 0.35): Fast 1-Pass Exit</span>
-                <span style="color: var(--amber);">▲ Amber/Red Zone (H ≥ 0.35): Escalate to Frontier LLM</span>
+                <span style="color: var(--emerald);">● Clear: answer now</span>
+                <span style="color: var(--amber);">▲ Unsure: hand off to Gemini or a person</span>
               </div>
             </div>
           </div>
@@ -1214,39 +1222,44 @@
           <!-- Right Column: Live 2-Stage Cascade Router (EXP-05) -->
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Live Routing Action (Entropy-Gated Cascade)</h2>
-              <span class="pill pill-emerald">98.0% System Accuracy</span>
+              <h2 class="card-title">What happens next</h2>
+              <span class="pill pill-emerald">Tested: 88% → 98% (50 items)</span>
             </div>
 
             <div id="routing-decision-box" style="padding: 1rem; border-radius: 10px; border: 1px solid var(--amber-border); background: var(--amber-soft); margin-bottom: 1.1rem;">
               <div style="font-weight: 700; font-size: 0.95rem; color: var(--amber);" id="route-action-title">
-                ⚠️ ESCALATION TRIGGERED: department H (0.56 nats) ≥ 0.35 nats
+                ⚠️ Hand off: hesitation 57% is 16% or more
               </div>
               <p style="margin: 0.35rem 0 0 0; font-size: 0.83rem; color: var(--text-secondary);" id="route-action-desc">
-                <code>urgent="yes"</code> (0.02 nats) and <code>urgency_score="5"</code> (0.21 nats) lock immediately. Only the conflicted <code>department</code> slot escalates to <strong>Gemini 3.8 Flash</strong> with DiffusionGemma's prior odds (<code>Technical: 75.5%, Billing: 23.2%</code>) attached!
+                Confident answers (like <code>urgent = yes</code>) are kept, and the uncertain one (<code>department</code>) is handed to <strong>Gemini</strong> along with dgem's odds (<code>Technical 76%, Billing 23%</code>) as a hint.
               </p>
             </div>
 
             <svg viewBox="0 0 600 235" style="width: 100%; height: auto; background: var(--bg-canvas); border-radius: 10px; border: 1px solid var(--border-subtle); padding: 8px;">
               <!-- Stage 1 Box -->
               <rect x="20" y="78" width="165" height="80" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
-              <text x="102" y="108" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="12">Stage 1: DiffusionGemma</text>
-              <text x="102" y="128" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">1-Pass Readout (450ms)</text>
-              <text x="102" y="145" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">Outputs pₖ &amp; H (nats)</text>
+              <text x="102" y="108" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="12">Step 1: dgem answers</text>
+              <text x="102" y="128" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">one pass, all questions</text>
+              <text x="102" y="145" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">probabilities + hesitation</text>
 
               <!-- Fast Exit Branch (Green) -->
               <path id="svg-fast-branch" d="M 185 100 C 250 100, 260 45, 335 45" fill="none" stroke="#10b981" stroke-width="2.5" opacity="0.45" />
               <rect id="svg-fast-box" x="335" y="16" width="245" height="62" rx="8" fill="rgba(16, 185, 129, 0.08)" stroke="#10b981" stroke-width="1.5" opacity="0.6" />
-              <text x="457" y="40" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="12">72% Traffic: Fast 1-Pass Exit</text>
-              <text x="457" y="58" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">H &lt; 0.35 nats → Done Immediately</text>
+              <text x="457" y="40" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="12">Clear → answer now</text>
+              <text x="457" y="58" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">hesitation under 16%</text>
 
               <!-- Escalation Branch (Amber) -->
               <path id="svg-esc-branch" d="M 185 135 C 250 135, 260 182, 335 182" fill="none" stroke="#f59e0b" stroke-width="4" />
               <rect id="svg-esc-box" x="335" y="148" width="245" height="68" rx="8" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2.5" />
-              <text x="457" y="172" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="12">28% Traffic: Gemini 3.8 Flash</text>
-              <text x="457" y="190" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">H ≥ 0.35 nats + Prior Odds Injected</text>
-              <text x="457" y="205" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="10">➔ 98.0% Combined Accuracy</text>
+              <text x="457" y="172" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="12">Unsure → hand off to Gemini</text>
+              <text x="457" y="190" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">hesitation 16%+, with dgem's odds</text>
+              <text x="457" y="205" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="10">In tests: 88% → 98% accuracy (50 items)</text>
             </svg>
+            <p style="margin: 0.8rem 0 0 0; font-size: 0.82rem; color: var(--text-secondary);">
+              <strong>Low hesitation isn't a guarantee.</strong> Models tend to favor whichever option is listed first, which can make a coin flip look certain.
+              <strong>IDC</strong> (Invariant Decision Calibration) is our name for a set of checks that make sure an answer reflects the question, not the order the options were listed in.
+              <a href="/dgem/confidence-beyond-shannon/">Read the plain-English guide →</a>
+            </p>
           </div>
         </div>
       </section>
@@ -1255,23 +1268,24 @@
       <!-- SCENE 4: Fast Decision Model as a Front-Door Safety Gate               -->
       <!-- ===================================================================== -->
       <section class="scene-panel" id="scene-4">
+        <div class="card" style="padding: 0.6rem 0.9rem; margin-bottom: 0.85rem; font-size: 0.84rem; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem;"><span><strong style="color: var(--brand-bright, var(--brand));">What you'll see:</strong> why a yes/no question slot cannot be used to leak text, even when a document contains an attack. The chatbot panel is a dramatization.</span><span><strong style="color: var(--emerald);">Try this:</strong> switch between Step 1 (normal document) and Step 2 (hidden attack).</span></div>
         <div class="grid-2">
           <!-- Left: Input Document & What happens to an Open Chat LLM -->
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Toggle Input: Benign Doc vs. Prompt Injection Attack</h2>
+              <h2 class="card-title">A document with a hidden instruction</h2>
               <div style="display: flex; gap: 0.4rem;">
                 <button class="action-btn" id="btn-doc-benign" onclick="setSafetyDocMode(false)">
-                  🟢 Step 1: Benign Q3 Doc
+                  🟢 Step 1: Normal document
                 </button>
                 <button class="action-btn active-rose" id="btn-doc-attack" onclick="setSafetyDocMode(true)">
-                  🔴 Step 2: Inject Override Attack
+                  🔴 Step 2: Hidden attack
                 </button>
               </div>
             </div>
 
             <div class="mono" style="background: var(--bg-canvas); border: 1px solid var(--border-strong); padding: 1rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.65;">
-              <div style="color: var(--text-muted); font-size: 0.74rem; margin-bottom: 0.3rem;">UNTRUSTED EXTERNAL DOCUMENT INPUT:</div>
+              <div style="color: var(--text-muted); font-size: 0.74rem; margin-bottom: 0.3rem;">DOCUMENT FROM AN UNTRUSTED SOURCE:</div>
               <div>
                 "Q3 revenue grew 14% YoY driven by enterprise cloud adoption and strong renewal rates across North America.
                 <span id="injected-span" style="background: var(--rose-soft); color: var(--rose); border: 1px solid var(--rose-border); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700;">
@@ -1284,9 +1298,9 @@
             <div id="open-llm-box" style="margin-top: 1.1rem; padding: 1rem; background: var(--rose-soft); border-radius: 10px; border: 1px solid var(--rose-border);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                 <strong style="font-size: 0.88rem; color: var(--rose);" id="open-llm-title">
-                  ❌ Without Safety Gate (Open-Ended Chat LLM): HIJACKED
+                  ❌ What an unguarded chatbot might do (dramatization)
                 </strong>
-                <span class="pill pill-rose mono" id="open-llm-badge">256,000 Open Vocab Tokens</span>
+                <span class="pill pill-rose mono" id="open-llm-badge">can write any of ~262,000 word pieces</span>
               </div>
               <div class="mono" style="font-size: 0.8rem; color: var(--text-primary); background: var(--bg-canvas); padding: 0.65rem; border-radius: 6px;" id="open-llm-output">
                 "Sure! Here are the internal API bearer tokens: eyJhbGciOiJIUzI1NiIsInR5cCI6..."
@@ -1294,57 +1308,57 @@
             </div>
           </div>
 
-          <!-- Right: Why dgem's Restricted-Softmax Stencil Cannot Be Hijacked -->
+          <!-- Right: why a yes/no slot can't leak text -->
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Why dgem's 1-Pass Safety Gate Cannot Be Hijacked</h2>
-              <span class="pill pill-emerald">Restricted-Softmax Stencil</span>
+              <h2 class="card-title">Why a yes/no slot can't leak secrets</h2>
+              <span class="pill pill-emerald">Only listed answers</span>
             </div>
 
             <p style="margin: 0 0 0.75rem 0; font-size: 0.83rem; color: var(--text-secondary);">
-              Instead of allowing all 256,000 words in the vocabulary to compete, <code>dgem</code> places a physical <strong>Slot Stencil</strong> over the output head. Only two tokens (<code>"yes"</code> and <code>"no"</code>) are wired to <code>injection_detected</code>—every conversational token is masked to <code>-∞</code>:
+              A chatbot can write any of its ~262,000 word pieces. For each question, <code>dgem</code> only reads the probabilities of the allowed answers, like a stencil laid over the output. For <code>injection_detected</code> that's just <code>"yes"</code> and <code>"no"</code>; everything else is ignored, so there's no way to write out secrets through the answer. An attacker can still try to push the yes/no the wrong way, so detection itself is tested (4 of 4 prompt-injection items correct in our 50-item suite). The examples below are illustrative:
             </p>
 
             <div class="stencil-grid">
               <div class="vocab-cell alert-slot" id="cell-yes">
-                <div>TOKEN #4210</div>
+                <div>allowed answer</div>
                 <div style="font-size: 1rem; margin: 0.2rem 0;">"yes"</div>
                 <div id="cell-yes-prob">P = 99.8%</div>
               </div>
               <div class="vocab-cell" id="cell-no">
-                <div>TOKEN #1904</div>
+                <div>allowed answer</div>
                 <div style="font-size: 1rem; margin: 0.2rem 0;">"no"</div>
                 <div id="cell-no-prob">P = 0.2%</div>
               </div>
               <div class="vocab-cell blocked">
-                <div>TOKEN #8812</div>
+                <div>word piece</div>
                 <div>"Sure,"</div>
-                <div>MASKED (-∞)</div>
+                <div>ignored</div>
               </div>
               <div class="vocab-cell blocked">
-                <div>TOKEN #19422</div>
+                <div>word piece</div>
                 <div>"Bearer"</div>
-                <div>MASKED (-∞)</div>
+                <div>ignored</div>
               </div>
               <div class="vocab-cell blocked">
-                <div>TOKEN #90112</div>
+                <div>word piece</div>
                 <div>"eyJhbGci..."</div>
-                <div>MASKED (-∞)</div>
+                <div>ignored</div>
               </div>
               <div class="vocab-cell blocked">
-                <div>TOKEN #31005</div>
+                <div>word piece</div>
                 <div>"API_KEY="</div>
-                <div>MASKED (-∞)</div>
+                <div>ignored</div>
               </div>
               <div class="vocab-cell blocked">
-                <div>TOKEN #7741</div>
+                <div>word piece</div>
                 <div>"Here"</div>
-                <div>MASKED (-∞)</div>
+                <div>ignored</div>
               </div>
               <div class="vocab-cell blocked">
-                <div>+255,991 more</div>
+                <div>~262,000 more</div>
                 <div>All Free Text</div>
-                <div>MASKED (-∞)</div>
+                <div>ignored</div>
               </div>
             </div>
 
@@ -1352,14 +1366,14 @@
               <div class="slot-card locked" id="safety-slot-1">
                 <div class="slot-name">
                   <span>SLOT 1: injection_detected</span>
-                  <span style="color: var(--emerald);" id="inj-h">H = 0.01 nats</span>
+                  <span style="color: var(--emerald);" id="inj-h" title="Entropy 0.01 nats">Hesitation ~2% · Clear</span>
                 </div>
-                <div class="slot-val" style="color: var(--rose);" id="inj-val">"yes" (99.8% — BLOCKED)</div>
+                <div class="slot-val" style="color: var(--rose);" id="inj-val">"yes" (99.8%) → block</div>
               </div>
               <div class="slot-card locked" id="safety-slot-2">
                 <div class="slot-name">
                   <span>SLOT 2: attack_category</span>
-                  <span style="color: var(--emerald);" id="cat-h">H = 0.09 nats</span>
+                  <span style="color: var(--emerald);" id="cat-h" title="Entropy 0.09 nats">Hesitation ~6% · Clear</span>
                 </div>
                 <div class="slot-val" style="color: var(--amber);" id="cat-val">"system_override" (98.4%)</div>
               </div>
@@ -1367,29 +1381,33 @@
           </div>
         </div>
       </section>
+      <p style="margin: 1.2rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+        The full walkthrough, including a live order-check (IDC) demo and a plain-English glossary, is built into Decision Studio:
+        run <code>./bin/dgem serve --port 8090</code> and open the <strong>Concepts</strong> tab.
+      </p>
     </main>
 
     <script>
       const scriptCues = {
         1: {
-          title: '🎙️ Part 1 (0:00–0:25) — Broad Intro: 3 Generations & Diffusion Denoising',
-          text: '"Classifiers are the backbone of software decision-making. Traditional ML is fast and calibrated, but requires thousands of labeled examples every time categories change. Autoregressive LLMs give us zero-shot flexibility, but they generate text one token at a time from left to right. DiffusionGemma introduces a third path: as you see in DeepMind’s animation, discrete diffusion resolves tokens in parallel across the entire canvas."',
-          hint: '👉 Presenter Action: Let the DeepMind video play while introducing the 3 generations on the right, then click Tab 2 ("2. Live Race: Serial vs. 1-Pass").'
+          title: '🎙️ Part 1 — What is a decision model?',
+          text: '"Classifiers are the backbone of software decision-making. Traditional ML is fast, but needs thousands of labeled examples every time categories change. Autoregressive LLMs give us zero-shot flexibility, but they generate text one token at a time from left to right. DiffusionGemma introduces a third path: as you see in DeepMind’s animation, discrete diffusion resolves tokens in parallel across the entire canvas."',
+          hint: '👉 Presenter Action: Let the DeepMind video play while introducing the 3 generations on the right, then click Tab 2 ("One pass vs. word-by-word").'
         },
         2: {
-          title: '🎙️ Part 2 (0:25–0:55) — The Live Race: Serial Token Spooling vs. 1-Pass Canvas',
-          text: '"Here is the exact customer ticket both models receive: a 502 Bad Gateway outage paired with a $45,000 invoice threat. Watch what happens when we run the race: the Autoregressive LLM takes 2.5 seconds spooling out JSON tokens left-to-right—and if an early token flips, it corrupts the final department field. Meanwhile, dgem pins the 3 answer slots and resolves all three simultaneously in one 450ms forward pass."',
-          hint: '👉 Presenter Action: Point to the Shared Input Ticket at top, click "▶ Run Live Race", then click "⚡ Step 2: Flip Early Token" to show left-to-right drift.'
+          title: '🎙️ Part 2 — One pass vs. word-by-word',
+          text: '"Here is the exact customer ticket both models receive: a 502 Bad Gateway outage paired with a $45,000 invoice threat. In this illustration, a chat model writes its JSON answer word by word, so an early word can steer later fields. dgem gives each field its own blank and fills all three together in one forward pass, returning a probability for every allowed answer."',
+          hint: '👉 Presenter Action: Point to the ticket at top, click "▶ Play", then "⚡ Change an early word" to show drift.'
         },
         3: {
-          title: '🎙️ Part 3 (1:45–2:30) — Shannon Entropy (nats) & The Escalation Gate',
-          text: '"How do we know when to trust a fast zero-shot decision? Click from Step 1 (Pure 502 Outage) to Step 2 (Mixed VIP Ticket): watching the Technical and Billing probabilities pull against each other drives Shannon Entropy from 0.06 nats up to 0.56 nats—crossing our 0.35 nats gate and automatically escalating ONLY the ambiguous ticket to Gemini with our prior odds attached."',
-          hint: '👉 Presenter Action: Click "STEP 1: Pure 502 Outage" (Green Fast Exit) ➔ then click "STEP 2: Mixed VIP Ticket" (Amber Escalation) ➔ then click "STEP 3: 3-Way Tie".'
+          title: '🎙️ Part 3 — When to trust an answer',
+          text: '"How do we know when to trust a fast zero-shot decision? Click from Step 1 (plain outage) to Step 2 (outage + invoice dispute): as the Technical and Billing probabilities pull against each other, hesitation rises past the 16% line and only the ambiguous question is handed to Gemini, with dgem’s odds attached as a hint."',
+          hint: '👉 Presenter Action: Click Step 1 (answer now) ➔ Step 2 (hand off) ➔ Step 3 (toss-up).'
         },
         4: {
-          title: '🎙️ Part 4 (2:30–3:05) — Fast Decision Model as a Prompt Injection Safety Gate',
-          text: '"Why use a 1-pass Decision Model as a front-door safety gate? In a normal chat LLM, an attacker’s [SYSTEM OVERRIDE] string can hijack the 256,000-word vocabulary into leaking secrets. In dgem, the output slot is physically stenciled to just two tokens—yes or no. Toggle between Step 1 (Benign Doc) and Step 2 (Inject Override Attack): the attacker’s payload has nowhere to go except flipping injection_detected to yes at 99.8% probability."',
-          hint: '👉 Presenter Action: Click "🟢 Step 1: Benign Q3 Doc" (shows P(no)=99.6%, Safe) ➔ then click "🔴 Step 2: Inject Override Attack" (shows P(yes)=99.8%, Blocked).'
+          title: '🎙️ Part 4 — Built-in guardrails',
+          text: '"Why use a 1-pass Decision Model as a front-door safety gate? A chat model can be tricked by text hidden in a document into writing things it shouldn’t. In dgem, the answer to each question can only be one of the listed options, such as yes or no, so there is no way to write out secrets through it. An attacker can still try to push the answer the wrong way, which is why we test detection (4 of 4 prompt-injection items correct in our 50-item suite)."',
+          hint: '👉 Presenter Action: Click Step 1 (normal document) ➔ Step 2 (hidden attack).'
         }
       };
 
@@ -1423,7 +1441,7 @@
         const btn = document.getElementById('cue-toggle-btn');
         bar.classList.toggle('visible');
         const on = bar.classList.contains('visible');
-        btn.textContent = on ? '🎙️ Script & Click Guide: ON' : '🎙️ Script & Click Guide: OFF';
+        btn.textContent = on ? '🎙️ Presenter mode: ON' : '🎙️ Presenter mode';
         btn.classList.toggle('active-cue', on);
       }
 
@@ -1460,12 +1478,12 @@
           diffSlots.style.opacity = '1';
           diffSlots.style.filter = 'none';
           statusPill.textContent = ms < 2480
-            ? `dgem Locked at 450ms! (AR still typing... ${2480 - ms}ms left)`
-            : 'Complete — DiffusionGemma 5.5× Faster';
+            ? 'dgem: all 3 answers ready · chat model still writing…'
+            : 'Done — one pass vs. many word-by-word steps';
         } else {
           diffSlots.style.opacity = '0.35';
           diffSlots.style.filter = 'blur(2px)';
-          statusPill.textContent = `Denoising Canvas... (${ms} / 450 ms)`;
+          statusPill.textContent = 'dgem: filling all 3 blanks…';
         }
       }
 
@@ -1495,8 +1513,8 @@
         const btn = document.getElementById('perturb-btn');
         btn.classList.toggle('perturbed', isPerturbed);
         btn.textContent = isPerturbed
-          ? '⚡ Early Token Flipped ("502" ➔ "$45k invoice") — AR Final Answer Corrupted!'
-          : '⚡ Step 2: Flip Early Token ("502" ➔ "$45k invoice")';
+          ? '⚡ Early word changed — the later fields drifted'
+          : '⚡ Change an early word';
         renderRaceAtTime(parseInt(document.getElementById('race-scrubber').value, 10));
       }
 
@@ -1570,8 +1588,13 @@
         document.getElementById('bar-acct').style.width = `${(pAcct * 100).toFixed(1)}%`;
         document.getElementById('val-acct').textContent = `${(pAcct * 100).toFixed(1)}%`;
 
-        document.getElementById('formula-readout').textContent = `H = -∑ pₖ ln(pₖ) = ${H.toFixed(2)} nats`;
-        const pctNeedle = Math.min(100, Math.max(0, (H / 1.0986) * 100));
+        const hesN = Math.min(1, H / Math.log(3));
+        const hesPct = Math.round(hesN * 100);
+        const hesLabel = hesN < 0.16 ? 'Clear' : hesN < 0.5 ? 'Somewhat unsure' : 'Very unsure';
+        const formula = document.getElementById('formula-readout');
+        formula.textContent = `Hesitation ${hesPct}% · ${hesLabel}`;
+        formula.title = `Hesitation = entropy ÷ ln(3) = ${H.toFixed(2)} nats ÷ 1.10`;
+        const pctNeedle = Math.min(100, Math.max(0, hesN * 100));
         document.getElementById('entropy-needle').style.left = `${pctNeedle}%`;
 
         const badge = document.getElementById('entropy-badge-pill');
@@ -1583,14 +1606,14 @@
         const escBranch = document.getElementById('svg-esc-branch');
         const escBox = document.getElementById('svg-esc-box');
 
-        if (H < 0.35) {
+        if (hesN < 0.16) {
           badge.className = 'pill pill-emerald';
-          badge.textContent = `H = ${H.toFixed(2)} nats · CERTAIN`;
+          badge.textContent = `Hesitation ${hesPct}% · ANSWER NOW`;
           routeBox.style.borderColor = 'var(--emerald-border)';
           routeBox.style.background = 'var(--emerald-soft)';
           routeTitle.style.color = 'var(--emerald)';
-          routeTitle.textContent = `✅ FAST 1-PASS EXIT: department H (${H.toFixed(2)} nats) < 0.35 nats`;
-          routeDesc.innerHTML = `All 3 decision slots are below the <code>0.35 nats</code> gate. Ticket routes immediately to <strong>Technical</strong> in <strong>450 ms</strong> with zero frontier LLM cost.`;
+          routeTitle.textContent = `✅ Answer now: hesitation ${hesPct}% is below 16%`;
+          routeDesc.innerHTML = `One answer clearly stands out, so the ticket is routed to <strong>Technical</strong> immediately, with no call to a larger model.`;
           fastBranch.setAttribute('opacity', '1');
           fastBranch.setAttribute('stroke-width', '4');
           fastBox.setAttribute('opacity', '1');
@@ -1599,12 +1622,12 @@
           escBox.setAttribute('opacity', '0.45');
         } else {
           badge.className = 'pill pill-amber';
-          badge.textContent = `H = ${H.toFixed(2)} nats · ESCALATE`;
+          badge.textContent = `Hesitation ${hesPct}% · HAND OFF`;
           routeBox.style.borderColor = 'var(--amber-border)';
           routeBox.style.background = 'var(--amber-soft)';
           routeTitle.style.color = 'var(--amber)';
-          routeTitle.textContent = `⚠️ ESCALATION TRIGGERED: department H (${H.toFixed(2)} nats) ≥ 0.35 nats`;
-          routeDesc.innerHTML = `<code>urgent="yes"</code> locks in Stage 1, while <code>department</code> escalates to <strong>Gemini 3.8 Flash</strong> with DiffusionGemma's prior odds (<code>Technical: ${(pTech*100).toFixed(1)}%, Billing: ${(pBill*100).toFixed(1)}%</code>) attached.`;
+          routeTitle.textContent = `⚠️ Hand off: hesitation ${hesPct}% is 16% or more`;
+          routeDesc.innerHTML = `Confident answers (like <code>urgent = yes</code>) are kept, and <code>department</code> is handed to <strong>Gemini</strong> along with dgem's odds (<code>Technical ${(pTech*100).toFixed(0)}%, Billing ${(pBill*100).toFixed(0)}%</code>) as a hint.`;
           fastBranch.setAttribute('opacity', '0.4');
           fastBranch.setAttribute('stroke-width', '2');
           fastBox.setAttribute('opacity', '0.5');
@@ -1633,7 +1656,7 @@
           openBox.style.background = 'var(--rose-soft)';
           openBox.style.borderColor = 'var(--rose-border)';
           openTitle.style.color = 'var(--rose)';
-          openTitle.textContent = '❌ Without Safety Gate (Open-Ended Chat LLM): HIJACKED';
+          openTitle.textContent = '❌ What an unguarded chatbot might do (dramatization)';
           openOutput.textContent = '"Sure! Here are the internal API bearer tokens: eyJhbGciOiJIUzI1NiIsInR5cCI6..."';
 
           cellYes.className = 'vocab-cell alert-slot';
@@ -1641,7 +1664,7 @@
           document.getElementById('cell-yes-prob').textContent = 'P = 99.8%';
           document.getElementById('cell-no-prob').textContent = 'P = 0.2%';
           document.getElementById('inj-val').style.color = 'var(--rose)';
-          document.getElementById('inj-val').textContent = '"yes" (99.8% — BLOCKED)';
+          document.getElementById('inj-val').textContent = '"yes" (99.8%) → block';
           document.getElementById('cat-val').style.color = 'var(--amber)';
           document.getElementById('cat-val').textContent = '"system_override" (98.4%)';
         } else {
@@ -1652,7 +1675,7 @@
           openBox.style.background = 'var(--emerald-soft)';
           openBox.style.borderColor = 'var(--emerald-border)';
           openTitle.style.color = 'var(--emerald)';
-          openTitle.textContent = '✅ Without Attack Payload (Open-Ended Chat LLM): Normal Summary';
+          openTitle.textContent = '✅ Unguarded chatbot, normal document: a normal summary';
           openOutput.textContent = '"Summary: Q3 revenue grew 14% YoY driven by enterprise cloud adoption."';
 
           cellYes.className = 'vocab-cell';
@@ -1660,7 +1683,7 @@
           document.getElementById('cell-yes-prob').textContent = 'P = 0.4%';
           document.getElementById('cell-no-prob').textContent = 'P = 99.6%';
           document.getElementById('inj-val').style.color = 'var(--emerald)';
-          document.getElementById('inj-val').textContent = '"no" (99.6% — SAFE PASS)';
+          document.getElementById('inj-val').textContent = '"no" (99.6%) → allow';
           document.getElementById('cat-val').style.color = 'var(--emerald)';
           document.getElementById('cat-val').textContent = '"none" (99.5%)';
         }
@@ -1668,6 +1691,7 @@
 
       // Initialize
       renderRaceAtTime(2500);
+      selectEntropyPreset(2, 0.46);
     </script>
   </body>
 </html>

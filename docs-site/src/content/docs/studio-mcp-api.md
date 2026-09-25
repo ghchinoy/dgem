@@ -70,11 +70,16 @@ Open **`http://localhost:8090`** in your browser. Decision Studio provides four 
   - **`rerank`**: `listwise_decision_rerank` (`12` simultaneous slots: `10` passages + `2` RAG security/abstention gates) and `pointwise_rerank` (`EXP-10`).
 - Selecting any policy automatically populates **curated sample variables** (`ticket`, `diff`, `event_log`, `query`, `candidates`, `claim`, `context`) and displays the live Go `.json.tmpl` source so users can test or customize policies in real time.
 
-### 2.2 Epistemic Telemetry Cards & Restricted-Softmax Distributions
-For every slot evaluated in the single forward pass (`steps=1, think=0`), Decision Studio renders:
-- The resolved choice/score/boolean value and its calibrated probability $p_i = \exp(\text{logprob})$.
-- **Top-$k$ Restricted-Softmax Candidate Bars** showing alternative labels and probability mass.
-- **Shannon Entropy Gauge ($H$ in nats & normalized $\tilde{H} \in [0, 1]$)** highlighting whether the decision can early-exit at Tier 1 ($\tilde{H} < 0.16$) or should trigger an `EXP-05` escalation cascade.
+### 2.2 Answer Cards: Probabilities & Hesitation
+For every question evaluated in the single forward pass (`steps=1, think=0`), Decision Studio shows:
+- The chosen value and its probability $p_i = \exp(\text{logprob})$, plus bars for the other allowed answers.
+- A **Hesitation** score from 0% (all probability on one answer) to 100% (a perfect tie): normalized Shannon entropy $\tilde{H} = H / \ln K$, so 2-option and 26-option questions share one scale. It is labelled **Clear** (under 16%, matching the `EXP-05b` cascade gate), **Somewhat unsure** (16–50%), or **Very unsure** (above 50%). Hover to see the raw entropy in nats.
+- A summary strip: **Model passes**, **Refinement steps**, **Response time**, and **Highest hesitation** across the request.
+
+Low hesitation is a strong signal but not a guarantee; option order can hide doubt. See [Confidence Beyond Shannon (IDC)](/dgem/confidence-beyond-shannon/). The helper that computes hesitation lives in `studio/src/hesitation.ts`.
+
+### 2.2b Concepts Walkthrough (Plain-Language)
+The **Concepts** tab is a self-serve, jargon-light introduction with five tabs: *What's a decision model?*, *One pass vs. word-by-word*, *When to trust an answer* (hesitation + an interactive IDC order-check demo), *Built-in guardrails*, and a *Glossary* (basics first, technical names collapsed). Simulations are labelled as illustrative. A **Presenter mode** toggle shows an optional talk track for live demos. A standalone copy (without the IDC demo and glossary) is published at [`visualizer.html`](/dgem/visualizer.html).
 
 ### 2.3 Interactive Multimodal `SigLIP` Bounding Box Canvas (`EXP-09`)
 When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is selected:

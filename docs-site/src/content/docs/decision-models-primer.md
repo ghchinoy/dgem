@@ -7,7 +7,7 @@ For decades, software engineers and product teams had to choose between two extr
 
 **DiffusionGemma** introduces a third paradigm: **Discrete Diffusion Decision Models**.
 
-> ✨ **Interactive Walkthrough**: Want to see the 1-pass Diffusion Canvas, the **Shannon Entropy Gate (`nats`)**, and the **Prompt Injection Safety Gate** in action? [**Open the 4-Tab Interactive Concept Visualizer ➔**](/dgem/visualizer.html) (also built directly into `dgem serve` under the **Concepts** tab).
+> ✨ **Interactive Walkthrough**: New to decision models? [**Open the plain-language walkthrough ➔**](/dgem/visualizer.html): what a decision model is, one pass vs. word-by-word, when to trust an answer (hesitation), and built-in guardrails. The full version, with a live IDC order-check demo and a glossary, is the **Concepts** tab in Decision Studio (`./bin/dgem serve`).
 
 ---
 
