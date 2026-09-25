@@ -1,12 +1,63 @@
 # dgem — DiffusionGemma as a Zero-Shot Decision Model
 
-**`dgem`** is a declarative **Policy-as-Template** engine and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma** (`26B-A4B-it`), supporting **four serving targets**:
-1. **Vertex AI Dedicated Endpoints (`/invoke/*`, `g2-standard-16` `1× NVIDIA L4` `64 GB` RAM)** — `0.0 s` cold start, `~490 ms` GPU denoise (`~536 ms` wall time), enterprise MLOps (`vertex_first` default in `dgemma-gateway`).
-2. **Serverless Cloud Run GPU (`NVIDIA RTX Pro 6000` `48GB` & `NVIDIA L4` `24GB`)** — Scale-to-zero (`$0.00/hr` idle cost), `~427 ms` GPU denoise (`~459 ms` warm wall latency).
-3. **Google Compute Engine VM (`1× L4` `NVFP4` / `2× A100` `bfloat16`)** — Dedicated VM continuous batching and custom CUDA kernel profiling.
-4. **Local Apple Silicon (`macOS Metal`)** — Native Rust Metal engine (`diffgemma`, `q4` unified memory) with zero cloud cost.
+**`dgem`** turns Google DeepMind's **DiffusionGemma** (`26B-A4B-it`, a discrete-diffusion Gemma 4) into a **decision engine**. You describe a decision as a small template of typed questions (`boolean`, `choice`, `score`). `dgem` places every question on the model's bidirectional canvas and reads **a probability for every allowed answer, for every question, in one forward pass**. There is no free-text generation to parse, and every answer comes with a per-question uncertainty score you can use to decide when to act automatically and when to escalate.
 
-It ships with an embedded **Decision Studio Web App (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `/mcp`)**, **HTTP Gateway REST API (`/api/decide` & `/v1/systemone`)**, and **Stage 2 Gemini Cascade (`gemini-3.8-flash` default)**.
+📖 **Docs site:** [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/) · 🖥️ **Decision Studio:** [dgemma.aaie.cloud](https://dgemma.aaie.cloud/)
+
+## What's in this repo
+
+| Piece | What it does | Start here |
+| :--- | :--- | :--- |
+| **Decision engine** (`dgem decide`) | Compiles `.json.tmpl` *Policy-as-Template* files into one-pass multi-question readouts with per-option probabilities and Shannon entropy. | [The Journey to Decision Models](docs/decision-models-primer.md) · [Template Catalog](docs/templates.md) |
+| **Invariant Decision Calibration (IDC)** — *the novel part* | Checks whether a decision depends on **where options were listed**: divides out the model's "pick option A" habit and reads a **reversed ballot on the same canvas, in the same forward pass**. | [Confidence Beyond Shannon (IDC)](docs/confidence-beyond-shannon.md) |
+| **Entropy-gated cascade** | Answers low-uncertainty decisions directly and escalates the rest to Vertex AI `gemini-3.8-flash` with the Stage-1 probabilities attached. | [EXP-05](docs/experiments/exp-05-roadmap-cascades-and-dags.md) |
+| **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/studio-mcp-api.md) · [CLI reference](docs/cli-reference.md) |
+| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-13`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
+| **Serving** | Vertex AI Dedicated Endpoint (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [Vertex AI vs. Cloud Run](docs/vertex-ai-vs-cloudrun.md) |
+
+## Quick start
+
+```bash
+make build                                   # builds ./bin/dgem
+./bin/dgem decide -t templates/support_triage.json.tmpl \
+  -v 'ticket=I was billed $500 twice for my annual renewal this morning!' --stats
+# Add --null-prior-debias and/or --dual-mirror to turn on IDC order-bias checks.
+```
+
+Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--vertex-url <endpoint-id>` (Vertex AI); see [Supported Deployment Environments](#supported-deployment-environments-4-serving-targets).
+
+---
+
+## Confidence Beyond Shannon: Invariant Decision Calibration (IDC)
+
+> **In one sentence:** IDC makes a `dgem` confidence score reflect *the question*, not *the position where each answer was listed*, and flags decisions whose answer depends on the list order. Plain-English guide with a worked example: **[`docs/confidence-beyond-shannon.md`](docs/confidence-beyond-shannon.md)**.
+
+**The problem.** Per-question Shannon entropy ($H = -\sum p_k \ln p_k$) is a useful escalation signal: it rises when human annotators disagree. But DiffusionGemma, like other language models, has a strong **ballot-order ("Box A") habit**: on blank, content-free questions it puts $88.3\%$ / $78.3\%$ / $49.3\%$ of its probability on the first slot (2 / 3 / 4 options). On a borderline input that habit can make a toss-up look 99.9% certain, and the entropy gate waves it through.
+
+**What IDC does.**
+1. **Null-Prior De-Biasing** (`--null-prior-debias`, no labeled data): divides out the measured slot habit. On the 50-item calibration suite: accuracy `88% → 90%`, Brier `0.186 → 0.149`, and **34/34** answers above 0.90 confidence correct (vs 34/36; separate runs).
+2. **Dual-Mirror Canvas** (`--dual-mirror`): adds a reversed-order copy of each choice question **to the same canvas**, so the forward and reversed readings come from **one forward pass**, and their gap (`Mirror TVD`) flags order-dependent answers. It caught `perm_08` (single reading 99.9%, TVD `0.258`) but missed `perm_06`; with the current merge rule it slightly worsens Brier/ECE.
+3. **Slot Temperature Scaling** (`EXP-11`): softens over-sharp scores. Needs labeled data; the reported ECE `0.075 → 0.033` is in-sample.
+
+**What's new.** Removing a content-free prior (*contextual calibration*, Zhao et al. 2021), permutation debiasing (e.g. PriDe, Zheng et al. 2023), and temperature scaling (Guo et al. 2017) are known techniques. The part specific to a diffusion decision model is **checking a reversed ballot on every request without a second forward pass**, which turns order sensitivity from an offline audit into a per-request signal.
+
+**Status.** Evidence is early (16 synthetic ordering items, 50 calibration items); IDC is CLI-only today (Mirror TVD is not yet returned by `serve` / MCP / Studio); the combined IDC + escalation pipeline has not been benchmarked end to end. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and [Proposed Experiments](docs/experiments/proposed.md) (`PROP-00`–`PROP-10`) for what comes next.
+
+---
+
+## Headline Results (measured, with sample sizes)
+
+| Result | Value | Sample | Receipt |
+| :--- | :--- | :---: | :--- |
+| Single-pass accuracy, 11 public datasets (`dgem bench-calibration`) | 88.0% (44/50) | 50 | `benchmarks/results_calibration_cloudrun.json` |
+| + Null-prior de-biasing (IDC) | 90.0%, Brier 0.186 → 0.149, 34/34 correct above 0.90 conf. | 50 | `results_calibration_null_prior.json` |
+| + Entropy cascade to `gemini-3.8-flash` ($\tilde H \ge 0.16$, 34% escalated) | **98.0% (49/50)**, 56% lower cost than Gemini on every item | 50 | `results_calibration_cascade_normalized.json` |
+| JevBench v1.3.1: DiffusionGemma reference → entropy cascade (28% escalated) | 194 → **213** of 231 | 231 | `benchmarks/jevbench/` |
+| Decision Index panel: bracket routing (> 26 options) + slot batching | 76.67 → 98.89, coverage 16/22 → 22/22 | 22 requests | `benchmarks/decision_index/` |
+| Listwise reranking of 10 passages in one pass (`EXP-10`) | 0.9265 nDCG@10, 0% ties | 30 queries | `results_rerank_cloudrun.json` |
+| Content-free Slot-A habit (`EXP-13B`) | 88.3% / 78.3% / 49.3% for K = 2 / 3 / 4 | probe | `results_permutation_cloudrun.json` |
+
+Thresholds and temperatures were tuned on the evaluation items, and calibration samples are small; treat these as directional. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
 
 ---
 
@@ -16,39 +67,27 @@ See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-
 
 | Interaction Surface | Command / Endpoint | Description |
 | :--- | :--- | :--- |
-| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090`<br>`https://dgemma.aaie.cloud` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, and **OpenTelemetry Trace Waterfall** inspection. |
+| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090`<br>`https://dgemma.aaie.cloud` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, a plain-English **Concepts** tab (including an IDC walkthrough), and **OpenTelemetry Trace Waterfall** inspection. |
 | **2. 🤖 Model Context Protocol (`MCP`)** | `./bin/dgem mcp` (`stdio`)<br>`POST /mcp` (`Streamable HTTP`) | Native MCP server exposing **6 tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) with `backend` (`vertex_first` \| `vertex` \| `cloudrun`) and Stage 2 Gemini Cascade support (`cascade_mode`, `cascade_threshold`, `cascade_model`). |
 | **3. 🌐 HTTP Gateway REST API** | `POST /api/decide/{template}`<br>`POST /v1/systemone`, `GET /api/templates` | Execute any `.json.tmpl` decision policy or `/v1/systemone` schema with `X-DGem-Backend: vertex_first \| vertex \| cloudrun` (`X-DGem-Backend-Used` returned on every response) and optional Stage 2 `gemini-3.8-flash` cascade. |
-| **4. ⌨️ CLI & 7 Benchmark Suites** | `./bin/dgem decide --vertex-url ...`<br>`./bin/dgem bench-*` | Direct single-pass decisions (`--stats`, `--vertex-url 4217256562927861760`) and seven reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-13`). |
+| **4. ⌨️ CLI & 9 Benchmark Harnesses** | `./bin/dgem decide --vertex-url ...`<br>`./bin/dgem bench-*` | Direct single-pass decisions (`--stats`, `--null-prior-debias`, `--dual-mirror`) and nine reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`, `bench-decision-index`, `bench-permutation`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-13`). |
 
 ### Why a "Decision Model"?
 
-Historically, production engineering teams had to choose between two extremes for automated triage, routing, and guardrails:
-1. **Discriminative Classifiers & Automata (BERT / DeBERTa / C++ WFSTs)**: Sub-10ms latency, but **rigid**. Adding a new policy rule or routing category requires curating labeled datasets, retraining weights, and redeploying model binaries.
-2. **Autoregressive Generative LLMs (Gemini / GPT-4 / Gemma 4)**: Zero-shot flexible, but **architecturally mismatched for discrete decisions**—paying $O(T_{\text{output}})$ serial token generation latency (`2–17s`), vulnerable to markdown/JSON syntax drift, and lacking calibrated distribution entropy over the decision space.
+Production teams have historically chosen between two extremes for automated triage, routing, and guardrails:
+1. **Discriminative classifiers & automata (BERT / DeBERTa / C++ WFSTs)**: very fast, but **rigid**. A new policy rule or category means new labeled data, retraining, and redeployment.
+2. **Autoregressive LLMs (Gemini / GPT / Gemma 4)**: zero-shot flexible, but they generate answers token by token (seconds per multi-field JSON answer), can drift from the output format, and their token probabilities are spread across formatting tokens rather than the decision itself.
 
-**DiffusionGemma introduces a third architectural category: the Zero-Shot Decision Model.**
-Instead of generating text left-to-right, `dgem` compiles declarative `.json.tmpl` templates into a **pre-allocated discrete diffusion canvas** (`32–256` tokens) with full bidirectional attention. Boolean gates, `[A-Z]` categorical choices, and ordinal rubrics are resolved simultaneously in a **single forward pass (`~125–450 ms`)**, returning **100% schema-guaranteed decisions**.
-
-### Confidence Beyond Shannon: `dgem Invariant Decision Calibration (IDC)`
-
-> **In one sentence:** IDC makes a `dgem` confidence score reflect *the question*, not *the position where each answer was listed*, and flags decisions whose answer depends on the list order. Full plain-English guide with a worked example: **[`docs/confidence-beyond-shannon.md`](docs/confidence-beyond-shannon.md)**.
-
-Single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises when human annotators disagree, which makes it a useful escalation signal (`EXP-04`/`EXP-05`). But `DiffusionGemma` also has a strong **ballot-order ("Box A") habit**: on blank, content-free questions it picks the first slot $88.3\%$ / $78.3\%$ / $49.3\%$ of the time (2 / 3 / 4 options). On borderline inputs this can make a toss-up look like 99.9% certainty. IDC combines:
-1. **Null-Prior De-Biasing** (`--null-prior-debias`, `EXP-13B`, no labeled data needed): divides out the measured slot habit. On the 50-item calibration suite: Brier `0.186 → 0.149`, accuracy `88% → 90%`, and **34/34** high-confidence (>90%) answers correct (vs 34/36 at baseline; separate runs).
-2. **Dual-Mirror Canvas** (`--dual-mirror`, `EXP-13C`): adds a reversed-order copy of each choice slot **to the same canvas, so it costs no extra forward pass**, and compares the two readings (`Mirror TVD`). It flagged `perm_08` (99.9% single-reading confidence, TVD `0.258`) but missed `perm_06`, and with the current merge rule it slightly worsens Brier/ECE. Mirror TVD isn't yet exposed on `serve` / MCP / Studio.
-3. **Slot Temperature Scaling** (`EXP-11`): ECE `0.075 → 0.033` with $T^* = 1.35$. **In-sample**: $T^*$ was fitted on the same 50 items.
-
-Samples are small (16 synthetic ordering items, 50 calibration items), and the combined IDC + escalation pipeline hasn't been benchmarked end to end yet. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and its caveats.
+A **zero-shot decision model** sits in between. `dgem` compiles a `.json.tmpl` template into a fixed diffusion canvas (`32–256` tokens) with bidirectional attention; boolean gates, `[A–Z]` choices, and ordinal scores are read together in **one forward pass**, and every answer is constrained to the allowed options.
 
 | Architectural Dimension | Discrete Diffusion Decision Model (`dgem`) | Discriminative Encoder (DeBERTa-v3 / Llama-Guard) | Autoregressive LLM (Gemini / Gemma 4) | Compiled Rulebook (`ecotone` C++ WFST) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Policy Adaptability** | **Zero-Shot Policy-as-Template** (edit `.json.tmpl` in seconds) | Requires labeled dataset & weight retraining per label change | Zero-shot prompt engineering | Manual grammar authoring & compilation |
-| **Inference Latency** | **125 – 490 ms** (1-pass Vertex AI L4 / Cloud Run GPU / Metal) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
-| **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 12 joint slots take same pass) | $O(M_{\text{heads}})$ separate classifiers per attribute | **$O(T_{\text{output}})$ linear penalty** (serial token loop) | $O(N_{\text{chars}})$ graph traversal |
-| **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single forward pass | Independent static classification heads | Unidirectional causal bias (`left -> right`) | Local sliding window (1–3 tokens) |
-| **Uncertainty & Calibration (`IDC`)** | **Per-slot probabilities + entropy**; zero-label order-bias correction (null-prior) and same-pass reversed-ballot check (Dual-Mirror) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
-| **Guardrail & Policy Accuracy** | **100%** `AgentDrift` hijack, **100%** Prompt Injection, **100%** RAG Grounding | Narrow single-task scope (512–8k context) | High accuracy at 15–25× higher latency | **36.7%** on semiotic polysemy traps |
+| **Policy Adaptability** | **Zero-shot Policy-as-Template** (edit `.json.tmpl`) | Labeled dataset & retraining per label change | Zero-shot prompt engineering | Manual grammar authoring & compilation |
+| **Inference Latency** | **~125 ms** (1 short question) to **~1.4 s** (12-slot rerank) per pass on Cloud Run / Vertex L4 | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5 s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
+| **Passes per Request** | **1 forward pass** for all questions (cost grows with canvas length) | One classifier per attribute | One token per step ($O(T_{\text{output}})$) | $O(N_{\text{chars}})$ graph traversal |
+| **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single pass | Independent heads | Left-to-right only | Local sliding window (1–3 tokens) |
+| **Uncertainty & Calibration** | **Per-option probabilities + entropy**; label-free order-bias correction (null-prior) and same-pass reversed-ballot check (IDC) | Often overconfident out-of-distribution | Sequence-level logprobs over formatting tokens | Static arc weights |
+| **Guardrail Examples (50-item suite)** | `AgentDrift` 7/7, prompt injection 4/4, RAG grounding 2/2 | Narrow single-task scope | High accuracy, 15–25× higher latency | **36.7%** on semiotic polysemy traps |
 
 ---
 
@@ -128,7 +167,7 @@ make stop
 
 ---
 
-## Installation & Quick Start
+## Installation & CLI Examples
 
 ```bash
 # Clone the repository
@@ -140,7 +179,7 @@ make build
 ```
 
 ### 1. Single-Pass Discrete Decision (`dgem decide`)
-Evaluate customer tickets, code changes, or security alerts in a single ~750 ms forward pass:
+Evaluate customer tickets, code changes, or security alerts in a single sub-second forward pass:
 ```bash
 ./bin/dgem decide -t templates/support_triage.json.tmpl \
   -v 'ticket=I was billed $500 twice for my annual renewal this morning!' \
@@ -194,7 +233,7 @@ Attach local image paths (automatically base64 encoded) or remote URLs:
 
 ## Benchmark Suites & Empirical Calibration
 
-`dgem` includes four first-class empirical benchmark harnesses (tracked in [`docs/experiments/README.md`](docs/experiments/README.md)):
+`dgem` includes nine benchmark harnesses (all tracked in [`docs/experiments/README.md`](docs/experiments/README.md)). Four of the most commonly used are below; the others are `bench-jev` (JevBench v1.3.1), `bench-decision-index` (Decision Index panel + `/v1/systemone`), `bench-permutation` (option-order sensitivity and IDC, `EXP-13`), `bench-rerank` (listwise reranking, `EXP-10`), and `bench-bbox` (bounding boxes, `EXP-09`).
 
 ### 1. Public Dataset Policy & Epistemic Calibration Suite (`dgem bench-calibration`)
 Evaluates 50 items across **11 public datasets** ([`benchmarks/calibration_suite.jsonl`](benchmarks/calibration_suite.jsonl)), testing declarative policy templates (`templates/calibration/*.json.tmpl`) across agent trajectory hijacking (`AgentDrift`), multilingual jailbreaks (`deepset/prompt-injections`), RAG fact grounding (`LLM-AggreFact`), retrieval relevance (`MS MARCO`), toxicity (`Jigsaw Civil Comments`), and human annotator disagreement (`ChaosNLI`):
@@ -211,10 +250,10 @@ Evaluates 50 items across **11 public datasets** ([`benchmarks/calibration_suite
 | **`LLM-AggreFact` & `MS MARCO`** (RAG Grounding & Retrieval Relevance) | 4 | **100.0% (4/4)** ⭐ | `0.993` | `0.0403 nats` | **728 ms** |
 | **`CLINC150`, `Banking77`, `GoEmotions`, `BoolQ`, `Yelp/SST-5`** | 20 | **100.0% (20/20)** ⭐ | `0.898` | `0.3263 nats` | **769 ms** |
 | **`ChaosNLI` Crowd Consensus (`low-entropy`)** | 3 | **100.0% (3/3)** | `0.986` | **`0.0744 nats` (1.0×)** | **625 ms** |
-| **`ChaosNLI` Crowd Split (`high-entropy`)** | 3 | 33.3% (1/3) | `0.759` | **`0.5932 nats` (8.0× spike)** ⭐ | **731 ms** |
+| **`ChaosNLI` Crowd Split (`high-entropy`)** | 3 | 33.3% (1/3) | `0.759` | **`0.5932 nats` (8.0× higher; n=3)** | **731 ms** |
 | **Stage 1 Alone: `DiffusionGemma` (`steps=1, think=0`)** | **50** | **88.0% (44/50)** | **`0.925`** | **`0.2279 nats`** | **712 ms** |
 | **Raw Entropy Cascade (`EXP-05a`): `dgemma [H<0.35]` $\rightarrow$ `gemini-3.8-flash`** | **50** | **94.0% (47/50, `+6.0%`)** | **`0.959`** | **`0.1410 nats`** | **1,824 ms** (`72%` early-exit) |
-| **Normalized + Prior-Guided Cascade (`EXP-05b`, $\tilde{H} < 0.16$)** | **50** | **98.0% (49/50, `+10.0%`)** ⭐ | **`0.960`** | **`0.1416 nats` ($\tilde{H}=0.106$)** | **2,105 ms** (`66%` early-exit) |
+| **Normalized + Prior-Guided Cascade (`EXP-05b`, $\tilde{H} < 0.16$, threshold tuned on these items)** | **50** | **98.0% (49/50, `+10.0%`)** ⭐ | **`0.960`** | **`0.1416 nats` ($\tilde{H}=0.106$)** | **2,105 ms** (`66%` early-exit) |
 | **Stage 2 Alone: `gemini-3.8-flash` (100% Frontier LLM)** | **50** | **98.0% (49/50)** | **`0.959`** | **`0.1347 nats`** | `3,412 ms` (`4.8×` slower) |
 
 ### 2. Multi-Domain Operational Triage (`dgem bench`)
@@ -240,11 +279,16 @@ Evaluates 30-way to 151-way intent routing and Out-of-Scope (`oos`) rejection on
 
 ## Documentation & Research Ledger
 
+All pages below are also published on the docs site: [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/).
+
 * **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, `g2-standard-16` (`64 GB` RAM) sizing, and live 30-case benchmark receipts.
 * **[Experiment Authoring Guide & Backend Target Selection](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
 * **[CLI, HTTP Gateway & MCP Reference](docs/cli-reference.md)**: Complete flag and tool parameter reference (`--vertex-url`, `dgem serve --default-backend vertex_first`, `/v1/systemone`, and MCP tools).
 * **[The Journey to Decision Models](docs/decision-models-primer.md)**: Architectural primer contrasting Classical ML, Symbolic WFSTs, Autoregressive LLMs, and Discrete Diffusion Decision Models.
+* **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](docs/confidence-beyond-shannon.md)**: Why a raw confidence score can be fooled by option order, how IDC checks it in one pass, what it does not fix, and the evidence with sample sizes.
+* **[Glossary & Mental Models](docs/glossary.md)**: Plain-English definitions (entropy, null prior, Mirror TVD, ECE, Brier) and translations across ML specialties.
 * **[Experiments & Research Ledger (`docs/experiments/`)](docs/experiments/README.md)**: Structured log of completed empirical studies (`EXP-01` through `EXP-13`) and active architectural investigations (`EXP-05` Entropy-Gated Cascades, `EXP-06` Encoder Comparisons, `EXP-07` Conditional Policy DAGs).
+* **[Proposed Experiments Register](docs/experiments/proposed.md)**: Pre-registered hypotheses, designs, and decision criteria for upcoming work (`PROP-00`–`PROP-10`).
 * **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Full empirical receipts comparing Vertex AI `1× L4`, Cloud Run `1× RTX Pro 6000` / `1× L4`, Apple M5 Metal, GCE `1× L4`, GCE `2× A100` `bfloat16`, `ChaosNLI`, Banking77, and CLINC150.
 * **[Template Catalog (`Policy-as-Code`)](docs/templates.md)**: Complete reference of declarative `.json.tmpl` decision schemas across triage, guardrails, NLU, and multimodal vision.
 * **[Ecotone (WFST) vs. DiffusionGemma](docs/ecotone-comparison.md)**: Semiotic polysemy taxonomy, head-to-head findings, and the hybrid Cascaded Normalizer architecture.

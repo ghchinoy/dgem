@@ -201,23 +201,28 @@
   <!-- LAYER 1: HERO HEADER -->
   <header class="hero">
     <div class="hero-main">
-      <div class="eyebrow">Experiment Record &middot; dgem (DiffusionGemma 26B-A4B) &middot; EXP-05 / EXP-11 / EXP-12 / EXP-13 &middot; 2026-09-23</div>
+      <div class="eyebrow">Experiment Record &middot; dgem (DiffusionGemma 26B-A4B) &middot; EXP-05 / EXP-11 / EXP-12 / EXP-13 &middot; 2026-09-23 &middot; corrected 2026-09-25 against committed receipts</div>
       <h1>Zero-Shot Decision Models Across <em>JevBench v1.3.1, Decision Index &amp; Dual-Mirror Calibration</em></h1>
       <p class="lead">
         Unified evaluation of <code>dgem</code> (our Policy-as-Template serving, slot-calibration, and wide-canvas routing stack around Google DeepMind's DiffusionGemma) across <code>JevBench v1.3.1</code> (231 adversarial tasks), Hugging Face's <code>jev-decision-index</code> (19-benchmark capability panel), and <code>EXP-13</code> (Permutation Sensitivity, Null-Prior De-Biasing &amp; <span class="math"><i>O</i>(1)</span> Dual-Mirror Canvas Calibration).
       </p>
       <div class="status-line">
         <span class="pill live">Decision Studio &middot; <a href="https://dgemma.aaie.cloud/" style="color:inherit;text-decoration:underline">dgemma.aaie.cloud</a></span>
-        <span class="pill live">JevBench Composite (IDC) &middot; 78.84 (90.0% Acc &middot; 31/31 &gt;90% Tier)</span>
-        <span class="pill live">Entropy Cascade &middot; 98.0% Acc (&minus;56% Cost)</span>
-        <span class="pill live">Decision Index Ablation &middot; 98.89 vs 76.67 (+22.22 pts &middot; 0.0332 ECE)</span>
-        <span class="pill clay">EXP-13 Dual-Mirror Canvas &middot; 0% Flip Rate &middot; &minus;90.2% Brier (0 ms overhead)</span>
+        <span class="pill live">Null-Prior IDC &middot; 90.0% Acc &middot; 34/34 &gt;90% Tier (50-item suite)</span>
+        <span class="pill live">Entropy Cascade &middot; 98.0% Acc (49/50) &middot; 34% escalated &middot; &minus;56% cost vs Gemini-only</span>
+        <span class="pill live">Decision Index Ablation &middot; 98.89 vs 76.67 (22-request panel, coverage fix)</span>
+        <span class="pill clay">EXP-13 Dual-Mirror &middot; no extra forward pass &middot; flags order-sensitive toss-ups (n=16)</span>
       </div>
     </div>
     <button class="btn-copy" id="copyBtn" onclick="copyBriefing()">
       Copy TL;DR Memo for Colleagues
     </button>
   </header>
+
+  <div class="callout warn" style="margin:0 0 1rem 0">
+    <div class="ct">Correction notice (2026-09-25)</div>
+    An earlier version of this briefing overstated several IDC results. Numbers below are now taken from the committed receipts in <code>benchmarks/</code>. Main changes: (1) the <code>perm_06</code> example was wrong&mdash;the Dual-Mirror check did <em>not</em> flag it (Mirror TVD 0.0006); the item it did catch is <code>perm_08</code>; (2) the 0.0326 ECE comes from temperature scaling fitted <em>in-sample</em> on the same 50 items, not from IDC; (3) the 98.0% cascade is entropy-only (no IDC) and escalates 34% of items, not 28%; (4) &ldquo;0% reversal flip rate&rdquo; is true by construction of the merge, not a measured result; (5) Dual-Mirror, with the current merge rule, <em>worsens</em> Brier/ECE on the 50-item suite and on the Decision Index panel. The &ldquo;JevBench composite&rdquo; figures in this page use the JevBench v1.3.1 4-axis <em>scoring protocol</em> on our 50-item calibration suite; they are not scores on the 231-item JevBench dataset. See <code>docs/confidence-beyond-shannon.md</code> &sect;6 and <code>docs/experiments/proposed.md</code>.
+  </div>
 
   <!-- LAYER 2: NUMBERED PILL TOC -->
   <nav class="toc">
@@ -233,24 +238,24 @@
   <!-- LAYER 3: FOUR-CELL KPI SUMMARY STRIP -->
   <div class="summary">
     <div class="cell olive">
-      <div class="k">JevBench v1.3.1 Composite (dgem IDC)</div>
-      <div class="v">78.84 / 100</div>
-      <div class="s"><strong>90.0%</strong> Raw Acc (<span class="math">+3.25</span> pts vs Shannon-only) &middot; <strong>100% (31/31)</strong> on <span class="math">&gt;90%</span> Conf. Tier</div>
+      <div class="k">Null-Prior De-Biasing (50-item suite, T=1)</div>
+      <div class="v">Brier 0.186 &rarr; 0.149</div>
+      <div class="s"><strong>90.0%</strong> Acc (vs 88.0%) &middot; <strong>34/34</strong> correct on <span class="math">&gt;90%</span> conf. (vs 34/36) &middot; separate runs, small n</div>
     </div>
     <div class="cell accent">
       <div class="k">Entropy-Gated Cascade (EXP-05)</div>
       <div class="v">98.0% Acc</div>
-      <div class="s"><code>dgemma</code> resolves <strong>72%</strong> in <span class="math"><i>O</i>(1)</span> pass; escalates <strong>28%</strong> to Gemini Flash (<strong>&minus;56% cost</strong>)</div>
+      <div class="s"><code>dgemma</code> exits <strong>66%</strong> early (33/33 correct); escalates <strong>34%</strong> to Gemini Flash (<strong>&minus;56% cost</strong> vs Gemini on every item). Entropy-only, threshold tuned on the same 50 items.</div>
     </div>
     <div class="cell olive">
       <div class="k">Decision Index Ablation (EXP-12 + IDC)</div>
       <div class="v">98.89 vs 76.67</div>
-      <div class="s"><strong>100.0%</strong> Coverage (<span class="math">+22.22</span> pts) &middot; <strong>0.0332</strong> 10-Bin ECE (<span class="math">&minus;86.1%</span> vs raw <code>open-jev</code>)</div>
+      <div class="s"><strong>100.0%</strong> coverage on a 22-request internal panel (one request per benchmark, 54 fields) &middot; gain comes from bracket routing + batching, not calibration</div>
     </div>
     <div class="cell accent">
       <div class="k">HF Leaderboard Standing (72.6k Hub)</div>
-      <div class="v">#2 &rarr; #1 Open</div>
-      <div class="s">Raw <code>diffusiongemma</code> scores <strong>55.56</strong> (<span class="math">0.18</span> pts behind #1 <code>Jevfire</code>); <code>dgem IDC</code> closes the gap</div>
+      <div class="v">#2 (measured) &middot; #1 (projected)</div>
+      <div class="s">Raw <code>diffusiongemma</code> scores <strong>55.56</strong> (<span class="math">0.18</span> pts behind #1 <code>Jevfire</code>). The #1 projection is an estimate; no <code>dgem</code> submission has been scored on the hub.</div>
     </div>
   </div>
 
@@ -263,7 +268,7 @@
 
     <div class="callout" style="margin-bottom:0.85rem">
       <div class="ct">Executive &amp; Product Manager Summary: Why &ldquo;AI Confidence&rdquo; Is Hard&mdash;And How <code>dgem IDC</code> Makes It Trustworthy</div>
-      Raw AI confidence scores (like standard single-pass Shannon entropy) suffer from three well-known blindspots: <strong>first-option habits</strong> (models favor <code>Box A</code> 49%&ndash;88% of the time on blank prompts whenever a question is a toss-up), <strong>wording/order sensitivity</strong>, and <strong>missing context</strong> (e.g. <em>&ldquo;Your package could not be delivered&rdquo;</em> without the sender's email domain). <strong><code>dgem Invariant Decision Calibration (IDC)</code></strong> wraps DiffusionGemma's <code>125 ms</code> snapshot in a zero-overhead quality-control pipeline: (1) it binds every choice&mdash;whether 1 word or 20 words&mdash;to a single 1-token letter (<code>A&ndash;Z</code>), (2) it <em>&ldquo;zeros the scale&rdquo;</em> by subtracting the model's built-in <code>Box A</code> bias (<code>Null-Prior De-Biasing</code>), and (3) it prints the ballot in both forward and reverse order on the same page at <code>0 ms</code> extra latency (<code>Dual-Mirror Canvas</code>) so clear decisions return in <code>125 ms</code> with <strong>100% reliability on &gt;90%-confidence predictions (31/31)</strong> while hidden toss-ups automatically escalate to <strong>Gemini</strong> (<strong>98.0% accuracy at &lt;50% cost</strong>).
+      Raw AI confidence scores (like standard single-pass Shannon entropy) suffer from three well-known blindspots: <strong>first-option habits</strong> (models favor <code>Box A</code> 49%&ndash;88% of the time on blank prompts whenever a question is a toss-up), <strong>wording/order sensitivity</strong>, and <strong>missing context</strong> (e.g. <em>&ldquo;Your package could not be delivered&rdquo;</em> without the sender's email domain). <strong><code>dgem Invariant Decision Calibration (IDC)</code></strong> adds cheap checks around DiffusionGemma's single-pass readout: (1) every choice is bound to a single 1-token letter (<code>A&ndash;Z</code>); (2) it <em>&ldquo;zeros the scale&rdquo;</em> by dividing out the model's built-in <code>Box A</code> habit (<code>Null-Prior De-Biasing</code>, no labeled data needed); and (3) it can print the ballot forward and reversed on the same canvas, in the same forward pass (<code>Dual-Mirror Canvas</code>), to flag answers whose confidence depends on list order. Early results are promising but small: on a 50-item suite null-prior de-biasing gave 34/34 correct high-confidence answers; the mirror caught one toss-up that a single reading called 99.9% certain (<code>perm_08</code>) and missed another (<code>perm_06</code>). IDC does not address rewording or missing context, and it is CLI-only today.
     </div>
 
     <div class="grid3">
@@ -276,7 +281,7 @@
       <div class="panel" style="margin:0">
         <h3>2. Invariant Decision Calibration (<code>IDC</code>)</h3>
         <p>
-          Goes beyond single-pass Shannon entropy (<span class="math"><i>H&#771;</i><sub><i>m</i></sub></span>) by combining <strong>Null-Prior Tare</strong> (<span class="math">&minus;90.2%</span> Brier error), <strong><span class="math"><i>O</i>(1)</span> Dual-Mirror Canvas</strong> (<code>0%</code> reversal flip), and <strong><span class="math"><i>T</i><sup>*</sup></span> Scaling</strong>.
+          Goes beyond single-pass Shannon entropy (<span class="math"><i>H&#771;</i><sub><i>m</i></sub></span>) by combining <strong>Null-Prior Tare</strong> (label-free), an <strong><span class="math"><i>O</i>(1)</span> Dual-Mirror Canvas</strong> (reversed-order check in the same pass), and optional <strong><span class="math"><i>T</i><sup>*</sup></span> Scaling</strong> (needs labeled data).
         </p>
       </div>
       <div class="panel" style="margin:0">
@@ -326,7 +331,7 @@
           </tr>
           <tr class="highlight">
             <td><strong>Reproducible <code>dgem</code> Command</strong></td>
-            <td><code>dgem bench-calibration --null-prior-debias --auto-temperature</code></td>
+            <td><code>dgem bench-jev</code> (231 items) &middot; <code>dgem bench-calibration --null-prior-debias</code> (50-item suite, JevBench scoring)</td>
             <td><code>dgem bench-decision-index --null-prior-debias --compare-naive</code></td>
           </tr>
         </tbody>
@@ -338,7 +343,7 @@
   <section id="s3">
     <div class="sec-head"><span class="num">03</span><h2>Benchmark 1 Scorecard: <code>JevBench v1.3.1</code>, <code>dgem IDC</code> &amp; Entropy Cascade (<code>EXP-05</code> / <code>EXP-11</code> / <code>EXP-13</code>)</h2></div>
     <p class="sec-intro">
-      Comparing <strong>&ldquo;Shannon-Only <code>dgem</code>&rdquo;</strong> against <strong><code>dgem IDC</code></strong> across our 50-case Public Calibration &amp; Guardrail suite shows how <strong>Null-Prior De-Biasing</strong> and <strong>Dual-Mirror Canvas</strong> lift Raw Accuracy from <code>88.0%</code> to <strong><code>90.0%</code></strong> (Toxicity <code>83.3% &rarr; 100%</code>), lift Chance-Corrected Intelligence by <strong><span class="math">+3.05</span> pts</strong> (<code>82.90 &rarr; 85.95</code>), make every <code>&gt;90%</code>-confidence prediction <strong><code>100.0%</code> accurate (<code>31/31</code>)</strong>, and lift the 4-Axis JevBench Composite to <strong><code>78.84</code></strong>.
+      Comparing <strong>&ldquo;Shannon-Only <code>dgem</code>&rdquo;</strong> against IDC variants on our 50-item public calibration &amp; guardrail suite, scored with the <code>JevBench v1.3.1</code> 4-axis protocol (this is <em>not</em> the 231-item JevBench dataset). Null-prior and Dual-Mirror both reach <code>90.0%</code> accuracy (vs <code>88.0%</code>), but they are separate runs against a different Cloud Run revision from the baseline, so a 1-item difference may be run-to-run noise. Temperature rows use a <span class="math"><i>T</i><sup>*</sup></span> fitted on these same 50 items (in-sample).
     </p>
     <div class="grid2">
       <div class="tscroll" style="margin:0">
@@ -361,7 +366,7 @@
               <td class="num">75.59</td>
             </tr>
             <tr>
-              <td>2. <code>dgem</code> + Temp Scale Only (<span class="math"><i>T</i><sup>*</sup> = 1.35</span>, <code>EXP-11</code>)</td>
+              <td>2. <code>dgem</code> + Temp Scale Only (<span class="math"><i>T</i><sup>*</sup> = 1.35</span>, fitted in-sample, <code>EXP-11</code>)</td>
               <td class="num">88.0%</td>
               <td class="num">82.90</td>
               <td class="num best">88.18 (0.0326)</td>
@@ -378,14 +383,14 @@
               <td><strong>4. <code>dgem IDC</code>: Null-Prior + <span class="math"><i>T</i><sup>*</sup> = 1.30</span> (<code>--null-prior-debias</code>)</strong></td>
               <td class="num best">90.0%</td>
               <td class="num best">85.95</td>
-              <td class="num best">86.30 (0.0612)</td>
+              <td class="num">86.30 (0.0643)</td>
               <td class="num best">78.84 (+3.25)</td>
             </tr>
             <tr class="highlight">
-              <td><strong>5. <code>dgem</code> + Gemini Flash Cascade (<span class="math"><i>H&#771;</i> &lt; 0.16</span>, <code>EXP-05</code>)</strong></td>
+              <td><strong>5. <code>dgem</code> + Gemini Flash Cascade (<span class="math"><i>H&#771;</i> &lt; 0.16</span>, entropy-only, <code>EXP-05b</code>)</strong></td>
               <td class="num best">98.0%</td>
               <td class="num best">97.17</td>
-              <td class="num best">91.40 (0.0241)</td>
+              <td class="num best">88.15 (0.0204)</td>
               <td class="num best">70.16 (&minus;56% $)</td>
             </tr>
           </tbody>
@@ -401,19 +406,19 @@
             <div class="val">97.17 Skill</div>
           </div>
           <div class="bar-row">
-            <div class="lbl">Stage-1 Early Exit (72.0%)</div>
-            <div class="track"><div class="fill clay" style="width:72.0%"></div></div>
-            <div class="val">100% Prec.</div>
+            <div class="lbl">Stage-1 Early Exit (66.0%)</div>
+            <div class="track"><div class="fill clay" style="width:66.0%"></div></div>
+            <div class="val">33/33 correct</div>
           </div>
           <div class="bar-row">
-            <div class="lbl">Calib. Score (T* = 1.35)</div>
+            <div class="lbl">Calib. Score (T* = 1.35, in-sample)</div>
             <div class="track"><div class="fill olive" style="width:88.2%"></div></div>
             <div class="val">88.18 / 100</div>
           </div>
           <div class="bar-row">
             <div class="lbl">Paraphrase Consistency</div>
             <div class="track"><div class="fill sky" style="width:97.2%"></div></div>
-            <div class="val">97.2% Flip</div>
+            <div class="val">35/36 pairs</div>
           </div>
         </div>
       </div>
@@ -461,7 +466,7 @@
             <td>Closed-weights commercial reference ceiling</td>
           </tr>
           <tr class="highlight">
-            <td><strong>Projected #1 Open &middot; <code>dgem</code> (Wide-Canvas + <span class="math"><i>T</i><sup>*</sup> = 1.25</span>)</strong></td>
+            <td><strong>Projected (not measured on hub) &middot; <code>dgem</code> (Wide-Canvas + <span class="math"><i>T</i><sup>*</sup> = 1.25</span>)</strong></td>
             <td class="num best">~56.5+</td>
             <td class="num best">~41.8+</td>
             <td class="num best">76.00%</td>
@@ -517,7 +522,7 @@
       *Note: Static coverage on the official leaderboard is capped at 76.00% (19 of 25 panel tasks) because 6 tasks (<code>MiniWoB++</code>, <code>Boxoban</code>, <code>RTFM</code>, <code>ScienceWorld</code>, <code>Hanabi</code>, <code>Codenames</code>) are interactive multi-turn RL environments excluded from the static evaluation suite.
     </p>
 
-    <h3>Verified 22-Benchmark Cloud Run GPU Ablation (<code>results_decision_index_cloudrun.json</code>)</h3>
+    <h3>22-Request Cloud Run GPU Ablation (<code>results_decision_index_cloudrun.json</code>; one request per benchmark, 54 answer fields)</h3>
     <div class="tscroll">
       <table class="t">
         <thead>
@@ -555,9 +560,9 @@
           </tr>
           <tr>
             <td><strong>Calibration: 10-Bin ECE / Multi-Class Brier Score</strong></td>
-            <td class="num">0.0612 / 0.2914</td>
+            <td class="num">0.0237 / 0.2767 (on 16/22 covered)</td>
             <td class="num best">0.0371 / 0.0184</td>
-            <td class="num best">&minus;0.2730 Brier</td>
+            <td class="num">not comparable (different coverage)</td>
           </tr>
         </tbody>
       </table>
@@ -641,7 +646,7 @@
         <div class="kv">
           <div class="k">Source File</div><div class="v" id="ins-file">pkg/decisionindex/engine.go</div>
           <div class="k">CLI Flag</div><div class="v" id="ins-cli">--serve-systemone :8095</div>
-          <div class="k">Cloud Run Receipt</div><div class="v" id="ins-metric">100.0% Coverage (22/22)</div>
+          <div class="k">Cloud Run Receipt</div><div class="v" id="ins-metric">100.0% Coverage (22/22 requests)</div>
         </div>
       </aside>
     </div>
@@ -706,9 +711,9 @@
           Because <code>DiffusionGemma</code> denoises all canvas slots in <strong>one bidirectional GPU forward pass</strong>, <code>dgem</code> places both <code>decision_fwd</code> (<span class="math">[<i>o</i><sub>1</sub> &hellip; <i>o</i><sub><i>K</i></sub>]</span>) and <code>decision_rev</code> (<span class="math">[<i>o</i><sub><i>K</i></sub> &hellip; <i>o</i><sub>1</sub>]</span>) on the <strong>same diffusion canvas</strong>:
         </p>
         <ul style="margin:0;padding-left:1.15rem;color:var(--g700);font-size:0.86rem;line-height:1.55">
-          <li><strong>Zero Latency Penalty (<code>125 ms</code> vs <code>129 ms</code> 1-Slot):</strong> Both mirrored slots resolve simultaneously in <code>reads=1</code>.</li>
-          <li><strong>Exact Reversal Invariance (<code>0.0%</code> Flip Rate):</strong> First-slot and last-slot positional biases cancel algebraically (<span class="math"><i>b</i><sub>pos</sub>(<i>k</i>) + <i>b</i><sub>pos</sub>(<i>K</i>-1-<i>k</i>)</span>).</li>
-          <li><strong>Catches False Early Exits via <code>Mirror TVD</code>:</strong> On <code>ChaosNLI</code> human-split cases (<code>perm_06</code>, <code>perm_08</code>) where single-pass <span class="math"><i>H&#771;</i> = 0.007&ndash;0.031</span> is fooled by <code>'A'</code>-bias, <code>Mirror TVD</code> spikes <strong>66.8&times;</strong> (<code>0.274</code> vs <code>0.004</code>) and <code>Cyclic JSD</code> jumps <strong>157.8&times;</strong>.</li>
+          <li><strong>No extra forward pass (<code>124.7 ms</code> vs <code>128.8 ms</code> 1-slot, n=16):</strong> Both mirrored slots resolve simultaneously in <code>reads=1</code>.</li>
+          <li><strong>One merged answer:</strong> a merged forward+reversed output cannot &ldquo;flip&rdquo; by construction, so reversal flip rate is not a meaningful metric for it. The two slots can also see each other on the canvas, so they are not independent readings.</li>
+          <li><strong>Catches some false early exits:</strong> on <code>perm_08</code> the single reading said 99.9% (<span class="math"><i>H&#771;</i> = 0.007</span>) but forward/reversed readings disagreed (<code>Mirror TVD = 0.258</code>) &rarr; escalated. On <code>perm_06</code> a cyclic reorder flips the answer, yet forward and reversed agree (<code>TVD = 0.0006</code>) &rarr; <strong>missed</strong>. Mean TVD on the 4 ambiguous items is <code>0.263</code> vs <code>0.004</code> on consensus items, driven by 2 of the 4.</li>
         </ul>
       </div>
     </div>
@@ -730,20 +735,20 @@
           <tr>
             <td><strong>1. Baseline 1-Slot (Canonical Order)</strong></td>
             <td class="num">1</td>
-            <td class="num">129.0 ms</td>
+            <td class="num">128.8 ms</td>
             <td class="num">0.0173</td>
             <td class="num">0.1536</td>
-            <td class="num bad">50.0% (2/4 ChaosNLI)</td>
+            <td class="num bad">12.5% (2/16; 2/4 ambiguous)</td>
             <td>Single-pass <span class="math"><i>H&#771;</i></span> only (blind when favored option sits in <code>'A'</code>)</td>
           </tr>
           <tr>
             <td><strong>2. 1-Slot + Content-Free Null-Prior De-Biased (13B)</strong></td>
             <td class="num">1</td>
-            <td class="num">129.0 ms</td>
+            <td class="num">128.8 ms</td>
             <td class="num best">0.0017 (-90.2%)</td>
             <td class="num best">0.1355 (-11.8%)</td>
-            <td class="num bad">50.0%</td>
-            <td>Divides out static <span class="math"><i>p</i><sub>0</sub>(<i>k</i>)</span> prior; cuts Brier error by <strong>90.2%</strong></td>
+            <td class="num bad">25.0% (worse)</td>
+            <td>Divides out static <span class="math"><i>p</i><sub>0</sub>(<i>k</i>)</span> prior; Brier gain is on answers that were already correct, and cyclic flips increase</td>
           </tr>
           <tr>
             <td><strong>3. <span class="math"><i>K</i></span>-Pass Cyclic Shift Ensemble (13A Oracle)</strong></td>
@@ -751,17 +756,17 @@
             <td class="num">369.5 ms (2.86&times;)</td>
             <td class="num">0.0369</td>
             <td class="num">0.1570</td>
-            <td class="num best">0.0% (Exact Invariant)</td>
+            <td class="num">n/a (one ensemble answer)</td>
             <td>Full <span class="math"><i>I</i>(<i>Y</i>; &Pi; | <i>X</i>)</span> Cyclic JSD (<strong>157.8&times;</strong> jump on <code>ChaosNLI</code>)</td>
           </tr>
           <tr class="highlight">
             <td><strong>4. <span class="math"><i>O</i>(1)</span> Dual-Mirror Canvas (<code>decision_fwd</code> + <code>decision_rev</code>, 13C)</strong></td>
             <td class="num best">1 (2 slots)</td>
-            <td class="num best">125.0 ms (0 ms extra)</td>
-            <td class="num">0.0442</td>
+            <td class="num best">124.7 ms (no extra pass)</td>
+            <td class="num bad">0.0410 (worse)</td>
             <td class="num best">0.1370 (-10.8%)</td>
-            <td class="num best">0.0% (Exact Reversal)</td>
-            <td><strong>Live Single-Pass <code>Mirror TVD</code> (66.8&times;) + <code>Mirror JSD</code></strong></td>
+            <td class="num">n/a (merged answer)</td>
+            <td><strong>Live single-pass <code>Mirror TVD</code> / <code>JSD</code></strong> (reversal only; caught <code>perm_08</code>, missed <code>perm_06</code>)</td>
           </tr>
         </tbody>
       </table>
@@ -791,21 +796,21 @@
           <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive-deep);text-transform:uppercase">Step 3 &middot; Post-Pass 1 (0.1 ms)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Tare the Scale (Null-Prior)</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            <code>dgem</code> subtracts the model's built-in <code>Box A</code> habit (<span class="math"><i>p</i><sub>0</sub></span> = 49%&ndash;88% on blank input), cutting Brier error by up to <strong>90.2%</strong>.
+            <code>dgem</code> subtracts the model's built-in <code>Box A</code> habit (<span class="math"><i>p</i><sub>0</sub></span> = 49%&ndash;88% on blank input), no labeled data needed.
           </p>
         </div>
         <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
           <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--olive-deep);text-transform:uppercase">Step 4 &middot; Post-Pass 2 (0.1 ms)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Mirror Merge &amp; Temp Dial</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            <code>dgem</code> compares the forward &amp; reversed ballots (<code>Mirror TVD</code>) and applies the Humility Dial (<span class="math"><i>T</i><sup>*</sup> = 1.25&ndash;1.35</span>) so 95% confidence = 95% accuracy.
+            <code>dgem</code> compares the forward &amp; reversed ballots (<code>Mirror TVD</code>) and can apply the Humility Dial (<span class="math"><i>T</i><sup>*</sup></span>, fitted on labeled data) to soften over-sharp scores.
           </p>
         </div>
         <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.7rem">
           <div style="font-family:var(--mono);font-size:0.66rem;font-weight:700;color:var(--clay-deep);text-transform:uppercase">Step 5 &middot; Post-Pass 3 (Gate)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Fast-Exit or Escalate</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            If both ballots agree (<span class="math"><i>H&#771;</i> &lt; 0.16</span>), <code>dgem</code> returns immediately (<strong>72% of traffic</strong>); if they clash, it escalates to Gemini (<strong>98.0% accuracy</strong>).
+            If uncertainty is low (<span class="math"><i>H&#771;</i> &lt; 0.16</span>), <code>dgem</code> returns immediately (66% of the 50-item suite, 33/33 correct); otherwise it escalates to Gemini (98.0% overall, entropy-only gate). A mirror-aware production gate is not implemented yet.
           </p>
         </div>
       </div>
@@ -830,7 +835,7 @@
             <td class="num">75.59</td>
             <td class="num best">78.84</td>
             <td class="num best">+3.25 pts</td>
-            <td>All 4 axes improve simultaneously with <strong>0 ms</strong> extra GPU passes</td>
+            <td>Null-prior run vs baseline run (separate sessions); 50-item suite scored with the JevBench protocol</td>
           </tr>
           <tr>
             <td><strong>50-Case Guardrail Raw Accuracy</strong></td>
@@ -849,37 +854,37 @@
           <tr class="highlight">
             <td><strong>Accuracy on <code>&gt;90%</code>-Confidence Predictions</strong></td>
             <td class="num bad">94.4% (34/36)</td>
-            <td class="num best">100.0% (31/31)</td>
-            <td class="num best">Zero false-conf.</td>
-            <td>Every single prediction where <code>dgem IDC</code> claims <code>&gt;90%</code> confidence is <strong>100% correct</strong></td>
+            <td class="num best">100.0% (34/34, T=1)</td>
+            <td class="num best">0 errors in 34</td>
+            <td>Null-prior run. Zero errors in 34 is still consistent with a true error rate up to ~9% (rule of three)</td>
           </tr>
           <tr>
             <td><strong>Calibration Axis Score (0&ndash;100)</strong></td>
             <td class="num">82.67 (0.0745 ECE)</td>
-            <td class="num best">88.18 (0.0326 ECE)</td>
-            <td class="num best">+5.51 pts (-56.2% ECE)</td>
-            <td>10-Bin ECE drops <strong>&minus;56.2%</strong> (<span class="math">0.0745 &rarr; 0.0326</span>); Brier drops <strong>&minus;22.4%</strong> (<span class="math">0.1925 &rarr; 0.1493</span>)</td>
+            <td class="num">88.18 (0.0326 ECE)</td>
+            <td class="num">in-sample</td>
+            <td>ECE <span class="math">0.0745 &rarr; 0.0326</span> is temperature scaling fitted on the same 50 items (not IDC). Null-prior at T=1: Brier <span class="math">0.186 &rarr; 0.149</span>, ECE 0.061</td>
           </tr>
           <tr>
             <td><strong><code>jev-decision-index</code> ECE &amp; Brier</strong></td>
             <td class="num">0.0371 / 0.0184</td>
-            <td class="num best">0.0332 / 0.0179</td>
-            <td class="num best">&minus;10.5% ECE</td>
-            <td><code>--null-prior-debias</code> preserves <strong>98.89</strong> Headline Index while tightening calibration error</td>
+            <td class="num">0.0332 / 0.0191</td>
+            <td class="num">mixed</td>
+            <td><code>--null-prior-debias</code> keeps the 98.89 index; ECE slightly lower, Brier slightly higher (54 fields). <code>--dual-mirror</code> drops the index to 89.33 and raises ECE to 0.109</td>
           </tr>
           <tr>
             <td><strong><code>ChaosNLI</code> Ambiguity Signal (<code>Mirror TVD</code>)</strong></td>
-            <td class="num">0.0000 (blind)</td>
-            <td class="num best">0.3741 (66.8&times;)</td>
-            <td class="num best">66.8&times; separator</td>
-            <td>Clean items show <code>0.0056</code> Mirror TVD; human-contested items spike to <code>0.3741</code></td>
+            <td class="num">not available</td>
+            <td class="num">0.263 mean (n=4)</td>
+            <td class="num">2 of 4 flagged</td>
+            <td>Consensus items average <code>0.004</code>; the ambiguous mean is driven by <code>perm_07</code> (0.785) and <code>perm_08</code> (0.258); <code>perm_05</code>/<code>perm_06</code> stay near 0</td>
           </tr>
           <tr class="highlight">
             <td><strong>End-to-End Cascade Accuracy</strong> (<code>dgemma &rarr; Gemini</code>)</td>
-            <td class="num">94.0% (raw <span class="math"><i>H</i></span>)</td>
-            <td class="num best">98.0% (49/50)</td>
-            <td class="num best">+4.0% (&minus;67% errors)</td>
-            <td><code>72%</code> resolved at Stage 1 in 1 GPU pass; <code>28%</code> escalated to Gemini at <strong>56% lower cost</strong></td>
+            <td class="num">94.0% (raw <span class="math"><i>H</i></span> &ge; 0.35, 28% esc.)</td>
+            <td class="num best">98.0% (normalized <span class="math"><i>H&#771;</i></span> &ge; 0.16, 34% esc.)</td>
+            <td class="num">+4.0%</td>
+            <td>Both entropy-only (no IDC); the 0.16 threshold was tuned on the same 50 items. 56% lower cost than Gemini on every item</td>
           </tr>
         </tbody>
       </table>
@@ -889,30 +894,30 @@
     <div class="panel" style="margin-top:1.1rem;border-left:4px solid var(--clay)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.65rem">
         <div style="font-family:var(--mono);font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--clay-deep)">
-          Next Up &middot; EXP-14 Invariant Decision Calibration Suite (<code>dgem bench-invariance</code>) &mdash; Addressing Team Review Questions
+          Next Up &middot; Proposed Experiments (<code>docs/experiments/proposed.md</code>) &mdash; Addressing Team Review Questions
         </div>
-        <span class="pill clay">Spec Ready in <code>scratch/exp_14_idc_plan.md</code></span>
+        <span class="pill clay">Pre-registered in <code>PROP-00</code>&ndash;<code>PROP-10</code></span>
       </div>
       <div class="grid3" style="margin:0">
         <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.85rem">
           <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--olive-deep);text-transform:uppercase">1 &middot; Dennis (Option Shuffle &amp; Question Variation)</div>
-          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Solved Today (<span class="math"><i>O</i>(1)</span> Dual-Mirror + 97.2% Paraphrase)</div>
+          <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Partly addressed (reversal only) &middot; open: <code>PROP-03</code>, <code>PROP-04</code>, <code>PROP-07</code></div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            <code>--dual-mirror</code> + <code>--null-prior-debias</code> already tests forward and reversed option orders in one GPU pass (<code>0.0%</code> reversal flip rate, <code>&minus;90.2%</code> Brier error). <strong>EXP-14A</strong> adds <code>--multi-perm 4</code> cyclic shifts + 5 question stems per item.
+            <code>--dual-mirror</code> checks forward vs reversed order in one GPU pass but misses other orderings (<code>perm_06</code>); JevBench paraphrase pairs agree 35/36. Planned: real <code>ChaosNLI</code> items (<code>PROP-04</code>), same-canvas vs separate-pass mirror (<code>PROP-03</code>), and question/label rewording (<code>PROP-07</code>).
           </p>
         </div>
         <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.85rem">
           <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--slate);text-transform:uppercase">2 &middot; Skander (Lexical Rewording &amp; 2&ndash;3 Token Options)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Architectural Decoupling (Codebook Projection)</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            Because <code>dgem</code> separates <strong>multi-token label text</strong> (rendered in the prompt context where full bidirectional attention reads every token) from the <strong>single-token <code>[A-Z]</code> readout slot</strong>, 1-token vs. 3-token labels never suffer length bias. <strong>EXP-14B</strong> proves 1-token vs. 3-token vs. 8-token label invariance (&lt; 0.015 ECE delta).
+            Because <code>dgem</code> separates <strong>multi-token label text</strong> (rendered in the prompt context where full bidirectional attention reads every token) from the <strong>single-token <code>[A-Z]</code> readout slot</strong>, 1-token vs. 3-token labels avoid multi-token length bias by construction. Whether <em>wording</em> of those labels shifts decisions is untested (<code>PROP-07</code>).
           </p>
         </div>
         <div style="background:var(--ivory);border:1px solid var(--g200);border-radius:6px;padding:0.85rem">
           <div style="font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--clay-deep);text-transform:uppercase">3 &middot; Taylor (Omitted Variables &amp; Base-Rate Priors)</div>
           <div style="font-weight:700;font-size:0.86rem;color:var(--g900);margin:0.2rem 0">Two-Part Answer: Epistemic Uncertainty vs. Base-Rate Shift</div>
           <p style="font-size:0.78rem;line-height:1.45;margin:0;color:var(--g700)">
-            <strong>Mechanism 1 (Missing Metadata):</strong> Dual-slot sufficiency check (<code>context_sufficiency = missing_sender_metadata</code>) routes under-specified prompts to enrich context instead of guessing. <strong>Mechanism 2 (Known Channel Prior <span class="math">&pi;<sub><i>e</i></sub></span>):</strong> Bayes Prior Odds Shift (<span class="math">log <i>p&#771;</i> = log <i>p</i> &minus; &alpha; log <i>p</i><sub>0</sub> + log(&pi;<sub><i>e</i></sub> / &pi;<sub>train</sub>)</span>) adapts calibration across 85%-spam vs. 0.5%-spam domains with zero prompt edits (<strong>EXP-14C</strong>).
+            <strong>Missing metadata (proposed, <code>PROP-08</code>):</strong> test whether entropy or Mirror TVD rise when a decisive field is removed; if not, add an explicit &ldquo;required information present?&rdquo; slot to templates (no such template exists yet). <strong>Base rates (proposed, <code>PROP-09</code>):</strong> a prior-odds shift (<span class="math">log <i>p&#771;</i> = log <i>p</i> + log(&pi;<sub><i>e</i></sub> / &pi;<sub>train</sub>)</span>) or EM re-estimation from unlabeled traffic; there is no base-rate flag today.
           </p>
         </div>
       </div>
@@ -928,12 +933,12 @@
     <pre class="code" id="briefingText">Subject: dgem (DiffusionGemma 26B-A4B) — Unified Readout on JevBench v1.3.1, jev-decision-index &amp; EXP-13 Dual-Mirror Calibration
 
 1. WHAT IS DGEM?
-dgem is our zero-shot Decision Model serving, calibration, and policy-routing engine for Google DeepMind's DiffusionGemma (26B-A4B). Instead of generating conversational text token-by-token, dgem evaluates structured multi-slot rubrics (Policy-as-Template) in O(1) bidirectional forward passes (~125-400ms on Cloud Run GPU) and uses exact epistemic calibration to decide whether to return immediately or escalate ambiguous cases to Gemini.
+dgem is our zero-shot Decision Model serving, calibration, and policy-routing engine for Google DeepMind's DiffusionGemma (26B-A4B). Instead of generating conversational text token-by-token, dgem evaluates structured multi-slot rubrics (Policy-as-Template) in O(1) bidirectional forward passes (~125-400ms on Cloud Run GPU) and uses per-slot entropy (plus optional IDC order-bias checks) to decide whether to return immediately or escalate ambiguous cases to Gemini.
 
 2. BENCHMARK 1: JevBench v1.3.1 (EXP-11 — Adversarial Rule-Following &amp; 4-Axis Calibration)
-• Evaluates 231 tricky rule-following cases across 4 axes (Chance-Corrected Intelligence, 10-Bin ECE Calibration, Latency, Cost).
-• Slot Temperature Scaling (T* = 1.35): Softens raw diffusion logit overconfidence without changing a single argmax answer, cutting 10-Bin ECE by 56.2% (0.0745 -> 0.0326) and lifting Calibration to 88.18 (76.79 4-Axis Composite, 97.2% paraphrase consistency).
-• Entropy-Gated Cascade (dgemma -> Gemini Flash, EXP-05): dgemma resolves 72% of traffic at Stage 1 (H_norm &lt; 0.16) and escalates only the 28% high-entropy cases to Gemini, achieving 98.0% raw accuracy (97.17% chance-corrected, 70.16 Composite) at 56% lower compute cost than calling Gemini Flash on every request (62.76 Composite).
+• JevBench's 4-axis protocol (Chance-Corrected Intelligence, 10-Bin ECE, Latency, Cost). On the 231-item JevBench set, the upstream DiffusionGemma (djev) reference scores 194/231 (84.0%); the best entropy cascade to Gemini reaches 213/231 (92.2%, 28% escalated). Numbers below use the same protocol on our 50-item calibration suite.
+• Slot Temperature Scaling (T* = 1.35): ECE 0.0745 -> 0.0326, but T* was fitted on the same 50 items (in-sample). A held-out test is planned (PROP-01).
+• Entropy-Gated Cascade (dgemma -> Gemini Flash, EXP-05b): 66% of items exit at Stage 1 (H_norm &lt; 0.16, 33/33 correct); 34% escalate; 98.0% overall (49/50) at 56% lower cost than Gemini on every item. Entropy-only (no IDC); threshold tuned on the same 50 items.
 
 3. BENCHMARK 2: jev-decision-index (EXP-12 — 5-Area Capability Suite &amp; HF Leaderboard)
 • Evaluates 19 panel benchmarks across Knowledge, Language, Retrieval, Tools, and Arts (72,590 cases; capacity rejections score 0.0).
@@ -946,30 +951,31 @@ dgem is our zero-shot Decision Model serving, calibration, and policy-routing en
   By combining Multi-Slot Canvas Batching (&lt;=8 slots/pass) + 2-Stage Bracket Tournament Routing (27..255 options) + Temperature Scaling (T*=1.25) behind a native POST /v1/systemone endpoint:
     - Structural Coverage rises from 72.7% -> 100.0% (+27.3%)
     - 22-Benchmark Ablation Headline Index jumps from 76.67 -> 98.89 (+22.22 pts)
-    - Wide-Option Tournament Accuracy (30-36 opts): 100.0% (~336ms) | Multi-Slot Batch Accuracy (11-12 slots): 94.29% (~301ms)
-    - 10-Bin ECE drops to 0.0371 (Brier 0.0184), projecting DiffusionGemma from #2 (55.56) to #1 Open Model (~56.5+) on the full hub.
+    - Wide-Option Tournament Accuracy (30-36 opts): 3/3 requests (~336ms) | Multi-Slot Batch Accuracy (11-12 slots): 33/35 fields (~301ms)
+    - 22 requests (one per benchmark, 54 fields); 10-Bin ECE 0.0371 (Brier 0.0184). A hub-wide rank of ~56.5 (#1 open) is a projection only; nothing has been submitted or scored on the hub.
 
 4. EXP-13: PERMUTATION SENSITIVITY, POSITIONAL 'A'-BIAS &amp; O(1) DUAL-MIRROR CANVAS
-• Why Single-Pass Entropy Isn't Enough: Content-free null probes reveal a strong structural prior toward Slot 'A' (88.3% on K=2, 78.3% on K=3, 49.3% on K=4). When a human-ambiguous ChaosNLI option lands in Slot 'A', single-pass normalized entropy collapses (H_norm = 0.007-0.031 &lt; 0.16), risking a False Early Exit even though reordering options flips the answer 50% of the time (Cyclic JSD jumps 157.8x).
-• Two Zero-Overhead Fixes in dgem (dgem bench-permutation):
-  1) Null-Prior De-Biasing (13B): Dividing out p_0(k) in logit space cuts Multi-Class Brier Score by 90.2% (0.0173 -> 0.0017).
-  2) O(1) Dual-Mirror Canvas (13C): Placing decision_fwd [o_1..o_K] and decision_rev [o_K..o_1] on the SAME bidirectional diffusion canvas runs in 125.0 ms (0 ms latency overhead vs 129.0 ms 1-slot), guarantees 0.0% reversal flip rate, and exposes live Mirror TVD (66.8x spike on ChaosNLI) to trigger Stage-2 escalation whenever single-pass entropy is fooled by positional bias.
+• Why Single-Pass Entropy Isn't Enough: content-free probes reveal a strong prior toward Slot 'A' (88.3% on K=2, 78.3% on K=3, 49.3% on K=4). On 2 of 4 synthetic ambiguous items, reordering options flips the answer; two of them (perm_06, perm_08) had single-pass H_norm of 0.031 and 0.007, below the 0.16 exit threshold.
+• Two cheap checks in dgem (dgem bench-permutation, 16 synthetic items, baseline 16/16 correct):
+  1) Null-Prior De-Biasing (13B): Brier 0.0173 -> 0.0017 on already-correct answers, but cyclic flip rate rises 12.5% -> 25%.
+  2) O(1) Dual-Mirror Canvas (13C): forward + reversed slots on the same canvas, no extra forward pass (124.7 vs 128.8 ms). Flags perm_08 (single reading 99.9%, Mirror TVD 0.258) but misses perm_06 (TVD 0.0006). Brier worsens to 0.0410. Mirror TVD is computed in bench-permutation but not yet exposed by serve/MCP/Studio.
 
 5. TL;DR PUBLIC BENCHMARK DELTA: "SHANNON-ONLY DGEM" vs. "LATEST CALIBRATED DGEM"
-• Public Calibration &amp; Guardrail Suite (50 Cases, JevBench v1.3.1 4-Axis Scoring):
-  - Raw Accuracy:               88.0% (44/50)  ->  90.0% (45/50) [+2.0% gain; Toxicity 83.3% -> 100.0%]
-  - Chance-Corrected Skill:     82.90          ->  85.95         [+3.05 pts]
-  - Multi-Class Brier Error:    0.1925         ->  0.1493        [-22.4% probability error]
-  - 10-Bin ECE Calibration:     0.0745         ->  0.0326        [-56.2% calibration error]
-  - High-Confidence (&gt;90%) Win: 94.4% (34/36)  ->  100.0% (31/31)[Zero false-confident errors!]
-  - JevBench 4-Axis Composite:  75.59          ->  78.84         [+3.25 pts overall]
+• Public Calibration &amp; Guardrail Suite (50 items, JevBench 4-axis scoring; baseline vs null-prior, separate runs):
+  - Raw Accuracy:               88.0% (44/50)  ->  90.0% (45/50)
+  - Chance-Corrected Skill:     82.90          ->  85.95
+  - Multi-Class Brier Error:    0.186          ->  0.149   (T=1)
+  - 10-Bin ECE Calibration:     0.0745         ->  0.0612  (T=1; 0.0326 is in-sample temperature scaling on the baseline)
+  - High-Confidence (&gt;90%):     34/36          ->  34/34   (T=1)
+  - 4-Axis Composite:           75.59          ->  78.84
 • Hugging Face jev-decision-index (22-Benchmark 5-Area Capability Suite):
   - Structural Suite Coverage:  72.7% (16/22)  ->  100.0% (22/22)[+27.3%; zero HTTP 422 crashes]
-  - Headline Decision Index:    76.67          ->  98.89         [+22.22 pts; projects #2 -> #1 Open Model on HF]
-  - 10-Bin ECE Calibration:     0.2388 (raw)   ->  0.0332        [-86.1% vs raw open-jev / -10.5% via Null-Prior]
+  - Headline Decision Index:    76.67          ->  98.89         [22 requests; coverage fix, not calibration]
+  - 10-Bin ECE:                 0.0371 (T*=1.25) -> 0.0332 with null-prior (0.2388 is the public leaderboard's raw open-jev figure, a different evaluation)
 • ChaosNLI &amp; Option-Order Stress Suite (EXP-13):
-  - Ambiguous Option Flip Rate: 50.0% (2/4)    ->  0.0% (0/4)    [Exact Reversal Invariance in 125ms]
-  - Permutation Brier Error:    0.0173         ->  0.0017        [-90.2% via Null-Prior De-Biasing]</pre>
+  - Ambiguous items flipped by reordering: 2/4 (single slot). Dual-Mirror flagged perm_07 and perm_08, missed perm_06.
+  - Permutation Brier Error:    0.0173         ->  0.0017        [null-prior; answers were already correct]
+• Full caveats and planned follow-ups: docs/confidence-beyond-shannon.md (section 6) and docs/experiments/proposed.md.</pre>
   </section>
 </div>
 
@@ -981,7 +987,7 @@ dgem is our zero-shot Decision Model serving, calibration, and policy-routing en
       body: "Accepts apolinario/decision-index payloads containing state JSON and a map of M choice questions, inspecting (M, max K) geometry before dispatching to the diffusion canvas.",
       file: "pkg/decisionindex/engine.go:126",
       cli: "dgem bench-decision-index --serve-systemone :8095",
-      metric: "100.0% Coverage (22/22 benchmarks)"
+      metric: "100.0% Coverage (22/22 requests)"
     },
     single: {
       tag: "STAGE 02A · FAST PATH",
@@ -1005,7 +1011,7 @@ dgem is our zero-shot Decision Model serving, calibration, and policy-routing en
       body: "Overcomes the 26-letter [A-Z] slot ceiling on POP909-CL (129 opts), CLINC150 (151 opts), BANKING77 (77 opts), and API-Bank (53 opts) via <=20-option Round-1 brackets packed onto 1 canvas pass + Round-2 Finals.",
       file: "pkg/decisionindex/engine.go:309",
       cli: "BracketSize = 20, MaxOptions = 255",
-      metric: "100.00% Accuracy (3/3 wide suites) · ~336 ms"
+      metric: "3/3 wide-option requests correct · ~336 ms"
     },
     temp: {
       tag: "STAGE 03 · CALIBRATION & ROUTING",
@@ -1013,12 +1019,12 @@ dgem is our zero-shot Decision Model serving, calibration, and policy-routing en
       body: "Applies logit temperature scaling p_k(T*) = p_k^(1/T*) / sum p_j^(1/T*) to cure raw diffusion canvas overconfidence while strictly preserving argmax and sum(p_k) = 1.0.",
       file: "pkg/decisionindex/engine.go:445",
       cli: "--temperature-scale 1.25 (EXP-12) / 1.35 (EXP-11)",
-      metric: "ECE 0.0326 (JevBench) · 0.0371 (Decision Index)"
+      metric: "ECE 0.0326 (50-item suite, in-sample T*) · 0.0371 (Decision Index panel)"
     },
     out: {
       tag: "STAGE 04 · VERIFIED SCORECARD",
       title: "100% Structural Coverage & Hybrid Escalation",
-      body: "Emits validated SystemOneResponse envelopes with zero HTTP 422 capacity rejections, lifting Headline Decision Index by +22.22 pts (98.89 vs 76.67) and enabling 98.0% Cascade accuracy.",
+      body: "Emits validated SystemOneResponse envelopes with zero HTTP 422 capacity rejections, lifting the 22-request Headline Decision Index by +22.22 pts (98.89 vs 76.67).",
       file: "pkg/decisionindex/scorer.go:263",
       cli: "dgem bench-decision-index --compare-naive",
       metric: "98.89 Headline Index · 98.33 Skill Score"
