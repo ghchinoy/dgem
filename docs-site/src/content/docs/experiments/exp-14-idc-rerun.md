@@ -145,6 +145,22 @@ image `dgemma:ab208dd`, mirror suffix `__rev`), all in one session. Results agre
   `PROP-03`.
 - The GPU change (L4 → RTX PRO 6000) did not change accuracy: JevBench baseline 187/231 on both.
 
+## Parity probe: Vertex G4 vs Cloud Run (run `20260925-parity-g4-vs-cloudrun`)
+
+Same session, same image (`dgemma:ab208dd`), both on RTX PRO 6000. Pre-registered pass: Vertex within 3 items (231) /
+2 items (50) of Cloud Run or better, with high per-item agreement.
+
+| Suite | Vertex G4 | Cloud Run | Same answer | Earlier G4 baseline (`20260925-g4-idc`) |
+| :--- | :--- | :--- | ---: | :--- |
+| JevBench (231) | **189, 192** (two runs), Brier 0.273 / 0.262 | 184, Brier 0.288 | 215–216 / 231 | 187 |
+| 50-item suite | 44, Brier 0.181 | 45, Brier 0.172 | 49 / 50 | 44 |
+
+- **Verdict: pass.** Vertex matches or beats Cloud Run, so the remaining experiments run on Vertex only.
+- **Vertex is not fully deterministic.** Two back-to-back runs agreed on 222/231 answers; all 9 changed answers had
+  confidence 0.31–0.75. Across the three G4 JevBench baselines the range is **187–192**, so the practical noise floor on
+  JevBench is about **±3 items** (not ±2), concentrated on low-confidence items. Later experiments should compare
+  conditions per item against several same-session baselines rather than against a single baseline.
+
 ## Why the mirror degrades and null-prior overcorrects (analysis)
 
 Per-item analysis of the `20260925-vertex-idc*` receipts (read-only, `scripts/analyze_idc.py` plus ad-hoc scripts).

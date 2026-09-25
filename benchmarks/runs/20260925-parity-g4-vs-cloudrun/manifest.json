@@ -1,0 +1,163 @@
+{
+  "run_id": "20260925-parity-g4-vs-cloudrun",
+  "created": "2026-09-25T23:44:41+00:00",
+  "git_commit": "c2ee9e2d54a2b4be934af0f1c067dcf468516539",
+  "git_dirty_paths": [
+    "kg/permutation/suite.go"
+  ],
+  "notes": "Parity probe: Vertex G4 (4423577720856772608, g4-standard-48 + RTX PRO 6000) vs Cloud Run dgemma (RTX PRO 6000), both image dgemma:ab208dd. Interleaved baselines; Vertex repeated for determinism. Pre-registered pass: Vertex within 3 items (231) / 2 items (50) of Cloud Run or better, with high per-item agreement.",
+  "receipts": [
+    {
+      "suite": "jevbench",
+      "config": "vertex_r1",
+      "path": "jevbench__vertex_r1.json",
+      "sha256": "8ff48c936ec4169a4187d6f94027f64b3d04318eae99000f81694b1fd1a1a40a",
+      "recorded": "2026-09-25T23:44:51+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r1.json",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-25T23:44:51Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 189,
+        "accuracy": 0.8181818181818182,
+        "brier_t1": 0.273411591303933,
+        "ece10_t1": 0.08017962668687101,
+        "hi_conf": "155/169",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cloudrun_r1",
+      "path": "jevbench__cloudrun_r1.json",
+      "sha256": "9788e27475c723bd72e46bdece98b94ad29d4e1d44d940d732fcc625d690f6ba",
+      "recorded": "2026-09-25T23:45:04+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-tkb3aiuiea-uc.a.run.app/v1 -m /mnt/gcs/dgemma --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__cloudrun_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-25T23:45:04Z",
+        "target_model": "/mnt/gcs/dgemma",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 184,
+        "accuracy": 0.7965367965367965,
+        "brier_t1": 0.28802247692975397,
+        "ece10_t1": 0.10599117018519986,
+        "hi_conf": "157/169",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "vertex_r2",
+      "path": "jevbench__vertex_r2.json",
+      "sha256": "7c221955334dbc4b78abae72abee73b2c7662601d40836f424a9a59a3637102d",
+      "recorded": "2026-09-25T23:45:11+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r2.json",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-25T23:45:11Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 192,
+        "accuracy": 0.8311688311688312,
+        "brier_t1": 0.2617314037468909,
+        "ece10_t1": 0.07219260013403123,
+        "hi_conf": "151/162",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "vertex",
+      "path": "calibration__vertex.json",
+      "sha256": "66554f36f96691f9923f8a3c8554960634cf1e18aac0f84a5678d01aa20705ed",
+      "recorded": "2026-09-25T23:45:16+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/calibration__vertex.json",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-25T23:45:16Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.18136575909698127,
+        "ece10_t1": 0.06725189532573439,
+        "hi_conf": "35/36",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cloudrun",
+      "path": "calibration__cloudrun.json",
+      "sha256": "c9591b7e2d528babe94011a1f61ae77100892552fb6c68d9d795bb6aff1aed7d",
+      "recorded": "2026-09-25T23:45:26+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-tkb3aiuiea-uc.a.run.app/v1 -m /mnt/gcs/dgemma --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/calibration__cloudrun.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-25T23:45:26Z",
+        "target_model": "/mnt/gcs/dgemma",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.172228591069789,
+        "ece10_t1": 0.09341113070706021,
+        "hi_conf": "34/37",
+        "mean_mirror_tvd": null
+      }
+    }
+  ]
+}
