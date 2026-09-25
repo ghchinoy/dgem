@@ -1,5 +1,5 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-13)"
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-14)"
 description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, JevBench v1.3.1 Parity, Decision Index, Permutation Invariance, and Next-Horizon Cascades."
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-13`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-14`)
 
 ### Part A — Completed Empirical Studies
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-13`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-14`)
 
 Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**, `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](./exp-10-listwise-diffusion-reranking.md)**, `EXP-11` is documented in **[`exp-11-jevbench-parity.md`](./exp-11-jevbench-parity.md)**, `EXP-12` is documented in **[`exp-12-decision-index.md`](./exp-12-decision-index.md)**, and `EXP-13` is documented in **[`exp-13-permutation-invariance.md`](./exp-13-permutation-invariance.md)**.
 
@@ -64,6 +64,7 @@ Detailed architectural specifications, mathematical formulations, and empirical 
 | **`EXP-11`** | **`JevBench v1.3.1` 4-Axis Parity, Slot Temperature Calibration & Upstream Sync Architecture** | Upgrade `dgem` with `JevBench v1.3.1`'s 4-Axis Geometric Mean Scorecard (Chance-Corrected Intelligence, 10-Bin ECE + Soft TVD Calibration, Speed, Cost) and Post-Hoc Slot Temperature Scaling ($p_k(T) = p_k^{1/T} / \sum p_j^{1/T}$). On Cloud Run `EXP-04`, `T* = 1.35` cuts 10-bin ECE by **56.2%** (`0.0745` $\rightarrow$ `0.0326`), lifting Calibration from `82.67` to **`88.18`** (`76.79` Composite). On `EXP-05`, the Entropy-Gated Cascade scores **`70.16` Composite (`98.0%` raw / `97.17%` chance-corrected)** vs. standalone `gemini-3.8-flash` at `62.76` (`56%` lower cost). Syncs and replays all 231 `JevBench` public tasks (`75.70` Composite $\rightarrow$ **Rank `#1`**, surpassing `#1 Hopper` [`75.40`]). | [`templates/jevbench_generic.json.tmpl`](../../templates/jevbench_generic.json.tmpl)<br>[`benchmarks/jevbench/jevbench_public.jsonl`](../../benchmarks/jevbench/jevbench_public.jsonl)<br>[`benchmarks/jevbench/manifest.lock.json`](../../benchmarks/jevbench/manifest.lock.json) | `dgem bench-jev --sync --check-upstream`<br>`dgem bench-calibration --auto-temperature`<br>[`results_djev_upstream_calibrated.json`](../../benchmarks/jevbench/results_djev_upstream_calibrated.json) | ✅ Completed ([Analysis](./exp-11-jevbench-parity.md)) |
 | **`EXP-12`** | **`jev-decision-index` (`apolinario/decision-index`) 5-Area Benchmark, Wide-Canvas Adapter & `/v1/systemone` Protocol** | Evaluate `dgemma` across the 5-Area Decision Index (19 scored panel benchmarks + 3 wide-option benchmarks). Eliminates `HTTP 422` capacity rejections (`0.0` score penalty on `M > 10` slots in `ContractNLI`/`BRIGHT`/`ToolRet` and `K > 26` options in `API-Bank`/`BANKING77`/`CLINC150`) via **Multi-Slot Canvas Batching** + **2-Stage Bracket Tournament Routing** (`T*=1.25`), lifting structural coverage from `72.7%` to **`100.0%`** and Headline Decision Index from `76.67` to **`98.89` (`+22.22 pts`, Skill `98.33`, ECE `0.0371`)**. Projects to **Rank `#3 / 49` Overall (`#1` Diffusion, `46.90` `balanced_skill`)** as Pure System-1 (`0%` LLM) and **Rank `#1 / 49` Overall (`53.94` `balanced_skill`, beating TypeSafe `Jev 1.13.0` [`51.67`])** with `EXP-05`/`11` Entropy-Gated Cascades (`#1 / 31` on `v0.1` at `56.51` raw). | [`benchmarks/decision_index/panel_suite.jsonl`](../../benchmarks/decision_index/panel_suite.jsonl)<br>[`pkg/decisionindex/engine.go`](../../pkg/decisionindex/engine.go) | `dgem bench-decision-index --compare-naive`<br>`dgem bench-decision-index --serve-systemone :8095`<br>[`results_decision_index_cloudrun.json`](../../benchmarks/decision_index/results_decision_index_cloudrun.json) | ✅ Completed ([Analysis](./exp-12-decision-index.md)) |
 | **`EXP-13`** | **Permutation Sensitivity, Content-Free Null-Prior De-Biasing & $O(1)$ Dual-Mirror Canvas Calibration** | Quantifies how option order distorts single-pass confidence. Content-free probes show a strong Slot-`'A'` preference ($p_0 = [88.3\%, 11.7\%]$ for $K=2$, $[78.3\%, 8.6\%, 13.1\%]$ for $K=3$, $[49.3\%, 4.8\%, 16.3\%, 29.5\%]$ for $K=4$). On 16 synthetic items (baseline 16/16 correct): (1) **Null-Prior De-Biasing (`13B`)** cuts Brier `0.0173` $\rightarrow$ `0.0017` but raises cyclic flip rate `12.5%` $\rightarrow$ `25%`; (2) **Cyclic JSD (`13A`)** is `~156×` higher on the 4 ambiguous items, where reordering flips 2/4 answers; (3) **Dual-Mirror (`13C`)** reads forward + reversed slots in one pass (`124.7` vs `128.8 ms`) and flags `perm_08` (`99.9%`, $\tilde{H}=0.007$, `Mirror TVD = 0.258`) but misses `perm_06` (TVD `0.0006`) and worsens Brier (`0.0410`). See the plain-English summary in [Confidence Beyond Shannon (IDC)](/dgem/confidence-beyond-shannon/). | [`benchmarks/permutation_suite.jsonl`](../../benchmarks/permutation_suite.jsonl)<br>[`pkg/permutation/permutation.go`](../../pkg/permutation/permutation.go) | `dgem bench-permutation`<br>[`results_permutation_cloudrun.json`](../../benchmarks/results_permutation_cloudrun.json) | ✅ Completed ([Analysis](./exp-13-permutation-invariance.md)) |
+| **`EXP-14`** | **Same-Session IDC Re-run on Vertex AI (versioned runs)** | Pre-registered follow-ups `PROP-01/02/05/10` plus an EXP-13 reproduction, run in one session with versioned receipts. Findings: ±1–2 item noise floor; null-prior helps on the 50-item suite (Brier 0.147 vs 0.175–0.193) but not on JevBench (186 vs 187, Brier worse); the dual-mirror slot id `__mirror_rev` degraded readings (JevBench 187 → 145; fixed to `__rev`), and a same-canvas mirror still lowers the forward reading; held-out temperature scaling cuts ECE 24–33% on 231 JevBench items but not on 50 items; entropy cascade reaches 221/231 at 39% escalation. [Details](/dgem/experiments/exp-14-idc-rerun/) | `benchmarks/calibration_suite.jsonl`, `benchmarks/jevbench/jevbench_public.jsonl`, `benchmarks/permutation_suite.jsonl` | `scripts/run_idc_rerun.sh`<br>`scripts/analyze_idc.py`<br>`benchmarks/runs/20260925-vertex-idc*` | ✅ Completed |
 
 ---
 

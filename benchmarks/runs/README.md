@@ -16,7 +16,10 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 | :--- | :--- |
 | `20260920-legacy` | Receipts produced before versioning (Sep 20–24, 2026), registered in place. Mixed endpoints and service revisions. |
 | `20260925-offline-prop01` | PROP-01 held-out temperature scaling, computed offline from legacy receipts. |
-| `20260925-vertex-idc` | Same-session IDC re-run on the Vertex endpoint (calibration suite ×7 configs incl. 3 baselines, EXP-13 permutation suite, JevBench ×4 configs, Gemini Stage-2 for every item). |
+| `20260925-vertex-idc` | Same-session IDC re-run on the Vertex endpoint (calibration suite ×7 configs incl. 3 baselines, EXP-13 permutation suite, JevBench ×4 configs, Gemini Stage-2 for every item). Dual-mirror receipts here use the old `__mirror_rev` slot id. |
+| `20260925-vertex-idc-mirrorfix` | Same session, after renaming the mirror slot to `__rev` (commit `2f731b0`), with fresh baselines. |
+
+Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
 
 Tools:
 

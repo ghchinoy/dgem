@@ -244,13 +244,14 @@ export default defineConfig({
         {
           label: 'Experiments & Research Log',
           items: [
-            { label: 'Experiment Ledger (EXP-01 – EXP-13)', slug: 'experiments' },
+            { label: 'Experiment Ledger (EXP-01 – EXP-14)', slug: 'experiments' },
             { label: 'Proposed Experiments Register', slug: 'experiments/proposed' },
             { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
             { label: 'Listwise Diffusion Reranking (EXP-10)', slug: 'experiments/exp-10-listwise-diffusion-reranking' },
             { label: 'JevBench v1.3.1 Parity & Sync (EXP-11)', slug: 'experiments/exp-11-jevbench-parity' },
             { label: 'Decision Index & Wide-Canvas (EXP-12)', slug: 'experiments/exp-12-decision-index' },
             { label: 'Permutation & Dual-Mirror Canvas (EXP-13)', slug: 'experiments/exp-13-permutation-invariance' },
+            { label: 'Same-Session IDC Re-run (EXP-14)', slug: 'experiments/exp-14-idc-rerun' },
           ],
         },
         {

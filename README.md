@@ -21,7 +21,7 @@
 make build                                   # builds ./bin/dgem
 ./bin/dgem decide -t templates/support_triage.json.tmpl \
   -v 'ticket=I was billed $500 twice for my annual renewal this morning!' --stats
-# Add --null-prior-debias and/or --dual-mirror to turn on IDC order-bias checks.
+# Add --null-prior-debias to divide out the first-option habit (validate on your data first; see EXP-14).
 ```
 
 Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--vertex-url <endpoint-id>` (Vertex AI); see [Supported Deployment Environments](#supported-deployment-environments-4-serving-targets).
@@ -35,13 +35,13 @@ Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--v
 **The problem.** Per-question Shannon entropy ($H = -\sum p_k \ln p_k$) is a useful escalation signal: it rises when human annotators disagree. But DiffusionGemma, like other language models, has a strong **ballot-order ("Box A") habit**: on blank, content-free questions it puts $88.3\%$ / $78.3\%$ / $49.3\%$ of its probability on the first slot (2 / 3 / 4 options). On a borderline input that habit can make a toss-up look 99.9% certain, and the entropy gate waves it through.
 
 **What IDC does.**
-1. **Null-Prior De-Biasing** (`--null-prior-debias`, no labeled data): divides out the measured slot habit. On the 50-item calibration suite: accuracy `88% → 90%`, Brier `0.186 → 0.149`, and **34/34** answers above 0.90 confidence correct (vs 34/36; separate runs).
-2. **Dual-Mirror Canvas** (`--dual-mirror`): adds a reversed-order copy of each choice question **to the same canvas**, so the forward and reversed readings come from **one forward pass**, and their gap (`Mirror TVD`) flags order-dependent answers. It caught `perm_08` (single reading 99.9%, TVD `0.258`) but missed `perm_06`; with the current merge rule it slightly worsens Brier/ECE.
-3. **Slot Temperature Scaling** (`EXP-11`): softens over-sharp scores. Needs labeled data; the reported ECE `0.075 → 0.033` is in-sample.
+1. **Null-Prior De-Biasing** (`--null-prior-debias`, no labeled data): divides out the measured slot habit. On the 50-item calibration suite it improved Brier from 0.175–0.193 (three same-session baselines) to 0.147; on the 231-item JevBench set it did **not** help (186 vs 187 correct, worse calibration). Suite-dependent, so validate before enabling.
+2. **Dual-Mirror Canvas** (`--dual-mirror`): adds a reversed-order copy of each choice question **to the same canvas**, so the forward and reversed readings come from **one forward pass**, and their gap (`Mirror TVD`) flags order-dependent answers. A research diagnostic for now: a slot-naming bug (`__mirror_rev`, fixed to `__rev`) degraded readings, and even after the fix the extra slot lowers forward accuracy on JevBench (189 → 163–169), so it is not recommended in production ([EXP-14](docs/experiments/exp-14-idc-rerun.md)).
+3. **Slot Temperature Scaling** (`EXP-11`): softens over-sharp scores. Needs labeled data. Fitted on held-out folds it cut ECE by 24–33% on 231 JevBench items ($T^* \approx 1.5$) but gave no reliable gain on the 50-item suite.
 
 **What's new.** Removing a content-free prior (*contextual calibration*, Zhao et al. 2021), permutation debiasing (e.g. PriDe, Zheng et al. 2023), and temperature scaling (Guo et al. 2017) are known techniques. The part specific to a diffusion decision model is **checking a reversed ballot on every request without a second forward pass**, which turns order sensitivity from an offline audit into a per-request signal.
 
-**Status.** Evidence is early (16 synthetic ordering items, 50 calibration items); IDC is CLI-only today (Mirror TVD is not yet returned by `serve` / MCP / Studio); the combined IDC + escalation pipeline has not been benchmarked end to end. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and [Proposed Experiments](docs/experiments/proposed.md) (`PROP-00`–`PROP-10`) for what comes next.
+**Status.** A same-session re-run on 50 + 231 items ([EXP-14](docs/experiments/exp-14-idc-rerun.md), versioned receipts in `benchmarks/runs/`) gave mixed results: the order-bias *problem* is real and reproducible, but the corrections are suite-dependent and the same-canvas mirror needs redesign. IDC is CLI-only today. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and [Proposed Experiments](docs/experiments/proposed.md) (`PROP-00`–`PROP-10`) for what comes next.
 
 ---
 
@@ -50,14 +50,15 @@ Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--v
 | Result | Value | Sample | Receipt |
 | :--- | :--- | :---: | :--- |
 | Single-pass accuracy, 11 public datasets (`dgem bench-calibration`) | 88.0% (44/50) | 50 | `benchmarks/results_calibration_cloudrun.json` |
-| + Null-prior de-biasing (IDC) | 90.0%, Brier 0.186 → 0.149, 34/34 correct above 0.90 conf. | 50 | `results_calibration_null_prior.json` |
+| + Null-prior de-biasing (IDC), same session | 45/50, Brier 0.147 vs 0.175–0.193 (3 baselines) | 50 | `benchmarks/runs/20260925-vertex-idc/` |
 | + Entropy cascade to `gemini-3.8-flash` ($\tilde H \ge 0.16$, 34% escalated) | **98.0% (49/50)**, 56% lower cost than Gemini on every item | 50 | `results_calibration_cascade_normalized.json` |
-| JevBench v1.3.1: DiffusionGemma reference → entropy cascade (28% escalated) | 194 → **213** of 231 | 231 | `benchmarks/jevbench/` |
+| JevBench v1.3.1: `dgem` single pass → entropy cascade (hesitation ≥ 16%, 39% escalated, offline) | 187–189 → **221** of 231 | 231 | `benchmarks/runs/20260925-vertex-idc/` |
+| JevBench v1.3.1: null-prior de-biasing | 186 of 231, Brier 0.293 vs 0.264 (no gain) | 231 | `benchmarks/runs/20260925-vertex-idc/` |
 | Decision Index panel: bracket routing (> 26 options) + slot batching | 76.67 → 98.89, coverage 16/22 → 22/22 | 22 requests | `benchmarks/decision_index/` |
 | Listwise reranking of 10 passages in one pass (`EXP-10`) | 0.9265 nDCG@10, 0% ties | 30 queries | `results_rerank_cloudrun.json` |
 | Content-free Slot-A habit (`EXP-13B`) | 88.3% / 78.3% / 49.3% for K = 2 / 3 / 4 | probe | `results_permutation_cloudrun.json` |
 
-Thresholds and temperatures were tuned on the evaluation items, and calibration samples are small; treat these as directional. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
+Run-to-run noise is about ±1 item on 50 and ±2 on 231. Cascade thresholds were chosen on the evaluation items; treat these as directional. Compare runs with `python3 scripts/bench_runs.py compare`. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
 
 ---
 

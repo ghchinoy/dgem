@@ -1,0 +1,156 @@
+{
+  "run_id": "20260925-vertex-idc-mirrorfix",
+  "created": "2026-09-25T21:24:32+00:00",
+  "git_commit": "2f731b0ddcbd641c8ebb00bbcfff10d0f14d1ff3",
+  "git_dirty_paths": [],
+  "notes": "Same session as 20260925-vertex-idc, after renaming the dual-mirror slot suffix from __mirror_rev to __rev (commit 2f731b0). Includes fresh baselines for comparability.",
+  "receipts": [
+    {
+      "suite": "calibration",
+      "config": "baseline",
+      "path": "calibration__baseline.json",
+      "sha256": "12c256a926306c67bc3ddd0a5d7d7bc3b391f5c9d5871b17170b2682778cd715",
+      "recorded": "2026-09-25T21:24:42+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/calibration__baseline.json",
+      "summary": {
+        "timestamp": "2026-09-25T21:24:42Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.17917488139106644,
+        "ece10_t1": 0.06905419315444286,
+        "hi_conf": "34/37",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "dual_mirror",
+      "path": "calibration__dual_mirror.json",
+      "sha256": "b414da2ec67d132a673c19ae21a0fa291c646ed892949549b5421e9ecb4c9764",
+      "recorded": "2026-09-25T21:24:51+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/calibration__dual_mirror.json --dual-mirror",
+      "summary": {
+        "timestamp": "2026-09-25T21:24:51Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror",
+        "n": 50,
+        "errors": 0,
+        "correct": 46,
+        "accuracy": 0.92,
+        "brier_t1": 0.17698159796961466,
+        "ece10_t1": 0.09970423527653821,
+        "hi_conf": "30/31",
+        "mean_mirror_tvd": 0.15594536139356657
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "dual_mirror_realnames",
+      "path": "calibration__dual_mirror_realnames.json",
+      "sha256": "836ba032e574387c15b93b0ba8e8457b40c2592ef500fd3e0f14f073994c54d5",
+      "recorded": "2026-09-25T21:25:02+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/calibration__dual_mirror_realnames.json --dual-mirror --mirror-alias-names=false",
+      "summary": {
+        "timestamp": "2026-09-25T21:25:02Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.19370828280264252,
+        "ece10_t1": 0.09820888042101358,
+        "hi_conf": "31/34",
+        "mean_mirror_tvd": 0.1264797292560516
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "null_prior_dual_mirror_realnames",
+      "path": "calibration__null_prior_dual_mirror_realnames.json",
+      "sha256": "84c18b2daf11e7bf2f8e3736749877be3dd7cd69731492002fcf9a3c2270444b",
+      "recorded": "2026-09-25T21:25:12+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/calibration__null_prior_dual_mirror_realnames.json --dual-mirror --mirror-alias-names=false --null-prior-debias",
+      "summary": {
+        "timestamp": "2026-09-25T21:25:12Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "null_prior(alpha=0.50)+dual_mirror",
+        "n": 50,
+        "errors": 0,
+        "correct": 46,
+        "accuracy": 0.92,
+        "brier_t1": 0.17814495902432323,
+        "ece10_t1": 0.08614254335865204,
+        "hi_conf": "27/29",
+        "mean_mirror_tvd": 0.15074752359547325
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "baseline",
+      "path": "jevbench__baseline.json",
+      "sha256": "473ea595399b1e2955647590ee90af3140a8ae845a3ee443079f9e6ea8681749",
+      "recorded": "2026-09-25T21:25:55+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/jevbench__baseline.json",
+      "summary": {
+        "timestamp": "2026-09-25T21:25:55Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 189,
+        "accuracy": 0.8181818181818182,
+        "brier_t1": 0.26355465739868933,
+        "ece10_t1": 0.08949860899925674,
+        "hi_conf": "154/165",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "dual_mirror",
+      "path": "jevbench__dual_mirror.json",
+      "sha256": "1c974c796f647b95ef6fb9000f22e45dc2ed72453697da599833f852fd8e3e55",
+      "recorded": "2026-09-25T21:26:42+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/jevbench__dual_mirror.json --dual-mirror",
+      "summary": {
+        "timestamp": "2026-09-25T21:26:42Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror",
+        "n": 231,
+        "errors": 1,
+        "correct": 163,
+        "accuracy": 0.7056277056277056,
+        "brier_t1": 0.3642273930329806,
+        "ece10_t1": 0.07912527228697869,
+        "hi_conf": "75/78",
+        "mean_mirror_tvd": 0.23942564059251278
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "dual_mirror_realnames",
+      "path": "jevbench__dual_mirror_realnames.json",
+      "sha256": "1ff8e9098cff3e327d7186931d585b896109e3e462ba7ade41549d7a593893b4",
+      "recorded": "2026-09-25T21:27:28+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4217256562927861760 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-vertex-idc-mirrorfix/jevbench__dual_mirror_realnames.json --dual-mirror --mirror-alias-names=false",
+      "summary": {
+        "timestamp": "2026-09-25T21:27:28Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror",
+        "n": 231,
+        "errors": 1,
+        "correct": 169,
+        "accuracy": 0.7316017316017316,
+        "brier_t1": 0.3182999796714018,
+        "ece10_t1": 0.08949356683196096,
+        "hi_conf": "59/59",
+        "mean_mirror_tvd": 0.27710304355432563
+      }
+    }
+  ]
+}

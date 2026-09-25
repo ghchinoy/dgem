@@ -1268,9 +1268,9 @@ export class DgemConceptVisualizer extends LitElement {
           </div>
           <div style="font-size: 0.72rem; color: var(--viz-text-muted); margin: 0 0 0.7rem 0;">
             ℹ️ <strong>Illustrative simulation:</strong> the tickets, probabilities and TVD gate below are made up to
-            show the mechanism. For measured results (small samples, including cases the mirror misses), see
-            <em>Confidence Beyond Shannon (IDC)</em> in the docs. IDC is CLI-only today (<code>--null-prior-debias</code>,
-            <code>--dual-mirror</code>); live Studio runs do not apply it yet.
+            show the mechanism. In real tests the first-option habit is consistent, but the fixes are mixed: the same-pass
+            order check lowered accuracy on a 231-item test and is research-only for now. See <em>Confidence Beyond
+            Shannon (IDC)</em> and EXP-14 in the docs. Live Studio runs do not apply IDC.
           </div>
 
           <div class="preset-row" style="grid-template-columns: repeat(4, 1fr);">
@@ -1664,7 +1664,7 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'Invariant Decision Calibration: Null-Prior De-Biasing + Dual-Mirror Canvas (Mirror TVD) + optional Temperature Scaling (EXP-13)',
         analogy:
           'Imagine interviewing a witness. If they give a confident answer, you check two things: (1) Are they just agreeing with the first suggestion you offered? and (2) Do they give the same answer if you list the choices in reverse order? IDC does both checks inside one GPU pass.',
-        impact: 'Flags answers whose confidence depends on list order. Early results are promising but small (16–50 items): de-biasing gave 34/34 correct high-confidence answers on the calibration suite; the mirror caught one 99.9%-"certain" toss-up and missed another.',
+        impact: 'The problem it targets is real: the first-option habit reproduced in every test. The fixes are mixed so far: de-biasing helped on a 50-item test but not on a 231-item one, and the same-pass order check currently lowers accuracy, so it is used for research only.',
       },
       {
         id: 'entropy',
@@ -1694,7 +1694,7 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'Contextual Calibration via Null-Context Prior Division: p̃ₖ = (pₖ / p₀(k)^α) / Z',
         analogy:
           'Before you weigh 200g of flour on a kitchen scale, you place the empty mixing bowl on the scale and press "TARE" (Zero) so you don’t weigh the bowl. dgem weighs the policy template on a blank input first (measuring the "bowl weight" of Option A, B, C) and subtracts it before scoring your real ticket.',
-        impact: 'Improved the Brier score from 0.186 to 0.149 on the 50-item calibration suite with no labeled data. It removes the average first-choice habit, not every order effect.',
+        impact: 'Improved calibration on a 50-item test with no labeled data, but not on a 231-item test, so check it on your own data. It removes the average first-choice habit, not every order effect.',
       },
       {
         id: 'framing',
@@ -1704,7 +1704,7 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'O(1) Dual-Mirror Canvas Slot Readout & Cross-Stem Total Variation Distance (TVD_cross = ½ ∑ |p_fwd - p_rev|)',
         analogy:
           'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma fills every slot on the canvas at once, dgem can place a Forward slot [A, B, C] and a Reversed slot [C, B, A] side by side without a second forward pass. If the two readings disagree a lot (the "order gap", or TVD, is large), the confidence depends on how the list was printed.',
-        impact: 'Caught a toss-up the single reading called 99.9% certain (TVD 0.26), but missed another: it only tests the reversed order, and the two slots can see each other. It does not check rewording. CLI-only for now.',
+        impact: 'A promising idea that needs more work: in a 231-item test the extra reversed slot lowered accuracy, because the two blanks influence each other. It only tests the reversed order and does not check rewording. Research use only (CLI).',
       },
       {
         id: 'brier',

@@ -29,12 +29,12 @@ The [Experiment Ledger](/dgem/experiments/) records experiments we have **run**.
 | ID | Title | Question it answers | Depends on | Priority | Status |
 | :--- | :--- | :--- | :--- | :---: | :--- |
 | [`PROP-00`](#prop-00-expose-mirror-tvd-on-all-four-surfaces-enabler) | Expose Mirror TVD on all four surfaces (*enabler*) | Can production use the mirror signal at all? | — | **P0** | Proposed |
-| [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | **P0** | Proposed |
-| [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | **P0** | Proposed |
-| [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Proposed |
-| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | Proposed |
+| [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | **P0** | Done → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (noise floor: ±1–2 items, Brier ±0.02) |
+| [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | **P0** | Done → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (met on 231 JevBench items, not on 50) |
+| [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Partly → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (entropy gates measured; mirror gate blocked by PROP-03) |
+| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | **Next** (EXP-14 found same-canvas coupling lowers the forward reading) |
 | [`PROP-04`](#prop-04-order-sensitivity-on-real-chaosnli) | Order sensitivity on real `ChaosNLI` | Do entropy / Mirror TVD / cyclic JSD track real human disagreement? | — | P1 | Proposed |
-| [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | P1 | Proposed |
+| [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | P1 | Done → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (50/50 beats 70/30; neither beats single slot) |
 | [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | P1 | Proposed |
 | [`PROP-07`](#prop-07-wording-invariance) | Wording invariance | How often does rephrasing an option change the decision? | — | P2 | Proposed |
 | [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed? | — | P2 | Proposed |

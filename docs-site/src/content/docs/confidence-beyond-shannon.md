@@ -27,7 +27,7 @@ description: "A plain-English guide to why a raw model confidence score can be m
 * **The problem.** Given a blank question with meaningless options, `DiffusionGemma` still picks the first option (`A`) 78–88% of the time. On a genuinely borderline question, that habit can turn a coin flip into a score like "99.9% sure". The usual uncertainty meter (Shannon entropy) then says "certain", and the case skips human or frontier-model review.
 * **The IDC idea.** (1) Measure the model's built-in preference for each position and divide it out (*null-prior de-biasing*). (2) Show the model the options in forward *and* reversed order **on the same canvas, in the same single forward pass**, and check whether the two readings agree (*Dual-Mirror*). (3) If you have labeled data, soften over-sharp scores (*temperature scaling*). (4) Send disagreeing or uncertain cases onward (*the gate*).
 * **What's new.** Steps 1 and 3 are known techniques from the LLM calibration literature. The part specific to `dgem` is step 2: because a diffusion model fills every answer slot at once, the reversed ballot costs **no extra forward pass**, which gives a free per-request "does order matter here?" signal.
-* **How strong is the evidence?** It's promising but early: 16 synthetic items for the ordering study and 50 items for calibration. Null-prior de-biasing looks like a clear win. Dual-Mirror catches some false certainty but, with its current merge rule, makes the headline calibration metrics *worse*. The combined IDC + escalation pipeline hasn't been benchmarked end to end yet. [Section 6](#6-the-evidence-so-far-with-sample-sizes) has the numbers.
+* **How strong is the evidence?** Mixed, and now measured on more data ([EXP-14](/dgem/experiments/exp-14-idc-rerun/), same-session re-run on 50 + 231 items). Null-prior de-biasing clearly helps on the 50-item suite but **not** on the 231-item JevBench set. Dual-Mirror had a naming bug that degraded readings (now fixed), and even after the fix a second slot on the same canvas lowers the forward reading on JevBench, so it is a **research diagnostic, not a production default**. Temperature scaling fitted on held-out data cuts calibration error by about a quarter to a third on 231 items, but not on 50. The entropy-gated cascade remains the most reliable gain. [Section 6](#6-the-evidence-so-far-with-sample-sizes) has the numbers.
 
 ---
 
@@ -82,7 +82,9 @@ Same ticket, same options, only the order changed, yet confidence ranges from 61
 
 **What happened here:** the model's final pick was right, but its 99.9% wasn't earned. How sure it seemed depended on the layout of the page. A trustworthy system should route a case like this to review rather than auto-approve it at "99.9%".
 
-> ⚠️ **Two honest footnotes on this example**
+> ⚠️ **Honest footnotes on this example**
+>
+> * **It did not fully reproduce on another backend.** In the Vertex AI re-run ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)), `perm_08`'s single reading was already uncertain (hesitation 20%, escalated by entropy alone) and the forward/reversed gap was only 0.064. The example shows the mechanism, not a stable property of this item.
 >
 > * **The forward slot changed too.** Adding the reversed slot moved the forward reading from 99.9% to 71.3%. On a diffusion canvas every slot can see every other slot, so the two readings are *not independent*: the mirror is part of the scene, not a detached observer. That is probably part of why it catches disagreement, but it also means the two readings could agree simply because they can see each other. A same-canvas vs. separate-pass ablation is still needed (see [§6](#6-the-evidence-so-far-with-sample-sizes)).
 > * **The mirror only tests one reordering.** On `perm_06` (a surgeon sighing after an operation: complication or just tiredness?), moving the options to a different order in a separate pass flips the answer from `neutral` to `entailment`. But the forward and *reversed* readings agree (TVD = **0.0006**), so the mirror does **not** flag it. Dual-Mirror is a smoke detector for one kind of order sensitivity, not a proof of invariance.
@@ -109,9 +111,9 @@ flowchart LR
 
 | Technique | Everyday analogy | What it does | Needs labeled data? | Extra cost | Where it's available today |
 | :--- | :--- | :--- | :---: | :--- | :--- |
-| **Null-prior de-biasing** (`EXP-13B`) | Tare the kitchen scale before weighing | Divides each option's probability by the model's measured content-free preference for that slot: $\tilde{p}_k \propto p_k / p_0(k)^{\alpha}$. $\alpha$ sets how strongly to correct. | **No.** Only needs the blank-question probe. | ~0 ms (arithmetic) | CLI: `dgem decide`, `bench-calibration`, `bench-decision-index` via `--null-prior-debias` (`--prior-alpha`, default `0.5`) |
-| **Dual-Mirror canvas** (`EXP-13C`) | Print the ballot twice, once upside down, and check both votes match | Adds a reversed-order copy of each choice slot to the same canvas, then compares the two readings. | **No** | No extra forward pass. Mean wall time was 124.7 ms vs 128.8 ms for one slot (n = 16, short prompts). | CLI `--dual-mirror`. **Note:** production merges the readings 70% forward / 30% reversed with a forward-priority tie rule (`pkg/permutation/permutation.go`), and **Mirror TVD is computed but not yet returned** by `dgem decide`, `dgem serve`, MCP, or the Studio. |
-| **Temperature scaling** (`EXP-11`) | A humility dial | Softens over-sharp scores: $p_k \propto p_k^{1/T}$ with $T > 1$. Never changes which option wins. | **Yes.** $T^*$ must be fitted on labeled examples. | ~0 ms | `bench-calibration --temperature-scale` / `--auto-temperature` (benchmarks only) |
+| **Null-prior de-biasing** (`EXP-13B`) | Tare the kitchen scale before weighing | Divides each option's probability by the model's measured content-free preference for that slot: $\tilde{p}_k \propto p_k / p_0(k)^{\alpha}$. $\alpha$ sets how strongly to correct. | **No.** Only needs the blank-question probe. | ~0 ms (arithmetic) | CLI: `dgem decide`, `bench-calibration`, `bench-jev`, `bench-decision-index` via `--null-prior-debias` (`--prior-alpha`, default `0.5`). **Suite-dependent:** helped on the 50-item suite, hurt calibration on JevBench (EXP-14). Validate on your own data before enabling. |
+| **Dual-Mirror canvas** (`EXP-13C`) | Print the ballot twice, once upside down, and check both votes match | Adds a reversed-order copy of each choice slot to the same canvas, then compares the two readings. | **No** | No extra forward pass. Mean wall time was 124.7 ms vs 128.8 ms for one slot (n = 16, short prompts). | CLI `--dual-mirror` (research use). **Not recommended in production** (EXP-14): until commit `2f731b0` the reversed slot was named `<id>__mirror_rev`, and the word "mirror" in a slot id degraded both readings; now `<id>__rev`. Even so, a second slot lowered forward accuracy on JevBench (189 → 163–169). Production merges 70/30 forward-priority; a 50/50 average with real option names worked better offline. Mirror TVD is recorded in benchmark receipts but not returned by `dgem decide`, `dgem serve`, MCP, or the Studio. |
+| **Temperature scaling** (`EXP-11`) | A humility dial | Softens over-sharp scores: $p_k \propto p_k^{1/T}$ with $T > 1$. Never changes which option wins. | **Yes.** $T^*$ must be fitted on labeled examples. | ~0 ms | `bench-calibration` / `bench-jev --temperature-scale` / `--auto-temperature` (benchmarks only). Held-out, it helped on 231 JevBench items ($T^* \approx 1.5$), not on 50. |
 | **The gate** (`EXP-05`) | A triage nurse deciding who sees the specialist | Escalates when uncertainty (or mirror disagreement) is high. | The threshold is best tuned on labeled data | Only escalated items pay for the second model | Entropy gate: `cascade_mode: "entropy"` on every surface. **Mirror-disagreement gate: only in `bench-permutation` so far** (fires on answer disagreement, merged $\tilde{H} \ge 0.16$, or normalized JSD $\ge 0.06$). |
 
 The illustration below shows what each step does to the decision boundary. It uses synthetic curves, not measured data:
@@ -181,13 +183,25 @@ Every row is recomputed from the stored per-item probabilities. **Caveat:** the 
 * **The large ECE improvement from temperature scaling (0.075 → 0.033) is in-sample.** $T^*$ was chosen on the same 50 items it was scored on. With most items in the top bin, 10-bin ECE on 50 items is also noisy.
 * **Dual-Mirror, with the current 70/30 merge, makes the headline calibration metrics slightly worse.** Its value is the disagreement signal, which isn't yet exposed or used by the production gate.
 
-### 6c. What is not yet measured
+### 6c. Same-session re-run on Vertex AI (EXP-14)
 
-1. **The combined pipeline:** null-prior + Dual-Mirror + temperature + a gate that uses both entropy and Mirror TVD, run end to end against Gemini. The 98% cascade result in §1 is entropy-only.
-2. **Held-out temperature:** fit $T^*$ on one split and report ECE on another (or use cross-validation).
-3. **Same-canvas vs separate-pass mirror:** does placing both readings on one canvas hide disagreement compared with two separate passes?
-4. **More ambiguous items:** 4 synthetic "ChaosNLI-style" items is too few. Real `ChaosNLI` items with 100-annotator label distributions would give a much stronger test.
-5. **Merge rule:** a plain 50/50 average vs the current 70/30 forward-priority rule.
+A single session against the Vertex AI endpoint, with interleaved baselines and versioned receipts ([EXP-14](/dgem/experiments/exp-14-idc-rerun/), `benchmarks/runs/20260925-vertex-idc*`):
+
+| Question | 50-item suite | JevBench (231 items) |
+| :--- | :--- | :--- |
+| Noise floor (repeat baselines) | 44, 44, 44, 45 correct; Brier 0.175–0.193 | 187 and 189 correct; Brier 0.264 |
+| Null-prior de-biasing | 45 correct, **Brier 0.147, ECE 0.026** (better than every baseline) | 186 correct, Brier 0.293, ECE 0.104 (**worse** than baseline) |
+| Dual-Mirror, old slot name `__mirror_rev` | 45 correct, Brier 0.186 | **145** correct (collapse) |
+| Dual-Mirror, fixed slot name `__rev` | 45–46 correct, Brier 0.177–0.194 (within noise) | 163–169 correct (still below baseline); best offline merge 185 |
+| Temperature fitted on held-out folds | no reliable gain | ECE 0.081 → 0.054–0.061 (24–33%), $T^* \approx 1.5$ |
+| Entropy cascade to Gemini (offline, hesitation ≥ 16%) | 48/50 at 34% escalated (Gemini alone 48/50) | **221/231 at 39% escalated** (Gemini on all: 225) |
+
+### 6d. What is not yet measured
+
+1. **Same-canvas vs separate-pass mirror (`PROP-03`):** EXP-14 shows the extra slot interferes with the forward reading; a two-pass mirror is the obvious comparison.
+2. **The combined pipeline with a working mirror gate:** blocked on item 1.
+3. **More ambiguous items:** 4 synthetic "ChaosNLI-style" items is too few. Real `ChaosNLI` items with 100-annotator label distributions would give a much stronger test.
+4. **Prior strength on more than one suite (`PROP-06`):** null-prior's opposite effects on the two suites need explaining.
 
 The structural gains in `EXP-12` (bracket tournaments for more than 26 options, batching more than 10 slots) are about *coverage*, not calibration. They're reported separately in [EXP-12](/dgem/experiments/exp-12-decision-index/) (19-item internal panel).
 
@@ -214,8 +228,8 @@ IDC builds on well-established ideas. Crediting them makes the new part easier t
 # Single decision with null-prior de-biasing (no labeled data needed):
 ./bin/dgem decide -t templates/support_triage.json.tmpl -v ticket="..." --null-prior-debias
 
-# Add the reversed-order mirror slot (same forward pass):
-./bin/dgem decide -t templates/support_triage.json.tmpl -v ticket="..." --null-prior-debias --dual-mirror
+# Research only: add the reversed-order mirror slot (same forward pass; see EXP-14 before using):
+./bin/dgem decide -t templates/support_triage.json.tmpl -v ticket="..." --dual-mirror
 
 # Reproduce the EXP-13 ordering study (cyclic reorders, null prior, Dual-Mirror, mirror gate):
 ./bin/dgem bench-permutation -u "$URL/v1" --gcp-auth -w 2
@@ -226,6 +240,10 @@ IDC builds on well-established ideas. Crediting them makes the new part easier t
 
 # Re-score a saved receipt with temperature scaling (in-sample unless you hold out data):
 ./bin/dgem bench-calibration --from-receipt benchmarks/results_calibration_cloudrun.json --auto-temperature
+
+# Held-out temperature, cascade gates and merge rules, offline from versioned receipts (EXP-14):
+python3 scripts/analyze_idc.py cv-temperature benchmarks/runs/20260925-vertex-idc/jevbench__baseline.json
+python3 scripts/bench_runs.py compare --suite jevbench
 ```
 
 Figures on this page are generated by `scripts/generate_idc_diagrams.py`. Figure 3 is computed directly from the receipts listed above; figures 1–2 are labeled illustrations.

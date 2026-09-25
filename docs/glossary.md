@@ -86,12 +86,12 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 ### Null-Prior De-Biasing ("Tare the Scale")
 * **In Plain English**: Weigh the empty bowl first, then subtract it. `dgem` divides out the model's built-in preference for each slot before reporting confidence. It needs no labeled data.
 * **Under the Hood**: $\tilde{p}_k \propto p_k / p_0(k)^{\alpha}$, with $\alpha \in [0,1]$ controlling correction strength (`--prior-alpha`, default `0.5`). Related prior work: *contextual calibration* (Zhao et al., 2021).
-* **Caveat**: It removes the *average* slot habit, not input-specific order effects. In `EXP-13` it improved Brier score but increased flips under other orderings (12.5% → 25%).
+* **Caveat**: It removes the *average* slot habit, not input-specific order effects. In `EXP-13` it improved Brier score but increased flips under other orderings (12.5% → 25%). In `EXP-14` it helped on the 50-item suite but made calibration worse on the 231-item JevBench set, so treat it as suite-dependent.
 
 ### Dual-Mirror Canvas
 * **In Plain English**: Print the ballot twice on the same page, once in reverse order, and check that both votes agree. Because a diffusion model fills every blank at once, the second copy costs no extra forward pass.
-* **Under the Hood**: For each `choice` slot, `dgem` adds `<id>__mirror_rev` with options $[o_K \dots o_1]$, reads both in one pass, maps them back to option names, and merges them (currently 70% forward / 30% reversed with a forward-priority rule).
-* **Caveats**: The two slots can see each other on the canvas, so they are not independent readings. Reversal is only one reordering: `perm_06` flips under a cyclic shift but passes the mirror check.
+* **Under the Hood**: For each `choice` slot, `dgem` adds `<id>__rev` with options $[o_K \dots o_1]$, reads both in one pass, maps them back to option names, and merges them (currently 70% forward / 30% reversed with a forward-priority rule).
+* **Caveats**: The two slots can see each other on the canvas, so they are not independent readings. Reversal is only one reordering: `perm_06` flips under a cyclic shift but passes the mirror check. In `EXP-14` the extra slot lowered forward accuracy on JevBench (189 → 163–169), and the original slot id `__mirror_rev` degraded readings further (renamed `__rev`). Treat it as a research diagnostic.
 
 ### Mirror TVD (Total Variation Distance)
 * **In Plain English**: How far apart the forward and reversed readings are, from `0` (identical) to `1` (completely different). Near 0 means order didn't matter for this input. A large value means the confidence depends on the layout.
