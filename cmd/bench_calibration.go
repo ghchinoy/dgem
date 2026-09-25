@@ -202,6 +202,7 @@ type CascadeSummary struct {
 type CalibrationReport struct {
 	Timestamp             string                    `json:"timestamp"`
 	IDCConfig             string                    `json:"idc_config,omitempty"`
+	IDCWarning            string                    `json:"idc_warning,omitempty"`
 	TargetURL             string                    `json:"target_url"`
 	TargetModel           string                    `json:"target_model"`
 	Workers               int                       `json:"workers"`
@@ -504,6 +505,9 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 	report.TargetURL = targetEndpointDisplay
 	report.TargetModel = targetModelDisplay
 	report.IDCConfig = idcConfigLabel(calNullPriorDebias, calDualMirror, calPriorAlpha)
+	if permutation.DualMirrorLetterCollisionSeen() {
+		report.IDCWarning = permutation.DualMirrorLetterWarning
+	}
 
 	if isCascadeRun {
 		pass2Label := calVertexModel

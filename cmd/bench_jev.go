@@ -233,6 +233,7 @@ type JevCaseResult struct {
 type JevReport struct {
 	Timestamp             string                    `json:"timestamp"`
 	IDCConfig             string                    `json:"idc_config,omitempty"`
+	IDCWarning            string                    `json:"idc_warning,omitempty"`
 	Source                string                    `json:"source"`
 	TargetURL             string                    `json:"target_url"`
 	TargetModel           string                    `json:"target_model"`
@@ -363,6 +364,9 @@ func runBenchJev(cmd *cobra.Command, args []string) error {
 	}
 	report := buildJevReport(results, "live-evaluation", c.BaseURL, viper.GetString("model"), lock.CommitSHA, activeTemp, jevMultiSlotEvidence, jevFlipOptions)
 	report.IDCConfig = idcConfigLabel(jevNullPriorDebias, jevDualMirror, jevPriorAlpha)
+	if permutation.DualMirrorLetterCollisionSeen() {
+		report.IDCWarning = permutation.DualMirrorLetterWarning
+	}
 
 	if jevOutput != "" {
 		data, _ := json.MarshalIndent(report, "", "  ")

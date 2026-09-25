@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"os"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
@@ -917,6 +921,26 @@ var MirrorAliasNames = true
 // receipts can be reproduced with --mirror-slot-suffix=__mirror_rev.
 var MirrorSlotSuffix = "__rev"
 
+// DualMirrorLetterWarning is the message emitted when --dual-mirror mirrors a lettered choice question.
+const DualMirrorLetterWarning = "--dual-mirror on lettered choice questions: the forward and reversed slots share letters (A, B, C...) " +
+	"that mean different options, and the model can copy the letter across slots, changing the forward answer (EXP-14). " +
+	"Research use only; see docs/experiments/exp-14-idc-rerun.md."
+
+var (
+	letterCollisionSeen atomic.Bool
+	letterWarnOnce      sync.Once
+	// WarnWriter receives the one-time dual-mirror warning (stderr by default; set to io.Discard to silence).
+	WarnWriter io.Writer = os.Stderr
+)
+
+// DualMirrorLetterCollisionSeen reports whether any schema in this process mirrored a lettered choice question.
+func DualMirrorLetterCollisionSeen() bool { return letterCollisionSeen.Load() }
+
+func noteLetterCollision() {
+	letterCollisionSeen.Store(true)
+	letterWarnOnce.Do(func() { fmt.Fprintln(WarnWriter, "WARNING: "+DualMirrorLetterWarning) })
+}
+
 func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem, bool) {
 	slotOpts := ExtractSchemaSlotOptions(schemaJSON)
 	if len(slotOpts) == 0 || len(slotOpts) > 5 {
@@ -979,6 +1003,10 @@ func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem,
 			}
 			newQuestions = append(newQuestions, mirrorQ)
 			injected = true
+			// Boolean slots are labelled yes/no by the server, so only lettered choices can collide.
+			if qType == "choice" {
+				noteLetterCollision()
+			}
 		}
 	}
 	if !injected {

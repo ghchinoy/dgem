@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERTEX_ID="${VERTEX_ID:-4217256562927861760}"
+VERTEX_ID="${VERTEX_ID:-4423577720856772608}"
 CLOUDRUN_URL="${CLOUDRUN_URL:-https://dgemma-tkb3aiuiea-uc.a.run.app/v1}"
 
 echo "========================================================================"

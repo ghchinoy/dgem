@@ -9,7 +9,8 @@ benchmarks/runs/<run_id>/manifest.json            git commit, notes, and one ent
 benchmarks/runs/<run_id>/<suite>__<config>.json   receipt written by `dgem bench-*`
 ```
 
-Each manifest entry records the suite, config, exact command, SHA-256 of the receipt, and headline
+Each manifest entry records the suite, config, exact command, SHA-256 of the receipt, the Vertex endpoint state at record
+time for Vertex runs (`backend_state`: machine, accelerator, min/max/available replicas, image), and headline
 numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.9 confidence, mean Mirror TVD).
 
 | Run | What it is |

@@ -44,6 +44,55 @@ def git(*args):
         return ""
 
 
+VERTEX_PROJECT = os.environ.get("VERTEX_PROJECT", "genai-blackbelt-fishfooding")
+VERTEX_REGION = os.environ.get("GCP_REGION", "us-central1")
+VERTEX_ENDPOINT = os.environ.get("DGEM_VERTEX_URL", "4423577720856772608")
+
+
+def _adc_token():
+    """Access token from gcloud ADC (authorized_user refresh token), without needing gcloud on PATH."""
+    import urllib.parse
+    import urllib.request
+    path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") or os.path.expanduser("~/.config/gcloud/application_default_credentials.json")
+    with open(path) as f:
+        d = json.load(f)
+    body = urllib.parse.urlencode({"client_id": d["client_id"], "client_secret": d["client_secret"],
+                                   "refresh_token": d["refresh_token"], "grant_type": "refresh_token"}).encode()
+    with urllib.request.urlopen("https://oauth2.googleapis.com/token", body, timeout=15) as r:
+        return json.load(r)["access_token"]
+
+
+def vertex_state(endpoint_id=None):
+    """Replica count, machine shape and image of the Vertex endpoint at record time (best effort)."""
+    import urllib.request
+    endpoint_id = endpoint_id or VERTEX_ENDPOINT
+    try:
+        tok = _adc_token()
+        base = f"https://{VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/{VERTEX_PROJECT}/locations/{VERTEX_REGION}"
+        req = urllib.request.Request(f"{base}/endpoints/{endpoint_id}", headers={"Authorization": f"Bearer {tok}"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            e = json.load(r)
+        out = {"endpoint": endpoint_id, "deployed_models": []}
+        for m in e.get("deployedModels", []):
+            dr = m.get("dedicatedResources", {})
+            ms = dr.get("machineSpec", {})
+            entry = {"id": m.get("id"), "machine": ms.get("machineType"), "accelerator": ms.get("acceleratorType"),
+                     "accelerator_count": ms.get("acceleratorCount"), "min_replicas": dr.get("minReplicaCount"),
+                     "max_replicas": dr.get("maxReplicaCount"),
+                     "available_replicas": m.get("status", {}).get("availableReplicaCount")}
+            try:
+                req = urllib.request.Request(f"https://{VERTEX_REGION}-aiplatform.googleapis.com/v1/{m['model']}",
+                                             headers={"Authorization": f"Bearer {tok}"})
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    entry["image"] = json.load(r).get("containerSpec", {}).get("imageUri")
+            except Exception:
+                pass
+            out["deployed_models"].append(entry)
+        return out
+    except Exception as ex:  # never block recording on this
+        return {"endpoint": endpoint_id, "error": str(ex)[:200]}
+
+
 def manifest_path(run_id):
     return os.path.join(RUNS, run_id, "manifest.json")
 
@@ -144,6 +193,7 @@ def cmd_record(args, receipt_path=None, command=None):
         "sha256": sha256(path),
         "recorded": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "command": command or args.command or "",
+        "backend_state": vertex_state() if "vertex" in (command or args.command or "") or os.environ.get("RECORD_VERTEX_STATE") else None,
         "summary": summarize(path),
     }
     m["receipts"] = [r for r in m["receipts"] if not (r["suite"] == args.suite and r["config"] == args.config)]
