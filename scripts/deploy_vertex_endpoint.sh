@@ -21,22 +21,47 @@ IMAGE_URI="${IMAGE_URI:-${REGION}-docker.pkg.dev/${PROJECT_ID}/dgem/dgemma:lates
 GCS_BUCKET="${GCS_BUCKET:-dgem-weights-${PROJECT_ID}}"
 ARTIFACT_URI="${ARTIFACT_URI:-gs://${GCS_BUCKET}/dgemma}"
 
-MODEL_DISPLAY_NAME="${VERTEX_MODEL_NAME:-dgemma-invoke}"
-ENDPOINT_DISPLAY_NAME="${VERTEX_ENDPOINT_NAME:-dgemma-dedicated}"
+# Hardware profile (VERTEX_PROFILE):
+#   l4             g2-standard-16 + 1x NVIDIA_L4 (24 GB VRAM, 64 GB RAM). SigLIP off by default (tight VRAM).
+#                  Endpoint/model names: dgemma-dedicated / dgemma-invoke (the original endpoint).
+#   g4-rtxpro6000  g4-standard-48 + 1x NVIDIA_RTX_PRO_6000 (Blackwell, native FP4, 180 GB host RAM).
+#                  SigLIP on (multimodal parity with Cloud Run). Names: dgemma-dedicated-g4 / dgemma-invoke-g4.
+# Any VERTEX_* / engine variable below still overrides the profile.
+VERTEX_PROFILE="${VERTEX_PROFILE:-l4}"
+case "$VERTEX_PROFILE" in
+  l4)
+    P_MACHINE=g2-standard-16; P_ACCEL=NVIDIA_L4; P_COUNT=1; P_MM=1; P_KV=2; P_SEQS=32; P_MAXREP=1
+    P_EP=dgemma-dedicated; P_MODEL=dgemma-invoke ;;
+  g4-rtxpro6000)
+    P_MACHINE=g4-standard-48; P_ACCEL=NVIDIA_RTX_PRO_6000; P_COUNT=1; P_MM=0; P_KV=12; P_SEQS=32; P_MAXREP=2
+    P_EP=dgemma-dedicated-g4; P_MODEL=dgemma-invoke-g4 ;;
+  *) echo "Unknown VERTEX_PROFILE=$VERTEX_PROFILE (use l4 | g4-rtxpro6000)" >&2; exit 1 ;;
+esac
 
-# Hardware profile:
-#   1x L4 (24GB VRAM, 64GB RAM for 17.53 GiB tmpfs + PyTorch load): MACHINE_TYPE=g2-standard-16, ACCELERATOR_TYPE=NVIDIA_L4, ACCELERATOR_COUNT=1
-#   2x L4 (48GB VRAM, multimodal DISABLE_MM=0): MACHINE_TYPE=g2-standard-24, ACCELERATOR_TYPE=NVIDIA_L4, ACCELERATOR_COUNT=2
-MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-16}"
-ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-NVIDIA_L4}"
-ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-1}"
-DISABLE_MM="${DISABLE_MM:-1}"
+MODEL_DISPLAY_NAME="${VERTEX_MODEL_NAME:-$P_MODEL}"
+ENDPOINT_DISPLAY_NAME="${VERTEX_ENDPOINT_NAME:-$P_EP}"
+MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-$P_MACHINE}"
+ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-$P_ACCEL}"
+ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-$P_COUNT}"
+DISABLE_MM="${DISABLE_MM:-$P_MM}"
 MIN_REPLICAS="${VERTEX_MIN_REPLICAS:-1}"
-MAX_REPLICAS="${VERTEX_MAX_REPLICAS:-1}"
+MAX_REPLICAS="${VERTEX_MAX_REPLICAS:-$P_MAXREP}"
+# Engine settings are passed explicitly so Vertex and Cloud Run can run identical configurations.
+KV_CACHE_GB="${KV_CACHE_GB:-$P_KV}"
+MAX_SEQS="${MAX_SEQS:-$P_SEQS}"
+CANVAS="${CANVAS:-128}"
+DEFAULT_SAMPLES="${DEFAULT_SAMPLES:-1}"
+MAX_INFLIGHT="${MAX_INFLIGHT:-8}"
+# Scale out when average GPU duty cycle exceeds this percentage (only used when MAX_REPLICAS > MIN_REPLICAS).
+AUTOSCALE_DUTY_CYCLE="${AUTOSCALE_DUTY_CYCLE:-70}"
 SERVICE_ACCOUNT="${VERTEX_SERVICE_ACCOUNT:-dgemma-gpu-sa@${PROJECT_ID}.iam.gserviceaccount.com}"
 
 API_BASE="https://${REGION}-aiplatform.googleapis.com/v1beta1"
 TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || gcloud auth print-access-token)"
+
+echo "==> Profile ${VERTEX_PROFILE}: ${MACHINE_TYPE} + ${ACCELERATOR_COUNT}x ${ACCELERATOR_TYPE}, replicas ${MIN_REPLICAS}-${MAX_REPLICAS}, DISABLE_MM=${DISABLE_MM}, KV_CACHE_GB=${KV_CACHE_GB}, MAX_SEQS=${MAX_SEQS}, DEFAULT_SAMPLES=${DEFAULT_SAMPLES}"
+echo "    Image: ${IMAGE_URI}"
+echo "    Endpoint display name: ${ENDPOINT_DISPLAY_NAME} (an existing endpoint with this name is reused)"
 
 echo "==> [1/4] Uploading Invoke-Enabled Model (${MODEL_DISPLAY_NAME}) with invokeRoutePrefix=\"/*\"..."
 UPLOAD_PAYLOAD=$(cat <<EOF
@@ -53,10 +78,14 @@ UPLOAD_PAYLOAD=$(cat <<EOF
       "env": [
         { "name": "DGEM_WEIGHTS_URI", "value": "${ARTIFACT_URI}" },
         { "name": "GCS_BUCKET", "value": "${GCS_BUCKET}" },
-        { "name": "CANVAS", "value": "128" },
+        { "name": "CANVAS", "value": "${CANVAS}" },
         { "name": "ENFORCE_EAGER", "value": "1" },
         { "name": "DISABLE_MM", "value": "${DISABLE_MM}" },
-        { "name": "GPU_UTIL", "value": "0.85" }
+        { "name": "GPU_UTIL", "value": "0.85" },
+        { "name": "KV_CACHE_GB", "value": "${KV_CACHE_GB}" },
+        { "name": "MAX_SEQS", "value": "${MAX_SEQS}" },
+        { "name": "DEFAULT_SAMPLES", "value": "${DEFAULT_SAMPLES}" },
+        { "name": "MAX_INFLIGHT", "value": "${MAX_INFLIGHT}" }
       ]
     }
   }
@@ -116,6 +145,12 @@ fi
 
 ENDPOINT_ID="${ENDPOINT_RESOURCE##*/}"
 
+AUTOSCALE_JSON=""
+if [ "${MAX_REPLICAS}" -gt "${MIN_REPLICAS}" ]; then
+  AUTOSCALE_JSON=",
+      \"autoscalingMetricSpecs\": [{\"metricName\": \"aiplatform.googleapis.com/prediction/online/accelerator/duty_cycle\", \"target\": ${AUTOSCALE_DUTY_CYCLE}}]"
+fi
+
 echo "==> [3/4] Deploying ${MODEL_RESOURCE} to ${ENDPOINT_RESOURCE} (${MACHINE_TYPE}, ${ACCELERATOR_COUNT}x ${ACCELERATOR_TYPE})..."
 DEPLOY_PAYLOAD=$(cat <<EOF
 {
@@ -130,7 +165,7 @@ DEPLOY_PAYLOAD=$(cat <<EOF
         "acceleratorCount": ${ACCELERATOR_COUNT}
       },
       "minReplicaCount": ${MIN_REPLICAS},
-      "maxReplicaCount": ${MAX_REPLICAS}
+      "maxReplicaCount": ${MAX_REPLICAS}${AUTOSCALE_JSON}
     }
   },
   "trafficSplit": {
