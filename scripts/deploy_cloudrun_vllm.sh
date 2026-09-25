@@ -90,9 +90,11 @@ fi
 
 DISABLE_MM_VAL="${DISABLE_MM:-0}"
 ENV_VARS="MODEL=/mnt/gcs/dgemma,CANVAS=${CANVAS_LEN},MAX_SEQS=32,MAX_MODEL_LEN=${MAX_MODEL_LEN},GPU_UTIL=0.40,KV_CACHE_GB=2,ATTN=TRITON_ATTN,ENFORCE_EAGER=1,DISABLE_MM=${DISABLE_MM_VAL},TORCH_COMPILE_DISABLE=1,VLLM_WORKER_MULTIPROC_METHOD=fork,CUDA_MODULE_LOADING=LAZY,COPY_TO_SHM=${COPY_SHM}"
-if [[ -n "${HF_TOKEN:-}" ]]; then
-  ENV_VARS="${ENV_VARS},HF_TOKEN=${HF_TOKEN}"
-fi
+ENV_VARS="${ENV_VARS},DEFAULT_SAMPLES=${DEFAULT_SAMPLES:-1},MAX_INFLIGHT=${MAX_INFLIGHT:-8}"
+# HF_TOKEN comes from Secret Manager (never a plaintext env var). Create once with:
+#   printf %s "$HF_TOKEN" | gcloud secrets create dgemma-hf-token --data-file=- && \
+#   gcloud secrets add-iam-policy-binding dgemma-hf-token --member=serviceAccount:$GPU_SA --role=roles/secretmanager.secretAccessor
+HF_SECRET="${HF_SECRET:-dgemma-hf-token}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENTRYPOINT_B64="$(base64 < "${REPO_ROOT}/deploy/cloudrun/entrypoint.sh" | tr -d '\n')"
@@ -122,6 +124,9 @@ DEPLOY_FLAGS=(
   "--startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,periodSeconds=5,timeoutSeconds=4,failureThreshold=120"
   "--set-env-vars=${ENV_VARS}"
 )
+if gcloud secrets describe "$HF_SECRET" --project "$PROJECT_ID" >/dev/null 2>&1; then
+  DEPLOY_FLAGS+=("--set-secrets=HF_TOKEN=${HF_SECRET}:latest")
+fi
 
 echo "==> Deploying to Cloud Run..."
 gcloud beta run deploy "$SERVICE_NAME" "${DEPLOY_FLAGS[@]}"
