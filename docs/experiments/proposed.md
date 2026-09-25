@@ -31,14 +31,20 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 | [`PROP-00`](#prop-00-expose-mirror-tvd-on-all-four-surfaces-enabler) | Expose Mirror TVD on all four surfaces (*enabler*) | Can production use the mirror signal at all? | — | **P0** | Proposed |
 | [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (noise floor: ±1–2 items, Brier ±0.02) |
 | [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (met on 231 JevBench items, not on 50) |
-| [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Partly → [EXP-14](exp-14-idc-rerun.md) (entropy gates measured; mirror gate blocked by PROP-03) |
-| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | **Next** (EXP-14 found same-canvas coupling lowers the forward reading) |
+| [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Partly → EXP-14 (entropy gates); mirror gate moves to `PROP-13` |
+| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | Replaced by `PROP-12` |
 | [`PROP-04`](#prop-04-order-sensitivity-on-real-chaosnli) | Order sensitivity on real `ChaosNLI` | Do entropy / Mirror TVD / cyclic JSD track real human disagreement? | — | P1 | Proposed |
 | [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | P1 | Done → [EXP-14](exp-14-idc-rerun.md) (50/50 beats 70/30; neither beats single slot) |
 | [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | P1 | Proposed |
 | [`PROP-07`](#prop-07-wording-invariance) | Wording invariance | How often does rephrasing an option change the decision? | — | P2 | Proposed |
 | [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed? | — | P2 | Proposed |
 | [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate (label-shift) adaptation | Can unlabeled target traffic correct for different class frequencies? | — | P2 | Proposed |
+| [`PROP-11`](#prop-11-letter-collision-in-the-mirror) | Letter collision in the mirror | Is the mirror's damage caused by shared letters rather than by a second slot? | — | **P0** | **Next** (client-only conditions) |
+| [`PROP-12`](#prop-12-separate-pass-mirror) | Separate-pass mirror (replaces `PROP-03`) | Does a mirror read in its own pass give a clean order signal? | `PROP-11` | P1 | Proposed |
+| [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | P1 | Proposed |
+| [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | P1 | Proposed |
+| [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Proposed |
+| [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | P1 | Proposed |
 
 ---
 
@@ -158,6 +164,58 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 * **Design:** Run the same items, same flags, and `-w 1` for determinism where possible, on Vertex AI (`4217256562927861760`) and Cloud Run.
 * **Metrics:** Standard deviation within a revision and differences between revisions for accuracy, Brier score, ECE, and per-item answer agreement.
 * **Decision:** Sets the minimum effect size that later entries (`PROP-01`–`PROP-09`) must exceed to count as real.
+
+---
+
+### `PROP-11`: Letter collision in the mirror
+
+* **Motivation:** In EXP-14 the forward answer changed 65% of the time when the forward and reversed slots chose the same letter (which then means different options), versus 9% otherwise. See [EXP-14, "Why the mirror degrades"](exp-14-idc-rerun.md#why-the-mirror-degrades-and-null-prior-overcorrects-analysis).
+* **Hypothesis (H11):** The mirror's damage to the forward reading comes from the two slots sharing letters with different meanings, not from the presence of a second slot.
+* **Design:** JevBench (231), Vertex G4, baselines at the start, middle and end of the session. Conditions: (a) single slot; (b) two identical copies in the same order; (c) forward + reversed with letters (current); (d′) forward + reversed where the reversed slot is sent as a `score` question so the server labels it 1, 2, 3… (client-only way to remove shared letters); (e) reversed slot placed before the forward slot. Server-side condition (d), explicit labels that keep each option's original letter, is deferred until the server accepts caller-supplied labels.
+* **Metrics:** forward-slot accuracy vs. (a); same-letter rate; how often the forward answer changes vs. (a); breakdown by question type and number of options.
+* **Decision (pre-registered):** H11 is supported if (b) and (d′) are within ±2 items of (a) while (c) stays more than 3 items below (a). If (b) is also degraded, a second slot hurts by itself and the same-canvas mirror should be dropped in favour of `PROP-12`.
+* **Cost:** about 1,200 requests. Client-only (`--mirror-mode`).
+
+### `PROP-12`: Separate-pass mirror
+
+* **Motivation:** Replaces `PROP-03`. A reversed reading in its own request cannot copy the forward slot.
+* **Hypothesis (H12):** Forward vs. reversed disagreement from two separate passes adds error detection beyond hesitation (entropy).
+* **Design:** JevBench and the 50-item suite: one pass in original order, one pass with options reversed. Record per-item disagreement (TVD) and argmax agreement.
+* **Metrics:** partial correlation of disagreement with errors, controlling for hesitation; AUROC for error detection of hesitation alone vs. hesitation + disagreement.
+* **Decision:** Supported if disagreement adds detection (partial correlation > 0 with a 95% bootstrap interval excluding 0). Forward accuracy equals baseline by construction; the cost is a second pass.
+* **Cost:** about 460 requests.
+
+### `PROP-13`: Mirror-aware cascade
+
+* **Motivation:** Unblocks `PROP-02` once an uncoupled mirror exists.
+* **Hypothesis (H13):** A gate of hesitation ≥ τ **or** disagreement ≥ τ′ beats entropy alone at the same hand-off rate.
+* **Design:** Offline, using `PROP-12` readings and the existing Gemini-on-every-item receipt; choose τ, τ′ on half the items and report on the other half.
+* **Decision:** Supported if accuracy is higher at a matched hand-off rate (±3 points), or hand-offs are fewer at matched accuracy.
+* **Cost:** offline.
+
+### `PROP-14`: In-context vs blank-question prior
+
+* **Motivation:** On JevBench the baseline picks position A less often than the correct answer is there (62 vs 70), so dividing out a blank-question slot-A habit overcorrects.
+* **Hypothesis (H14):** A position prior estimated from real items with rotated options (PriDe-style, Zheng et al. 2023) avoids null-prior's overcorrection.
+* **Design:** Rotate options on held-out JevBench items (60) and the 50-item suite; estimate per-position pick rates independent of content; compare blank-question prior, in-context prior, and none, with cross-validation.
+* **Decision:** Supported if the in-context prior is no worse than baseline on JevBench and at least as good as the blank-question prior on the 50-item suite.
+* **Cost:** about 900 requests.
+
+### `PROP-15`: Correction strength by question type
+
+* **Motivation:** Extends `PROP-06`. Three yes/no items broke under null-prior on JevBench.
+* **Hypothesis (H15):** Yes/no and lettered choices need different correction strengths (possibly none for yes/no).
+* **Design:** Sweep α ∈ {0, 0.25, 0.5, 0.75, 1} separately by question type and number of options on both suites, with cross-validation (offline re-scoring from receipts' raw distributions).
+* **Decision:** Supported if a per-type setting is never worse than baseline on either suite.
+* **Cost:** offline.
+
+### `PROP-16`: Slot names are part of the prompt
+
+* **Motivation:** Renaming the mirror slot from `__mirror_rev` to `__rev` changed JevBench from 145 to 163 correct.
+* **Hypothesis (H16):** Slot ids act as instructions; meaningful or loaded words change answers more than neutral ids.
+* **Design:** Single-slot and two-slot schemas with ids: `decision`, `q1`, random strings, and loaded words (e.g. "mirror", "check").
+* **Decision:** If the effect exceeds 2 items on JevBench, add a template style rule for slot ids.
+* **Cost:** about 1,200 requests.
 
 ---
 

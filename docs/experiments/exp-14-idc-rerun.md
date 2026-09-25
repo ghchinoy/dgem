@@ -145,6 +145,37 @@ image `dgemma:ab208dd`, mirror suffix `__rev`), all in one session. Results agre
   `PROP-03`.
 - The GPU change (L4 → RTX PRO 6000) did not change accuracy: JevBench baseline 187/231 on both.
 
+## Why the mirror degrades and null-prior overcorrects (analysis)
+
+Per-item analysis of the `20260925-vertex-idc*` receipts (read-only, `scripts/analyze_idc.py` plus ad-hoc scripts).
+
+**1. The two slots copy each other's letter.** `structured_server.py` labels every `choice` option **A, B, C…** and
+the model fills lines such as `decision: X` and `decision__rev: Y`. In the reversed slot the same letters stand for
+different options (forward A = first option; reversed A = last option). Because both blanks are filled together and
+see each other, the model tends to write the **same letter** in both, which means **contradictory options**:
+
+| Run (JevBench, 230 items with mirror data) | Slots agree on the option | Same **letter**, different option | Forward answer changed vs. baseline when same-letter | Forward changed otherwise |
+| :--- | ---: | ---: | ---: | ---: |
+| Old slot name `__mirror_rev`, aliased names | 91 | **114** | 32/114 | 24/116 |
+| New slot name `__rev`, aliased names | 167 | 48 | **31/48 (65%)** | 17/182 (9%) |
+| New slot name `__rev`, real option names | 141 | 76 | 23/76 (30%) | 13/154 (8%) |
+
+This fits every observation so far: the word "mirror" roughly doubled letter-copying (114 vs 48); the damage is
+worst on 3–4-option choices and 4-level scores (0.18–0.32 of probability lost on the correct answer) and small at
+6+ options; and the 50-item suite was barely affected because its yes/no questions are labelled with the words
+`yes`/`no` in the forward slot, so there is no shared letter to copy. JevBench converts yes/no into lettered choices,
+so both slots collide. The mechanism is a hypothesis until `PROP-11` tests it directly.
+
+**2. Null-prior corrects for a habit the model doesn't show on JevBench.** The correction divides out a slot-A
+preference measured on **blank** questions (87% / 76% / 57% for 2 / 3 / 4 options). On real JevBench items the
+correct answer is in position A on 70 items, and the baseline picks position A on only 62 (and position B on 93), so
+dividing out the blank-question habit pushes answers away from A. Three yes/no items whose correct answer "yes" is
+listed first broke under the correction. On the 50-item suite the habit does appear in context, which is why the
+correction helped there. Tested by `PROP-14` and `PROP-15`.
+
+Follow-ups are pre-registered as `PROP-11`–`PROP-16` in the [Proposed Experiments Register](proposed.md) and will be run
+one at a time, in that order, on the Vertex G4 endpoint.
+
 ## Verdicts on pre-registered hypotheses
 
 | ID | Pre-registered criterion | Verdict |
@@ -160,5 +191,4 @@ image `dgemma:ab208dd`, mirror suffix `__rev`), all in one session. Results agre
   production default; temperature scaling can help on larger sets but must be fit on held-out data.
 - Code: dual-mirror slot suffix renamed to `__rev`; receipts now carry per-item raw forward/reversed distributions
   (`idc` block); Gemini Stage-2 calls retry transient errors.
-- Next: `PROP-03` (separate-pass vs same-canvas mirror) is now the key question for whether the mirror idea is
-  usable at all; `PROP-06` (prior strength) should include JevBench.
+- Next: `PROP-11` → `PROP-16`, one at a time (see the analysis above).
