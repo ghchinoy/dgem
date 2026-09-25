@@ -49,33 +49,46 @@ Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k
 
 ### 3.2 `EXP-13A` & `EXP-13C`: Method Comparison (`1-Slot` vs. `Null-Prior` vs. `Cyclic-K` vs. `O(1) Dual-Mirror Canvas`)
 
-| Calibration / Readout Method | Forward Passes (`reads`) | Mean Latency (`ms`) | Overall Accuracy | Multi-Class Brier (`↓`) | Soft-Label TVD (`↓`) | Reversal Flip Rate (`↓`) | Permutation Signal Available? |
+| Calibration / Readout Method | Forward Passes (`reads`) | Mean Latency (`ms`) | Overall Accuracy | Multi-Class Brier (`↓`) | Soft-Label TVD (`↓`) | Order Flip Rate (`↓`) | Permutation Signal Available? |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **`1. Baseline 1-Slot (Canonical)`** | `1` | `129.0 ms` | `100.0%` | `0.0173` | `0.1536` | `12.5%` (`50%` on ambiguous) | ❌ No (blind when option in `'A'`) |
-| **`2. 1-Slot + Null-Prior De-Biased (13B)`** | `1` | `129.0 ms` | `100.0%` | **`0.0017` (`-90.2%`)** | **`0.1355` (`-11.8%`)** | `12.5%` | ❌ Static prior correction only |
-| **`3. K-Pass Cyclic Ensemble (13A Oracle)`** | `K` (`2–4`) | `369.5 ms` (`2.86x`) | `100.0%` | `0.0369` | `0.1570` | **`0.0%` (Exact Invariant)** | ✅ Full `Cyclic JSD` ($I(Y;\Pi\mid X)$) |
-| **`4. O(1) Dual-Mirror Canvas (13C)`** | **`1` (`2 slots`)** | **`125.0 ms` (`0.97x`)** | **`100.0%`** | **`0.0442`** | **`0.1370` (`-10.8%`)** | **`0.0%` (Exact Reversal Invariant)** | ✅ **Live `Mirror JSD` & `Mirror TVD` in 1 Pass** |
+| **`1. Baseline 1-Slot (Canonical)`** | `1` | `128.8 ms` | `100.0%` | `0.0173` | `0.1536` | `12.5%` cyclic (`2/16`; `2/4` on ambiguous) | ❌ No |
+| **`2. 1-Slot + Null-Prior De-Biased (13B, α=0.75)`** | `1` | `128.8 ms` | `100.0%` | **`0.0017` (`-90.2%`)** | **`0.1355` (`-11.8%`)** | `25.0%` cyclic (**worse**) | ❌ Static prior correction only |
+| **`3. K-Pass Cyclic Ensemble (13A Oracle)`** | `K` (`2–4`) | `369.5 ms` (`2.86x`) | `93.75%` | `0.0369` | `0.1570` | n/a (ensemble = one answer) | ✅ Full `Cyclic JSD` ($I(Y;\Pi\mid X)$) |
+| **`4. O(1) Dual-Mirror Canvas (13C)`** | **`1` (`2 slots`)** | **`124.7 ms` (`0.97x`)** | `100.0%` | `0.0410` (**worse**) | `0.1370` (`-10.8%`) | n/a (merged = one answer) | ✅ Live `Mirror JSD` & `Mirror TVD` in 1 pass (reversal only) |
 
-> **Key Architectural Breakthrough**: Because `DiffusionGemma` evaluates both `decision_fwd` ($[o_1 \dots o_K]$) and `decision_rev` ($[o_K \dots o_1]$) inside the **same 256-token bidirectional canvas**, **`O(1)` Dual-Mirror Canvas (`13C`) runs in `125.0 ms` vs. `129.0 ms` for a single slot (`0 ms` latency overhead)** while achieving **`0.0%` reversal flip rate** and exposing live **Mirror TVD / JSD** in a single read.
+> **Key architectural result**: Because `DiffusionGemma` fills both `decision_fwd` ($[o_1 \dots o_K]$) and `decision_rev` ($[o_K \dots o_1]$) in the **same bidirectional canvas**, the Dual-Mirror readout costs no extra forward pass (`124.7 ms` vs. `128.8 ms`, n=16) and exposes a per-request `Mirror TVD` / `JSD`. Caveats: a merged output cannot "flip" by construction, so reversal flip rate is not a meaningful metric for it; its Brier score is worse than baseline on this suite; and it only tests one alternative order (see `perm_06` below). The baseline made **zero errors** on these 16 synthetic items, so this suite measures confidence honesty, not error catching.
 
 ---
 
-### 3.3 Regime Breakdown: Why Single-Pass Entropy Fails on `ChaosNLI` While `JSD` & `Mirror TVD` Catch It (`H2` Proof)
+### 3.3 Regime Breakdown: Where Single-Pass Entropy Is Blind and What Catches It (`H2`)
 
-| Regime (`4 cases each`) | Mean 1-Pass Norm Entropy ($\tilde{H}$) | Mean `Cyclic JSD` ($I(Y;\Pi\mid X)$) | `Cyclic JSD` Multiplier vs Consensus | Cyclic Permutation Flip Rate | Mean Single-Pass `Mirror TVD` (`13C`) |
+| Regime (`4 synthetic cases each`) | Mean 1-Pass Norm Entropy ($\tilde{H}$) | Mean `Cyclic JSD` ($I(Y;\Pi\mid X)$) | `Cyclic JSD` vs Consensus | Cyclic Permutation Flip Rate | Mean `Mirror TVD` (`13C`) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **`consensus`** (Unambiguous facts) | `0.0065` | `0.0017 nats` | `1.0x` (baseline) | **`0.0%`** (`0/4`) | `0.0041` |
-| **`adversarial_trap`** (Distractor in `'A'`) | `0.0110` | `0.0036 nats` | `2.1x` | **`0.0%`** (`0/4`) | `0.0060` |
-| **`binary_ablation`** ($K=2$ policies) | `0.0056` | `0.0016 nats` | `0.9x` | **`0.0%`** (`0/4`) | `0.0029` |
-| **`ambiguous_chaosnli`** (Human split) | `0.0977` | **`0.2683 nats`** | **`157.8x`** | **`50.0%`** (`2/4` flip `argmax`) | **`0.2738` (`66.8x` consensus)** |
+| **`consensus`** (Unambiguous facts) | `0.0065` | `0.0017 nats` | `1.0x` (baseline) | `0.0%` (`0/4`) | `0.0044` |
+| **`adversarial_trap`** (Distractor in `'A'`) | `0.0176` | `0.0036 nats` | `2.1x` | `0.0%` (`0/4`) | `0.0673` |
+| **`binary_ablation`** ($K=2$ policies) | `0.0330` | `0.0016 nats` | `0.9x` | `0.0%` (`0/4`) | `0.0431` |
+| **`ambiguous_chaosnli`** (ChaosNLI-style split) | `0.2077` | **`0.2683 nats`** | **`~156x`** | **`50.0%`** (`2/4` flip `argmax`) | **`0.2626`** (driven by `perm_07` `0.785` and `perm_08` `0.258`; `perm_05`/`perm_06` ≈ `0.001–0.007`) |
 
-#### Concrete Case Proofs (`perm_06` & `perm_08`):
-1. **`perm_06_ambiguous_chaosnli_hospital` (*Surgeon sighing after operation: 48% Entailment vs 46% Neutral*)**:
-   - **Canonical 1-Slot (`A=entailment, B=neutral, C=contradiction`)**: `dgemma` outputs `entailment` with **`99.4%` confidence** and **Single-Pass Normalized Entropy $\tilde{H} = 0.031$** (well below the `0.16` cascade threshold $\rightarrow$ **False Early Exit!**). Why? Because `entailment` sits in Slot `'A'` ($p_0(\text{A}) = 78.3\%$), reinforcing a near-50/50 semantic split into artificial certainty.
-   - **Under Cyclic Shift (`A=neutral, B=contradiction, C=entailment`)**: `dgemma` **flips its answer (`Cyclic JSD = 0.573 nats`, `337x` consensus)**!
-2. **`perm_08_ambiguous_fair_use_parody` (*Commercial billboard parody: 36% Fair Use vs 34% Infringement vs 30% Factual Jury Question*)**:
-   - **Canonical 1-Slot**: Single-Pass Normalized Entropy is **`0.007`** (another **False Early Exit** under single-pass entropy!).
-   - **Under `O(1)` Dual-Mirror Canvas (`13C`)**: In a **single `125 ms` forward pass**, `decision_fwd` and `decision_rev` disagree with **`Mirror TVD = 0.258` (`63x` consensus)** and **`Cyclic JSD = 0.157 nats`**, immediately flagging the item for Stage-2 escalation!
+*(All values from `benchmarks/results_permutation_cloudrun.json`, 2026-09-23. "ChaosNLI-style" items are authored for this suite with a stated human split; they are not drawn from the ChaosNLI release.)*
+
+#### Concrete Cases (`perm_08`, `perm_06`, `perm_07`)
+1. **`perm_08_ambiguous_fair_use_parody`** (*14-second chorus captured incidentally in a documentary; expected `incidental_fair_use`*): **Dual-Mirror catches false certainty.**
+   - **Canonical 1-Slot** (`A=requires_sync_license, B=incidental_fair_use, C=public_domain_waiver`): `incidental_fair_use` at **`99.9%`**, $\tilde{H} = 0.007$, so it would early-exit under the `0.16` entropy gate.
+   - **Dual-Mirror canvas (1 pass)**: forward slot `71.3%`, reversed slot `96.5%`, giving **`Mirror TVD = 0.258`** and merged $\tilde{H} = 0.465$, so it is **escalated**. (The forward reading itself dropped from 99.9% to 71.3% once the reversed slot shared the canvas: the two slots are not independent.)
+2. **`perm_06_ambiguous_chaosnli_hospital`** (*surgeon sighs and summons the family; stated split 48% entailment / 46% neutral; expected `neutral`*): **Dual-Mirror misses a real order sensitivity.**
+   - **Canonical 1-Slot** (`A=entailment, B=neutral, C=contradiction`): `neutral` at `99.5%` ($\tilde{H} = 0.031$). Correct, and *not* the Slot-`'A'` option.
+   - **Cyclic shift** (`A=contradiction, B=entailment, C=neutral`): flips to `entailment` at `95.6%` (`Cyclic JSD = 0.573 nats`).
+   - **Dual-Mirror canvas**: forward and reversed readings are both ≈ `99.9%` `neutral` (`Mirror TVD = 0.0006`), so it is **not flagged**. Reversal is only one of the orderings that matter.
+3. **`perm_07_ambiguous_dual_intent_vip`** (*ticket that is equally an SRE outage and a legal termination*): caught by **both** gates. Canonical $\tilde{H} = 0.71$; the forward and reversed slots pick different answers (`Mirror TVD = 0.785`).
+
+### 3.4 Verdict on Hypotheses
+
+| Hypothesis | Verdict | Evidence |
+| :--- | :--- | :--- |
+| **`H1`** Content-free Slot-`'A'` bias exists; subtracting it improves calibration | ✅ **Supported** (bias); ⚠️ **Mixed** (effect) | Bias is large (`88% / 78% / 49%`). Brier improves `-90.2%` on already-correct answers, but cyclic flip rate rises `12.5% → 25%`. On the 50-item calibration suite it is the best IDC component (see [IDC §6](../confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes)). |
+| **`H2`** Single-pass entropy can miss order-sensitive items; cyclic JSD reveals them | ✅ **Supported** (n=4) | `perm_06` and `perm_08` have $\tilde{H} < 0.04$ with large cyclic JSD. |
+| **`H3`** Dual-Mirror is `O(1)`, cancels position bias, gives a live disagreement signal | ⚠️ **Partly** | `O(1)` latency ✅; live signal ✅ (`perm_08`); Brier **worse** (`0.0410`); "0% reversal flip" is by construction; misses `perm_06`. |
+| **`H4`** Entropy + Mirror gate catches every order-unstable ambiguity | ❌ **Not supported** | Catches `perm_07` and `perm_08`; misses `perm_06`. Also escalates 3 correct non-ambiguous items (`perm_10`, `perm_12`, `perm_16`). |
 
 ---
 

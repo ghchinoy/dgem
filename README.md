@@ -32,12 +32,14 @@ Instead of generating text left-to-right, `dgem` compiles declarative `.json.tmp
 
 ### Confidence Beyond Shannon: `dgem Invariant Decision Calibration (IDC)`
 
-See **[Confidence Beyond Shannon: Invariant Decision Calibration (`docs/confidence-beyond-shannon.md`)](docs/confidence-beyond-shannon.md)** for the full architectural explainer:
+> **In one sentence:** IDC makes a `dgem` confidence score reflect *the question*, not *the position where each answer was listed*, and flags decisions whose answer depends on the list order. Full plain-English guide with a worked example: **[`docs/confidence-beyond-shannon.md`](docs/confidence-beyond-shannon.md)**.
 
-While raw single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises **8.0×** when human annotators disagree (`ChaosNLI`), relying on raw token entropy alone suffers from **Ballot-Order (`Box A`) Primacy Bias** ($p_0 = 88.3\%$ on 2-way, $78.3\%$ on 3-way, $49.3\%$ on 4-way blank prompts) and **unscaled diffusion logit overconfidence**. **`dgem Invariant Decision Calibration (IDC)`** wraps `DiffusionGemma`'s `125 ms` snapshot in a zero-overhead calibration pipeline:
-1. **Null-Prior De-Biasing ("Tare the Scale", `--null-prior-debias`, `EXP-13B`)**: Divides out the model's content-free `Box A` bias in logit space, cutting Multi-Class Brier error by **90.2%** (`0.0173` $\rightarrow$ `0.0017`) and making **`>90%`-confidence decisions `100.0%` accurate (`31/31`)** on our 50-case calibration suite (`78.84` JevBench Composite).
-2. **$O(1)$ Dual-Mirror Canvas (`--dual-mirror`, `EXP-13C`)**: Evaluates forward (`A..D`) and reversed (`D..A`) option orderings simultaneously on the **same bidirectional diffusion canvas (`0 ms` extra latency)**, eliminating option-reversal answer flipping (`0.0%` flip rate) and exposing live `Mirror TVD` (`66.8×` spike on `ChaosNLI`) to catch hidden toss-ups.
-3. **Slot Temperature Scaling ($T^* = 1.25\text{–}1.35$, `EXP-11`) & Wide-Canvas Bracket Routing (`EXP-12`)**: Cuts 10-Bin Expected Calibration Error (`ECE`) by **56.2%–86.1%** (`0.0326` on `JevBench`, `0.0332` on `jev-decision-index`) and lifts structural coverage to **100.0% (`98.89` Headline Decision Index)** across up to 255 options and 32+ simultaneous slots.
+Single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises when human annotators disagree, which makes it a useful escalation signal (`EXP-04`/`EXP-05`). But `DiffusionGemma` also has a strong **ballot-order ("Box A") habit**: on blank, content-free questions it picks the first slot $88.3\%$ / $78.3\%$ / $49.3\%$ of the time (2 / 3 / 4 options). On borderline inputs this can make a toss-up look like 99.9% certainty. IDC combines:
+1. **Null-Prior De-Biasing** (`--null-prior-debias`, `EXP-13B`, no labeled data needed): divides out the measured slot habit. On the 50-item calibration suite: Brier `0.186 → 0.149`, accuracy `88% → 90%`, and **34/34** high-confidence (>90%) answers correct (vs 34/36 at baseline; separate runs).
+2. **Dual-Mirror Canvas** (`--dual-mirror`, `EXP-13C`): adds a reversed-order copy of each choice slot **to the same canvas, so it costs no extra forward pass**, and compares the two readings (`Mirror TVD`). It flagged `perm_08` (99.9% single-reading confidence, TVD `0.258`) but missed `perm_06`, and with the current merge rule it slightly worsens Brier/ECE. Mirror TVD isn't yet exposed on `serve` / MCP / Studio.
+3. **Slot Temperature Scaling** (`EXP-11`): ECE `0.075 → 0.033` with $T^* = 1.35$. **In-sample**: $T^*$ was fitted on the same 50 items.
+
+Samples are small (16 synthetic ordering items, 50 calibration items), and the combined IDC + escalation pipeline hasn't been benchmarked end to end yet. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and its caveats.
 
 | Architectural Dimension | Discrete Diffusion Decision Model (`dgem`) | Discriminative Encoder (DeBERTa-v3 / Llama-Guard) | Autoregressive LLM (Gemini / Gemma 4) | Compiled Rulebook (`ecotone` C++ WFST) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -45,7 +47,7 @@ While raw single-pass **Shannon entropy ($H = -\sum p_k \ln p_k$)** rises **8.0�
 | **Inference Latency** | **125 – 490 ms** (1-pass Vertex AI L4 / Cloud Run GPU / Metal) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
 | **Latency Scaling Law** | **$O(K_{\text{steps}})$ constant time** (1 or 12 joint slots take same pass) | $O(M_{\text{heads}})$ separate classifiers per attribute | **$O(T_{\text{output}})$ linear penalty** (serial token loop) | $O(N_{\text{chars}})$ graph traversal |
 | **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single forward pass | Independent static classification heads | Unidirectional causal bias (`left -> right`) | Local sliding window (1–3 tokens) |
-| **Epistemic Calibration (`IDC`)** | **Null-Prior + Dual-Mirror + $T^*$** (`0.0326` ECE, `0%` reversal flip, **8.0×** $H$ on `ChaosNLI`) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
+| **Uncertainty & Calibration (`IDC`)** | **Per-slot probabilities + entropy**; zero-label order-bias correction (null-prior) and same-pass reversed-ballot check (Dual-Mirror) | Overconfident logits out-of-distribution | Uncalibrated sequence-level logprobs | Static tropical semiring arc weights |
 | **Guardrail & Policy Accuracy** | **100%** `AgentDrift` hijack, **100%** Prompt Injection, **100%** RAG Grounding | Narrow single-task scope (512–8k context) | High accuracy at 15–25× higher latency | **36.7%** on semiotic polysemy traps |
 
 ---

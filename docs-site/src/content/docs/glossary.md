@@ -1,6 +1,6 @@
 ---
 title: Glossary & Mental Models
-description: Plain-English decoder ring and architectural glossary for Discrete Diffusion Decision Models, Uncertainty Calibration, Dual-Encoders (GTR), TabPFN, and Test-Time Compute cascades.
+description: Plain-English decoder ring and architectural glossary for Discrete Diffusion Decision Models, Uncertainty Calibration, Order Bias & IDC, Dual-Encoders (GTR), TabPFN, and Test-Time Compute cascades.
 ---
 
 New to **DiffusionGemma (`dgem`)**? Because `dgem` sits at the intersection of **Classical Search/Tabular ML**, **Formal Language Automata**, and **Discrete Diffusion Generative Models**, engineers arriving from different specialties often bring different terminology for overlapping ideas.
@@ -47,7 +47,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ### Relative Tie-Detection vs. Target-Domain Probability Calibration
 * **In Plain English**: `dgem`'s single-pass logprob scores tell you **whether the model is torn between your template choices** (relative routing ambiguity), *not* the real-world base rate of how often a class appears in your database.
-* **Why This Matters**: True statistical calibration ($P(\text{Gold}=A \mid \hat{p}=0.80) = 0.80$) depends on the target environment's class prior $P_{\text{target}}(Y)$ and always requires post-hoc target data (Platt scaling, temperature scaling, or conformal prediction). What `dgem` provides zero-shot in 1 forward pass is a **tie-detector over the user-supplied option letters (`A..Z`)**—eliminating the $10\times\text{–}50\times$ token-cost multiplier of multi-sample autoregressive confidence rollouts.
+* **Why This Matters**: True statistical calibration ($P(\text{Gold}=A \mid \hat{p}=0.80) = 0.80$) depends on the target environment's class prior $P_{\text{target}}(Y)$ and always requires post-hoc target data (Platt scaling, temperature scaling, or conformal prediction). What `dgem` provides zero-shot in 1 forward pass is a **tie-detector over the user-supplied option letters (`A..Z`)**—eliminating the $10\times\text{–}50\times$ token-cost multiplier of multi-sample autoregressive confidence rollouts. Order bias can also make a tie look decisive; see [IDC](/dgem/confidence-beyond-shannon/) for the zero-label corrections `dgem` applies before gating.
 
 ### Distributional Discrete Regression (`score` Slots)
 * **In Plain English**: Turning continuous regression (like a `1..5` severity score) into a probability histogram over discrete levels so that classification confidence and regression variance come out of the exact same softmax formula.
@@ -72,7 +72,53 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ---
 
-## 4. Comparative ML Architectures
+## 4. Order Bias & Invariant Decision Calibration (`IDC`)
+
+These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](/dgem/confidence-beyond-shannon/), which walks through them with a worked example.
+
+### Invariant Decision Calibration (`IDC`)
+* **In Plain English**: A set of cheap checks and corrections that make a confidence score reflect *the question*, not *where each answer happened to be listed*, and that flag decisions whose answer changes when the list order changes.
+* **Why "Invariant"**: Reordering the options doesn't change the question, so an ideal decision (and its confidence) shouldn't change either.
+* **Where You See It in `dgem`**: `--null-prior-debias`, `--dual-mirror` (`dgem decide`, `bench-calibration`, `bench-decision-index`), `bench-permutation` (`EXP-13`).
+
+### Ballot-Order (Primacy) Bias / Null Prior $p_0$
+* **In Plain English**: Like undecided voters who tick the first name on a ballot, the model leans toward whichever option is listed first (`A`). Given a blank question with meaningless options, `DiffusionGemma` still picks `A` 88% (2 options), 78% (3), or 49% (4) of the time.
+* **Under the Hood**: $p_0(k)$ is the model's slot distribution on a content-free input. It estimates the position term $b_{\text{pos}}(k)$ in $z = s(\text{option}) + b_{\text{pos}}(k) + \epsilon$.
+
+### Null-Prior De-Biasing ("Tare the Scale")
+* **In Plain English**: Weigh the empty bowl first, then subtract it. `dgem` divides out the model's built-in preference for each slot before reporting confidence. It needs no labeled data.
+* **Under the Hood**: $\tilde{p}_k \propto p_k / p_0(k)^{\alpha}$, with $\alpha \in [0,1]$ controlling correction strength (`--prior-alpha`, default `0.5`). Related prior work: *contextual calibration* (Zhao et al., 2021).
+* **Caveat**: It removes the *average* slot habit, not input-specific order effects. In `EXP-13` it improved Brier score but increased flips under other orderings (12.5% → 25%).
+
+### Dual-Mirror Canvas
+* **In Plain English**: Print the ballot twice on the same page, once in reverse order, and check that both votes agree. Because a diffusion model fills every blank at once, the second copy costs no extra forward pass.
+* **Under the Hood**: For each `choice` slot, `dgem` adds `<id>__mirror_rev` with options $[o_K \dots o_1]$, reads both in one pass, maps them back to option names, and merges them (currently 70% forward / 30% reversed with a forward-priority rule).
+* **Caveats**: The two slots can see each other on the canvas, so they are not independent readings. Reversal is only one reordering: `perm_06` flips under a cyclic shift but passes the mirror check.
+
+### Mirror TVD (Total Variation Distance)
+* **In Plain English**: How far apart the forward and reversed readings are, from `0` (identical) to `1` (completely different). Near 0 means order didn't matter for this input. A large value means the confidence depends on the layout.
+* **Under the Hood**: $\text{TVD} = \tfrac12 \sum_k |p^{\text{fwd}}_k - p^{\text{rev}}_k|$. Clear-cut `EXP-13` items typically score below `0.01`; `perm_08` scored `0.258` while its single reading claimed 99.9%.
+* **Status**: Computed in `bench-permutation`. Not yet returned by `dgem decide`, `dgem serve`, MCP, or the Studio.
+
+### Cyclic JSD (Permutation Mutual Information)
+* **In Plain English**: The expensive, thorough version of the mirror: ask the question once per rotation of the option list and measure how much the answers disagree.
+* **Under the Hood**: The Jensen–Shannon divergence across $K$ cyclic orderings estimates $I(Y; \Pi \mid X)$, the information the option order carries about the answer. It costs $K$ forward passes (`EXP-13A`).
+
+### Temperature Scaling ("Humility Dial")
+* **In Plain English**: One dial that makes over-confident scores more modest (or under-confident ones bolder) without changing which answer wins.
+* **Under the Hood**: $p_k(T) \propto p_k^{1/T}$. $T > 1$ softens. $T^*$ is **fitted on labeled examples** (Guo et al., 2017), so the improvement is only trustworthy when measured on data not used for fitting.
+
+### Expected Calibration Error (`ECE`)
+* **In Plain English**: "When the model says 80%, is it right about 80% of the time?" ECE is the average gap between stated confidence and actual accuracy, so `0` is perfect.
+* **Under the Hood**: Predictions are grouped into 10 confidence bins; ECE $= \sum_b \frac{n_b}{N}\,|\text{acc}_b - \text{conf}_b|$. It's noisy on small datasets, especially when most predictions fall in the top bin.
+
+### Brier Score
+* **In Plain English**: A penalty for being confidently wrong *and* for being needlessly unsure when right. Lower is better. A perfect, fully confident forecaster scores `0`.
+* **Under the Hood**: $\text{Brier} = \frac1N \sum_i \sum_k (p_{i,k} - y_{i,k})^2$, where $y$ is the one-hot gold label.
+
+---
+
+## 5. Comparative ML Architectures
 
 ### Dual Encoder (`GTR` / `Sentence-T5`)
 * **In Plain English**: A bi-encoder architecture that compresses the input text into one vector $u$ and the label description into another vector $v_k$ *independently*, then compares the two vectors at the very end.
@@ -89,7 +135,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ---
 
-## 5. Spatial Grounding & Vision-Language Terminology (`EXP-09`)
+## 6. Spatial Grounding & Vision-Language Terminology (`EXP-09`)
 
 ### `DETR` Object Queries (Detection Transformer)
 * **In Plain English**: Instead of scanning an image with thousands of sliding-window guesses and filtering duplicates afterward (`Non-Maximum Suppression`), `DETR` creates a fixed number of parallel "empty parking spots" (**Object Queries**—e.g., `obj1` and `obj2`). Because all query slots attend to the image and to **each other simultaneously**, `obj2` sees that `obj1` already claimed the left object and automatically claims the right object in a single pass.

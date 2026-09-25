@@ -20,8 +20,8 @@ If you are a Product Manager, Engineering Leader, or Systems Architect, here is 
    Give a traditional model 10,000 labeled customer tickets and it will classify new ones in milliseconds with a genuine confidence score (e.g., `99% Billing` vs. `51% Billing`). **The catch:** Every time your product adds a new routing department or policy rule, your team has to collect new data and retrain the model from scratch.
 2. **Autoregressive LLMs (`~2,500 ms` · Instant Setup, Slow & Overconfident at Runtime)**:
    Chat models let you define categories on the fly in plain English (*zero-shot*). **The catch:** They generate text one word at a time from left to right. Using a chat LLM just to classify a ticket into three fields is like asking a novelist to write a paragraph just to check a box—and because it outputs a plain string (`"department": "Technical"`), **it hides whether the model was 99% certain or guessing 51/49 on a coin flip**.
-3. **Decision Models (`dgem` + `DiffusionGemma` · `~450 ms` · Zero-Shot Setup + Honest Uncertainty)**:
-   Instead of generating words left to right, `DiffusionGemma` evaluates all of your decision blanks simultaneously on a fixed canvas in **one single pass (`~450 ms`)**. Because it locks directly onto your allowed options, it cannot hallucinate invalid JSON or succumb to prompt injection—and it returns an honest **uncertainty score (`Shannon Entropy` in `nats`)** for every single field.
+3. **Decision Models (`dgem` + `DiffusionGemma` · `~450 ms` · Zero-Shot Setup + Per-Field Uncertainty)**:
+   Instead of generating words left to right, `DiffusionGemma` evaluates all of your decision blanks simultaneously on a fixed canvas in **one single pass (`~450 ms`)**. Because it locks directly onto your allowed options, it cannot emit invalid JSON or an off-menu label—and it returns a per-field **uncertainty score (`Shannon Entropy` in `nats`)**. That score is a strong starting signal, not a guarantee: see [how it can be fooled and how `dgem` checks it](/dgem/confidence-beyond-shannon/).
 
 ### How the Entropy Gate Works (The "Triage Nurse vs. Specialist" Pattern)
 In real products, **70%+ of incoming requests are obvious** (e.g., *"Our API is returning 502 Bad Gateway"*), while **~25–30% are genuinely mixed** (e.g., *"Our API is returning 502 Bad Gateway AND we are disputing our $45,000 Q3 invoice"*).
@@ -32,11 +32,11 @@ Instead of sending 100% of your traffic to a slow, expensive frontier reasoning 
 flowchart TD
     IN["📥 Incoming Request / Ticket\n(100% of Production Traffic)"] --> S1["⚡ Stage 1: dgem + DiffusionGemma\nSingle Forward Pass (~450–712 ms)\nComputes Answer + Uncertainty (nats)"]
     S1 -->|"🟢 Low Uncertainty (H < 0.35 nats)\n72% of Traffic (Clear Signal)"| FAST["✅ Fast Auto-Route\nDone in ~450 ms · $0 Frontier LLM Cost"]
-    S1 -->|"🟠 High Uncertainty (H ≥ 0.35 nats)\n28% of Traffic (Mixed / Borderline)"| ESC["⚠️ Auto-Escalate to Frontier Model (Gemini 3.8 Flash)\nwith Stage-1 Odds Attached (75% Tech / 23% Billing)\n➔ 98.0% Combined System Accuracy"]
+    S1 -->|"🟠 High Uncertainty (H ≥ 0.35 nats)\n28% of Traffic (Mixed / Borderline)"| ESC["⚠️ Auto-Escalate to Frontier Model (Gemini 3.8 Flash)\nwith Stage-1 Odds Attached (75% Tech / 23% Billing)\n➔ 94.0% Combined Accuracy (EXP-05a, 50 items)"]
 ```
 
 * **When the signal is clear (`H < 0.35 nats`)**: `DiffusionGemma` is 98%+ confident. The request takes the **Green Fast Lane** (`72%` of traffic), finishing in sub-second latency at a fraction of LLM cost.
-* **When the request contains conflicting signals (`H ≥ 0.35 nats`)**: `DiffusionGemma` detects its own internal tug-of-war (`75.5% Technical` vs. `23.2% Billing`) and raises an **Amber Flag (`0.56 nats`)**. Your application automatically routes **only that ambiguous 28% slice** to a frontier model (or human reviewer)—passing along `DiffusionGemma`'s exact odds (`75% vs 23%`) as a diagnostic clue to reach **98.0% overall accuracy** ([`EXP-05`](/dgem/experiments/exp-05-roadmap-cascades-and-dags/)).
+* **When the request contains conflicting signals (`H ≥ 0.35 nats`)**: `DiffusionGemma` detects its own internal tug-of-war (`75.5% Technical` vs. `23.2% Billing`) and raises an **Amber Flag (`0.56 nats`)**. Your application automatically routes **only that ambiguous 28% slice** to a frontier model (or human reviewer)—passing along `DiffusionGemma`'s exact odds (`75% vs 23%`) as a diagnostic clue, lifting overall accuracy on the 50-item calibration suite from 88% to **94.0%**. A size-normalized variant ($\tilde{H} \ge 0.16$, threshold tuned on the same 50 items) reaches **98.0%** while escalating 34% ([`EXP-05`](/dgem/experiments/exp-05-roadmap-cascades-and-dags/)).
 
 ---
 
@@ -95,7 +95,7 @@ When deploying mission-critical systems (such as high-volume customer triage, au
 | **1. The Context Horizon Dilemma** | **Zero context** (Bag-of-Words). Fails on negation. | **Local window (1–3 tokens)**. Fails on semiotic polysemy. | **Full sequence (unidirectional)**. Deep reasoning. | **Full sequence (bidirectional)**. Deep syntax + slot cross-attention. |
 | **2. The Latency & Compute Tax** | **Microseconds** (&lt; 1 ms on CPU). | **Single-digit ms** (1–5 ms on CPU). | **Multi-second** (2,000–15,000 ms sequential loop). | **Sub-second** (750–1,100 ms single forward pass). |
 | **3. The Syntactic Guarantee** | Categorical output guaranteed. | Regular grammar output guaranteed. | **Probabilistic formatting**. Can hallucinate or drift. | **100% Schema-Guaranteed**. Readout directly into pre-allocated slots. |
-| **4. Uncertainty Calibration** | **Overconfident** ($0.9999$ or $0.0001$). Unusable. | Static arc weights. No probabilistic variance. | Logprobs available, but tied to serial token branches. | **Calibrated entropy & empirical variance** ($\pm\sigma$ and $H$). |
+| **4. Uncertainty Calibration** | **Overconfident** ($0.9999$ or $0.0001$). Unusable. | Static arc weights. No probabilistic variance. | Logprobs available, but tied to serial token branches. | **Per-slot probabilities & entropy** ($\pm\sigma$ and $H$); calibration via [IDC](/dgem/confidence-beyond-shannon/). |
 
 ---
 
@@ -131,7 +131,7 @@ While autoregressive LLMs apply a causal mask (token 5 cannot look ahead at toke
 At the target slot position, the model projects the latent representation directly against the authorized token vocabulary for that question. For a boolean question (`"type": "boolean"`), the softmax is restricted strictly to `{ "yes", "no" }`. For a categorical question (`"type": "choice"`), the projection is restricted strictly to the declared category options.
 
 ### 4. Dual-Mode Uncertainty Telemetry & Epistemic Calibration (`ChaosNLI`)
-Because decision models project onto restricted candidate vocabularies rather than getting trapped in open-ended autoregressive decoding paths, they provide true mathematical calibration:
+Because decision models project onto restricted candidate vocabularies rather than open-ended decoding paths, they expose clean per-slot probabilities. These are a strong *uncertainty signal*, though not automatically *calibrated* probabilities (calibration to a real deployment needs labeled data; see [IDC](/dgem/confidence-beyond-shannon/)):
 * **Empirical Standard Error ($\pm\sigma$)**: On Apple Silicon Metal, multi-seed perturbation noise draws reveal whether the model has high consensus ($\pm 0.0000$) or ambiguity ($\pm 0.1500$).
 * **Monotonic Shannon Entropy ($H = -\sum p_k \ln p_k$)**: Evaluated on [`ChaosNLI`](/dgem/benchmarks/) (100 human annotators per item), DiffusionGemma's single-pass Shannon entropy correlates monotonically with human disagreement:
 
@@ -143,6 +143,8 @@ Because decision models project onto restricted candidate vocabularies rather th
 | **`high-entropy` (`ChaosNLI` 3-Way Crowd Split)** | **33.3% (1/3)** | `0.759` | **`0.5932 nats`** | **8.0× higher $H$** ⭐ |
 
 When human annotators agree, DiffusionGemma resolves the slot with **100% accuracy** and near-zero entropy (`0.0744 nats`). When the human crowd splits evenly across options, DiffusionGemma's internal entropy spikes **8.0× higher (`0.5932 nats`)**, giving engineers a deterministic threshold ($H > 0.30\text{ nats}$) to trigger abstention or escalate to a Tier-3 reasoning model.
+
+> **But raw entropy can be fooled.** The table above uses one fixed option order, and only 3 items sit in each ChaosNLI tier, so treat the 8× figure as a direction rather than a constant. `DiffusionGemma` has a strong habit of picking whichever option is listed first ("Box A"). On a borderline question that habit can make a coin flip *look* like 99.9% certainty, and the entropy gate then waves it through. **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](/dgem/confidence-beyond-shannon/)** explains the problem with a worked example, describes the checks `dgem` adds (removing the Box-A habit, reading a reversed ballot in the same pass, temperature scaling), and reports what the evidence does and doesn't show so far.
 
 ### 5. Templates as Executable Decision Policies (`Policy-as-Code`)
 In classical ML or fine-tuned encoder architectures (such as `DeBERTa-v3` or `Llama-Guard`), the decision policy is baked into static linear classification weights. If security engineering adds a 4th trajectory hijack state (`injection_point` vs. `hijacked` vs. `failed_injection`), the classifier head must be retrained.
@@ -182,9 +184,9 @@ DiffusionGemma does not replace FSTs or conversational LLMs; it fills the critic
 1. **Tier 1 (The Deterministic Fast Path)**:
    Use classical C++ WFSTs or regular expressions for unambiguous transformations. If text contains `"$5.99"`, an FST expands it to *"five dollars ninety-nine cents"* in 1 millisecond. Never pay GPU overhead for deterministic string replacement.
 2. **Tier 2 (The Discrete Decision Model)**:
-   When inputs exhibit semantic ambiguity, polysemy, negation, or require multi-rubric policy enforcement, route to **DiffusionGemma**. In **~459–712 ms**, it resolves the decision policy with full bidirectional context, 100% schema enforcement, and calibrated Shannon entropy $H$.
+   When inputs exhibit semantic ambiguity, polysemy, negation, or require multi-rubric policy enforcement, route to **DiffusionGemma**. In **~459–712 ms**, it resolves the decision policy with full bidirectional context, 100% schema enforcement, and per-slot Shannon entropy $H$.
 3. **Tier 3 (The Conversational Reasoning Engine)**:
-   When DiffusionGemma's calibrated telemetry flags high epistemic uncertainty ($H > 0.30$ nats—such as on human-contested `ChaosNLI` items or multi-hop `ANLI-R3` traps), escalate to a Thinking / Autoregressive LLM (like Google Cloud Vertex AI Gemini) to execute serial scratchpad reasoning or synthesize an explanation for a human reviewer.
+   When DiffusionGemma's uncertainty telemetry flags high uncertainty ($H > 0.30$ nats—such as on human-contested `ChaosNLI` items or multi-hop `ANLI-R3` traps), escalate to a Thinking / Autoregressive LLM (like Google Cloud Vertex AI Gemini) to execute serial scratchpad reasoning or synthesize an explanation for a human reviewer.
 
 ---
 
@@ -196,7 +198,7 @@ DiffusionGemma does not replace FSTs or conversational LLMs; it fills the critic
 | **How are policies updated?** | Relabel dataset & retrain weights | Prompt engineering + output parser | **Declarative `.json.tmpl` (`Policy-as-Code`)** |
 | **How fast is it?** | Microseconds – 20 ms | 2 – 17.5 seconds | **458.9 – 712 ms (1 forward pass)** |
 | **Can slots attend to each other?** | No (independent heads) | Unidirectional (`left -> right` only) | **Yes (`slot_1 <-> slot_2` bidirectionally)** |
-| **Does it know when it's unsure?** | Overconfident out-of-domain | Uncalibrated sequence logprobs | **Yes (8.0× $H$ spike on `ChaosNLI` splits)** |
+| **Does it know when it's unsure?** | Overconfident out-of-domain | Uncalibrated sequence logprobs | **Often: entropy rises with human disagreement, but option order can hide it ([IDC](/dgem/confidence-beyond-shannon/))** |
 | **Can it handle vision?** | Separate vision classifiers | Yes (multimodal autoregression) | **Yes (native SigLIP vision canvas)** |
 
 By decoupling **deep contextual reasoning** from **slow sequential text generation**, DiffusionGemma and `dgem` bring the power of 26B foundation models to sub-second, zero-shot decision engineering.

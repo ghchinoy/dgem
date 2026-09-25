@@ -3,7 +3,7 @@ title: DiffusionGemma — Zero-Shot Decision Model
 description: Declarative Policy-as-Template engine, Lit WebComponents Decision Studio, Model Context Protocol (MCP) Server, HTTP Gateway API, and sub-second discrete diffusion slot readouts across Vertex AI Dedicated Endpoints (/invoke/*), Serverless Cloud Run GPU, Google Compute Engine, and Apple Silicon Metal.
 template: splash
 hero:
-  tagline: Turn declarative .json.tmpl schemas into sub-second zero-shot Decision Policies with calibrated Shannon entropy (H)—via Decision Studio (Web UI), Model Context Protocol (MCP), HTTP REST API, or CLI across Vertex AI Dedicated Endpoints (/invoke/*), Serverless Cloud Run GPUs, and Apple Silicon Metal.
+  tagline: Turn declarative .json.tmpl schemas into sub-second zero-shot Decision Policies with a per-field uncertainty score (Shannon entropy H) and order-bias checks (IDC)—via Decision Studio (Web UI), Model Context Protocol (MCP), HTTP REST API, or CLI across Vertex AI Dedicated Endpoints (/invoke/*), Serverless Cloud Run GPUs, and Apple Silicon Metal.
   image:
     file: ../../assets/hero.svg
   actions:
@@ -59,8 +59,11 @@ import JevParityDashboard from '../../components/JevParityDashboard.astro';
   <Card title="📜 Policy-as-Template (Zero-Shot)" icon="document">
     Treat `.json.tmpl` files as executable decision policies rather than brittle prompts. Add new boolean gates, `[A-Z]` choices, or ordinal rubrics in seconds without retraining encoder heads—achieving **100% accuracy** on `AgentDrift` trajectory hijacks, `deepset/prompt-injections`, `LLM-AggreFact` grounding, and `MS MARCO`.
   </Card>
-  <Card title="📊 Epistemic Calibration & Stage 2 Gemini Cascade" icon="random">
-    Restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ rises monotonically with human annotator disagreement—spiking **8.0× higher** (`0.0744` $\rightarrow$ `0.5932 nats`) on split `ChaosNLI` items to drive the **Stage 2 Gemini Cascade (`gemini-3.8-flash` default, `EXP-05`, 98.0% accuracy)**.
+  <Card title="📊 Uncertainty Gate & Stage 2 Gemini Cascade" icon="random">
+    Every field comes with its own probabilities and Shannon entropy $H$, which rises when human annotators disagree (`EXP-04`). Routing only high-entropy items to **`gemini-3.8-flash`** lifted a 50-item public calibration suite from 88% to **98.0%** while escalating 34% of items (`EXP-05b`).
+  </Card>
+  <Card title="⚖️ Confidence Beyond Shannon (IDC)" icon="approve-check">
+    Like voters ticking the first name on a ballot, the model favors option `A`, which can make a toss-up look 99.9% certain. **Invariant Decision Calibration** removes that habit and reads a reversed ballot **in the same forward pass** to flag order-dependent answers. [Read the plain-English guide →](/dgem/confidence-beyond-shannon/)
   </Card>
   <Card title="🔎 Listwise Reranking & Spatial Grounding" icon="magnifier">
     Continuous Softmax Expectation ($\hat{r}_i = \sum g \cdot p_{i,g}$) scores **10 candidate RAG passages + 2 security gates in 1 pass (`EXP-10`, `0.9265 nDCG@10`, `0.0%` tie rate)** and regresses sub-bin 2D bounding boxes (`EXP-09`, `+30.2% mIoU`) with per-edge occlusion entropy.

@@ -7,6 +7,8 @@ description: Declarative Policy-as-Template engine, Lit WebComponents Decision S
 
 **`dgem`** is a declarative **Policy-as-Template** engine, **Lit WebComponents Decision Studio (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `/mcp`)**, **HTTP Gateway REST API (`/api/decide` & `/v1/systemone`)**, and **empirical benchmark harness** for Google DeepMind's **DiffusionGemma (`26B-A4B-it`)**.
 
+**New here?** Start with **[The Journey to Decision Models](decision-models-primer.md)** (what a decision model is and why it can report a per-field uncertainty score), then **[Confidence Beyond Shannon (IDC)](confidence-beyond-shannon.md)** (why that score can be fooled by option order, and how `dgem` checks it).
+
 ---
 
 ## Multi-Environment Serving Matrix (4 Primary Serving Targets)
