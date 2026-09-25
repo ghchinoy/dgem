@@ -121,6 +121,30 @@ standalone Gemini). Three JevBench Gemini calls failed with HTTP 429 after retri
 | | 0.25 | 13 (26%) | 48 / 50 |
 | | 0.35 | 11 (22%) | 47 / 50 |
 
+## Addendum: replication on Vertex G4 (run `20260925-g4-idc`)
+
+Same four configurations re-run on the new G4 endpoint (`4423577720856772608`, `g4-standard-48` + RTX PRO 6000,
+image `dgemma:ab208dd`, mirror suffix `__rev`), all in one session. Results agree with the findings above.
+
+| Suite | Config | Correct | Brier (T=1) | ECE-10 (T=1) | Mean Mirror TVD |
+| :--- | :--- | ---: | ---: | ---: | ---: |
+| 50-item | baseline | 44/50 | 0.176 | 0.034 | — |
+| 50-item | null-prior | 46/50 | 0.148 | 0.037 | — |
+| 50-item | dual-mirror | 46/50 | 0.197 | 0.136 | 0.133 |
+| 50-item | null-prior + dual-mirror | 46/50 | 0.188 | 0.114 | 0.190 |
+| JevBench | baseline | 187/231 | 0.286 | 0.097 | — |
+| JevBench | null-prior | 183/231 | 0.304 | 0.104 | — |
+| JevBench | dual-mirror | 156/231 | 0.349 | 0.083 | 0.223 |
+| JevBench | null-prior + dual-mirror | 155/231 | 0.353 | 0.126 | 0.290 |
+
+- Null-prior again helps on the 50-item suite (Brier 0.148 vs 0.176) and not on JevBench (183 vs 187).
+- Dual-mirror again costs accuracy on JevBench. Offline re-scoring (`analysis/merge_jevbench_dual_mirror.json`)
+  shows the **forward slot on the mirror canvas** gets only 156/230 right (it agrees with the single-slot answer on
+  178/231 items), while symmetric merges (50/50 mean or geometric) recover **185/230**, close to baseline. The
+  coupling between slots on one canvas, not the merge alone, is the main cost, which strengthens the case for
+  `PROP-03`.
+- The GPU change (L4 → RTX PRO 6000) did not change accuracy: JevBench baseline 187/231 on both.
+
 ## Verdicts on pre-registered hypotheses
 
 | ID | Pre-registered criterion | Verdict |

@@ -96,23 +96,25 @@ A **zero-shot decision model** sits in between. `dgem` compiles a `.json.tmpl` t
 
 See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU (`docs/vertex-ai-vs-cloudrun.md`)](docs/vertex-ai-vs-cloudrun.md)** for the complete architectural comparison and live 30-case benchmark receipts:
 
+Warm p50 latencies for a 3-question decision, from [`benchmarks/runs/20260925-serving-speed`](benchmarks/runs/20260925-serving-speed/README.md) (Vertex/Cloud Run) and older receipts (GCE, Metal).
+
 | Serving Target | Hardware & Shape | Cold-Start / Wakeup | Avg GPU Denoise (`N=4`) | Avg End-to-End Wall Time | Cost Profile | Recommended Use Case |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `g2-standard-16` (`1× NVIDIA L4` `24GB` VRAM, `64GB` RAM, ID `4217256562927861760`) | **`0.0 s`** (`minReplicaCount=1`, permanently warm) | **`490.0 ms`** (`195 ms` for `N=1`) | **`536.0 ms`** (`245 ms` for `N=1`) | `~$1.12/hr` while deployed (`$0/hr` after `make vertex-teardown`) | **Primary Production Target (`vertex_first` default)**: Zero cold-start SLA, interactive agents, CI/CD gates, and multimodal `SigLIP` headroom (`64 GB` RAM). |
-| **2. Serverless Cloud Run GPU (`dgemma`)** | `1× NVIDIA RTX Pro 6000` (`48GB` VRAM, `80Gi` RAM) or `1× L4` (`24GB`) | **`~121.8 s`** (`0 → 1` scale-from-zero) | **`427.3 ms`** (`171 ms` for `N=1`) | **`459.0 ms`** (`199 ms` for `N=1`) | **`$0.00/hr` when idle** (`min-instances=0`) | **Scale-to-Zero & Auto-Failover Standby (`cloudrun`)**: Episodic batch jobs, research evaluations, and zero-idle-cost sandboxes. |
+| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `g4-standard-48` + `1× NVIDIA RTX PRO 6000` (ID `4423577720856772608`; SigLIP on). Legacy: `g2-standard-16` + `1× L4` (`4217256562927861760`) | **`0.0 s`** (min 1 replica, autoscale to 2) | **`97.9 ms`** (`57.5 ms` for `N=1`) | **`181 ms`** (`143 ms` for `N=1`) | Billed per replica-hour while deployed | **Primary production target (`vertex_first` default)**: always warm, IAM, autoscaling, multimodal. |
+| **2. Serverless Cloud Run GPU (`dgemma`)** | `1× NVIDIA RTX PRO 6000` (`80Gi` RAM) or `1× L4` | **`~90–120 s`** (`0 → 1` scale-from-zero) | **`107.7 ms`** (`65.0 ms` for `N=1`) | **`187 ms`** (`144 ms` for `N=1`) | **`$0.00/hr` when idle** (`min-instances=0`) | **Scale-to-zero failover and batch (`cloudrun`)**: episodic jobs, research evaluations, sandboxes. |
 | **3. Cloud GPU on GCE VM** | `g2-standard-8` (`1× L4` `NVFP4`) or `a2-highgpu-2g` (`2× A100` `bfloat16`) | **`0.0 s`** (dedicated VM) | — | **`1,968.7 ms`** (`L4`) / **`2,733 ms`** (`2× A100`) | `~$0.70/hr` (`L4`) / `~$7.34/hr` (`2× A100`) | High-throughput raw `vLLM` continuous batching (`Banking77` / `CLINC150`) & `bfloat16` precision baselines. |
 | **4. Local Apple Silicon (`Metal`)** | Apple M-Series (`diffgemma-26b-a4b-it-q4` unified RAM) | **`0.0 s`** (local daemon) | **`892.0 ms`** (`210 ms` for `N=1`) | **`898.5 ms`** | **`$0.00/hr`** (local hardware) | Offline laptop development, policy authoring, and local verification. |
 
 ### Option A: Vertex AI Dedicated Endpoint (`/invoke/*`, Recommended Primary)
-Deploys the `dgemma` container with arbitrary custom routes (`invokeRoutePrefix: "/*"`) onto a `g2-standard-16` (`1× NVIDIA L4`, `64 GB` RAM) Vertex AI Dedicated Endpoint (`4217256562927861760`) so `/invoke/v1/chat/completions`, `/invoke/v1/systemone`, and `/invoke/health` are served with **`0.0 s` wakeup**:
+Deploys the `dgemma` container with arbitrary custom routes (`invokeRoutePrefix: "/*"`) onto a Vertex AI Dedicated Endpoint (default G4: `g4-standard-48` + RTX PRO 6000, `4423577720856772608`) so `/invoke/v1/chat/completions`, `/invoke/v1/systemone`, and `/invoke/health` are served with **`0.0 s` wakeup**:
 ```bash
-# 1. Deploy dgemma to Vertex AI Dedicated Endpoint (g2-standard-16, 1× NVIDIA L4):
-make vertex-deploy
+# 1. Deploy dgemma to a Vertex AI Dedicated Endpoint on G4 (RTX PRO 6000), pinned image tag:
+VERTEX_PROFILE=g4-rtxpro6000 IMAGE_URI=us-central1-docker.pkg.dev/$GCP_PROJECT/dgem/dgemma:<sha> make vertex-deploy
 
 # 2. Run single-pass decision or 30-case benchmark directly against /invoke/v1:
-./bin/dgem decide --vertex-url 4217256562927861760 --gcp-auth \
+./bin/dgem decide --vertex-url 4423577720856772608 --gcp-auth \
   -t templates/support_triage.json.tmpl -v 'ticket=Emergency outage' --stats
-./bin/dgem bench --vertex-url 4217256562927861760 --gcp-auth \
+./bin/dgem bench --vertex-url 4423577720856772608 --gcp-auth \
   -d benchmarks/eval_dataset.jsonl -o benchmarks/results_vertex_l4_invoke.json
 
 # 3. Teardown replica when zero-idle-cost ($0.00/hr) is desired:
@@ -282,7 +284,7 @@ Evaluates 30-way to 151-way intent routing and Out-of-Scope (`oos`) rejection on
 
 All pages below are also published on the docs site: [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/).
 
-* **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, `g2-standard-16` (`64 GB` RAM) sizing, and live 30-case benchmark receipts.
+* **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, the G4 (RTX PRO 6000) default, and the crawl-walk-run serving recommendation.
 * **[Experiment Authoring Guide & Backend Target Selection](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
 * **[CLI, HTTP Gateway & MCP Reference](docs/cli-reference.md)**: Complete flag and tool parameter reference (`--vertex-url`, `dgem serve --default-backend vertex_first`, `/v1/systemone`, and MCP tools).
 * **[The Journey to Decision Models](docs/decision-models-primer.md)**: Architectural primer contrasting Classical ML, Symbolic WFSTs, Autoregressive LLMs, and Discrete Diffusion Decision Models.

@@ -1,0 +1,46 @@
+{
+  "receipt": "benchmarks/runs/20260925-g4-idc/calibration__dual_mirror.json",
+  "stage": "raw_",
+  "rules": [
+    {
+      "rule": "forward_only",
+      "n": 40,
+      "correct": 36,
+      "brier": 0.22249432061073757,
+      "ece": 0.12536574251565302,
+      "hi": "25/26"
+    },
+    {
+      "rule": "reversed_only",
+      "n": 40,
+      "correct": 31,
+      "brier": 0.3092597170035996,
+      "ece": 0.1351740031840849,
+      "hi": "22/24"
+    },
+    {
+      "rule": "mean_50_50",
+      "n": 40,
+      "correct": 34,
+      "brier": 0.2493839278105993,
+      "ece": 0.13988129592367932,
+      "hi": "22/24"
+    },
+    {
+      "rule": "geometric",
+      "n": 40,
+      "correct": 33,
+      "brier": 0.25401543363409307,
+      "ece": 0.11228324863186062,
+      "hi": "25/27"
+    },
+    {
+      "rule": "fwd70_rev30",
+      "n": 40,
+      "correct": 35,
+      "brier": 0.23466974309147798,
+      "ece": 0.12126945601232972,
+      "hi": "24/26"
+    }
+  ]
+}

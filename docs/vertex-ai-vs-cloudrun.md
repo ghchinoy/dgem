@@ -9,8 +9,38 @@ description: "Architectural comparison of Google Cloud Vertex AI Dedicated Endpo
 
 1. **Local Apple Silicon Metal (`diffgemma`)** — Developer laptop prototyping & offline eval.
 2. **GCE VM (`g2-standard-8` L4 / `a2-highgpu-2g` A100)** — Raw VM benchmarking & custom kernel profiling.
-3. **Serverless Cloud Run GPU (`dgemma`)** — **Default production backend** (`--min-instances=0`, scale-to-zero `$0/hr` idle cost, NVIDIA RTX Pro 6000 48GB or L4 24GB).
-4. **Vertex AI Dedicated Endpoints (`dgemma-dedicated` with `invokeRoutePrefix: "/*"`)** — **Enterprise MLOps backend** exposing all `structured_server.py` and `vLLM` routes directly via `/invoke/*`.
+3. **Serverless Cloud Run GPU (`dgemma`)** — Scale-to-zero failover and batch backend (`--min-instances=0`, `$0/hr` idle, NVIDIA RTX PRO 6000 or L4).
+4. **Vertex AI Dedicated Endpoints (`invokeRoutePrefix: "/*"`)** — **Default production backend** (`vertex_first`): `dgemma-dedicated-g4` (`4423577720856772608`, RTX PRO 6000) with the L4 `dgemma-dedicated` (`4217256562927861760`) as a legacy fallback.
+
+---
+
+## 0. Current Recommendation (September 2026): Crawl → Walk → Run
+
+| Tier | Platform | Use it for | Measured (single decision, 3 questions) |
+| :--- | :--- | :--- | :--- |
+| **Crawl** | Apple Silicon Metal (`diffgemma`, q4) | Offline development and template authoring | ~0.9 s; different engine from production, so numbers don't transfer |
+| **Walk → run** | Cloud Run GPU (`dgemma`, 1× RTX PRO 6000) | Batch evaluation, research, scale-to-zero failover | 65 ms denoise / 144 ms wall (p50); 90–120 s cold start |
+| **Run (default)** | Vertex AI Dedicated Endpoint **`4423577720856772608`** (`g4-standard-48` + 1× RTX PRO 6000) | Production: always warm, IAM, replica autoscaling (1–2), multimodal | **57.5 ms denoise / 143 ms wall (p50)**; images 66.5 ms |
+| Legacy | Vertex AI `4217256562927861760` (`g2-standard-16` + 1× L4) | Cheapest always-warm fallback; text only | 188 ms / 271 ms; **crashes under load** (see below) |
+
+Measurements: [`benchmarks/runs/20260925-serving-speed`](../benchmarks/runs/20260925-serving-speed/README.md)
+(50 requests per cell, same session). Why G4 rather than A100/H100: the checkpoint is NVFP4 (4-bit), which
+Blackwell GPUs (RTX PRO 6000) execute natively; L4 and A100 do not.
+
+**Operational notes**
+
+- **Samples.** Schemas without `"samples"` now default to **1** (one read, fastest). Templates opt in to
+  `4` (one parallel batch, ~40 ms more on G4) when they want agreement/stderr; override per call with
+  `-v samples=N`. Avoid `"auto"` for latency: it runs a second sequential batch on most requests
+  (150.6 ms vs 97.9 ms for a fixed 4 on G4).
+- **Concurrency.** The G4 image caps decisions in flight at `MAX_INFLIGHT=8` and queues the rest, so a
+  32-client burst completed with 0 errors (≈60 decisions/s at 1 sample, ≈36/s at 4 samples on one replica).
+  The L4 endpoint has no limiter: 4 samples × 8 concurrent clients crashed vLLM's engine and the replica
+  restarted for ~2 minutes. The gateway's `vertex_first` routing fails over to Cloud Run during such events.
+- **Dual-mirror** adds ~4 ms at 1 sample on G4, but see [EXP-14](experiments/exp-14-idc-rerun.md) for why it
+  is not recommended in production.
+- **Deploying G4:** `VERTEX_PROFILE=g4-rtxpro6000 IMAGE_URI=<pinned tag> ./scripts/deploy_vertex_endpoint.sh`
+  (~10 minutes from deploy call to serving; the container self-warms before its first request).
 
 ---
 
@@ -67,7 +97,7 @@ flowchart LR
 
 ---
 
-## 2.1 Empirical 30-Case Benchmark Comparison (`dgem bench`)
+## 2.1 Empirical 30-Case Benchmark Comparison (`dgem bench`, historical: L4 endpoint)
 
 We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/eval_dataset.jsonl`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/eval_dataset.jsonl) across `support`, `code_review`, and `security`) on our live **Vertex AI Dedicated Endpoint (`4217256562927861760`, `g2-standard-16` · `1× NVIDIA L4` · `/invoke/v1`)** and **Serverless Cloud Run GPU (`dgemma`)**:
 
@@ -93,14 +123,14 @@ We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/ev
 
 | Mode (`backend` / `X-DGem-Backend`) | Routing Behavior | Recommended Use Case |
 | :--- | :--- | :--- |
-| **`vertex_first` (Default)** | Routes to **Vertex AI Dedicated Endpoint (`4217256562927861760`)** whenever `deployed` (`0s` cold start). Automatically fails over to **Cloud Run GPU (`dgemma`)** if Vertex AI is `deploying` or `quiesced`. | **Internal Teams & Production Agents** (Guaranteed `0s` cold start when Vertex is up; zero downtime during maintenance). |
+| **`vertex_first` (Default)** | Routes to **Vertex AI Dedicated Endpoint (`4423577720856772608`, G4)** whenever `deployed` (`0s` cold start). Automatically fails over to **Cloud Run GPU (`dgemma`)** if Vertex AI is `deploying` or `quiesced`. | **Internal Teams & Production Agents** (Guaranteed `0s` cold start when Vertex is up; zero downtime during maintenance). |
 | **`vertex` (Strict Pin)** | Routes strictly to **Vertex AI (`/invoke/*`)**. Never falls back to Cloud Run. | **Pure Vertex AI Benchmarking** (`dgem bench`). |
 | **`cloudrun` (Strict Pin)** | Routes strictly to **Serverless Cloud Run GPU (`dgemma`)**. | **Pure Cloud Run Benchmarking** & scale-to-zero testing. |
 
 ### A. In the Web Studio UI (`https://<your-dgem-gateway>`)
 1. Click the **`Vertex First (Auto)` / `Cloud Run GPU` / `Vertex AI (/invoke/*)`** selector in the top header bar to open the solid opaque Backend Target panel.
 2. Choose **Vertex First · Cloud Run Failover (Recommended)**, **Cloud Run GPU (Strict)**, or **Vertex AI Strict (`/invoke/*`)**.
-3. The panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated` · `4217256562927861760`)** with 1-click **Provision Vertex GPU (1× L4)** and **Teardown Replica ($0/hr)** buttons.
+3. The panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated-g4` · `4423577720856772608`)** with 1-click **Provision Vertex GPU (1× L4)** and **Teardown Replica ($0/hr)** buttons.
 
 ### B. Via HTTP API (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`, `/v1/raw/chat/completions`)
 Pass `X-DGem-Backend: vertex_first | vertex | cloudrun` (or query parameter `?backend=vertex` or JSON body field `"backend": "vertex"`) on any gateway route. Every response includes `X-DGem-Backend-Used: vertex | cloudrun`:
@@ -148,16 +178,16 @@ All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`*
 ```
 
 ### D. Via `dgem` CLI (`--vertex-url`)
-Pass `--vertex-url 4217256562927861760` on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
+Pass `--vertex-url 4423577720856772608` (the default; use `4217256562927861760` for the legacy L4) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
 
 ```bash
-# Single decision against Vertex AI Dedicated Endpoint 4217256562927861760:
-./bin/dgem decide --vertex-url 4217256562927861760 --gcp-auth \
+# Single decision against the default Vertex AI Dedicated Endpoint (G4, 4423577720856772608):
+./bin/dgem decide --vertex-url 4423577720856772608 --gcp-auth \
   -t templates/support_triage.json.tmpl \
   -v ticket="I was charged twice for my Pro subscription." -s
 
 # Full 30-case benchmark suite against Vertex AI Dedicated Endpoint:
-./bin/dgem bench --vertex-url 4217256562927861760 --gcp-auth \
+./bin/dgem bench --vertex-url 4423577720856772608 --gcp-auth \
   -d benchmarks/eval_dataset.jsonl \
   -o benchmarks/results_vertex_l4_invoke.json
 ```
@@ -167,7 +197,8 @@ Pass `--vertex-url 4217256562927861760` on any `dgem` CLI command (`decide`, `be
 ## 4. Deploying & Tearing Down a Vertex AI Dedicated Endpoint
 
 ```bash
-# 1. Upload dgemma with invokeRoutePrefix="/*" and deploy to a Dedicated Endpoint (g2-standard-16 + 1x L4)
+# 1. Upload dgemma with invokeRoutePrefix="/*" and deploy to a Dedicated Endpoint
+#    (VERTEX_PROFILE=g4-rtxpro6000 for G4 + RTX PRO 6000; default profile l4 = g2-standard-16 + 1x L4)
 make vertex-deploy
 
 # 2. Undeploy replicas when zero-idle-cost ($0.00/hr) is desired

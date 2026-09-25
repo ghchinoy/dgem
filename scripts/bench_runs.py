@@ -184,6 +184,8 @@ def cmd_compare(args):
         for r in m["receipts"]:
             if args.suite and r["suite"] != args.suite:
                 continue
+            if "summary" not in r:  # non-dgem-bench receipts (e.g. serving_speed.py); see the run README
+                continue
             rows.append((run_id, r))
     print(f"| run | suite | config | n | correct | acc | Brier (T=1) | ECE-10 (T=1) | >0.9 conf correct | mean Mirror TVD |")
     print("| :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")

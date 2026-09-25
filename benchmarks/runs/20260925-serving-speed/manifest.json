@@ -1,0 +1,12 @@
+{
+  "run_id": "20260925-serving-speed",
+  "created": "2026-09-25T22:10:00+00:00",
+  "git_commit": "cfebe62445dcf46241325990f113f698f32718bf",
+  "notes": "Serving speed review: Vertex L4 vs Vertex G4 (RTX PRO 6000, image dgemma:ab208dd) vs Cloud Run RTX PRO 6000. Produced by scripts/serving_speed.py (not dgem bench), so receipts use the serving_speed format; see README.md.",
+  "receipts": [
+    {"suite": "serving-modes", "config": "l4+cloudrun", "path": "modes_l4_cloudrun.json"},
+    {"suite": "serving-modes", "config": "g4", "path": "modes_g4.json"},
+    {"suite": "serving-modes", "config": "cloudrun-image", "path": "modes_cloudrun_image.json"},
+    {"suite": "serving-sweep", "config": "g4+cloudrun+l4", "path": "sweep.json"}
+  ]
+}

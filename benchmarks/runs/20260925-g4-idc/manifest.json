@@ -1,0 +1,177 @@
+{
+  "run_id": "20260925-g4-idc",
+  "created": "2026-09-25T22:26:50+00:00",
+  "git_commit": "cfebe62445dcf46241325990f113f698f32718bf",
+  "git_dirty_paths": [],
+  "notes": "IDC re-run on Vertex G4 (4423577720856772608, g4-standard-48 + RTX PRO 6000, image dgemma:ab208dd) with the fixed mirror slot suffix __rev. Same session for all configs.",
+  "receipts": [
+    {
+      "suite": "jevbench",
+      "config": "baseline",
+      "path": "jevbench__baseline.json",
+      "sha256": "0b7c9fa345d4df8d61dee9525cd08ca2b6c8611b34f077b2f94ee7585d804e2f",
+      "recorded": "2026-09-25T22:26:57+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/jevbench__baseline.json",
+      "summary": {
+        "timestamp": "2026-09-25T22:26:57Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 1,
+        "correct": 187,
+        "accuracy": 0.8095238095238095,
+        "brier_t1": 0.2857984466227657,
+        "ece10_t1": 0.09652133595933332,
+        "hi_conf": "146/157",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "baseline",
+      "path": "calibration__baseline.json",
+      "sha256": "20410b6b856fd9d7da9a2e5115ffc5117d2c408e244f6f4780f4ce466b379521",
+      "recorded": "2026-09-25T22:26:59+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/calibration__baseline.json",
+      "summary": {
+        "timestamp": "2026-09-25T22:26:59Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.175660910810168,
+        "ece10_t1": 0.034111527518985725,
+        "hi_conf": "34/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "null_prior",
+      "path": "jevbench__null_prior.json",
+      "sha256": "cecffb87c25bcc14091a989a04ad7191123c5b055b906b12b26c70b490e4d88d",
+      "recorded": "2026-09-25T22:27:03+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/jevbench__null_prior.json --null-prior-debias",
+      "summary": {
+        "timestamp": "2026-09-25T22:27:03Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "null_prior(alpha=0.50)",
+        "n": 231,
+        "errors": 0,
+        "correct": 183,
+        "accuracy": 0.7922077922077922,
+        "brier_t1": 0.30407773704030877,
+        "ece10_t1": 0.10391517948906219,
+        "hi_conf": "149/166",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "null_prior",
+      "path": "calibration__null_prior.json",
+      "sha256": "89030eca171943f34a6ce6885355b9d522cb4086f5f23ab3a88361d6cb486972",
+      "recorded": "2026-09-25T22:27:06+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/calibration__null_prior.json --null-prior-debias",
+      "summary": {
+        "timestamp": "2026-09-25T22:27:06Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "null_prior(alpha=0.50)",
+        "n": 50,
+        "errors": 0,
+        "correct": 46,
+        "accuracy": 0.92,
+        "brier_t1": 0.14844177782935145,
+        "ece10_t1": 0.0374622996502234,
+        "hi_conf": "34/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "dual_mirror",
+      "path": "jevbench__dual_mirror.json",
+      "sha256": "cdbc9a25c9692f11c9e96abbcc2625968e2a022ed971b383c98593a6de9ac9da",
+      "recorded": "2026-09-25T22:27:13+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/jevbench__dual_mirror.json --dual-mirror",
+      "summary": {
+        "timestamp": "2026-09-25T22:27:13Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror",
+        "n": 231,
+        "errors": 1,
+        "correct": 156,
+        "accuracy": 0.6753246753246753,
+        "brier_t1": 0.34883135834389806,
+        "ece10_t1": 0.08299033925565073,
+        "hi_conf": "78/81",
+        "mean_mirror_tvd": 0.2231133631804061
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "dual_mirror",
+      "path": "calibration__dual_mirror.json",
+      "sha256": "9b562ffc2e225b00710776dc7526679e49648d710f2278518434658635745a0d",
+      "recorded": "2026-09-25T22:27:15+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/calibration__dual_mirror.json --dual-mirror",
+      "summary": {
+        "timestamp": "2026-09-25T22:27:15Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror",
+        "n": 50,
+        "errors": 0,
+        "correct": 46,
+        "accuracy": 0.92,
+        "brier_t1": 0.19733423668281783,
+        "ece10_t1": 0.13570273473906996,
+        "hi_conf": "30/32",
+        "mean_mirror_tvd": 0.13259858288174659
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "null_prior_dual_mirror",
+      "path": "jevbench__null_prior_dual_mirror.json",
+      "sha256": "8a884d32ee534ccbbcccc1b75f1a00bb6654633c34ddefbf4d3726a7eca68755",
+      "recorded": "2026-09-25T22:27:20+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/jevbench__null_prior_dual_mirror.json --null-prior-debias --dual-mirror",
+      "summary": {
+        "timestamp": "2026-09-25T22:27:20Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "null_prior(alpha=0.50)+dual_mirror",
+        "n": 231,
+        "errors": 1,
+        "correct": 155,
+        "accuracy": 0.670995670995671,
+        "brier_t1": 0.3527501885497374,
+        "ece10_t1": 0.12628860942698544,
+        "hi_conf": "74/79",
+        "mean_mirror_tvd": 0.2895396778803942
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "null_prior_dual_mirror",
+      "path": "calibration__null_prior_dual_mirror.json",
+      "sha256": "1578c668bd538a75d699b08d1a94d40a8e694548db8514556a4918357cbeb6a2",
+      "recorded": "2026-09-25T22:27:22+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 8 -o /workspace/dgem/benchmarks/runs/20260925-g4-idc/calibration__null_prior_dual_mirror.json --null-prior-debias --dual-mirror",
+      "summary": {
+        "timestamp": "2026-09-25T22:27:22Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "null_prior(alpha=0.50)+dual_mirror",
+        "n": 50,
+        "errors": 0,
+        "correct": 46,
+        "accuracy": 0.92,
+        "brier_t1": 0.18848493476314446,
+        "ece10_t1": 0.1142769279347998,
+        "hi_conf": "28/29",
+        "mean_mirror_tvd": 0.19010210480539155
+      }
+    }
+  ]
+}

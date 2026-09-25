@@ -1,0 +1,384 @@
+{
+ "kind": "modes",
+ "timestamp": "2026-09-25T22:17:53Z",
+ "n": 50,
+ "targets": {
+  "cloudrun": {
+   "url": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1/chat/completions",
+   "modes": {
+    "1G_image_s1": {
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 186.6,
+       "p50": 185.6,
+       "p95": 193.1,
+       "p99": 236.0
+      },
+      "denoise_ms": {
+       "mean": 78.7,
+       "p50": 78.8,
+       "p95": 82.6,
+       "p99": 84.0
+      }
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.6027920022898,
+       "denoise_ms": 76.45487785339355,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.74387600185582,
+       "denoise_ms": 81.76422119140625,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.84833300093305,
+       "denoise_ms": 78.60660552978516,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.0849170027068,
+       "denoise_ms": 75.9890079498291,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.70145800022874,
+       "denoise_ms": 75.70338249206543,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 269.18270900205243,
+       "denoise_ms": 80.31868934631348,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.03341700084275,
+       "denoise_ms": 80.4281234741211,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.2572500006645,
+       "denoise_ms": 76.83610916137695,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.60049999924377,
+       "denoise_ms": 76.6303539276123,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.28220899982261,
+       "denoise_ms": 76.00712776184082,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.49145900033182,
+       "denoise_ms": 75.01626014709473,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.8734580014716,
+       "denoise_ms": 76.07626914978027,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.03449999904842,
+       "denoise_ms": 82.41510391235352,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.98866699862992,
+       "denoise_ms": 79.61773872375488,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.13979199997266,
+       "denoise_ms": 82.37385749816895,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.69912499960628,
+       "denoise_ms": 82.7944278717041,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.09887499932665,
+       "denoise_ms": 79.47921752929688,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.27579199912725,
+       "denoise_ms": 78.80687713623047,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.2445830013021,
+       "denoise_ms": 77.38709449768066,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.95075000121142,
+       "denoise_ms": 76.34162902832031,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.91954200121108,
+       "denoise_ms": 77.26025581359863,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.14016700000502,
+       "denoise_ms": 79.4227123260498,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.2869579991675,
+       "denoise_ms": 77.17561721801758,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.0278749995341,
+       "denoise_ms": 78.33218574523926,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.70145800124737,
+       "denoise_ms": 75.92248916625977,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.10016700040433,
+       "denoise_ms": 78.76372337341309,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.68024999997579,
+       "denoise_ms": 79.02741432189941,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.24329199822387,
+       "denoise_ms": 77.58450508117676,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.9872089989949,
+       "denoise_ms": 76.24411582946777,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.43741699997918,
+       "denoise_ms": 79.05912399291992,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.03637500017066,
+       "denoise_ms": 75.83260536193848,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.69745800070814,
+       "denoise_ms": 78.40681076049805,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.8463750005467,
+       "denoise_ms": 80.08742332458496,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.45641700236592,
+       "denoise_ms": 80.0328254699707,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.25037500128383,
+       "denoise_ms": 79.88762855529785,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 201.4191669986758,
+       "denoise_ms": 79.31709289550781,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.19399999806774,
+       "denoise_ms": 79.55551147460938,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.7089170011459,
+       "denoise_ms": 78.48739624023438,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 180.8551260000968,
+       "denoise_ms": 78.86314392089844,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.742541998683,
+       "denoise_ms": 80.40904998779297,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.2760419998085,
+       "denoise_ms": 76.42722129821777,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.33304199870327,
+       "denoise_ms": 85.18314361572266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.9187089978368,
+       "denoise_ms": 81.00605010986328,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.9199160001881,
+       "denoise_ms": 82.82351493835449,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.64658299874282,
+       "denoise_ms": 79.65707778930664,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.40075000177603,
+       "denoise_ms": 79.83970642089844,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.75704199893516,
+       "denoise_ms": 76.4169692993164,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.3356249994249,
+       "denoise_ms": 78.50933074951172,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.52795800051535,
+       "denoise_ms": 80.24454116821289,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.10466699727112,
+       "denoise_ms": 78.55415344238281,
+       "reads": 1
+      }
+     ]
+    }
+   }
+  }
+ }
+}
