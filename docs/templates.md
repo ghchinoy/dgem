@@ -39,6 +39,14 @@ Because DiffusionGemma evaluates all questions on a bidirectional `[MASK]` canva
 2. **`"type": "choice"` (Mutually Exclusive Label, `2..26` Options)**: Maps each option to a single uppercase ASCII letter (`A`–`Z`). Adding a `"description"` field to each option teaches `dgemma` your exact domain rubric zero-shot without fine-tuning.
 3. **`"type": "score"` (Ordered Scale Levels)**: Maps ordered levels (e.g., `["minimal", "moderate", "elevated", "severe"]`) and computes the continuous probability-weighted expectation $\mathbb{E}[\text{score}] = \sum_k k \cdot P(\text{level}_k)$.
 
+### Naming questions (slot ids)
+
+Question ids are written into the prompt, so the model reads them. In `EXP-16`, a single question's id made no
+measurable difference, but naming a second question `…__mirror_rev` cost 19 of 231 JevBench items even though its
+options were identical. In multi-question schemas, use neutral ids that describe what is asked (`team`, `urgent`,
+`severity`, `decision_b`). Avoid ids that hint the answer should differ or be inverted (`mirror`, `reverse`,
+`opposite`, `alt`, `check_again`).
+
 ### 3-Step Workflow to Create & Validate a New Template
 
 1. **Always pipe input variables through `| toJson`**: Write `"clause": {{ default "" .clause | toJson }}` inside `"state"` so quotes, newlines, and special characters in user text are automatically JSON-escaped.

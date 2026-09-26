@@ -1,0 +1,46 @@
+{
+  "baselines": [
+    183,
+    189,
+    189
+  ],
+  "conditions": {
+    "id_q1": {
+      "correct": 184,
+      "agree_majority": 214
+    },
+    "id_random": {
+      "correct": 183,
+      "agree_majority": 212
+    },
+    "id_mirror": {
+      "correct": 183,
+      "agree_majority": 209
+    },
+    "id_check": {
+      "correct": 185,
+      "agree_majority": 214
+    },
+    "two_copy_rev": {
+      "correct": 181,
+      "agree_majority": 210,
+      "forward_correct": 181,
+      "second_slot_correct": 185,
+      "forward_agree_majority": 210
+    },
+    "two_copy_mirror_rev": {
+      "correct": 162,
+      "agree_majority": 186,
+      "forward_correct": 163,
+      "second_slot_correct": 135,
+      "forward_agree_majority": 187
+    },
+    "two_copy_b": {
+      "correct": 180,
+      "agree_majority": 213,
+      "forward_correct": 180,
+      "second_slot_correct": 177,
+      "forward_agree_majority": 213
+    }
+  }
+}

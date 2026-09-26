@@ -21,6 +21,7 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 | `20260925-g4-idc` | IDC configurations re-run on Vertex G4 with the `__rev` mirror suffix (replicates EXP-14). |
 | `20260925-vertex-idc` | Same-session IDC re-run on the Vertex endpoint (calibration suite ×7 configs incl. 3 baselines, EXP-13 permutation suite, JevBench ×4 configs, Gemini Stage-2 for every item). Dual-mirror receipts here use the old `__mirror_rev` slot id. |
 | `20260925-parity-g4-vs-cloudrun` | Parity probe: Vertex G4 vs Cloud Run (same image, RTX PRO 6000), JevBench ×3 and 50-item suite ×2. Vertex ≥ Cloud Run; JevBench noise ±3 items. |
+| `20260926-prop16-slot-names` | PROP-16 / EXP-16: slot-id variants (single and two-slot copy) on JevBench, Vertex G4. |
 | `20260925-prop11-letter-collision` | PROP-11 / EXP-15: 3 baselines + 4 `--mirror-mode` conditions on JevBench, Vertex G4. |
 | `20260925-vertex-idc-mirrorfix` | Same session, after renaming the mirror slot to `__rev` (commit `2f731b0`), with fresh baselines. |
 

@@ -244,7 +244,7 @@ export default defineConfig({
         {
           label: 'Experiments & Research Log',
           items: [
-            { label: 'Experiment Ledger (EXP-01 – EXP-15)', slug: 'experiments' },
+            { label: 'Experiment Ledger (EXP-01 – EXP-16)', slug: 'experiments' },
             { label: 'Proposed Experiments Register', slug: 'experiments/proposed' },
             { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
             { label: 'Listwise Diffusion Reranking (EXP-10)', slug: 'experiments/exp-10-listwise-diffusion-reranking' },
@@ -253,6 +253,7 @@ export default defineConfig({
             { label: 'Permutation & Dual-Mirror Canvas (EXP-13)', slug: 'experiments/exp-13-permutation-invariance' },
             { label: 'Same-Session IDC Re-run (EXP-14)', slug: 'experiments/exp-14-idc-rerun' },
             { label: 'Letter Collision in the Mirror (EXP-15)', slug: 'experiments/exp-15-letter-collision' },
+            { label: 'Slot Names Are Part of the Prompt (EXP-16)', slug: 'experiments/exp-16-slot-names' },
           ],
         },
         {

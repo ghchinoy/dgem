@@ -1,0 +1,369 @@
+{
+  "run_id": "20260926-prop16-slot-names",
+  "created": "2026-09-26T00:10:11+00:00",
+  "git_commit": "58cae3a20639fabc017473bda9bb21b3596b336c",
+  "git_dirty_paths": [],
+  "notes": "PROP-16 slot names (EXP-16). JevBench 231 on Vertex G4, one session. Single-slot ids interleaved with baselines; two-slot copy mode with three suffixes. Code: commit 58cae3a.",
+  "receipts": [
+    {
+      "suite": "jevbench",
+      "config": "baseline_b1",
+      "path": "jevbench__baseline_b1.json",
+      "sha256": "e0cbc96d513435091c9ba4c1fa53422bfc5fe47642c1015c1cc6cea735c7fc68",
+      "recorded": "2026-09-26T00:10:19+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b1.json",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:10:19Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 183,
+        "accuracy": 0.7922077922077922,
+        "brier_t1": 0.27964673701944665,
+        "ece10_t1": 0.09616735097220624,
+        "hi_conf": "151/162",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "id_q1",
+      "path": "jevbench__id_q1.json",
+      "sha256": "c9c4ec439ba567aec50c931322e51cc6133d31450c275f11d2a219986473568a",
+      "recorded": "2026-09-26T00:10:31+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_q1.json --slot-id q1",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:10:31Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none; slot_id=q1",
+        "n": 231,
+        "errors": 0,
+        "correct": 184,
+        "accuracy": 0.7965367965367965,
+        "brier_t1": 0.29889681314837974,
+        "ece10_t1": 0.12486836202014316,
+        "hi_conf": "160/177",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "id_random",
+      "path": "jevbench__id_random.json",
+      "sha256": "74ab8a96e6c69134ea1902f0b5f9e42417215876433cadf8e3d6e2541ea3e17a",
+      "recorded": "2026-09-26T00:10:43+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_random.json --slot-id x7k2q",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:10:43Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none; slot_id=x7k2q",
+        "n": 231,
+        "errors": 1,
+        "correct": 183,
+        "accuracy": 0.7922077922077922,
+        "brier_t1": 0.2914453494810948,
+        "ece10_t1": 0.10877492465126785,
+        "hi_conf": "157/169",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "two_copy_rev",
+      "path": "jevbench__two_copy_rev.json",
+      "sha256": "b0ba20999a915da62049c470d9b1ea463754d530345b8c8ac8b049a222a7cc31",
+      "recorded": "2026-09-26T00:10:55+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_rev.json --dual-mirror --mirror-mode copy --mirror-slot-suffix __rev",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:10:55Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror(mode=copy,suffix=__rev)",
+        "n": 231,
+        "errors": 1,
+        "correct": 181,
+        "accuracy": 0.7835497835497836,
+        "brier_t1": 0.2764396430580396,
+        "ece10_t1": 0.10016133703611295,
+        "hi_conf": "153/165",
+        "mean_mirror_tvd": 0.03927236449758946
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "baseline_b2",
+      "path": "jevbench__baseline_b2.json",
+      "sha256": "618473d77d86497c5c80f69c083013ffeb02c42c1760eb69790ee402bd19917e",
+      "recorded": "2026-09-26T00:11:07+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b2.json",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:11:07Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 189,
+        "accuracy": 0.8181818181818182,
+        "brier_t1": 0.26623826710282505,
+        "ece10_t1": 0.07340724051769064,
+        "hi_conf": "154/167",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "id_mirror",
+      "path": "jevbench__id_mirror.json",
+      "sha256": "d21302b5f59f78b8040de648a743ab52fec839695e8723bbf20bf7d589b117ba",
+      "recorded": "2026-09-26T00:11:20+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_mirror.json --slot-id mirror",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:11:20Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none; slot_id=mirror",
+        "n": 231,
+        "errors": 0,
+        "correct": 183,
+        "accuracy": 0.7922077922077922,
+        "brier_t1": 0.28014167105987425,
+        "ece10_t1": 0.10103988066660756,
+        "hi_conf": "153/162",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "id_check",
+      "path": "jevbench__id_check.json",
+      "sha256": "2f770fa501adeb900b833cbcd4a4d933e8d94cd99eec6cd089497fcdbd3b11bb",
+      "recorded": "2026-09-26T00:11:32+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_check.json --slot-id check",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:11:32Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none; slot_id=check",
+        "n": 231,
+        "errors": 0,
+        "correct": 185,
+        "accuracy": 0.8008658008658008,
+        "brier_t1": 0.294348712019333,
+        "ece10_t1": 0.08962274088166143,
+        "hi_conf": "142/154",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "two_copy_mirror_rev",
+      "path": "jevbench__two_copy_mirror_rev.json",
+      "sha256": "4d84dba980f15a5d8c957b92aa934e98c78ccca3fd69b97c20f1aef3a0cb90e2",
+      "recorded": "2026-09-26T00:11:45+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_mirror_rev.json --dual-mirror --mirror-mode copy --mirror-slot-suffix __mirror_rev",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:11:45Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror(mode=copy,suffix=__mirror_rev)",
+        "n": 231,
+        "errors": 1,
+        "correct": 162,
+        "accuracy": 0.7012987012987013,
+        "brier_t1": 0.4278653375443162,
+        "ece10_t1": 0.04740934673465799,
+        "hi_conf": "51/57",
+        "mean_mirror_tvd": 0.20225352220142578
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "two_copy_b",
+      "path": "jevbench__two_copy_b.json",
+      "sha256": "58e5c58ec66b3dfc95b1d2aee461b0faea60f04ed10e3e2bbaeaf3c8107b645d",
+      "recorded": "2026-09-26T00:11:57+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_b.json --dual-mirror --mirror-mode copy --mirror-slot-suffix _b",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:11:57Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "dual_mirror(mode=copy,suffix=_b)",
+        "n": 231,
+        "errors": 1,
+        "correct": 180,
+        "accuracy": 0.7792207792207793,
+        "brier_t1": 0.28944049195523963,
+        "ece10_t1": 0.08636109219525155,
+        "hi_conf": "124/134",
+        "mean_mirror_tvd": 0.0958616167515598
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "baseline_b3",
+      "path": "jevbench__baseline_b3.json",
+      "sha256": "83c3b6fa0837cd9708999b3464daee0239f30cd5eedfa85a626463b2a66a4194",
+      "recorded": "2026-09-26T00:12:09+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b3.json",
+      "backend_state": {
+        "endpoint": "4423577720856772608",
+        "deployed_models": [
+          {
+            "id": "5961425052208463872",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-09-26T00:12:09Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 189,
+        "accuracy": 0.8181818181818182,
+        "brier_t1": 0.2654539710141999,
+        "ece10_t1": 0.08463476694555577,
+        "hi_conf": "153/165",
+        "mean_mirror_tvd": null
+      }
+    }
+  ]
+}

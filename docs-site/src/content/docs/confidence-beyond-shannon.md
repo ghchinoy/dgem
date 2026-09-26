@@ -198,6 +198,8 @@ A single session against the Vertex AI endpoint, with interleaved baselines and 
 
 **Follow-up ([EXP-15](/dgem/experiments/exp-15-letter-collision/)):** the mirror's damage is caused by **letter collision**. The server labels every choice A, B, C…, so in a reversed slot the same letter means a different option, and the model copies letters across slots. An identical copy (184) and a reversed slot labelled with digits (`--mirror-mode reversed-digits`, 182) stayed within the baseline noise band (182–189), while the lettered reversed slot fell to 154. On that run, the digit mirror's disagreement added little error detection beyond hesitation (AUROC 0.852 → 0.854).
 
+**Follow-up ([EXP-16](/dgem/experiments/exp-16-slot-names/)):** the second slot's *name* matters too. With identical options (no letter collision), naming it `__mirror_rev` cost 19 items versus `__rev`; single-slot ids made no difference. The original dual-mirror collapse had both causes.
+
 ### 6d. What is not yet measured
 
 1. **Same-canvas vs separate-pass mirror (`PROP-03`):** EXP-14 shows the extra slot interferes with the forward reading; a two-pass mirror is the obvious comparison.
