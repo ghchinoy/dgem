@@ -51,6 +51,7 @@ var (
 	jevMultiSlotEvidence bool
 	jevNullPriorDebias   bool
 	jevDualMirror        bool
+	jevSlotID            string
 	jevPriorAlpha        float64
 	jevOutput            string
 	jevJSON              bool
@@ -113,6 +114,7 @@ func init() {
 	benchJevCmd.Flags().BoolVar(&jevFlipOptions, "flip-options", false, "Reverse option order to test Option-Order Permutation Invariance")
 	benchJevCmd.Flags().BoolVar(&jevMultiSlotEvidence, "multi-slot-evidence", false, "Co-allocate a companion 'evidence_focus' slot on the diffusion canvas in the same forward pass")
 	benchJevCmd.Flags().BoolVar(&jevNullPriorDebias, "null-prior-debias", false, "IDC: divide out the content-free positional ('A') prior before scoring")
+	benchJevCmd.Flags().StringVar(&jevSlotID, "slot-id", "decision", "Question id used for the decision slot (PROP-16: slot names are visible to the model)")
 	benchJevCmd.Flags().BoolVar(&jevDualMirror, "dual-mirror", false, "IDC: add a reversed-order mirror slot on the same canvas and record Mirror TVD")
 	benchJevCmd.Flags().Float64Var(&jevPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for null-prior de-biasing")
 	benchJevCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
@@ -365,6 +367,9 @@ func runBenchJev(cmd *cobra.Command, args []string) error {
 	}
 	report := buildJevReport(results, "live-evaluation", c.BaseURL, viper.GetString("model"), lock.CommitSHA, activeTemp, jevMultiSlotEvidence, jevFlipOptions)
 	report.IDCConfig = idcConfigLabel(jevNullPriorDebias, jevDualMirror, jevPriorAlpha)
+	if jevSlotID != "decision" {
+		report.IDCConfig += "; slot_id=" + jevSlotID
+	}
 	if permutation.DualMirrorLetterCollisionSeen() {
 		report.IDCWarning = permutation.DualMirrorLetterWarning
 	}
@@ -984,6 +989,7 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 		"Samples":             samplesExpr,
 		"ThinkTokens":         0,
 		"IncludeEvidenceSlot": includeEvidence,
+		"SlotID":              jevSlotID,
 		"QuestionType":        qType,
 		"QuestionPrompt":      qPrompt,
 		"Options":             opts,
@@ -1032,7 +1038,7 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 
 	if jevDualMirror || jevNullPriorDebias {
 		details := permutation.PostProcessDecisionResponseDetailed(resp, slotOpts, jevDualMirror, jevNullPriorDebias, jevPriorAlpha)
-		if d, ok := details["decision"]; ok {
+		if d, ok := details[jevSlotID]; ok {
 			dd := d
 			res.IDC = &dd
 		}
@@ -1041,7 +1047,7 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 	if evAns, ok := resp.Answers["evidence_focus"]; ok {
 		res.EvidenceFocus = firstNonEmpty(evAns.Choice, evAns.Label)
 	}
-	qa, ok := resp.Answers["decision"]
+	qa, ok := resp.Answers[jevSlotID]
 	if !ok {
 		res.Error = "missing decision slot in response"
 		return res

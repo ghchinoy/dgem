@@ -217,6 +217,7 @@ The [Experiment Ledger](/dgem/experiments/) records experiments we have **run**.
 * **Design:** Single-slot and two-slot schemas with ids: `decision`, `q1`, random strings, and loaded words (e.g. "mirror", "check").
 * **Decision:** If the effect exceeds 2 items on JevBench, add a template style rule for slot ids.
 * **Cost:** about 1,200 requests.
+* **Pre-registered design (2026-09-26, before data):** JevBench 231, Vertex G4, one session. Single slot: 3 baselines with id `decision` (noise band = min–max), then ids `q1`, `x7k2q` (random), `mirror`, `check`. Two slots (`--dual-mirror --mirror-mode copy`, so no letter collision): suffixes `__rev`, `__mirror_rev`, `_b`. An id "matters" if its correct count is more than 3 items outside the baseline band, or (two-slot) more than 3 items away from `copy`+`__rev`. Secondary: per-item agreement with the baseline majority answer. About 2,300 requests (revised up from 1,200).
 
 ---
 

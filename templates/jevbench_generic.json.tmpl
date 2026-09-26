@@ -17,7 +17,7 @@
     },
     {{- end }}
     {
-      "id": "decision",
+      "id": {{ printf "%q" (or .SlotID "decision") }},
       "type": {{ printf "%q" .QuestionType }},
       "instructions": {{ printf "%q" .QuestionPrompt }}
       {{- if .Options }},
