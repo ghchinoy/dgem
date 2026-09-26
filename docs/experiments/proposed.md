@@ -175,6 +175,7 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 * **Metrics:** forward-slot accuracy vs. (a); same-letter rate; how often the forward answer changes vs. (a); breakdown by question type and number of options.
 * **Decision (pre-registered):** H11 is supported if (b) and (d′) are within ±2 items of (a) while (c) stays more than 3 items below (a). If (b) is also degraded, a second slot hurts by itself and the same-canvas mirror should be dropped in favour of `PROP-12`.
 * **Cost:** about 1,200 requests. Client-only (`--mirror-mode`).
+* **Amendment (2026-09-25, before any PROP-11 data):** the parity probe measured a JevBench noise floor of about ±3 items (baselines 187–192), so the ±2 band would fail on noise alone. Revised rule: run at least 3 baselines in the session; "within noise" means inside their min–max range; "degraded" means more than 3 items below the range minimum. Added a per-item test that is insensitive to run-to-run drift: among items where the two slots pick the same *letter* for different options, the forward answer should change (vs. the baseline majority answer) significantly more often than on other items, and this gap should vanish in `copy` and `reversed-digits`. Questions with more than 9 options fall back to letters in `reversed-digits` (0 such items in JevBench).
 
 ### `PROP-12`: Separate-pass mirror
 

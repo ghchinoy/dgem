@@ -2,6 +2,7 @@ package permutation
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -25,5 +26,42 @@ func TestDualMirrorWarning(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "EXP-14") {
 		t.Fatalf("warning not written: %q", buf.String())
+	}
+}
+
+func TestMirrorModes(t *testing.T) {
+	WarnWriter = &bytes.Buffer{}
+	defer func() { MirrorMode = "reversed" }()
+	schema := `{"questions":[{"id":"q","type":"choice","instructions":"x","options":[{"name":"a","description":"A"},{"name":"b","description":"B"},{"name":"c","description":"C"}]}]}`
+	for _, mode := range []string{"reversed", "copy", "reversed-digits", "reversed-first"} {
+		MirrorMode = mode
+		out, _, ok := InjectDualMirrorSchema(schema)
+		if !ok {
+			t.Fatalf("%s: not injected", mode)
+		}
+		var m map[string]any
+		_ = json.Unmarshal([]byte(out), &m)
+		qs := m["questions"].([]any)
+		first := qs[0].(map[string]any)["id"].(string)
+		second := qs[1].(map[string]any)
+		switch mode {
+		case "reversed-first":
+			if first != "q__rev" {
+				t.Fatalf("reversed-first: first slot %s", first)
+			}
+		case "reversed-digits":
+			if second["type"] != "score" {
+				t.Fatalf("digits: type %v", second["type"])
+			}
+			lv := second["levels"].([]any)
+			if lv[0].(string) != "c: C" {
+				t.Fatalf("digits: first level %v", lv[0])
+			}
+		case "copy":
+			opts := second["options"].([]any)
+			if opts[0].(map[string]any)["name"] != "a" {
+				t.Fatalf("copy: order %v", opts[0])
+			}
+		}
 	}
 }

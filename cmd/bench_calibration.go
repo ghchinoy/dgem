@@ -115,6 +115,7 @@ func init() {
 	benchCalibrationCmd.Flags().Float64Var(&calPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
 	benchCalibrationCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
 	benchCalibrationCmd.Flags().StringVar(&permutation.MirrorSlotSuffix, "mirror-slot-suffix", "__rev", "Dual-mirror: suffix for the reversed slot id (legacy runs used __mirror_rev)")
+	benchCalibrationCmd.Flags().StringVar(&permutation.MirrorMode, "mirror-mode", "reversed", "Dual-mirror second slot: reversed | copy | reversed-digits | reversed-first (PROP-11)")
 
 	RootCmd.AddCommand(benchCalibrationCmd)
 }
@@ -1511,7 +1512,7 @@ func idcConfigLabel(nullPrior, dualMirror bool, alpha float64) string {
 		parts = append(parts, fmt.Sprintf("null_prior(alpha=%.2f)", alpha))
 	}
 	if dualMirror {
-		parts = append(parts, "dual_mirror")
+		parts = append(parts, "dual_mirror(mode="+permutation.MirrorMode+",suffix="+permutation.MirrorSlotSuffix+")")
 	}
 	if len(parts) == 0 {
 		return "none"

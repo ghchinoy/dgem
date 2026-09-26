@@ -921,6 +921,53 @@ var MirrorAliasNames = true
 // receipts can be reproduced with --mirror-slot-suffix=__mirror_rev.
 var MirrorSlotSuffix = "__rev"
 
+// MirrorMode selects how the second slot is built (PROP-11):
+//
+//	reversed        reversed options, lettered choice (historical default; letters collide)
+//	copy            identical copy of the question in the same order (letters mean the same options)
+//	reversed-digits reversed options sent as a score question, so the server labels them 1, 2, 3...
+//	reversed-first  reversed lettered choice placed before the forward question
+var MirrorMode = "reversed"
+
+// mirrorSlotSpec returns the mirror slot's options (in presentation order), the answer keys the server
+// will report for each, and the slot type.
+func mirrorSlotSpec(opts []OptionItem) ([]OptionItem, []string, string) {
+	ordered := ReverseOptions(opts)
+	if MirrorMode == "copy" {
+		ordered = append([]OptionItem(nil), opts...)
+	}
+	keys := make([]string, len(ordered))
+	if MirrorMode == "reversed-digits" && len(ordered) <= 9 {
+		for i, o := range ordered {
+			if o.Description != "" && o.Description != o.Name {
+				keys[i] = o.Name + ": " + o.Description
+			} else {
+				keys[i] = o.Name
+			}
+		}
+		return ordered, keys, "score"
+	}
+	for i, o := range ordered {
+		if MirrorMode == "copy" || !MirrorAliasNames {
+			keys[i] = o.Name
+		} else {
+			keys[i] = fmt.Sprintf("item_%d", i+1)
+		}
+	}
+	return ordered, keys, "choice"
+}
+
+func mirrorDescription(o OptionItem, key string) string {
+	desc := o.Description
+	if desc == "" {
+		return o.Name
+	}
+	if key != o.Name && len(o.Name) > 1 && !strings.HasPrefix(strings.ToLower(o.Name), "opt_") {
+		return o.Name + ": " + desc
+	}
+	return desc
+}
+
 // DualMirrorLetterWarning is the message emitted when --dual-mirror mirrors a lettered choice question.
 const DualMirrorLetterWarning = "--dual-mirror on lettered choice questions: the forward and reversed slots share letters (A, B, C...) " +
 	"that mean different options, and the model can copy the letter across slots, changing the forward answer (EXP-14). " +
@@ -973,38 +1020,30 @@ func InjectDualMirrorSchema(schemaJSON string) (string, map[string][]OptionItem,
 			continue
 		}
 		if qType == "boolean" || qType == "choice" {
-			revOpts := ReverseOptions(opts)
-			revObjs := make([]map[string]string, len(revOpts))
-			for i, ro := range revOpts {
-				aliasName := fmt.Sprintf("item_%d", i+1)
-				desc := ro.Description
-				if !MirrorAliasNames {
-					aliasName = ro.Name
-					if desc == "" {
-						desc = ro.Name
-					}
-				} else if desc == "" {
-					desc = ro.Name
-				} else if len(ro.Name) > 1 && !strings.HasPrefix(strings.ToLower(ro.Name), "opt_") {
-					desc = ro.Name + ": " + desc
-				}
-				m := map[string]string{
-					"name":        aliasName,
-					"description": desc,
-				}
-				revObjs[i] = m
-			}
+			mOpts, mKeys, mType := mirrorSlotSpec(opts)
 			instr, _ := qMap["instructions"].(string)
 			mirrorQ := map[string]any{
 				"id":           qID + MirrorSlotSuffix,
-				"type":         "choice",
+				"type":         mType,
 				"instructions": instr,
-				"options":      revObjs,
 			}
-			newQuestions = append(newQuestions, mirrorQ)
+			if mType == "score" {
+				mirrorQ["levels"] = mKeys
+			} else {
+				objs := make([]map[string]string, len(mOpts))
+				for i, mo := range mOpts {
+					objs[i] = map[string]string{"name": mKeys[i], "description": mirrorDescription(mo, mKeys[i])}
+				}
+				mirrorQ["options"] = objs
+			}
+			if MirrorMode == "reversed-first" {
+				newQuestions = append(newQuestions[:len(newQuestions)-1], mirrorQ, item)
+			} else {
+				newQuestions = append(newQuestions, mirrorQ)
+			}
 			injected = true
-			// Boolean slots are labelled yes/no by the server, so only lettered choices can collide.
-			if qType == "choice" {
+			// Boolean slots are labelled yes/no and digit/copy modes do not reuse letters with other meanings.
+			if qType == "choice" && (MirrorMode == "reversed" || MirrorMode == "reversed-first") {
 				noteLetterCollision()
 			}
 		}
@@ -1091,13 +1130,10 @@ func PostProcessDecisionResponseDetailed(
 		revID := qID + MirrorSlotSuffix
 		if enableDualMirror {
 			if qaRev, hasRev := resp.Answers[revID]; hasRev {
-				revOpts := ReverseOptions(opts)
+				revOpts, mKeys, _ := mirrorSlotSpec(opts)
 				aliasOpts := make([]OptionItem, len(revOpts))
 				for i, ro := range revOpts {
-					aliasOpts[i] = OptionItem{Name: fmt.Sprintf("item_%d", i+1), Description: ro.Description}
-					if !MirrorAliasNames {
-						aliasOpts[i].Name = ro.Name
-					}
+					aliasOpts[i] = OptionItem{Name: mKeys[i], Description: ro.Description}
 				}
 				probsAlias := normalizeAnswerProbs(qaRev, aliasOpts)
 				probsRev := make(map[string]float64, len(revOpts))
