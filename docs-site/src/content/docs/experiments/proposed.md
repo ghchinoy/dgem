@@ -184,6 +184,7 @@ The [Experiment Ledger](/dgem/experiments/) records experiments we have **run**.
 * **Design:** JevBench and the 50-item suite: one pass in original order, one pass with options reversed. Record per-item disagreement (TVD) and argmax agreement.
 * **Metrics:** partial correlation of disagreement with errors, controlling for hesitation; AUROC for error detection of hesitation alone vs. hesitation + disagreement.
 * **Decision:** Supported if disagreement adds detection (partial correlation > 0 with a 95% bootstrap interval excluding 0). Forward accuracy equals baseline by construction; the cost is a second pass.
+* **Pre-registered design (2026-09-26, before data):** JevBench 231 only (the 50-item suite has too few errors for detection metrics, and `bench-calibration` has no option-reversal flag). Vertex G4, one session, order: forward F1, reversed R1 (`bench-jev --flip-options`), forward F2, reversed R2. Primary: partial Spearman correlation between forward/reversed TVD and forward-pass error, controlling for forward hesitation, averaged over the four F×R pairings, 95% bootstrap CI (2,000 resamples). **Noise control:** the same statistic for F1 vs F2 (two forward passes), since Vertex is not fully deterministic; order disagreement must beat it. Secondary: 5-fold CV AUROC of logistic error models (hesitation vs. hesitation + TVD), and accuracy of the averaged forward+reversed distribution vs. forward alone. About 924 requests.
 * **Cost:** about 460 requests.
 
 ### `PROP-13`: Mirror-aware cascade
