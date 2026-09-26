@@ -145,6 +145,21 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 }
 ```
 
+#### Option D: Local `stdio` Targeting Apple Silicon Metal (`--local`)
+```json
+{
+  "mcpServers": {
+    "dgem-local": {
+      "command": "/path/to/dgem/bin/dgem",
+      "args": [
+        "mcp",
+        "--local"
+      ]
+    }
+  }
+}
+```
+
 ### 3.2 Complete Catalog of MCP Tools Exposed by `dgem`
 
 | MCP Tool Name | Input Arguments | Output Payload & Purpose |

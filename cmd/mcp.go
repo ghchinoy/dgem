@@ -190,7 +190,10 @@ func inferWarmupPhaseAndLabel(elapsedSec int, ewmaSec int, phaseHint string, byt
 	return "phase_4_triton_jit", "Stage 4/4: First Decision Readout & Triton Kernel JIT"
 }
 
-var mcpRemoteURL string
+var (
+	mcpRemoteURL    string
+	mcpLocalBackend bool
+)
 
 // runRemoteMCPProxy bridges stdio JSON-RPC messages to a remote Streamable HTTP MCP endpoint
 // (such as https://<your-dgem-gateway>/mcp), automatically attaching Application Default Credentials
@@ -616,19 +619,29 @@ and Cloud Run IAP / IAM services without requiring manual tokens.
 
 Pass --remote https://<your-dgem-gateway>/mcp to bridge stdio directly to a remote dgem serve
 MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
-	Example: `  # Bridge stdio to a remote dgem serve MCP gateway using ADC automatically
-  dgem mcp --remote https://<your-dgem-gateway>/mcp
+	Example: `  # Run local stdio MCP server targeting local diffgemma (Apple Silicon Metal)
+  dgem mcp --local
 
   # Run local stdio MCP server with automatic ADC (vertex_first -> Cloud Run failover)
-  dgem mcp`,
+  dgem mcp
+
+  # Bridge stdio to a remote dgem serve MCP gateway using ADC automatically
+  dgem mcp --remote https://<your-dgem-gateway>/mcp`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defaultRetriesForLongRunning()
 		if strings.TrimSpace(mcpRemoteURL) != "" {
 			return runRemoteMCPProxy(strings.TrimSpace(mcpRemoteURL))
 		}
-		viper.Set("gcp_auth", true)
-		if viper.GetString("url") == "http://127.0.0.1:8080/v1" {
-			viper.Set("url", "https://dgemma-882920967572.us-central1.run.app/v1")
+		isLocal := mcpLocalBackend || os.Getenv("DGEM_MCP_LOCAL") == "1" || os.Getenv("DGEM_MCP_LOCAL") == "true"
+		if isLocal {
+			backendConfigMu.Lock()
+			serveDefaultBackend = "cloudrun" // in resolveBackendTargetFromParams, "cloudrun" routes directly to viper.GetString("url")
+			backendConfigMu.Unlock()
+		} else {
+			viper.Set("gcp_auth", true)
+			if viper.GetString("url") == "http://127.0.0.1:8080/v1" {
+				viper.Set("url", "https://dgemma-882920967572.us-central1.run.app/v1")
+			}
 		}
 		if _, err := os.Stat(serveTemplatesDir); err != nil {
 			if exe, exErr := os.Executable(); exErr == nil {
@@ -645,6 +658,7 @@ MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
 
 func init() {
 	mcpCmd.Flags().StringVar(&mcpRemoteURL, "remote", "", "Remote Streamable HTTP MCP endpoint URL (e.g. https://<your-dgem-gateway>/mcp) to proxy over stdio using ADC")
+	mcpCmd.Flags().BoolVar(&mcpLocalBackend, "local", false, "Route MCP tool calls directly to local diffgemma backend (-u, default http://127.0.0.1:8080/v1) without ADC or cloud fallback (env: DGEM_MCP_LOCAL)")
 	RootCmd.AddCommand(mcpCmd)
 }
 
@@ -686,31 +700,41 @@ func startGPUKeepaliveLoop() {
 				}
 			}
 
-			// On gateway startup, probe upstream Cloud Run /health once with a 3s timeout: if the GPU container
-			// is already warm ("phase":"ready" / "vllm_ready":true), sync gateway state immediately.
+			// On gateway startup, probe upstream Cloud Run /health (or local /v1/models) once with a 3s timeout:
+			// if the GPU container is already warm, sync gateway state immediately.
 			upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
 			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
 			if upstreamBase != "" {
+				isLocalTarget := strings.Contains(upstreamBase, "127.0.0.1") || strings.Contains(upstreamBase, "localhost")
 				healthURL := upstreamBase + "/health"
+				if isLocalTarget {
+					healthURL = upstreamBase + "/v1/models"
+				}
 				if req, err := http.NewRequest("GET", healthURL, nil); err == nil {
-					if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
-						if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), healthURL); tok != "" {
+					if !isLocalTarget {
+						if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
+							if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), healthURL); tok != "" {
+								req.Header.Set("Authorization", "Bearer "+tok)
+							}
+						} else if tok := viper.GetString("token"); tok != "" {
 							req.Header.Set("Authorization", "Bearer "+tok)
 						}
-					} else if tok := viper.GetString("token"); tok != "" {
-						req.Header.Set("Authorization", "Bearer "+tok)
 					}
 					hc := &http.Client{Timeout: 4 * time.Second}
 					if resp, err := hc.Do(req); err == nil {
-						var st struct {
-							Phase     string `json:"phase"`
-							VLLMReady bool   `json:"vllm_ready"`
-						}
-						_ = json.NewDecoder(resp.Body).Decode(&st)
-						resp.Body.Close()
-						if st.VLLMReady || st.Phase == "ready" {
+						if isLocalTarget && resp.StatusCode == http.StatusOK {
 							MarkGPUWarm()
+						} else {
+							var st struct {
+								Phase     string `json:"phase"`
+								VLLMReady bool   `json:"vllm_ready"`
+							}
+							_ = json.NewDecoder(resp.Body).Decode(&st)
+							if st.VLLMReady || st.Phase == "ready" {
+								MarkGPUWarm()
+							}
 						}
+						resp.Body.Close()
 					}
 				}
 			}
@@ -965,13 +989,35 @@ func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOv
 	}
 	gpuStateMu.Unlock()
 
+	upstreamURL := viper.GetString("url")
+	isLocalTarget := strings.Contains(upstreamURL, "127.0.0.1") || strings.Contains(upstreamURL, "localhost")
+	modelName := "nvidia/diffusiongemma-26B-A4B-it-NVFP4"
+	gpuTier := "1x NVIDIA RTX Pro 6000 (48GB VRAM, SigLIP Multimodal)"
+	if isLocalTarget {
+		modelName = viper.GetString("model")
+		if modelName == "" {
+			modelName = "diffgemma-26b-a4b-it-q4"
+		}
+		gpuTier = "Apple Silicon Metal (Unified Memory)"
+		if lastWarm.IsZero() {
+			healthURL := strings.TrimSuffix(upstreamURL, "/") + "/models"
+			if resp, err := http.Get(healthURL); err == nil {
+				if resp.StatusCode == http.StatusOK {
+					MarkGPUWarm()
+					lastWarm = time.Now()
+				}
+				resp.Body.Close()
+			}
+		}
+	}
+
 	out := HealthAndGPUStatusOutput{
 		GatewayHealthy:       true,
 		ActiveBackend:        "cloudrun",
 		RequestedBackend:     defB,
-		UpstreamURL:          viper.GetString("url"),
-		Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
-		GPUTier:              "1x NVIDIA RTX Pro 6000 (48GB VRAM, SigLIP Multimodal)",
+		UpstreamURL:          upstreamURL,
+		Model:                modelName,
+		GPUTier:              gpuTier,
 		TemplatesAvailable:   len(catalog),
 		AuthenticatedUser:    userEmail,
 		WarmupInProgress:     warming,
