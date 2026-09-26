@@ -1,0 +1,98 @@
+{
+  "baselines": [
+    "benchmarks/runs/20260925-prop11-letter-collision/jevbench__baseline_b1.json",
+    "benchmarks/runs/20260925-prop11-letter-collision/jevbench__baseline_b2.json",
+    "benchmarks/runs/20260925-prop11-letter-collision/jevbench__baseline_b3.json"
+  ],
+  "baseline_correct": [
+    189,
+    182,
+    186
+  ],
+  "conditions": [
+    {
+      "receipt": "benchmarks/runs/20260925-prop11-letter-collision/jevbench__mirror_reversed.json",
+      "mode": "mirror_reversed",
+      "merged_correct": 154,
+      "forward_correct": 154,
+      "band": [
+        182,
+        189
+      ],
+      "verdict": "degraded",
+      "same_position_different_option": 54,
+      "changed_same_pos": [
+        36,
+        54
+      ],
+      "changed_other": [
+        10,
+        176
+      ],
+      "fisher_p": 9.555625596738092e-20
+    },
+    {
+      "receipt": "benchmarks/runs/20260925-prop11-letter-collision/jevbench__mirror_copy.json",
+      "mode": "mirror_copy",
+      "merged_correct": 184,
+      "forward_correct": 184,
+      "band": [
+        182,
+        189
+      ],
+      "verdict": "within",
+      "same_position_different_option": 0,
+      "changed_same_pos": [
+        0,
+        0
+      ],
+      "changed_other": [
+        17,
+        230
+      ],
+      "fisher_p": null
+    },
+    {
+      "receipt": "benchmarks/runs/20260925-prop11-letter-collision/jevbench__mirror_reversed_digits.json",
+      "mode": "mirror_reversed_digits",
+      "merged_correct": 182,
+      "forward_correct": 182,
+      "band": [
+        182,
+        189
+      ],
+      "verdict": "within",
+      "same_position_different_option": 7,
+      "changed_same_pos": [
+        3,
+        7
+      ],
+      "changed_other": [
+        15,
+        223
+      ],
+      "fisher_p": 0.011644419343089322
+    },
+    {
+      "receipt": "benchmarks/runs/20260925-prop11-letter-collision/jevbench__mirror_reversed_first.json",
+      "mode": "mirror_reversed_first",
+      "merged_correct": 169,
+      "forward_correct": 168,
+      "band": [
+        182,
+        189
+      ],
+      "verdict": "degraded",
+      "same_position_different_option": 44,
+      "changed_same_pos": [
+        33,
+        44
+      ],
+      "changed_other": [
+        27,
+        186
+      ],
+      "fisher_p": 1.5081737435448866e-14
+    }
+  ]
+}

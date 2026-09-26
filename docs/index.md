@@ -35,4 +35,4 @@ See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-
 * **[The Journey to Decision Models](decision-models-primer.md)**
 * **[Confidence Beyond Shannon: Invariant Decision Calibration (`IDC`)](confidence-beyond-shannon.md)**
 * **[Benchmark Evaluation Report](benchmarks-report.md)**
-* **[Experiments & Research Ledger (`EXP-01` – `EXP-14`)](experiments/README.md)**
+* **[Experiments & Research Ledger (`EXP-01` – `EXP-15`)](experiments/README.md)**

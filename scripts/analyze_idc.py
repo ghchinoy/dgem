@@ -220,6 +220,80 @@ def cmd_merge(args):
             json.dump({"receipt": args.receipt, "stage": args.stage, "rules": out}, f, indent=2)
 
 
+def fisher_one_sided(a, b, c, d):
+    """P(X >= a) for the 2x2 table [[a,b],[c,d]] under the hypergeometric null (one-sided Fisher exact)."""
+    from math import comb
+    r1, c1, n = a + b, a + c, a + b + c + d
+    denom = comb(n, c1)
+    return sum(comb(r1, x) * comb(n - r1, c1 - x) for x in range(a, min(r1, c1) + 1)) / denom
+
+
+def cmd_collision(args):
+    """PROP-11: forward-slot accuracy and the letter-collision effect for dual-mirror receipts."""
+    tasks = {}
+    with open(args.dataset) as f:
+        for line in f:
+            t = json.loads(line)
+            tasks[t["id"]] = t
+    def load(p):
+        with open(p) as f:
+            return {c["id"]: c for c in json.load(f)["cases"]}
+    bases = [load(p) for p in args.baselines]
+    ids = list(bases[0])
+    majority = {}
+    for i in ids:
+        votes = [b[i]["actual"] for b in bases]
+        majority[i] = max(set(votes), key=votes.count)
+    base_correct = [sum(1 for i in ids if b[i]["accurate"]) for b in bases]
+    lo, hi = min(base_correct), max(base_correct)
+    print("### PROP-11 letter collision\n")
+    print(f"Baselines: {base_correct} → noise band [{lo}, {hi}] of {len(ids)}. 'Forward' = the forward slot's own raw reading "
+          "(before merging with the mirror). 'Same position' = both slots chose the option at the same list position, i.e. "
+          "the same label, which in reversed modes means different options.\n")
+    print("| condition | merged correct | forward-slot correct | vs band | same position, different option | forward changed vs baseline majority: same-position / other | one-sided Fisher p |")
+    print("| :--- | ---: | ---: | :--- | ---: | :--- | ---: |")
+    out = []
+    for p in args.receipts:
+        mode = p.split("__")[-1].replace(".json", "")
+        cs = load(p)
+        fwd_ok = merged_ok = coll = 0
+        a = b = c = d = 0
+        for i in ids:
+            x = cs[i]
+            merged_ok += 1 if x["accurate"] else 0
+            idc = x.get("idc") or {}
+            fw, rv = idc.get("raw_fwd_probs"), idc.get("raw_rev_probs")
+            if not fw or not rv:
+                continue
+            labels = tasks[i]["labels"]
+            k = len(labels)
+            fwin = max(fw, key=fw.get)
+            rwin = max(rv, key=rv.get)
+            exp = str(x["expected"])
+            fwd_ok += 1 if fwin.lower() == exp.lower() else 0
+            fi = labels.index(fwin) if fwin in labels else -1
+            ri = labels.index(rwin) if rwin in labels else -1
+            rpos = ri if "copy" in mode else k - 1 - ri  # position of the mirror's pick in the mirror's own list
+            same_pos_diff = (fi == rpos) and (fi != ri)
+            coll += same_pos_diff
+            changed = fwin != majority[i]
+            if same_pos_diff:
+                a += changed; b += not changed
+            else:
+                c += changed; d += not changed
+        band = "within" if lo <= fwd_ok <= hi else ("degraded" if fwd_ok < lo - 3 else ("below band" if fwd_ok < lo else "above band"))
+        pval = fisher_one_sided(a, b, c, d) if (a + b) and (c + d) else None
+        rate1 = f"{a}/{a+b} ({100*a/(a+b):.0f}%)" if a + b else "—"
+        rate2 = f"{c}/{c+d} ({100*c/(c+d):.0f}%)" if c + d else "—"
+        print(f"| {mode} | {merged_ok} | {fwd_ok} | {band} | {coll} | {rate1} / {rate2} | {'—' if pval is None else '%.2g' % pval} |")
+        out.append({"receipt": p, "mode": mode, "merged_correct": merged_ok, "forward_correct": fwd_ok, "band": [lo, hi],
+                    "verdict": band, "same_position_different_option": coll, "changed_same_pos": [a, a + b],
+                    "changed_other": [c, c + d], "fisher_p": pval})
+    if args.json_out:
+        with open(args.json_out, "w") as f:
+            json.dump({"baselines": args.baselines, "baseline_correct": base_correct, "conditions": out}, f, indent=2)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -240,8 +314,13 @@ def main():
     sp.add_argument("receipt")
     sp.add_argument("--stage", choices=["raw_", ""], default="raw_", help="raw_ = before null-prior; '' = after")
     sp.add_argument("--json-out")
+    sp = sub.add_parser("collision")
+    sp.add_argument("--baselines", nargs="+", required=True)
+    sp.add_argument("--dataset", default="benchmarks/jevbench/jevbench_public.jsonl")
+    sp.add_argument("--json-out")
+    sp.add_argument("receipts", nargs="+")
     args = ap.parse_args()
-    {"cv-temperature": cmd_cv, "gates": cmd_gates, "merge-rules": cmd_merge}[args.cmd](args)
+    {"collision": cmd_collision, "cv-temperature": cmd_cv, "gates": cmd_gates, "merge-rules": cmd_merge, "collision": cmd_collision}[args.cmd](args)
 
 
 if __name__ == "__main__":
