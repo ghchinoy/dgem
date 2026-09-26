@@ -26,7 +26,7 @@ performs. All numbers are measured, from one client, in one session, with 50 req
 | Stage | Platform | Use it for | Cost model | Cold start | Warm latency (1 sample, p50) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Crawl** | Apple Silicon (`diffgemma`, Metal, q4) | Offline development, writing templates, privacy | Your laptop | None (local daemon) | ~0.9 s (different engine; numbers don't transfer to GPU serving) |
-| **Walk** | Cloud Run GPU (1× RTX PRO 6000) | Batch evaluation, research, bursty internal use, failover | Pay per instance-second; **$0 when idle** | Minutes (weights staged from Cloud Storage) | 65 ms GPU / 144 ms end to end |
+| **Walk** | Cloud Run GPU (1× RTX PRO 6000) | Batch evaluation, research, bursty internal use, failover | Pay per instance-second; **$0 when idle** | ~2.5 min with Direct VPC egress ([§5](#5-cold-start-options-for-scale-to-zero-deployments)) | 65 ms GPU / 144 ms end to end |
 | **Run** | Vertex AI Dedicated Endpoint, `g4-standard-48` + 1× RTX PRO 6000 | Production: always warm, IAM, autoscaling replicas, monitoring, multimodal | Per replica-hour while deployed | **None** (min replicas ≥ 1) | **58 ms GPU / 143 ms end to end** |
 
 A thin gateway (`dgem serve`) in front of both runtime tiers routes each request to Vertex first and fails
@@ -136,6 +136,39 @@ DGEM_VERTEX_URL=<ENDPOINT_ID> ./scripts/deploy_cloudrun_gateway.sh
 **Rollback:** gateways and Cloud Run services roll back by shifting traffic to the previous revision
 (`gcloud run services update-traffic <SERVICE> --to-revisions=<PREVIOUS>=100`). For Vertex, deploy the previous
 image as a second model on the endpoint, move the traffic split to it, then undeploy the new one.
+
+## 5. Cold start: options for scale-to-zero deployments
+
+A scale-to-zero Cloud Run GPU service pays a cold start on the first request after idle. Measured on 1× RTX PRO 6000
+([deployment log](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260925-serving-speed/deployments.md)):
+
+| Configuration | Weight staging (17.53 GiB) | Container start → ready and warmed | Extra cost |
+| :--- | ---: | ---: | :--- |
+| Public egress to Cloud Storage (previous default) | 403 s (~46 MiB/s) | ~7.5 min | — |
+| **Direct VPC egress + Private Google Access (current default)** | **83 s (~410 MiB/s)** | **~2.5 min** | None |
+| Minimum 1 instance (`CLOUDRUN_MIN_INSTANCES=1`) | — | **0** (always warm) | One GPU billed continuously |
+| Vertex AI Dedicated Endpoint (min replicas ≥ 1) | — | **0** | Per replica-hour |
+
+How the current default works: the container copies the weights from Cloud Storage into memory with 64 parallel
+range requests while vLLM initialises, then loads them onto the GPU. Routing that traffic through a VPC subnet with
+Private Google Access raised throughput about 9× in our tests (4 GiB: 88 s on public egress vs 9–10 s through the VPC).
+
+```bash
+# Enable (default in scripts/deploy_cloudrun_vllm.sh); the subnet needs Private Google Access
+gcloud compute networks subnets update <SUBNET> --region=<REGION> --enable-private-ip-google-access
+gcloud run services update <SERVICE> --region=<REGION> --network=<NETWORK> --subnet=<SUBNET> --vpc-egress=all-traffic
+```
+
+Notes and trade-offs:
+- With `--vpc-egress=all-traffic` and no Cloud NAT, the service has no public internet access. The serving container
+  only needs Cloud Storage and the metadata server; add Cloud NAT if you need the internet (for example to pull
+  weights from Hugging Face).
+- What remains of the ~2.5 minutes is vLLM start-up (~75 s, overlapped with the copy), moving weights to the GPU and
+  building caches (~45 s), and the self-warmup (~20 s).
+- **Baking weights into the image** is another option we have not measured: it avoids the copy but produces a ~35 GB
+  image, slowing builds and image pulls.
+- **Use Vertex for latency-critical paths.** A gateway with `vertex_first` routing sends traffic to the always-warm
+  endpoint and uses the scale-to-zero service only for failover and batch work, so users never wait for a cold start.
 
 ## Method
 

@@ -8,9 +8,11 @@
 | 23:14–23:36 | Cloud Run `dgemma-gateway` → revision `dgemma-gateway-00046-mcq` | Image `dgemma-gateway:6857cbe` (Studio text + G4 defaults); `DGEM_VERTEX_URL=4423577720856772608` | `/api/decide` → `X-DGem-Backend-Used: vertex` (256–300 ms client wall); `X-DGem-Backend: cloudrun` override works; Studio loads; `/api/backend-config` reports G4 `deployed`, 1 replica | `gcloud run services update-traffic dgemma-gateway --to-revisions=dgemma-gateway-00045-fdz=100` |
 | 23:40–23:55 | Cloud Run `dgemma-gateway` → revision `dgemma-gateway-00047-wvm` | Image `dgemma-gateway:a081cf8` (status display name fix) | `/api/backend-config` shows `dgemma-dedicated-g4` deployed; `/api/decide` → vertex | Revision `00046-mcq` |
 | 23:37 | Vertex `4217256562927861760` (L4) | Undeployed model `9093397118067933184`; empty endpoint and uploaded models retained | 0 deployed models (no GPU billing) | `VERTEX_PROFILE=l4 ./scripts/deploy_vertex_endpoint.sh` |
+| 00:04–00:15 (09-26) | Cloud Run job `dgemma-dltest-*` (temporary, deleted) | Cloud Storage download throughput test, 4 GiB, 8 vCPU | Public egress 46–52 MiB/s; Direct VPC egress (default subnet, Private Google Access) 395–441 MiB/s | — |
+| 00:16–00:19 (09-26) | Cloud Run `dgemma` → revision `dgemma-00031-47c` | Direct VPC egress (`--network default --subnet default --vpc-egress all-traffic`) | Weight copy 403 s → **83 s**; container start → warmed **~2.5 min** (was ~7.5); text/4-sample/image decisions and gateway→cloudrun verified | Revision `00030-qkl` |
+| 00:10 (09-26) | Secret Manager `dgemma-hf-token` | Version 2 added (rotated token), version 1 disabled | Read via `:latest` on next revision/cold start (00031 uses v2) | — |
 
 Follow-ups:
-- Rotate the Hugging Face token (it was stored in plaintext before this change) and add the new value as a new
-  version of `dgemma-hf-token`.
-- The self-warmup on Cloud Run ran but did not record `warmed` in the health payload there (the health file is
-  rewritten by the tmpfs reclaim step); cosmetic, requests after warmup are fast.
+- ~~Rotate the Hugging Face token~~ done (version 2).
+- ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show
+  `"warmed": true`.

@@ -115,7 +115,7 @@ DEPLOY_FLAGS=(
   "--gpu-type" "$GPU_TYPE"
   "--no-gpu-zonal-redundancy"
   "--no-cpu-throttling"
-  "--min-instances" "0"
+  "--min-instances" "${CLOUDRUN_MIN_INSTANCES:-0}"
   "--max-instances" "1"
   "--concurrency" "32"
   "--port" "8080"
@@ -124,6 +124,16 @@ DEPLOY_FLAGS=(
   "--startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,periodSeconds=5,timeoutSeconds=4,failureThreshold=120"
   "--set-env-vars=${ENV_VARS}"
 )
+# Direct VPC egress with Private Google Access: staging 17.53 GiB of weights from Cloud Storage drops from
+# ~400 s (public egress, ~46 MiB/s) to ~83 s (~410 MiB/s), cutting cold start from ~7.5 to ~2.5 minutes.
+# Requires Private Google Access on the subnet. With all-traffic egress and no Cloud NAT the service has no
+# public internet access (it only needs Cloud Storage and the metadata server). Set CLOUDRUN_VPC_EGRESS=off to disable.
+CLOUDRUN_NETWORK="${CLOUDRUN_NETWORK:-default}"
+CLOUDRUN_SUBNET="${CLOUDRUN_SUBNET:-default}"
+CLOUDRUN_VPC_EGRESS="${CLOUDRUN_VPC_EGRESS:-all-traffic}"
+if [[ "$CLOUDRUN_VPC_EGRESS" != "off" ]]; then
+  DEPLOY_FLAGS+=("--network=${CLOUDRUN_NETWORK}" "--subnet=${CLOUDRUN_SUBNET}" "--vpc-egress=${CLOUDRUN_VPC_EGRESS}")
+fi
 if gcloud secrets describe "$HF_SECRET" --project "$PROJECT_ID" >/dev/null 2>&1; then
   DEPLOY_FLAGS+=("--set-secrets=HF_TOKEN=${HF_SECRET}:latest")
 fi
