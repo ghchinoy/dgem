@@ -1,5 +1,5 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-16)"
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-17)"
 description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, JevBench v1.3.1 Parity, Decision Index, Permutation Invariance, and Next-Horizon Cascades."
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-16`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-17`)
 
 ### Part A — Completed Empirical Studies
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-16`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-17`)
 
 Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](./exp-05-roadmap-cascades-and-dags.md)**, `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](./exp-10-listwise-diffusion-reranking.md)**, `EXP-11` is documented in **[`exp-11-jevbench-parity.md`](./exp-11-jevbench-parity.md)**, `EXP-12` is documented in **[`exp-12-decision-index.md`](./exp-12-decision-index.md)**, and `EXP-13` is documented in **[`exp-13-permutation-invariance.md`](./exp-13-permutation-invariance.md)**.
 
@@ -67,6 +67,7 @@ Detailed architectural specifications, mathematical formulations, and empirical 
 | **`EXP-14`** | **Same-Session IDC Re-run on Vertex AI (versioned runs)** | Pre-registered follow-ups `PROP-01/02/05/10` plus an EXP-13 reproduction, run in one session with versioned receipts. Findings: ±1–2 item noise floor; null-prior helps on the 50-item suite (Brier 0.147 vs 0.175–0.193) but not on JevBench (186 vs 187, Brier worse); the dual-mirror slot id `__mirror_rev` degraded readings (JevBench 187 → 145; fixed to `__rev`), and a same-canvas mirror still lowers the forward reading; held-out temperature scaling cuts ECE 24–33% on 231 JevBench items but not on 50 items; entropy cascade reaches 221/231 at 39% escalation. [Details](/dgem/experiments/exp-14-idc-rerun/) | `benchmarks/calibration_suite.jsonl`, `benchmarks/jevbench/jevbench_public.jsonl`, `benchmarks/permutation_suite.jsonl` | `scripts/run_idc_rerun.sh`<br>`scripts/analyze_idc.py`<br>`benchmarks/runs/20260925-vertex-idc*` | ✅ Completed |
 | **`EXP-15`** | **Letter Collision in the Dual-Mirror (`PROP-11`)** | Same-canvas mirror damage comes from shared letters: on JevBench (231, Vertex G4, 3 baselines 182–189), an identical copy (184) and a digit-labelled reversed slot (182) are within noise, while the letter-labelled reversed slot drops to 154; forward answers change on 67% of same-letter items vs 6% otherwise (p≈1e-19). [Details](/dgem/experiments/exp-15-letter-collision/) | `benchmarks/jevbench/jevbench_public.jsonl` | `dgem bench-jev --dual-mirror --mirror-mode`<br>`scripts/analyze_idc.py collision`<br>`benchmarks/runs/20260925-prop11-letter-collision` | ✅ Completed |
 | **`EXP-16`** | **Slot Names Are Part of the Prompt (`PROP-16`)** | Single-slot ids (`q1`, random, `mirror`, `check`) are within the baseline band (183–189) on JevBench; a loaded second-slot id (`__mirror_rev`, identical options so no letter collision) drops accuracy to 162 (second slot 135) vs 181 for `__rev`. Style rule: neutral ids in multi-question schemas. [Details](/dgem/experiments/exp-16-slot-names/) | `benchmarks/jevbench/jevbench_public.jsonl` | `dgem bench-jev --slot-id`<br>`benchmarks/runs/20260926-prop16-slot-names` | ✅ Completed |
+| **`EXP-17`** | **Separate-Pass Mirror (`PROP-12`)** | Forward vs. separately-run reversed pass on JevBench (231, Vertex G4): order disagreement relates to errors beyond hesitation (mean partial Spearman 0.133, CI [0.025, 0.240]), but two forward passes show a similar non-significant value (0.083) and CV AUROC improves by ≤ 0.016 at double the cost. [Details](/dgem/experiments/exp-17-separate-pass-mirror/) | `benchmarks/jevbench/jevbench_public.jsonl` | `dgem bench-jev --flip-options`<br>`scripts/analyze_idc.py separate-pass`<br>`benchmarks/runs/20260926-prop12-separate-pass` | ✅ Completed |
 
 ---
 

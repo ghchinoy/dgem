@@ -294,6 +294,160 @@ def cmd_collision(args):
             json.dump({"baselines": args.baselines, "baseline_correct": base_correct, "conditions": out}, f, indent=2)
 
 
+def _rank(xs):
+    order = sorted(range(len(xs)), key=lambda i: xs[i])
+    r = [0.0] * len(xs)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and xs[order[j + 1]] == xs[order[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            r[order[k]] = (i + j) / 2.0
+        i = j + 1
+    return r
+
+
+def _pearson(a, b):
+    ma, mb = sum(a) / len(a), sum(b) / len(b)
+    sa = math.sqrt(sum((x - ma) ** 2 for x in a)); sb = math.sqrt(sum((y - mb) ** 2 for y in b))
+    return sum((x - ma) * (y - mb) for x, y in zip(a, b)) / (sa * sb) if sa and sb else 0.0
+
+
+def partial_spearman(x, y, z):
+    """Spearman correlation of x and y controlling for z (rank residuals)."""
+    rx, ry, rz = _rank(x), _rank(y), _rank(z)
+    def resid(a):
+        mz, ma = sum(rz) / len(rz), sum(a) / len(a)
+        vz = sum((q - mz) ** 2 for q in rz)
+        beta = sum((q - mz) * (w - ma) for q, w in zip(rz, a)) / vz if vz else 0.0
+        return [w - ma - beta * (q - mz) for q, w in zip(rz, a)]
+    return _pearson(resid(rx), resid(ry))
+
+
+def auroc(scores, labels):
+    pos = [s for s, l in zip(scores, labels) if l]; neg = [s for s, l in zip(scores, labels) if not l]
+    if not pos or not neg:
+        return None
+    return sum((p > n) + 0.5 * (p == n) for p in pos for n in neg) / (len(pos) * len(neg))
+
+
+def _logit_fit(X, y, iters=3000, lr=0.5, l2=1e-3):
+    import numpy as np
+    X = np.column_stack([np.ones(len(X)), np.asarray(X, float)])
+    mu, sd = X[:, 1:].mean(0), X[:, 1:].std(0) + 1e-9
+    X[:, 1:] = (X[:, 1:] - mu) / sd
+    w = np.zeros(X.shape[1]); y = np.asarray(y, float)
+    for _ in range(iters):
+        p = 1 / (1 + np.exp(-X @ w))
+        w -= lr * (X.T @ (p - y) / len(y) + l2 * w)
+    return w, mu, sd
+
+
+def _logit_pred(model, X):
+    import numpy as np
+    w, mu, sd = model
+    X = (np.asarray(X, float) - mu) / sd
+    return 1 / (1 + np.exp(-(w[0] + X @ w[1:])))
+
+
+def cv_auroc(features, labels, folds=5, repeats=20, seed=7):
+    rng = random.Random(seed)
+    vals = []
+    n = len(labels)
+    for _ in range(repeats):
+        idx = list(range(n)); rng.shuffle(idx)
+        preds = [0.0] * n
+        for f in range(folds):
+            test = idx[f::folds]; tset = set(test)
+            train = [i for i in idx if i not in tset]
+            m = _logit_fit([features[i] for i in train], [labels[i] for i in train])
+            for i, p in zip(test, _logit_pred(m, [features[i] for i in test])):
+                preds[i] = float(p)
+        vals.append(auroc(preds, labels))
+    return statistics.mean(vals), min(vals), max(vals)
+
+
+def cmd_separate(args):
+    """PROP-12: does forward/reversed disagreement from separate passes add error detection beyond hesitation?"""
+    def load(p):
+        with open(p) as f:
+            return {c["id"]: c for c in json.load(f)["cases"]}
+    F = [load(p) for p in args.forward]
+    Rv = [load(p) for p in args.reversed]
+    ids = [i for i in F[0] if all(i in x for x in F + Rv)]
+    def dist(c):
+        tp = c.get("top_probabilities") or {}
+        s = sum(tp.values()) or 1.0
+        return {k: v / s for k, v in tp.items()}
+    def tvd(a, b):
+        keys = set(a) | set(b)
+        return 0.5 * sum(abs(a.get(k, 0) - b.get(k, 0)) for k in keys)
+    def hes(p):
+        k = max(2, len(p))
+        return -sum(v * math.log(v) for v in p.values() if v > 0) / math.log(k)
+    def stats_for(fwd, other, label):
+        err = [0 if fwd[i]["accurate"] else 1 for i in ids]
+        h = [hes(dist(fwd[i])) for i in ids]
+        d = [tvd(dist(fwd[i]), dist(other[i])) for i in ids]
+        ps = partial_spearman(d, err, h)
+        rng = random.Random(11)
+        boots = []
+        for _ in range(args.boot):
+            s_ = [rng.randrange(len(ids)) for _ in ids]
+            boots.append(partial_spearman([d[j] for j in s_], [err[j] for j in s_], [h[j] for j in s_]))
+        boots.sort()
+        lo, hi = boots[int(0.025 * len(boots))], boots[int(0.975 * len(boots)) - 1]
+        a_h = cv_auroc([[x] for x in h], err)
+        a_hd = cv_auroc([[x, y] for x, y in zip(h, d)], err)
+        return {"pair": label, "n": len(ids), "errors": sum(err), "partial_spearman": ps, "ci": [lo, hi],
+                "auroc_hes_raw": auroc(h, err), "auroc_tvd_raw": auroc(d, err),
+                "cv_auroc_hes": a_h, "cv_auroc_hes_tvd": a_hd, "mean_tvd": sum(d) / len(d)}
+    rows = []
+    for fi, fwd in enumerate(F):
+        for ri, rev in enumerate(Rv):
+            rows.append(stats_for(fwd, rev, f"F{fi+1}×R{ri+1}"))
+    noise = [stats_for(F[a], F[b], f"F{a+1}×F{b+1} (noise)") for a in range(len(F)) for b in range(a + 1, len(F))]
+    ens = []
+    for fi, fwd in enumerate(F):
+        for ri, rev in enumerate(Rv):
+            ok = 0
+            for i in ids:
+                a, b = dist(fwd[i]), dist(rev[i])
+                m = {k: 0.5 * (a.get(k, 0) + b.get(k, 0)) for k in set(a) | set(b)}
+                ok += max(m, key=m.get).lower() == str(fwd[i]["expected"]).lower()
+            ens.append({"pair": f"F{fi+1}+R{ri+1}", "correct": ok, "forward_correct": sum(fwd[i]["accurate"] for i in ids),
+                        "reversed_correct": sum(rev[i]["accurate"] for i in ids)})
+    # Pre-registered primary: mean partial Spearman over all forward x reversed pairings, item bootstrap.
+    def pair_arrays(fwd, other):
+        return ([tvd(dist(fwd[i]), dist(other[i])) for i in ids], [0 if fwd[i]["accurate"] else 1 for i in ids],
+                [hes(dist(fwd[i])) for i in ids])
+    arrs = [pair_arrays(f, r) for f in F for r in Rv]
+    primary = statistics.mean(partial_spearman(*a) for a in arrs)
+    rng = random.Random(23)
+    boots = []
+    for _ in range(args.boot):
+        smp = [rng.randrange(len(ids)) for _ in ids]
+        boots.append(statistics.mean(partial_spearman([d[j] for j in smp], [e[j] for j in smp], [h[j] for j in smp]) for d, e, h in arrs))
+    boots.sort()
+    prim_ci = [boots[int(0.025 * len(boots))], boots[int(0.975 * len(boots)) - 1]]
+    print("### PROP-12 separate-pass mirror\n")
+    print(f"**Primary (pre-registered):** mean partial Spearman over {len(arrs)} forward×reversed pairings = {primary:.3f}, "
+          f"95% item-bootstrap CI [{prim_ci[0]:.3f}, {prim_ci[1]:.3f}].\n")
+    print("| pair | n | errors | mean TVD | partial Spearman (TVD, error \\| hesitation) [95% CI] | AUROC hesitation | AUROC TVD | CV AUROC hesitation | CV AUROC hesitation + TVD |")
+    print("| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: | ---: |")
+    for r in rows + noise:
+        print(f"| {r['pair']} | {r['n']} | {r['errors']} | {r['mean_tvd']:.3f} | {r['partial_spearman']:.3f} [{r['ci'][0]:.3f}, {r['ci'][1]:.3f}] | "
+              f"{r['auroc_hes_raw']:.3f} | {r['auroc_tvd_raw']:.3f} | {r['cv_auroc_hes'][0]:.3f} | {r['cv_auroc_hes_tvd'][0]:.3f} |")
+    print("\n| averaged forward+reversed | correct | forward alone | reversed alone |")
+    print("| :--- | ---: | ---: | ---: |")
+    for e in ens:
+        print(f"| {e['pair']} | {e['correct']} | {e['forward_correct']} | {e['reversed_correct']} |")
+    if args.json_out:
+        with open(args.json_out, "w") as f:
+            json.dump({"primary_mean_partial_spearman": primary, "primary_ci": prim_ci, "order_pairs": rows, "noise_pairs": noise, "ensembles": ens}, f, indent=2)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -314,13 +468,18 @@ def main():
     sp.add_argument("receipt")
     sp.add_argument("--stage", choices=["raw_", ""], default="raw_", help="raw_ = before null-prior; '' = after")
     sp.add_argument("--json-out")
+    sp = sub.add_parser("separate-pass")
+    sp.add_argument("--forward", nargs="+", required=True)
+    sp.add_argument("--reversed", nargs="+", required=True)
+    sp.add_argument("--boot", type=int, default=2000)
+    sp.add_argument("--json-out")
     sp = sub.add_parser("collision")
     sp.add_argument("--baselines", nargs="+", required=True)
     sp.add_argument("--dataset", default="benchmarks/jevbench/jevbench_public.jsonl")
     sp.add_argument("--json-out")
     sp.add_argument("receipts", nargs="+")
     args = ap.parse_args()
-    {"collision": cmd_collision, "cv-temperature": cmd_cv, "gates": cmd_gates, "merge-rules": cmd_merge, "collision": cmd_collision}[args.cmd](args)
+    {"collision": cmd_collision, "cv-temperature": cmd_cv, "gates": cmd_gates, "merge-rules": cmd_merge, "separate-pass": cmd_separate}[args.cmd](args)
 
 
 if __name__ == "__main__":

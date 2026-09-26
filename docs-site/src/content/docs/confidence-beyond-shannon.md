@@ -200,6 +200,8 @@ A single session against the Vertex AI endpoint, with interleaved baselines and 
 
 **Follow-up ([EXP-16](/dgem/experiments/exp-16-slot-names/)):** the second slot's *name* matters too. With identical options (no letter collision), naming it `__mirror_rev` cost 19 items versus `__rev`; single-slot ids made no difference. The original dual-mirror collapse had both causes.
 
+**Follow-up ([EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/)):** reading the reversed order in a *separate* pass avoids interference. Its disagreement is statistically related to errors beyond hesitation (partial Spearman 0.13, CI [0.03, 0.24]), but two ordinary forward passes disagree in a similarly informative way, and cross-validated error detection improves by at most 0.016 AUROC, at double the cost. Hesitation alone already detects most errors (AUROC ≈ 0.85).
+
 ### 6d. What is not yet measured
 
 1. **Same-canvas vs separate-pass mirror (`PROP-03`):** EXP-14 shows the extra slot interferes with the forward reading; a two-pass mirror is the obvious comparison.
