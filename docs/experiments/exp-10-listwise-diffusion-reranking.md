@@ -63,7 +63,7 @@ Because Cohere Rerank v3.5/v4 and Voyage `rerank-2.5-lite` evaluate each candida
 
 ## 3. Mathematical Formulation: `dgem` Listwise Decision Canvas (`templates/rerank/listwise_decision_rerank.json.tmpl`)
 
-Instead of calling `dgem decide` $K$ separate times (`Pointwise`), we pack the Query $q$, the Retrieval Policy Rubric $\mathcal{P}$, and the Top-$K$ candidate passages ($K = 10$) into a **single `dgem` `.json.tmpl` policy** ([`templates/rerank/listwise_decision_rerank.json.tmpl`](../../templates/rerank/listwise_decision_rerank.json.tmpl)) and allocate **$K + 2 = 12$ parallel `[MASK]` canvas slots** resolved in **1 forward pass (`steps=1, think=0`)**:
+Instead of calling `dgem decide` $K$ separate times (`Pointwise`), we pack the Query $q$, the Retrieval Policy Rubric $\mathcal{P}$, and the Top-$K$ candidate passages ($K = 10$) into a **single `dgem` `.json.tmpl` policy** (`templates/rerank/listwise_decision_rerank.json.tmpl`) and allocate **$K + 2 = 12$ parallel `[MASK]` canvas slots** resolved in **1 forward pass (`steps=1, think=0`)**:
 
 1. **10 Parallel Graded Relevance Slots (`doc_01` $\dots$ `doc_10`)**:
    Each passage slot `doc_i` is a 4-level ordered `score` slot with levels:
@@ -87,7 +87,7 @@ $$
 
 ## 4. Phase-0 Pre-Shootout Validation Suite (`benchmarks/rerank_suite.jsonl`)
 
-Before running an external API shootout against Cohere Rerank v3.5/v4 and Voyage `rerank-2.5-lite`, we assembled a **30-query, 300-passage validation suite** ([`benchmarks/rerank_suite.jsonl`](../../benchmarks/rerank_suite.jsonl)) drawn from 5 canonical public IR benchmarks:
+Before running an external API shootout against Cohere Rerank v3.5/v4 and Voyage `rerank-2.5-lite`, we assembled a **30-query, 300-passage validation suite** (`benchmarks/rerank_suite.jsonl`) drawn from 5 canonical public IR benchmarks:
 
 | Slice ID | Source Benchmark | Queries | Passages | Primary Validation Capability & Metric |
 | :--- | :--- | :---: | :---: | :--- |
@@ -101,7 +101,7 @@ Before running an external API shootout against Cohere Rerank v3.5/v4 and Voyage
 
 ## 5. Live Cloud Run GPU (`1× NVIDIA L4`) Empirical Results (`benchmarks/results_rerank_cloudrun.json`)
 
-We deployed `DiffusionGemma 26B-A4B-it` (`dgemma`) to **Serverless Cloud Run GPU (`1× NVIDIA L4` 24GB VRAM)** in `us-central1` (`https://dgemma-lihc3g7fva-uc.a.run.app/v1`), executed all 30 live 12-slot listwise decisions (`300` query-passage pairs) via `./bin/dgem decide`, saved the telemetry receipt to [`benchmarks/results_rerank_cloudrun.json`](../../benchmarks/results_rerank_cloudrun.json), and immediately tore down the Cloud Run service (`make cloudrun-teardown`).
+We deployed `DiffusionGemma 26B-A4B-it` (`dgemma`) to **Serverless Cloud Run GPU (`1× NVIDIA L4` 24GB VRAM)** in `us-central1` (`https://dgemma-lihc3g7fva-uc.a.run.app/v1`), executed all 30 live 12-slot listwise decisions (`300` query-passage pairs) via `./bin/dgem decide`, saved the telemetry receipt to `benchmarks/results_rerank_cloudrun.json`, and immediately tore down the Cloud Run service (`make cloudrun-teardown`).
 
 ### 5.1 Reproduction Commands
 

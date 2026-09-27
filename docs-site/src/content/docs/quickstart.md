@@ -64,7 +64,10 @@ Run an operational ticket triage decision using a built-in policy template:
   --stats
 ```
 
-### Expected Output:
+### Example Output (illustrative)
+
+> The values below are illustrative, not a recorded run. Your probabilities, latency and cache statistics depend on the backend and input; run with `--stats` to see your own.
+
 ```text
 SLOT             | TYPE       | VALUE                | PROB       | ENTROPY     | MARGIN    
 -----------------------------------------------------------------------------------------
@@ -75,13 +78,13 @@ urgent           | boolean    | yes                  | 99.9%      | 0.001 nats  
 ──────────────────────────────── STATS ────────────────────────────────
   Model:             nvidia/diffusiongemma-26B-A4B-it-NVFP4
   Endpoint:          http://127.0.0.1:8080/v1/chat/completions
-  Total Wall Time:   185 ms
-  KV Cache Reused:   169 tokens (82.8% hit rate)
+  Total Wall Time:   <varies by backend>
+  KV Cache Reused:   <varies>
   Denoise Steps:     1 step (policy: samples=1)
 ───────────────────────────────────────────────────────────────────────
 ```
 
-All three question slots (`sentiment`, `team`, `urgent`) were resolved simultaneously in a **single forward pass** ($O(1)$) with calibrated probability and epistemic Shannon entropy ($H$).
+All three question slots (`sentiment`, `team`, `urgent`) are read in a **single forward pass**, each with its own probabilities and Shannon entropy ($H$). Measured single-read latencies are in [Path to Production](/dgem/path-to-production/).
 
 ---
 

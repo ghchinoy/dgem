@@ -1,9 +1,5 @@
 # Discrete Diffusion vs. Autoregression
 
-Theoretical and mechanical breakdown of DiffusionGemma's discrete block diffusion canvas compared to sequential autoregression, Dual-Encoders (`GTR`) + `TabPFN`, and Test-Time Compute cascades.
-
----
-
 ## 1. The Bottleneck of Autoregressive LLMs
 
 Standard Large Language Models (LLMs) operate under a sequential autoregressive factorization:
@@ -102,13 +98,13 @@ In standard autoregressive LLM pipelines, estimating whether the model is confid
    $$\tilde{H}_m = \frac{H_m}{\ln(\text{number of choices})} \in [0, 1]$$
    scales our "tie meter" onto `0.0` (one letter dominates) to `1.0` (dead tie) regardless of how many classes you put in your template. When $\tilde{H}_m \ge 0.16$, `dgem` escalates the query to a reasoning pass (`think > 0` or Tier-2 LLM) **and passes along the Pass-1 letter breakdown (`{A: 54%, B: 42%}`)** so the reasoning model knows which two candidates to disambiguate.
 
-> [!CAUTION]
-> **Important Statistical Distinction: Relative Tie-Detection vs. Target-Domain Base-Rate Calibration**
-> In statistics and classical ML, **true probability calibration** means that when a classifier outputs `0.80` for class `A`, class `A` empirically occurs `80%` of the time in your production environment.
->
-> **No zero-shot model can provide true out-of-the-box base-rate calibration on an unseen task without target-domain data**, because the model does not know your production class priors $P_{\text{target}}(Y)$ (e.g., whether a rare clinical or fraud event happens in `0.1%` or `30%` of cases). If your application requires calibrated frequentist probabilities tied to production base rates, you still need a post-hoc calibration layer fit on labeled target examples (such as Platt/temperature scaling, isotonic regression, or conformal prediction).
->
-> What `dgem`'s normalized entropy $\tilde{H}_m$ provides zero-shot is **Relative Routing Ambiguity (Tie-Detection)**—answering *"Given the options in the template, does one choice clearly win in 1 forward pass, or are the top choices competing?"*—allowing you to early-exit **66%** of traffic in a single pass (`712 ms`) and reserve expensive autoregressive reasoning tokens for the **34%** of inputs where the choices are in contention.
+:::caution[Important Statistical Distinction: Relative Tie-Detection vs. Target-Domain Base-Rate Calibration]
+In statistics and classical ML, **true probability calibration** means that when a classifier outputs `0.80` for class `A`, class `A` empirically occurs `80%` of the time in your production environment.
+
+**No zero-shot model can provide true out-of-the-box base-rate calibration on an unseen task without target-domain data**, because the model does not know your production class priors $P_{\text{target}}(Y)$ (e.g., whether a rare clinical or fraud event happens in `0.1%` or `30%` of cases). If your application requires calibrated frequentist probabilities tied to production base rates, you still need a post-hoc calibration layer fit on labeled target examples (such as Platt/temperature scaling, isotonic regression, or conformal prediction).
+
+What `dgem`'s normalized entropy $\tilde{H}_m$ provides zero-shot is **Relative Routing Ambiguity (Tie-Detection)**—answering *"Given the options in the template, does one choice clearly win in 1 forward pass, or are the top choices competing?"*—allowing you to early-exit **66%** of traffic in a single pass (`712 ms`) and reserve expensive autoregressive reasoning tokens for the **34%** of inputs where the choices are in contention.
+:::
 
 ---
 
@@ -118,13 +114,15 @@ Engineers from search, retrieval, and tabular ML backgrounds frequently ask a fo
 
 > *"Could the goal of a fast, reasoning-capable classifier be achieved without a generative model—specifically by pairing a **GTR-style Dual Encoder** (`Sentence-T5`) with a **TabPFN / TabFM** zero-shot tabular classification foundation model? Or do you strictly need a decoder and test-time compute (`think > 0`) to pull off reasoning?"*
 
-> [!TIP]
-> **TL;DR: The 30-Second Architectural Answer**
-> 1. **Why `GTR Dual-Encoder + TabPFN` Hits an Early Information Wall**: A Dual Encoder compresses your entire input document into a single fixed vector $u \in \mathbb{R}^d$ **before** reading your policy rules or hypothesis. That pooling step permanently destroys token-to-token relational alignment (such as negation scope, numerical bounds like `50–75% < 100%`, or SQL parameter tampering in `AgentDrift`). Feeding those pooled embeddings into `TabPFN` cannot recover fine-grained relational bindings already lost in $u$—and `TabPFN` further requires **labeled support rows ($N_{\text{support}} > 0$)** rather than zero-shot instructions.
-> 2. **When You Do *NOT* Need a Decoder (`think=0` in $O(1)$ — `86%–90%` of Tasks)**: Full **token-level cross-attention** across a 26B-A4B model (`dgem` with `steps=1, think=0`) solves 1-hop relational policy grounding (`AgentDrift` `100%`, `deepset/prompt-injections` `100%`, `LLM-AggreFact` `100%`, `MS MARCO` `100%`) in **a single `458–712 ms` forward pass** without generating a single scratchpad token.
-> 3. **When You *DO* Need a Decoder + Test-Time Compute (`think > 0` — `anli-01..03`)**: When a decision hinges on synthesizing an **unwritten intermediate variable** (such as computing `2015 + 4 = 2019` and checking `2019 > 2018` in `anli-02`), constant-depth circuit bounds ($\mathsf{TC}^0$) prevent *any* single-pass model (`GTR`, `TabPFN`, or `dgemma [think=0]`) from reliably chaining the arithmetic. Because `dgemma` is a unified architecture, its **normalized entropy gate ($\tilde{H}_m \ge 0.160$)** detects those exact multi-hop traps and triggers `think > 0` (conditioned on Pass-1 priors) only on the **34% of queries** that need a scratchpad—reaching **`98.0%` accuracy (`49/50`)**.
+:::tip[TL;DR: The 30-Second Architectural Answer]
+1. **Why `GTR Dual-Encoder + TabPFN` Hits an Early Information Wall**: A Dual Encoder compresses your entire input document into a single fixed vector $u \in \mathbb{R}^d$ **before** reading your policy rules or hypothesis. That pooling step permanently destroys token-to-token relational alignment (such as negation scope, numerical bounds like `50–75% < 100%`, or SQL parameter tampering in `AgentDrift`). Feeding those pooled embeddings into `TabPFN` cannot recover fine-grained relational bindings already lost in $u$—and `TabPFN` further requires **labeled support rows ($N_{\text{support}} > 0$)** rather than zero-shot instructions.
+2. **When You Do *NOT* Need a Decoder (`think=0` in $O(1)$ — `86%–90%` of Tasks)**: Full **token-level cross-attention** across a 26B-A4B model (`dgem` with `steps=1, think=0`) solves 1-hop relational policy grounding (`AgentDrift` `100%`, `deepset/prompt-injections` `100%`, `LLM-AggreFact` `100%`, `MS MARCO` `100%`) in **a single `458–712 ms` forward pass** without generating a single scratchpad token.
+3. **When You *DO* Need a Decoder + Test-Time Compute (`think > 0` — `anli-01..03`)**: When a decision hinges on synthesizing an **unwritten intermediate variable** (such as computing `2015 + 4 = 2019` and checking `2019 > 2018` in `anli-02`), constant-depth circuit bounds ($\mathsf{TC}^0$) prevent *any* single-pass model (`GTR`, `TabPFN`, or `dgemma [think=0]`) from reliably chaining the arithmetic. Because `dgemma` is a unified architecture, its **normalized entropy gate ($\tilde{H}_m \ge 0.160$)** detects those exact multi-hop traps and triggers `think > 0` (conditioned on Pass-1 priors) only on the **34% of queries** that need a scratchpad—reaching **`98.0%` accuracy (`49/50`)**.
+:::
 
 ### The Operative Decoder Ring (5 Core Concepts in Plain English)
+
+For readers arriving from different specialties (Platform Engineering, Search/Retrieval, or LLM Infrastructure), here is how the five architectural terms map to plain English:
 
 | Term | 10-Word Plain-English Mental Model | Canonical Example |
 | :--- | :--- | :--- |
@@ -133,6 +131,44 @@ Engineers from search, retrieval, and tabular ML backgrounds frequently ask a fo
 | **[Cross-Attention Canvas (`dgem`)](glossary.md#bidirectional-canvas-attention)** | Every input word directly inspects every policy rule and slot. | Zero-shot `AgentDrift` security audit & `LLM-AggreFact` grounding. |
 | **[Normalized Entropy ($\tilde{H}_m$)](glossary.md#cardinality-normalized-entropy)** | A universal `0.0–1.0` uncertainty gauge adjusted for option count. | Early-exiting `b77-01` ($\tilde{H}=0.158$) while escalating `anli-01` ($\tilde{H}=0.168$). |
 | **[Test-Time Compute (`think > 0`)](glossary.md#fixed-depth-circuits-tc0-vs-test-time-compute)** | Scratchpad tokens generated only when a problem needs multi-step math. | Solving `2015 + 4 = 2019 > 2018` in `anli-02` (`--cascade-self-think 256`). |
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: Late Interaction (`GTR` Pooling Bottleneck) vs. Early All-to-All Cross-Attention (`dgem`)</strong> <em>(click to expand)</em></summary>
+
+```text
+1. GTR Dual-Encoder + TabPFN (Late Interaction / Vector Bottleneck):
+   Input Text (1,000 tokens) ──► [T5 Encoder] ──► Single Vector u (R^768) ──┐
+                                                                            ├──► [TabPFN Grid] ──► Prediction
+   Policy Rules / Labels     ──► [T5 Encoder] ──► Label Vectors v_k       ──┘
+   ⚠️ Bottleneck: Input tokens never attend to Policy tokens! Fine-grained numbers,
+      negations ("NOT in allowlist"), and variable bindings are crushed during pooling.
+
+2. DiffusionGemma Canvas Readout (Early Token-Level Cross-Attention):
+   [Policy Rules (.json.tmpl) + Input Text (1,000 tokens) + Masked Slots <s_1, s_2, s_3>]
+                                       │
+              ┌────────────────────────┴────────────────────────┐
+              │ All 26B-A4B Layers: Every token in Input,       │
+              │ Policy, and Slots <s_1 <-> s_2> mutually attend │
+              └────────────────────────┬────────────────────────┘
+                                       ▼
+                     Joint Calibrated Readout (458.9 ms)
+```
+
+* **Why Normalization + `TabPFN` Cannot Undo Pooling Loss**: By the Data Processing Inequality, once $E_x(x)$ compresses a multi-clause passage or tool trajectory into a fixed vector $u \in \mathbb{R}^d$, information about which specific quantifier modifies which entity is lost. `TabPFN` is a powerful Bayesian decision boundary estimator over tabular columns, but it can only partition the features it is given—and it requires **in-context labeled support rows ($X_{\text{train}}, y_{\text{train}}$)**, whereas `dgem` executes declarative `.json.tmpl` policies with **zero support rows ($N_{\text{support}} = 0$)**.
+
+</details>
+
+<details class="term-aside">
+<summary>💡 <strong>Concept Aside: Why Fixed-Depth Circuits (`think=0`) Cannot Solve Latent Multi-Hop Arithmetic Without Test-Time Compute (`think > 0`)</strong> <em>(click to expand)</em></summary>
+
+* **The Circuit-Depth Bound ($\mathsf{TC}^0$)**: Any single forward pass through a transformer of fixed depth $L$ (`GTR`, `DeBERTa`, `TabPFN`, or `dgemma` at `steps=1, think=0`) executes a constant number of sequential layer operations.
+* **Concrete Proof (`anli-02` in `dgem bench-calibration`)**:
+  * **Premise**: *"Mira joined the lab in **2015** and became its second director **four years later**, succeeding the founder."*
+  * **Hypothesis**: *"Mira led the lab before **2018**."*
+  * Notice that the number **`2019`** never appears in the input tokens! To recognize the contradiction, the model must (1) bind `2015` + `four years later`, (2) compute the latent sum `2019`, and (3) evaluate `2019 < 2018` (`False` $\implies$ `contradiction`).
+* **Why `dgem` Solves This Without Slowing Down Easy Traffic**: In Pass 1 (`think=0`), `dgemma` outputs `entailment`, **but its normalized epistemic entropy $\tilde{H}_m$ spikes 3.0× above baseline to `0.224` ($\ge 0.160$)**! That spike triggers Pass 2 (`think > 0` with the Pass-1 prior block), which computes `2015 + 4 = 2019` on its scratchpad and flips the answer to `contradiction` (`100%` `3/3` on `ANLI-R3`).
+
+</details>
 
 ### Architectural Comparison Matrix
 
@@ -145,3 +181,17 @@ Engineers from search, retrieval, and tabular ML backgrounds frequently ask a fo
 | **Latent Multi-Hop Arithmetic (`ANLI-R3` `anli-01..03`)** | ❌ **Fails** (Fixed circuit depth, no scratchpad) | ❌ **Fails** (Fixed circuit depth, no scratchpad) | ❌ **0.0% (`0/3`)** (Single-pass $\mathsf{TC}^0$ limit) | ✅ **100.0% (`3/3`)** ($\tilde{H}_m \ge 0.16$ triggers `think>0` + Priors) |
 | **Overall 50-Case Calibration Suite Accuracy** | — | — | **86.0% (`43/50`)** | **98.0% (`49/50`)** ⭐ |
 | **Mean Wall-Clock Latency (Cloud Run L4)** | `~15–45 ms` | `~15–30 ms` | **`712 ms`** (`458.9 ms` 3-slot triage) | **`1,259 ms` blended** (`66%` exit @ `712 ms`) |
+
+---
+
+## 6. Terminology: Discrete Diffusion Slot Readout vs. "Jev-Style"
+
+In community discourse and open-source benchmarks (such as `open-jev` and vLLM PR #57250), single-pass canvas evaluation was informally termed "Jev-style" following commercial evaluations published by startup TypeSafe AI.
+
+From a computer science and machine learning perspective, the formal technique is **Discrete Diffusion Slot Readout** (or bidirectional masked logit extraction). It builds directly upon foundational literature:
+* **Masked Language Modeling (BERT, 2018)**: Evaluating logits across bidirectional transformer encoder layers.
+* **Non-Autoregressive Sequence Generation (Mask-Predict, 2019)**: Parallel canvas denoising.
+* **Discrete Denoising Diffusion (D3PM, 2021; MDLM, 2024)**: Denoising categorical state spaces.
+* **DiffusionGemma (Google DeepMind, 2025/2026)**: The 26B-A4B MoE architecture providing an autoregressive prefix encoder paired with a discrete diffusion decoder with bidirectional attention.
+
+`dgem` uses stock, unmodified weights from Google DeepMind (`google/diffusiongemma-26B-A4B-it`) and implements this technique directly.

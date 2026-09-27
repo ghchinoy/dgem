@@ -65,8 +65,8 @@ User Prompt / Conversation State
     "samples": "auto"
   },
   "state": {
-    "user_message": "User prompt injected here",
-    "last_action": "none"
+    "user_message": {{ .prompt | toJson }},
+    "last_action": {{ default "none" .last_action | toJson }}
   }
 }
 ```
@@ -103,7 +103,7 @@ if [ -z "$DIFF_CONTENT" ]; then
 fi
 
 # Run discrete slot readout
-RESULT=$(./bin/dgem decide -t templates/code_review.json.tmpl \
+RESULT=$(dgem decide -t templates/code_review.json.tmpl \
   -v "diff=$DIFF_CONTENT" \
   -f json)
 

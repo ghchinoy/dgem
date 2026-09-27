@@ -16,6 +16,20 @@ SERVICE_NAME="dgem-smoke-$(date +%s)"
 TEMPERATURE="${TEMPERATURE:-1.0}"
 KEEP_ALIVE="${KEEP_ALIVE:-0}"
 
+# Portable millisecond clock (BSD/macOS `date` has no %N).
+now_ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
+
+# health_ok <url> [bearer-token]: true if the endpoint returns HTTP 200 with {"status": "ok"}.
+health_ok() {
+  local url="$1" tok="${2:-}" body
+  if [[ -n "$tok" ]]; then
+    body=$(curl -sf -m 5 -H "Authorization: Bearer $tok" "$url") || return 1
+  else
+    body=$(curl -sf -m 5 "$url") || return 1
+  fi
+  printf '%s' "$body" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("status") == "ok" else 1)' 2>/dev/null
+}
+
 # Parse optional CLI flags
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -140,14 +154,21 @@ if [[ "$TARGET" == "vertex" ]]; then
   TOK=$(gcloud auth print-access-token)
 
   echo -n "==> Waiting for /invoke/health probe..."
+  HEALTHY=0
   for i in {1..60}; do
-    if curl -s -m 5 -H "Authorization: Bearer $TOK" "$HEALTH_URL" | grep -q "healthy" 2>/dev/null; then
+    if health_ok "$HEALTH_URL" "$TOK"; then
       echo " healthy!"
+      HEALTHY=1
       break
     fi
     sleep 3
     echo -n "."
   done
+  if [[ "$HEALTHY" != "1" ]]; then
+    echo ""
+    echo "❌ /invoke/health did not return {\"status\": \"ok\"} within ~3 minutes." >&2
+    exit 3
+  fi
 
   echo "==> Executing test decision via POST /invoke/v1/systemone..."
   TEST_PAYLOAD='{
@@ -165,13 +186,13 @@ if [[ "$TARGET" == "vertex" ]]; then
       }
     }
   }'
-  START_T=$(date +%s%N)
+  START_T=$(now_ms)
   RESP=$(curl -sS -X POST "$SYSTEMONE_URL" \
     -H "Authorization: Bearer $TOK" \
     -H "Content-Type: application/json" \
     -d "$TEST_PAYLOAD")
-  END_T=$(date +%s%N)
-  WALL_MS=$(( (END_T - START_T) / 1000000 ))
+  END_T=$(now_ms)
+  WALL_MS=$(( END_T - START_T ))
 
   echo ""
   echo "=== Smoke Test Output (${WALL_MS} ms) ==="
@@ -261,18 +282,25 @@ echo "==> Service deployed at $SERVICE_URL"
 
 # 4. Probe Health
 echo -n "==> Waiting for /health probe..."
+HEALTHY=0
 for i in {1..90}; do
-  if curl -s -m 5 "${SERVICE_URL}/health" >/dev/null 2>&1; then
+  if health_ok "${SERVICE_URL}/health"; then
     echo " healthy!"
+    HEALTHY=1
     break
   fi
   sleep 2
   echo -n "."
 done
+if [[ "$HEALTHY" != "1" ]]; then
+  echo ""
+  echo "❌ /health did not return {\"status\": \"ok\"} within ~3 minutes." >&2
+  exit 3
+fi
 
 # 5. Execute Test Decision via POST /v1/systemone
 echo "==> Executing test decision via POST /v1/systemone..."
-START_T=$(date +%s%N)
+START_T=$(now_ms)
 TEST_PAYLOAD='{
   "state": "Customer was double billed on transaction #48291.",
   "questions": {
@@ -293,8 +321,8 @@ RESP=$(curl -sS -X POST "${SERVICE_URL}/v1/systemone" \
   -H "Content-Type: application/json" \
   -d "$TEST_PAYLOAD")
 
-END_T=$(date +%s%N)
-WALL_MS=$(( (END_T - START_T) / 1000000 ))
+END_T=$(now_ms)
+WALL_MS=$(( END_T - START_T ))
 
 echo ""
 echo "=== Smoke Test Output (${WALL_MS} ms) ==="

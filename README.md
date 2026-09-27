@@ -90,7 +90,7 @@ Run-to-run noise is about ±1 item on 50 and ±2 on 231. Cascade thresholds were
 
 ## Four Ways to Use `dgem`
 
-See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-api.md`)](docs/studio-mcp-api.md)** and **[Experiment Authoring Guide (`docs/experiment-authoring-guide.md`)](docs/experiment-authoring-guide.md)** for full details:
+See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-api.md`)](docs/studio-mcp-api.md)** and **[Backend Routing & Cascades (`docs/experiment-authoring-guide.md`)](docs/experiment-authoring-guide.md)** for full details:
 
 | Interaction Surface | Command / Endpoint | Description |
 | :--- | :--- | :--- |
@@ -312,7 +312,7 @@ All pages below are also published on the docs site: [ghchinoy.github.io/dgem](h
 
 * **[Path to Production](docs/path-to-production.md)**: Crawl → walk → run tiers, measured latency and concurrency scaling, hardware and serving recommendations, and a deploy/verify/rollback checklist.
 * **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, the G4 (RTX PRO 6000) default, and the crawl-walk-run serving recommendation.
-* **[Experiment Authoring Guide & Backend Target Selection](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
+* **[Backend Routing & Cascades](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
 * **[CLI, HTTP Gateway & MCP Reference](docs/cli-reference.md)**: Complete flag and tool parameter reference (`--vertex-url`, `dgem serve --default-backend vertex_first`, `/v1/systemone`, and MCP tools).
 * **[The Journey to Decision Models](docs/decision-models-primer.md)**: Architectural primer contrasting Classical ML, Symbolic WFSTs, Autoregressive LLMs, and Discrete Diffusion Decision Models.
 * **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](docs/confidence-beyond-shannon.md)**: Why a raw confidence score can be fooled by option order, how IDC checks it in one pass, what it does not fix, and the evidence with sample sizes.

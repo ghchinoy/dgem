@@ -10,7 +10,7 @@ This report presents empirical benchmark metrics comparing **Discrete Diffusion 
 4. **Google Compute Engine (`a2-highgpu-2g`, 2× NVIDIA A100-40GB, `TP=2`)** — **16-bit Unquantized `bfloat16`** (`google/diffusiongemma-26B-A4B-it`)
 
 > [!NOTE]
-> For details on building and deploying the self-contained container image, GCS FUSE weight streaming, and C++ CUDA extension ABI compatibility on Cloud Run, see **[Cloud Run Lessons Learned & Native CUDA Build Guide](cloudrun-lessons-learned.md)**.
+> For details on building and deploying the self-contained container image, GCS FUSE weight streaming, and C++ CUDA extension ABI compatibility on Cloud Run, see **[Cloud Run Lessons Learned & Native CUDA Build Guide](/dgem/cloudrun-lessons-learned/)**.
 
 ---
 
@@ -32,7 +32,7 @@ This report presents empirical benchmark metrics comparing **Discrete Diffusion 
 
 ## 2. Experimental Design, Dataset & Sample Cases
 
-The evaluation suite (`./bin/dgem bench`) tests structured multi-question decision accuracy and latency across a standardized 30-case dataset ([`benchmarks/eval_dataset.jsonl`](../benchmarks/eval_dataset.jsonl)). For the deep mechanical explanation of 256-token canvas seeding and restricted softmax readout, see **[Architecture: Discrete Diffusion vs. Autoregression](architecture.md)**.
+The evaluation suite (`./bin/dgem bench`) tests structured multi-question decision accuracy and latency across a standardized 30-case dataset ([`benchmarks/eval_dataset.jsonl`](../benchmarks/eval_dataset.jsonl)). For the deep mechanical explanation of 256-token canvas seeding and restricted softmax readout, see **[Architecture: Discrete Diffusion vs. Autoregression](/dgem/architecture/)**.
 
 ### 2.1 Multi-Domain Evaluation Corpus (30 Cases)
 Each test item injects structured input variables into a domain-specific Go template and simultaneously evaluates **three distinct question types** (`boolean`, `choice`, and `score`) in a single request:
