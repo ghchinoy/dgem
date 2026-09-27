@@ -171,3 +171,45 @@ func TestRecordLocalReadoutLatency(t *testing.T) {
 		t.Errorf("expected lastLocalReadoutLatencyMs to stay 678, got %d", val2)
 	}
 }
+
+func TestDeriveAvailableBackends(t *testing.T) {
+	// 1. Local-only mode
+	b1 := deriveAvailableBackends("https://endpoint.prediction.vertexai.goog/v1", "https://dgemma.run.app/v1", "", true)
+	if len(b1) != 1 || b1[0] != "local" {
+		t.Errorf("expected [local] when locMode=true, got %v", b1)
+	}
+
+	// 2. No vertex, loopback Cloud Run URL -> local only
+	b2 := deriveAvailableBackends("", "http://127.0.0.1:8080/v1", "", false)
+	if len(b2) != 1 || b2[0] != "local" {
+		t.Errorf("expected [local] when unconfigured, got %v", b2)
+	}
+
+	// 3. Remote Cloud Run only
+	b3 := deriveAvailableBackends("", "https://dgemma-test-uc.a.run.app/v1", "", false)
+	if len(b3) != 1 || b3[0] != "cloudrun" {
+		t.Errorf("expected [cloudrun] when Cloud Run configured, got %v", b3)
+	}
+
+	// 4. Vertex and remote Cloud Run
+	b4 := deriveAvailableBackends("https://endpoint.prediction.vertexai.goog/v1", "https://dgemma-test-uc.a.run.app/v1", "", false)
+	if len(b4) != 3 || b4[0] != "vertex_first" || b4[1] != "vertex" || b4[2] != "cloudrun" {
+		t.Errorf("expected [vertex_first, vertex, cloudrun], got %v", b4)
+	}
+
+	// 5. Remote Cloud Run and local Metal
+	b5 := deriveAvailableBackends("", "https://dgemma-test-uc.a.run.app/v1", "http://127.0.0.1:8080/v1", false)
+	if len(b5) != 2 || b5[0] != "cloudrun" || b5[1] != "local" {
+		t.Errorf("expected [cloudrun, local], got %v", b5)
+	}
+}
+
+func TestServePortDefault(t *testing.T) {
+	flag := serveCmd.Flags().Lookup("port")
+	if flag == nil {
+		t.Fatalf("serve flag --port not found")
+	}
+	if flag.DefValue != "8090" {
+		t.Errorf("expected default serve port '8090', got %q", flag.DefValue)
+	}
+}

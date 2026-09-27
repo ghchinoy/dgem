@@ -1681,236 +1681,256 @@ export class DgemStudio extends LitElement {
           </div>
 
           <div class="status-cluster">
-            <div style="position:relative; display:inline-flex; align-items:center; gap:0.25rem;">
-              <button
-                class="btn btn--sm ${this.backendTarget === 'vertex' || this.backendTarget === 'vertex_first' ? 'btn--brand' : ''}"
-                @click=${async () => {
-                  this.backendSettingsOpen = !this.backendSettingsOpen;
-                  if (this.backendSettingsOpen) {
-                    await this.fetchBackendConfig();
-                  }
-                }}
-                title="Switch Inference Backend: Local Metal, Vertex First (Auto-Failover), Cloud Run GPU, or Vertex AI Strict (/invoke/*)"
-              >
-                <span class="material-symbols-outlined">
-                  ${this.backendTarget === 'local' ? 'laptop_mac' : this.backendTarget === 'cloudrun' ? 'cloud_done' : 'hub'}
-                </span>
-                <span>
-                  ${this.backendTarget === 'local'
-                    ? 'Local Metal'
-                    : this.backendTarget === 'vertex_first'
-                      ? 'Vertex First (Auto)'
-                      : this.backendTarget === 'vertex'
-                        ? 'Vertex AI (/invoke/*)'
-                        : 'Cloud Run GPU'}
-                </span>
-                <span class="material-symbols-outlined" style="font-size:13px; opacity:0.85">
-                  expand_more
-                </span>
-              </button>
-
-              ${this.backendSettingsOpen
-                ? html`
-                    <div
-                      style="position:fixed; inset:0; z-index:998; background:rgba(15, 23, 42, 0.18);"
-                      @click=${() => (this.backendSettingsOpen = false)}
-                    ></div>
-                    <div
-                      style="position:absolute; top:calc(100% + 10px); left:0; width:min(440px, calc(100vw - 2rem)); background:${this.resolvedTheme === 'dark' ? '#0f172a' : '#ffffff'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}; border:1.5px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; border-radius:12px; box-shadow:0 24px 48px -12px rgba(15, 23, 42, 0.45), 0 8px 16px -6px rgba(15, 23, 42, 0.25); padding:1rem; z-index:999; display:flex; flex-direction:column; gap:0.75rem;"
+            ${this.availableBackends && this.availableBackends.length > 1
+              ? html`
+                  <div style="position:relative; display:inline-flex; align-items:center; gap:0.25rem;">
+                    <button
+                      class="btn btn--sm ${this.backendTarget === 'vertex' || this.backendTarget === 'vertex_first' ? 'btn--brand' : ''}"
+                      @click=${async () => {
+                        this.backendSettingsOpen = !this.backendSettingsOpen;
+                        if (this.backendSettingsOpen) {
+                          await this.fetchBackendConfig();
+                        }
+                      }}
+                      title="Switch Inference Backend"
                     >
-                      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid ${this.resolvedTheme === 'dark' ? '#1e293b' : '#e2e8f0'}; padding-bottom:0.55rem;">
-                        <div>
-                          <div style="font-size:0.84rem; font-weight:700; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}">
-                            Inference Backend Target
-                          </div>
-                          <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
-                            Select active serving policy (<code>X-DGem-Backend</code> / MCP <code>backend</code>)
-                          </div>
-                        </div>
-                        <button
-                          class="btn btn--sm"
-                          style="padding:0.2rem 0.5rem; font-size:0.75rem;"
-                          @click=${() => (this.backendSettingsOpen = false)}
-                        >
-                          ✕
-                        </button>
-                      </div>
+                      <span class="material-symbols-outlined">
+                        ${this.backendTarget === 'local' ? 'laptop_mac' : this.backendTarget === 'cloudrun' ? 'cloud_done' : 'hub'}
+                      </span>
+                      <span>
+                        ${this.backendTarget === 'local'
+                          ? 'Local Metal'
+                          : this.backendTarget === 'vertex_first'
+                            ? 'Vertex First (Auto)'
+                            : this.backendTarget === 'vertex'
+                              ? 'Vertex AI (/invoke/*)'
+                              : 'Cloud Run GPU'}
+                      </span>
+                      <span class="material-symbols-outlined" style="font-size:13px; opacity:0.85">
+                        expand_more
+                      </span>
+                    </button>
 
-                      <button
-                        type="button"
-                        style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex_first' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex_first' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
-                        @click=${async () => {
-                          await this.saveBackendConfig('vertex_first', this.vertexUrl);
-                          this.backendSettingsOpen = false;
-                        }}
-                      >
-                        <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
-                          <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">alt_route</span>
-                          <span>Vertex First · Cloud Run Failover (Recommended)</span>
-                        </div>
-                        <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                          Routes to Vertex AI Dedicated Endpoint when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
-                        </div>
-                      </button>
-
-                      ${this.localAvailable || this.availableBackends.includes('local')
-                        ? html`
-                            <button
-                              type="button"
-                              style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'local' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'local' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
-                              @click=${async () => {
-                                await this.saveBackendConfig('local', this.vertexUrl);
-                                this.backendSettingsOpen = false;
-                              }}
-                            >
-                              <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                                <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
-                                  <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">laptop_mac</span>
-                                  <span>Local · Apple Silicon Metal</span>
+                    ${this.backendSettingsOpen
+                      ? html`
+                          <div
+                            style="position:fixed; inset:0; z-index:998; background:rgba(15, 23, 42, 0.18);"
+                            @click=${() => (this.backendSettingsOpen = false)}
+                          ></div>
+                          <div
+                            style="position:absolute; top:calc(100% + 10px); left:0; width:min(440px, calc(100vw - 2rem)); background:${this.resolvedTheme === 'dark' ? '#0f172a' : '#ffffff'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}; border:1.5px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; border-radius:12px; box-shadow:0 24px 48px -12px rgba(15, 23, 42, 0.45), 0 8px 16px -6px rgba(15, 23, 42, 0.25); padding:1rem; z-index:999; display:flex; flex-direction:column; gap:0.75rem;"
+                          >
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid ${this.resolvedTheme === 'dark' ? '#1e293b' : '#e2e8f0'}; padding-bottom:0.55rem;">
+                              <div>
+                                <div style="font-size:0.84rem; font-weight:700; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'}">
+                                  Inference Backend Target
                                 </div>
-                                <span style="font-size:0.62rem; font-weight:700; padding:0.1rem 0.35rem; border-radius:4px; background:${this.localStatus?.reachable ? 'rgba(22, 163, 74, 0.16)' : 'rgba(100, 116, 139, 0.18)'}; color:${this.localStatus?.reachable ? '#16a34a' : (this.resolvedTheme === 'dark' ? '#cbd5e1' : '#475569')};">
-                                  ${this.localStatus?.reachable ? 'READY' : 'OFFLINE'}
-                                </span>
+                                <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
+                                  Select active serving policy (<code>X-DGem-Backend</code> / MCP <code>backend</code>)
+                                </div>
                               </div>
-                              <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                                On-device diffgemma (Unified Memory) · $0.00/hr · <code>${this.localUrl}</code> (text-only)
-                              </div>
-                            </button>
-                          `
-                        : ''}
+                              <button
+                                class="btn btn--sm"
+                                style="padding:0.2rem 0.5rem; font-size:0.75rem;"
+                                @click=${() => (this.backendSettingsOpen = false)}
+                              >
+                                ✕
+                              </button>
+                            </div>
 
-                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.55rem;">
-                        <button
-                          type="button"
-                          style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'cloudrun' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'cloudrun' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
-                          @click=${async () => {
-                            await this.saveBackendConfig('cloudrun', this.vertexUrl);
-                            this.backendSettingsOpen = false;
-                          }}
-                        >
-                          <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
-                            <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">cloud_done</span>
-                            <span>Cloud Run GPU (Strict)</span>
+                            ${this.availableBackends.includes('vertex_first')
+                              ? html`
+                                  <button
+                                    type="button"
+                                    style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex_first' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex_first' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                                    @click=${async () => {
+                                      await this.saveBackendConfig('vertex_first', this.vertexUrl);
+                                      this.backendSettingsOpen = false;
+                                    }}
+                                  >
+                                    <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
+                                      <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">alt_route</span>
+                                      <span>Vertex First · Cloud Run Failover (Recommended)</span>
+                                    </div>
+                                    <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
+                                      Routes to Vertex AI Dedicated Endpoint when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
+                                    </div>
+                                  </button>
+                                `
+                              : null}
+
+                            ${this.availableBackends.includes('local')
+                              ? html`
+                                  <button
+                                    type="button"
+                                    style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'local' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'local' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                                    @click=${async () => {
+                                      await this.saveBackendConfig('local', this.vertexUrl);
+                                      this.backendSettingsOpen = false;
+                                    }}
+                                  >
+                                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                                      <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
+                                        <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">laptop_mac</span>
+                                        <span>Local · Apple Silicon Metal</span>
+                                      </div>
+                                      <span style="font-size:0.62rem; font-weight:700; padding:0.1rem 0.35rem; border-radius:4px; background:${this.localStatus?.reachable ? 'rgba(22, 163, 74, 0.16)' : 'rgba(100, 116, 139, 0.18)'}; color:${this.localStatus?.reachable ? '#16a34a' : (this.resolvedTheme === 'dark' ? '#cbd5e1' : '#475569')};">
+                                        ${this.localStatus?.reachable ? 'READY' : 'OFFLINE'}
+                                      </span>
+                                    </div>
+                                    <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
+                                      On-device diffgemma (Unified Memory) · $0.00/hr · <code>${this.localUrl}</code> (text-only)
+                                    </div>
+                                  </button>
+                                `
+                              : null}
+
+                            <div style="display:grid; grid-template-columns:${this.availableBackends.includes('cloudrun') && this.availableBackends.includes('vertex') ? '1fr 1fr' : '1fr'}; gap:0.55rem;">
+                              ${this.availableBackends.includes('cloudrun')
+                                ? html`
+                                    <button
+                                      type="button"
+                                      style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'cloudrun' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'cloudrun' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                                      @click=${async () => {
+                                        await this.saveBackendConfig('cloudrun', this.vertexUrl);
+                                        this.backendSettingsOpen = false;
+                                      }}
+                                    >
+                                      <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
+                                        <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">cloud_done</span>
+                                        <span>Cloud Run GPU (Strict)</span>
+                                      </div>
+                                      <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
+                                        Scale-to-zero ($0/hr idle) · NVIDIA RTX Pro 6000
+                                      </div>
+                                    </button>
+                                  `
+                                : null}
+
+                              ${this.availableBackends.includes('vertex')
+                                ? html`
+                                    <button
+                                      type="button"
+                                      style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                                      @click=${async () => {
+                                        await this.saveBackendConfig('vertex', this.vertexUrl);
+                                      }}
+                                    >
+                                      <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
+                                        <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">hub</span>
+                                        <span>Vertex AI Strict (/invoke/*)</span>
+                                      </div>
+                                      <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
+                                        Dedicated Endpoint (/invoke/*)
+                                      </div>
+                                    </button>
+                                  `
+                                : null}
+                            </div>
+
+                            ${this.availableBackends.includes('vertex') || this.availableBackends.includes('vertex_first')
+                              ? html`
+                                  <div
+                                    style="padding:0.65rem 0.75rem; border-radius:8px; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; border:1px solid ${this.resolvedTheme === 'dark' ? '#1e293b' : '#e2e8f0'}; display:flex; flex-direction:column; gap:0.45rem;"
+                                  >
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                      <span style="font-size:0.72rem; font-weight:700; color:${this.resolvedTheme === 'dark' ? '#e2e8f0' : '#1e293b'};">
+                                        Vertex AI Dedicated Endpoint (<code>dgemma-dedicated</code>)
+                                      </span>
+                                      <span
+                                        style="font-size:0.66rem; font-weight:700; padding:0.12rem 0.45rem; border-radius:999px; background:${this.vertexStatus?.state === 'deployed' ? 'rgba(22, 163, 74, 0.16)' : this.vertexStatus?.state === 'deploying' ? 'rgba(217, 119, 6, 0.18)' : 'rgba(100, 116, 139, 0.18)'}; color:${this.vertexStatus?.state === 'deployed' ? '#16a34a' : this.vertexStatus?.state === 'deploying' ? '#d97706' : (this.resolvedTheme === 'dark' ? '#cbd5e1' : '#475569')};"
+                                      >
+                                        ${this.vertexStatus?.state === 'deployed'
+                                          ? 'ACTIVE · RTX PRO 6000'
+                                          : this.vertexStatus?.state === 'deploying'
+                                            ? 'PROVISIONING G4...'
+                                            : 'QUIESCED · $0.00/hr'}
+                                      </span>
+                                    </div>
+                                    <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.35;">
+                                      ${this.vertexStatus?.message ||
+                                      'Vertex AI Dedicated Endpoint (/invoke/*) registered in us-central1.'}
+                                    </div>
+                                    <div style="display:flex; gap:0.45rem; margin-top:0.15rem;">
+                                      ${this.vertexStatus?.state === 'deployed' || this.vertexStatus?.state === 'deploying'
+                                        ? html`
+                                            <button
+                                              class="btn btn--sm"
+                                              ?disabled=${this.vertexActionBusy}
+                                              @click=${() => this.handleTeardownVertex()}
+                                            >
+                                              <span class="material-symbols-outlined">power_settings_new</span>
+                                              <span>${this.vertexActionBusy ? 'Updating...' : 'Teardown Replica ($0/hr)'}</span>
+                                            </button>
+                                          `
+                                        : html`
+                                            <button
+                                              class="btn btn--sm btn--brand"
+                                              ?disabled=${this.vertexActionBusy}
+                                              @click=${() => this.handleProvisionVertex()}
+                                            >
+                                              <span class="material-symbols-outlined">bolt</span>
+                                              <span>${this.vertexActionBusy ? 'Starting...' : 'Provision Vertex GPU (G4)'}</span>
+                                            </button>
+                                          `}
+                                      <button
+                                        class="btn btn--sm"
+                                        ?disabled=${this.vertexActionBusy}
+                                        @click=${() => this.fetchBackendConfig()}
+                                      >
+                                        <span class="material-symbols-outlined">refresh</span>
+                                        <span>Refresh</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label
+                                      style="display:block; font-size:0.71rem; font-weight:600; color:${this.resolvedTheme === 'dark' ? '#cbd5e1' : '#334155'}; margin-bottom:0.25rem;"
+                                    >
+                                      Vertex AI Endpoint ID or Dedicated <code>/invoke/*</code> URL (<code>X-DGem-Vertex-Url</code>)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      .value=${this.vertexUrl}
+                                      @input=${(e: Event) => {
+                                        this.vertexUrl = (e.target as HTMLInputElement).value;
+                                      }}
+                                      placeholder="Endpoint ID or Dedicated /invoke/* URL"
+                                      style="width:100%; box-sizing:border-box; font-family:'JetBrains Mono', monospace; font-size:0.72rem; padding:0.45rem 0.6rem; border-radius:6px; border:1px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                                    />
+                                  </div>
+                                `
+                              : null}
+
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:0.2rem;">
+                              <span style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
+                                Active: <strong>${this.backendTarget === 'local'
+                                  ? 'Local diffgemma (Apple Silicon Metal)'
+                                  : this.backendTarget === 'vertex_first'
+                                    ? isVertexBackend
+                                      ? 'Vertex First → Vertex AI G4 (/invoke/*)'
+                                      : 'Vertex First → Cloud Run GPU (Failover)'
+                                    : this.backendTarget === 'vertex'
+                                      ? 'Vertex AI Strict (/invoke/*)'
+                                      : 'Cloud Run GPU (Strict)'}</strong>
+                              </span>
+                              <button
+                                class="btn btn--sm btn--brand"
+                                @click=${async () => {
+                                  await this.saveBackendConfig(this.backendTarget, this.vertexUrl);
+                                  this.backendSettingsOpen = false;
+                                }}
+                              >
+                                Save & Close
+                              </button>
+                            </div>
                           </div>
-                          <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                            Scale-to-zero ($0/hr idle) · NVIDIA RTX Pro 6000
-                          </div>
-                        </button>
-
-                        <button
-                          type="button"
-                          style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
-                          @click=${async () => {
-                            await this.saveBackendConfig('vertex', this.vertexUrl);
-                          }}
-                        >
-                          <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
-                            <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">hub</span>
-                            <span>Vertex AI Strict (/invoke/*)</span>
-                          </div>
-                          <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                            Dedicated Endpoint (/invoke/*)
-                          </div>
-                        </button>
-                      </div>
-
-                      <div
-                        style="padding:0.65rem 0.75rem; border-radius:8px; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; border:1px solid ${this.resolvedTheme === 'dark' ? '#1e293b' : '#e2e8f0'}; display:flex; flex-direction:column; gap:0.45rem;"
-                      >
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                          <span style="font-size:0.72rem; font-weight:700; color:${this.resolvedTheme === 'dark' ? '#e2e8f0' : '#1e293b'};">
-                            Vertex AI Dedicated Endpoint (<code>dgemma-dedicated</code>)
-                          </span>
-                          <span
-                            style="font-size:0.66rem; font-weight:700; padding:0.12rem 0.45rem; border-radius:999px; background:${this.vertexStatus?.state === 'deployed' ? 'rgba(22, 163, 74, 0.16)' : this.vertexStatus?.state === 'deploying' ? 'rgba(217, 119, 6, 0.18)' : 'rgba(100, 116, 139, 0.18)'}; color:${this.vertexStatus?.state === 'deployed' ? '#16a34a' : this.vertexStatus?.state === 'deploying' ? '#d97706' : (this.resolvedTheme === 'dark' ? '#cbd5e1' : '#475569')};"
-                          >
-                            ${this.vertexStatus?.state === 'deployed'
-                              ? 'ACTIVE · RTX PRO 6000'
-                              : this.vertexStatus?.state === 'deploying'
-                                ? 'PROVISIONING G4...'
-                                : 'QUIESCED · $0.00/hr'}
-                          </span>
-                        </div>
-                        <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.35;">
-                          ${this.vertexStatus?.message ||
-                          'Vertex AI Dedicated Endpoint (/invoke/*) registered in us-central1.'}
-                        </div>
-                        <div style="display:flex; gap:0.45rem; margin-top:0.15rem;">
-                          ${this.vertexStatus?.state === 'deployed' || this.vertexStatus?.state === 'deploying'
-                            ? html`
-                                <button
-                                  class="btn btn--sm"
-                                  ?disabled=${this.vertexActionBusy}
-                                  @click=${() => this.handleTeardownVertex()}
-                                >
-                                  <span class="material-symbols-outlined">power_settings_new</span>
-                                  <span>${this.vertexActionBusy ? 'Updating...' : 'Teardown Replica ($0/hr)'}</span>
-                                </button>
-                              `
-                            : html`
-                                <button
-                                  class="btn btn--sm btn--brand"
-                                  ?disabled=${this.vertexActionBusy}
-                                  @click=${() => this.handleProvisionVertex()}
-                                >
-                                  <span class="material-symbols-outlined">bolt</span>
-                                  <span>${this.vertexActionBusy ? 'Starting...' : 'Provision Vertex GPU (G4)'}</span>
-                                </button>
-                              `}
-                          <button
-                            class="btn btn--sm"
-                            ?disabled=${this.vertexActionBusy}
-                            @click=${() => this.fetchBackendConfig()}
-                          >
-                            <span class="material-symbols-outlined">refresh</span>
-                            <span>Refresh</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label
-                          style="display:block; font-size:0.71rem; font-weight:600; color:${this.resolvedTheme === 'dark' ? '#cbd5e1' : '#334155'}; margin-bottom:0.25rem;"
-                        >
-                          Vertex AI Endpoint ID or Dedicated <code>/invoke/*</code> URL (<code>X-DGem-Vertex-Url</code>)
-                        </label>
-                        <input
-                          type="text"
-                          .value=${this.vertexUrl}
-                          @input=${(e: Event) => {
-                            this.vertexUrl = (e.target as HTMLInputElement).value;
-                          }}
-                          placeholder="Endpoint ID or Dedicated /invoke/* URL"
-                          style="width:100%; box-sizing:border-box; font-family:'JetBrains Mono', monospace; font-size:0.72rem; padding:0.45rem 0.6rem; border-radius:6px; border:1px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
-                        />
-                      </div>
-
-                      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:0.2rem;">
-                        <span style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
-                          Active: <strong>${this.backendTarget === 'local'
-                            ? 'Local diffgemma (Apple Silicon Metal)'
-                            : this.backendTarget === 'vertex_first'
-                              ? isVertexBackend
-                                ? 'Vertex First → Vertex AI G4 (/invoke/*)'
-                                : 'Vertex First → Cloud Run GPU (Failover)'
-                              : this.backendTarget === 'vertex'
-                                ? 'Vertex AI Strict (/invoke/*)'
-                                : 'Cloud Run GPU (Strict)'}</strong>
-                        </span>
-                        <button
-                          class="btn btn--sm btn--brand"
-                          @click=${async () => {
-                            await this.saveBackendConfig(this.backendTarget, this.vertexUrl);
-                            this.backendSettingsOpen = false;
-                          }}
-                        >
-                          Save & Close
-                        </button>
-                      </div>
-                    </div>
-                  `
-                : null}
-            </div>
+                        `
+                      : null}
+                  </div>
+                `
+              : null}
 
             <span class="pill" title=${this.gpuStatus?.message || ''}>
               <span class="dot ${dotClass}"></span>
