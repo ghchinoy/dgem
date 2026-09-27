@@ -37,6 +37,11 @@ if ! gcloud artifacts repositories describe "$REPOSITORY" --location="$REGION" -
     --description="DiffusionGemma Cloud Run container images"
 fi
 
+# 2. The Dockerfile bundles a static dgem binary (systemone adapter for ROLE=decision-index)
+echo "==> Building static Linux dgem binary into deploy/cloudrun/dgem..."
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o deploy/cloudrun/dgem .
+trap 'rm -f deploy/cloudrun/dgem' EXIT
+
 echo "==> Submitting build to Google Cloud Build (machine: e2-highcpu-8, timeout: 30m)..."
 gcloud builds submit deploy/cloudrun \
   --project="$PROJECT_ID" \

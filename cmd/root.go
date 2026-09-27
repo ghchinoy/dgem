@@ -353,7 +353,14 @@ func FetchGCPIdentityToken(explicitAudience, targetURL string) string {
 // GetClient returns a configured API client using Viper values.
 func GetClient() *client.Client {
 	if f := RootCmd.PersistentFlags().Lookup("vertex-url"); f != nil && f.Changed {
-		if norm, err := expandAndValidateVertexURL(f.Value.String()); err == nil {
+		norm, err := expandAndValidateVertexURL(f.Value.String())
+		if err != nil {
+			// Never fall back silently to --url (default localhost): benchmarks would record
+			// connection-refused errors as a 0% run against the wrong target.
+			fmt.Fprintf(os.Stderr, "Error: --vertex-url: %v\n", err)
+			os.Exit(2)
+		}
+		if norm != "" {
 			return GetClientForURL(norm)
 		}
 	}

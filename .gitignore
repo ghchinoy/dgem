@@ -57,3 +57,4 @@ target/
 .serena/
 .vscode/
 .idea/
+benchmarks/runs/*/.manifest.lock

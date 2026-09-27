@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Per-item agreement between groups of benchmark receipts (bench-jev / bench-calibration).
+
+Compares answers item by item. Within-group pairs (same image, repeated runs) give the noise floor;
+cross-group pairs (old vs new image) should look the same if the change is neutral.
+
+  python3 scripts/receipt_agreement.py --group old=a_r1.json,a_r2.json --group new=b_r1.json,b_r2.json
+"""
+import argparse
+import itertools
+import json
+import statistics
+
+
+def load(path):
+    d = json.load(open(path))
+    cases = d.get("cases") or d.get("items") or d.get("results") or []
+    out = {}
+    for c in cases:
+        cid = c.get("id") or c.get("case_id")
+        out[cid] = {"actual": c.get("actual") or c.get("predicted"), "ok": bool(c.get("accurate", c.get("correct"))),
+                    "conf": c.get("confidence"), "wall": c.get("wall_time_ms"), "brier": c.get("brier_score")}
+    return out
+
+
+def pair(a, b):
+    ids = sorted(set(a) & set(b))
+    same = sum(a[i]["actual"] == b[i]["actual"] for i in ids)
+    dconf = [abs(a[i]["conf"] - b[i]["conf"]) for i in ids if a[i]["conf"] is not None and b[i]["conf"] is not None]
+    return len(ids), same, (statistics.mean(dconf) if dconf else float("nan"))
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--group", action="append", required=True, help="name=r1.json,r2.json,...")
+    a = ap.parse_args()
+    groups = {}
+    for g in a.group:
+        n, files = g.split("=", 1)
+        groups[n] = [(f, load(f)) for f in files.split(",")]
+    print(f"{'group':14s} {'runs':>4s} {'correct per run':>22s} {'mean Brier':>10s} {'wall p50 ms':>11s}")
+    for n, runs in groups.items():
+        corr = [sum(v["ok"] for v in r.values()) for _, r in runs]
+        brier = [statistics.mean(v["brier"] for v in r.values() if v["brier"] is not None) for _, r in runs]
+        wall = [statistics.median(v["wall"] for v in r.values() if v["wall"]) for _, r in runs]
+        print(f"{n:14s} {len(runs):4d} {str(corr):>22s} {statistics.mean(brier):10.4f} {statistics.mean(wall):11.0f}")
+    print(f"\n{'pair type':30s} {'pairs':>5s} {'answer agreement':>17s} {'mean |Δconf|':>12s}")
+    names = list(groups)
+    for n in names:
+        rs = [pair(x[1], y[1]) for x, y in itertools.combinations(groups[n], 2)]
+        if rs:
+            print(f"{'within ' + n:30s} {len(rs):5d} {statistics.mean(s / t for t, s, _ in rs):17.1%} {statistics.mean(d for *_, d in rs):12.4f}")
+    for n1, n2 in itertools.combinations(names, 2):
+        rs = [pair(x[1], y[1]) for x in groups[n1] for y in groups[n2]]
+        print(f"{'cross ' + n1 + ' vs ' + n2:30s} {len(rs):5d} {statistics.mean(s / t for t, s, _ in rs):17.1%} {statistics.mean(d for *_, d in rs):12.4f}")
+
+
+if __name__ == "__main__":
+    main()

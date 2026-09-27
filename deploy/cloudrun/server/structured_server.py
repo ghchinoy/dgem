@@ -1244,6 +1244,14 @@ def message_text(m):
     return c if isinstance(c, str) else ""
 
 
+class _Server(ThreadingHTTPServer):
+    # dgem: the default listen backlog of 5 resets connections when a client opens as many at
+    # once as the engine serves sequences (seen as Vertex "Model server early terminated the
+    # request" at 16+ concurrent requests). Excess requests queue on MAX_INFLIGHT instead.
+    request_queue_size = 256
+    daemon_threads = True
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -1540,7 +1548,7 @@ def serve_tls(host, port, cert_dir):
     cert, key = self_signed(cert_dir)
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(cert, key)
-    srv = ThreadingHTTPServer((host, port), Handler)
+    srv = _Server((host, port), Handler)
     srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
@@ -1590,7 +1598,7 @@ def main():
         f"(canvas {CANVAS_LEN})",
         flush=True,
     )
-    ThreadingHTTPServer((ARGS.host, ARGS.port), Handler).serve_forever()
+    _Server((ARGS.host, ARGS.port), Handler).serve_forever()
 
 
 if __name__ == "__main__":

@@ -183,8 +183,20 @@ def summarize(path):
 
 
 def cmd_record(args, receipt_path=None, command=None):
-    m = load_manifest(args.run, create=True)
     path = receipt_path or args.path
+    summary = summarize(path)
+    state = vertex_state() if "vertex" in (command or args.command or "") or os.environ.get("RECORD_VERTEX_STATE") else None
+    os.makedirs(os.path.join(RUNS, args.run), exist_ok=True)
+    # Parallel `exec` calls on the same run each rewrite manifest.json; hold an exclusive lock across
+    # load -> append -> save so concurrent recordings are not lost.
+    import fcntl
+    with open(os.path.join(RUNS, args.run, ".manifest.lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _record_locked(args, path, command, summary, state)
+
+
+def _record_locked(args, path, command, summary, state):
+    m = load_manifest(args.run, create=True)
     rel = os.path.relpath(os.path.abspath(path), os.path.join(RUNS, args.run))
     entry = {
         "suite": args.suite,
@@ -193,8 +205,8 @@ def cmd_record(args, receipt_path=None, command=None):
         "sha256": sha256(path),
         "recorded": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "command": command or args.command or "",
-        "backend_state": vertex_state() if "vertex" in (command or args.command or "") or os.environ.get("RECORD_VERTEX_STATE") else None,
-        "summary": summarize(path),
+        "backend_state": state,
+        "summary": summary,
     }
     m["receipts"] = [r for r in m["receipts"] if not (r["suite"] == args.suite and r["config"] == args.config)]
     m["receipts"].append(entry)
