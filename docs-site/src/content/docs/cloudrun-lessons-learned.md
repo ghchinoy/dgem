@@ -1,11 +1,15 @@
 ---
 title: Cloud Run Lessons Learned & Self-Contained Deployment Guide
-description: Architectural comparison of experimental vLLM deployments on Google Cloud Run, comparing taeold/djev-run against dgem and providing a 100% self-contained Artifact Registry build pipeline.
+description: Architectural analysis of experimental vLLM deployments on Google Cloud Run, documenting CUDA ABI boundaries, serverless container constraints, and the path to clean upstream builds.
 ---
 
 # Lessons Learned: Deploying Experimental vLLM on Google Cloud Run with GPU
 
-This document records the empirical findings, architectural trade-offs, and operational lessons learned while deploying Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), comparing against Daniel Lee's [**`taeold/djev-run`**](https://github.com/taeold/djev-run) and providing a 100% self-contained, reproducible container build and deployment pipeline.
+> [!NOTE]
+> **Historical Archive & Evolution**: This document records the empirical findings and architectural lessons learned during the prototype phase of containerizing vLLM and DiffusionGemma on Cloud Run (including legacy fork overlays and ABI mismatches).
+> As of commit `56baadf`, `dgem` builds directly on official upstream `vllm-project/vllm:main` nightly images with native PR #57250 and PR #58216 support. For current production deployment procedures, refer to [Public Container Images](/dgem/public-image/) and [Deploy on Your Own Cloud GPU](/dgem/deploy-your-own-gpu/).
+
+This document records the empirical findings, architectural trade-offs, and operational lessons learned while deploying Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), providing a 100% self-contained, reproducible container build and deployment pipeline.
 
 ---
 

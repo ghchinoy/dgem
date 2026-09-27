@@ -73,6 +73,8 @@ gcloud run deploy dgemma \
   --allow-unauthenticated
 ```
 
+> **Security Note**: `--allow-unauthenticated` allows direct testing without IAM tokens. For production environments, omit `--allow-unauthenticated`, deploy `scripts/deploy_cloudrun_gateway.sh` with Identity-Aware Proxy (IAP), and pass `--gcp-auth` on client commands.
+
 *For L4 GPUs (`--gpu-type=nvidia-l4 --memory=32Gi`), set `--set-env-vars="DISABLE_MM=1"` to disable the multimodal SigLIP vision tower if operating within the 32Gi RAM ceiling.*
 
 ### Evaluating on Decision Index (`ROLE=decision-index`)
@@ -116,18 +118,28 @@ This deploys a Blackwell G4 (`g4-standard-48` + 1× RTX PRO 6000) dedicated endp
 
 ## 5. Verification & Querying
 
-Once deployed, retrieve the service URL and issue a test structured decision:
-
+### A. Testing Cloud Run GPU
 ```bash
 ENDPOINT_URL=$(gcloud run services describe dgemma --project="$GCP_PROJECT" --region="$GCP_REGION" --format="value(status.url)")
 
 # Check health
 curl -s "${ENDPOINT_URL}/health"
 
-# Run a test policy evaluation using the dgem CLI
+# Run a test policy evaluation
 ./bin/dgem decide -u "${ENDPOINT_URL}/v1" \
   -t templates/support_triage.json.tmpl \
-  -v "ticket_text=Database connection pool exhausted"
+  -v "ticket=Database connection pool exhausted" --stats
+```
+
+### B. Testing Vertex AI Dedicated Endpoint
+```bash
+# Obtain Endpoint ID from deployment output or list endpoints:
+EP_ID=$(gcloud ai endpoints list --project="$GCP_PROJECT" --region="$GCP_REGION" --filter="displayName=dgemma-dedicated-g4" --format="value(name)" | head -1)
+
+# Run a test policy evaluation with automatic GCP token injection:
+./bin/dgem decide --vertex-url "$EP_ID" --gcp-auth \
+  -t templates/support_triage.json.tmpl \
+  -v "ticket=Database connection pool exhausted" --stats
 ```
 
 ---

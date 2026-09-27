@@ -153,5 +153,5 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 ### Per-Edge Occlusion Entropy ($\tilde{H}_{\text{edge}}$)
 * **In Plain English**: Traditional object detectors give you a single confidence number for an entire box, hiding *which side* of the object is blocked. Because `dgem` evaluates `ymin`, `xmin`, `ymax`, and `xmax` as 4 independent 21-bin distributions, an object covering the bottom edge causes entropy to spike **specifically on `ymax`** (`1.37×` higher on live Cloud Run `dgemma`) while the 3 visible edges stay sharp.
 * **Under the Hood**: Computed per edge $m \in \{\text{ymin}, \text{xmin}, \text{ymax}, \text{xmax}\}$ as $\tilde{H}_m = H_m / \ln(21) \in [0, 1]$.
-* **Where You See It in `dgem`**: `dgem bench-bbox --annotate` and `scratch/render_bbox_results.py`.
+* **Where You See It in `dgem`**: `dgem bench-bbox --annotate`.
 

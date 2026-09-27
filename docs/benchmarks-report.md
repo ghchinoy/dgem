@@ -106,7 +106,7 @@ Evaluated live on Google Compute Engine (`us-central1-a`) running `nvidia/diffus
 ================================================================================
   DIFFUSIONGEMMA: DISCRETE DIFFUSION BENCHMARK EVALUATION
 ================================================================================
-Target Server: http://35.193.147.242:8080/v1
+Target Server: http://<GCE_EXTERNAL_IP>:8080/v1
 Model:         nvidia/diffusiongemma-26B-A4B-it-NVFP4
 Mode:          slot
 Test Cases:    30 items
@@ -235,6 +235,20 @@ Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/res
 | **`DiffusionGemma 26B`** (Cloud Run 1× L4 `NVFP4`, `s=1`) | **89.1% (41 / 46)** | **88.0% (44 / 50)** | **712 ms** ⭐ | **4.79× faster** ⭐ | **100% AgentDrift (`693 ms`), 100% Guardrail (`669 ms`), 100% Intent (`765 ms`)**, calibrated Shannon entropy $H$ |
 | **`gemini-3.8-flash`** (Vertex AI Autoregressive) | 87.0% (40 / 46) | **98.0% (49 / 50)** 🏆 | 3,412 ms | 1.00× (Baseline) | **100% ANLI (`3/3`), 100% ChaosNLI (`6/6`), 100% Toxicity (`6/6`)** via multi-hop reasoning |
 | **Entropy-Gated Cascade** (`dgemma` $\xrightarrow{H \ge 0.35}$ `3.8-flash`) | **93.5% (43 / 46)** | **94.0% (47 / 50)** ⭐ | **1,824 ms** | **1.87× faster** (`72%` local) | **100% on `ambiguous` (`9/9`), `high-entropy` (`3/3`), and `toxicity` (`6/6`)** while escalating only 28% of traffic |
+
+#### Category-by-Category Latency & Accuracy (`DiffusionGemma 26B` vs. `gemini-3.8-flash`)
+
+| Category | Cases | `DiffusionGemma 26B` Acc | `DiffusionGemma` Latency | `gemini-3.8-flash` Acc (`dgem`) | `gemini-3.8-flash` Latency | Latency Speedup (`dgem` vs `3.8-flash`) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`agent-trajectory`** (`AgentDrift`) | 7 | **100.0% (7 / 7)** ⭐ | **693 ms** | 100.0% (7 / 7) *(85.7% in YAML)* | 4,495 ms | **6.49× faster** ⭐ |
+| **`guardrail`** (`prompt-injections`) | 4 | **100.0% (4 / 4)** ⭐ | **669 ms** | 100.0% (4 / 4) | 2,988 ms | **4.47× faster** |
+| **`grounding`** (`LLM-AggreFact`) | 2 | **100.0% (2 / 2)** ⭐ | **793 ms** | 100.0% (2 / 2) | 1,979 ms | **2.50× faster** |
+| **`retrieval`** (`MS MARCO`) | 2 | **100.0% (2 / 2)** ⭐ | **664 ms** | 100.0% (2 / 2) | 3,115 ms | **4.69× faster** |
+| **`intent`** (`CLINC150 OOS` + `Banking77`) | 7 | **100.0% (7 / 7)** ⭐ | **765 ms** | 85.7% (6 / 7) *(missed `b77-01`)* | 2,828 ms | **3.70× faster** (+14.3% acc) ⭐ |
+| **`qa`** (`BoolQ`) | 3 | **100.0% (3 / 3)** | **729 ms** | 100.0% (3 / 3) | 1,683 ms | **2.31× faster** |
+| **`sentiment`** (`Yelp` + `SST-5`) | 6 | **100.0% (6 / 6)** | **664 ms** | 100.0% (6 / 6) | 3,420 ms | **5.15× faster** |
+| **`emotion`** (`GoEmotions`) | 4 | **100.0% (4 / 4)** | **767 ms** | 100.0% (4 / 4) | 2,616 ms | **3.41× faster** |
+| **`toxicity`** (`Civil Comments`) | 6 | 83.3% (5 / 6) | **694 ms** | **100.0% (6 / 6)** ⭐ | 4,380 ms | **6.31× faster** (`100%` w/ cascade) |
 
 ### 8.4 Entropy-Gated Cascade (`EXP-05`: `DiffusionGemma` $\xrightarrow{H \ge 0.35\text{ nats}}$ `gemini-3.8-flash`)
 

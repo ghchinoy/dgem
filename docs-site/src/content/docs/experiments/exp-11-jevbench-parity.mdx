@@ -155,7 +155,7 @@ Upstream JevBench v1.4 introduced an updated evaluation methodology:
   --endpoint-kind gpu --compare-leaderboard
 
 # 6. Replay local Apple M5 Metal receipt with Leaderboard Comparison
-./bin/dgem bench-jev --from-receipt scratch/runs/20260926-local-m5/bench_jev.json \
+./bin/dgem bench-jev --from-receipt benchmarks/jevbench/results_djev_upstream_ref.json \
   --endpoint-kind gpu --compare-leaderboard
 
 # 7. Sweep Normalized Entropy Gate Thresholds [0.40..0.75] on JevBench
