@@ -19,6 +19,27 @@ KEEP_ALIVE="${KEEP_ALIVE:-0}"
 # Portable millisecond clock (BSD/macOS `date` has no %N).
 now_ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
 
+# region_quota <service> <quota-id>: print the quota value that applies to $REGION
+# ("0" if none/unset). The quota list covers every region and its order is not
+# guaranteed, so pick the entry for $REGION instead of the first entry.
+region_quota() {
+  gcloud beta quotas info describe "$2" --service="$1" --project="$PROJECT_ID" --format=json 2>/dev/null \
+    | REGION="$REGION" python3 -c '
+import json, os, sys
+region = os.environ["REGION"]
+try:
+    infos = json.load(sys.stdin).get("dimensionsInfos", [])
+except Exception:
+    print("0"); sys.exit()
+exact = [i for i in infos if i.get("dimensions", {}).get("region") == region]
+applies = [i for i in infos if region in i.get("applicableLocations", [])]
+for i in exact or applies:
+    print(i.get("details", {}).get("value") or "0"); break
+else:
+    print("0")
+' || echo "0"
+}
+
 # health_ok <url> [bearer-token]: true if the endpoint returns HTTP 200 with {"status": "ok"}.
 health_ok() {
   local url="$1" tok="${2:-}" body
@@ -84,10 +105,7 @@ if [[ "$TARGET" == "vertex" ]]; then
   fi
 
   echo "==> Verifying Vertex AI GPU quota ($VERTEX_QUOTA_ID) in $PROJECT_ID ($REGION)..."
-  QUOTA_VAL=$(gcloud beta quotas info describe "$VERTEX_QUOTA_ID" \
-    --service=aiplatform.googleapis.com \
-    --project="$PROJECT_ID" \
-    --format="value(dimensionsInfos[0].details.value)" 2>/dev/null || echo "0")
+  QUOTA_VAL=$(region_quota aiplatform.googleapis.com "$VERTEX_QUOTA_ID")
 
   if [[ "$QUOTA_VAL" == "0" || "$QUOTA_VAL" == "null" || -z "$QUOTA_VAL" ]]; then
     echo ""
@@ -96,7 +114,7 @@ if [[ "$TARGET" == "vertex" ]]; then
     echo "   https://console.cloud.google.com/iam-admin/quotas?project=${PROJECT_ID}&service=aiplatform.googleapis.com"
     exit 2
   fi
-  echo "✓ Active Vertex AI quota confirmed: $QUOTA_VAL GPU(s) available."
+  echo "✓ Active Vertex AI quota confirmed: $QUOTA_VAL GPU(s) in $REGION."
 
   EP_NAME="dgem-smoke-ep-$(date +%s)"
   MODEL_NAME="dgem-smoke-model-$(date +%s)"
@@ -219,10 +237,7 @@ if [[ "$GPU_TYPE" == *"l4"* ]]; then
 fi
 
 echo "==> Verifying Cloud Run GPU quota ($QUOTA_ID) in $PROJECT_ID ($REGION)..."
-QUOTA_VAL=$(gcloud beta quotas info describe "$QUOTA_ID" \
-  --service=run.googleapis.com \
-  --project="$PROJECT_ID" \
-  --format="value(dimensionsInfos[0].details.value)" 2>/dev/null || echo "0")
+QUOTA_VAL=$(region_quota run.googleapis.com "$QUOTA_ID")
 
 if [[ "$QUOTA_VAL" == "0" || "$QUOTA_VAL" == "null" || -z "$QUOTA_VAL" ]]; then
   echo ""
@@ -232,7 +247,8 @@ if [[ "$QUOTA_VAL" == "0" || "$QUOTA_VAL" == "null" || -z "$QUOTA_VAL" ]]; then
   exit 2
 fi
 
-echo "✓ Active quota confirmed: $QUOTA_VAL GPU(s) available."
+# Cloud Run reports GPU quota in thousandths of a GPU (e.g. 4000 = 4 GPUs).
+echo "✓ Active Cloud Run quota confirmed: $QUOTA_VAL (~$(( QUOTA_VAL / 1000 )) GPU(s)) in $REGION."
 
 # 2. Register Guaranteed Teardown Trap
 cleanup() {
