@@ -462,6 +462,27 @@ def upstream_chat(body, timeout=600):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
+def _health_info():
+    """Readiness telemetry for /health: always HTTP 200 (the container is up), with
+    vllm_ready/phase/bytes_staged_gb/warmed from entrypoint.sh's warmup_state.json so the
+    gateway, MCP get_health_and_gpu_status and the Studio can report cold-start progress."""
+    info = {"status": "ok", "server": "dgem-structured-server", "vllm_ready": False,
+            "phase": "loading_vllm_siglip", "bytes_staged_gb": 0.0}
+    try:
+        with open("/tmp/dgemma/warmup_state.json") as wf:
+            info.update(json.load(wf))
+    except Exception:
+        pass
+    try:
+        with urllib.request.urlopen(ARGS.upstream.rstrip("/") + "/health", timeout=0.4) as r:
+            if r.status == 200:
+                info["vllm_ready"] = True
+                info["phase"] = "ready"
+    except Exception:
+        pass
+    return info
+
+
 def upstream_completions(body, timeout=600):
     _wait_for_upstream()
     req = urllib.request.Request(
@@ -1237,7 +1258,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/health", "/invoke/health", "/"):
-            return self._json(200, {"status": "ok", "server": "dgem-structured-server"})
+            return self._json(200, _health_info())
         if self.path == "/health":
             return self._json(200, {"status": "ok"})
         return self._json(404, {"error": {"message": "unknown route"}})

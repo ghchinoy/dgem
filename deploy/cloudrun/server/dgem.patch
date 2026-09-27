@@ -1,5 +1,5 @@
---- deploy/cloudrun/server/structured_server.upstream.py	2026-09-27 08:52:59
-+++ deploy/cloudrun/server/structured_server.py	2026-09-27 08:54:33
+--- deploy/cloudrun/server/structured_server.upstream.py
++++ deploy/cloudrun/server/structured_server.py
 @@ -97,9 +97,12 @@
  
  ARGS = None
@@ -26,12 +26,10 @@
      if samples == "auto":
          policy = {
              "mode": "auto",
-@@ -430,9 +434,26 @@
- def label_id_union(slots):
-     ids = sorted({i for s in slots for i in s["label_ids"]})
+@@ -432,7 +436,24 @@
      return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
-+
-+
+ 
+ 
 +def _wait_for_upstream(max_wait=180):
 +    global _upstream_ready
 +    if _upstream_ready:
@@ -46,31 +44,53 @@
 +                    return
 +        except Exception:
 +            time.sleep(1.0)
- 
- 
++
++
  def upstream_chat(body, timeout=600):
 +    _wait_for_upstream()
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/chat/completions",
          data=json.dumps(body).encode(),
-@@ -442,6 +463,7 @@
+@@ -441,7 +462,29 @@
+     return json.load(urllib.request.urlopen(req, timeout=timeout))
  
  
++def _health_info():
++    """Readiness telemetry for /health: always HTTP 200 (the container is up), with
++    vllm_ready/phase/bytes_staged_gb/warmed from entrypoint.sh's warmup_state.json so the
++    gateway, MCP get_health_and_gpu_status and the Studio can report cold-start progress."""
++    info = {"status": "ok", "server": "dgem-structured-server", "vllm_ready": False,
++            "phase": "loading_vllm_siglip", "bytes_staged_gb": 0.0}
++    try:
++        with open("/tmp/dgemma/warmup_state.json") as wf:
++            info.update(json.load(wf))
++    except Exception:
++        pass
++    try:
++        with urllib.request.urlopen(ARGS.upstream.rstrip("/") + "/health", timeout=0.4) as r:
++            if r.status == 200:
++                info["vllm_ready"] = True
++                info["phase"] = "ready"
++    except Exception:
++        pass
++    return info
++
++
  def upstream_completions(body, timeout=600):
 +    _wait_for_upstream()
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -1214,6 +1236,8 @@
+@@ -1214,6 +1257,8 @@
          self.wfile.write(body)
  
      def do_GET(self):
 +        if self.path in ("/health", "/invoke/health", "/"):
-+            return self._json(200, {"status": "ok", "server": "dgem-structured-server"})
++            return self._json(200, _health_info())
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1303,6 +1327,8 @@
+@@ -1303,6 +1348,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -79,7 +99,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1344,12 @@
+@@ -1318,6 +1365,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
