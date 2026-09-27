@@ -178,3 +178,99 @@ func TestExecuteSystemOne_BatchingAndWideTournament(t *testing.T) {
 		t.Errorf("expected NaiveLimits to reject 19-slot/77-option request")
 	}
 }
+
+func TestExecuteSystemOne_NoulQuestion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		answers := map[string]client.QuestionAnswer{
+			"is_hallucinated": {
+				Label: "yes",
+				Noul:  0.88,
+				Probabilities: map[string]float64{
+					"yes": 0.88,
+					"no":  0.12,
+				},
+				Entropy: 0.36,
+			},
+		}
+		env := client.StructuredDecisionResponse{Answers: answers}
+		envBytes, _ := json.Marshal(env)
+		resp := map[string]any{
+			"choices": []map[string]any{
+				{
+					"message": map[string]any{
+						"role":    "assistant",
+						"content": string(envBytes),
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	cli := client.NewClient(srv.URL, "dgemma", 10*time.Second)
+	req := SystemOneRequest{
+		State: "The patient was prescribed amoxicillin.",
+		Questions: map[string]SystemOneQuestion{
+			"is_hallucinated": {
+				Type:         "noul",
+				Instructions: "Is the claim hallucinated?",
+			},
+		},
+	}
+
+	opts := DefaultEngineOptions()
+	resp, err := ExecuteSystemOne(context.Background(), cli, req, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	ans, ok := resp.Answers["is_hallucinated"]
+	if !ok {
+		t.Fatalf("missing answer for is_hallucinated")
+	}
+	if ans.Type != "noul" {
+		t.Errorf("expected type 'noul', got %q", ans.Type)
+	}
+	if ans.Noul == nil || *ans.Noul < 0.80 || *ans.Noul > 0.95 {
+		t.Errorf("expected noul ~0.88, got %v", ans.Noul)
+	}
+	if ans.Choice != "" {
+		t.Errorf("expected choice to be empty for noul, got %q", ans.Choice)
+	}
+	if len(ans.Probabilities) != 0 {
+		t.Errorf("expected probabilities to be empty for noul, got %v", ans.Probabilities)
+	}
+}
+
+func TestNewSystemOneHTTPHandler_CapacityMarkers(t *testing.T) {
+	// Dummy client with invalid URL to trigger error
+	cli := client.NewClient("http://127.0.0.1:9999/v1", "dgemma", 1*time.Second)
+	opts := DefaultEngineOptions()
+	opts.NaiveLimits = true // will reject >26 options with "options per choice"
+
+	wideCriteria := make(map[string]string)
+	for i := 0; i < 30; i++ {
+		wideCriteria[fmt.Sprintf("opt_%d", i)] = fmt.Sprintf("desc %d", i)
+	}
+
+	reqBody, _ := json.Marshal(SystemOneRequest{
+		State: "Sample state",
+		Questions: map[string]SystemOneQuestion{
+			"q1": {Type: "choice", Criteria: wideCriteria},
+		},
+	})
+
+	handler := NewSystemOneHTTPHandler(cli, opts)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/v1/systemone", strings.NewReader(string(reqBody)))
+	handler(rec, req)
+
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Errorf("expected HTTP 422 for capacity refusal, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "options per choice") {
+		t.Errorf("expected body to contain capacity marker 'options per choice', got %q", rec.Body.String())
+	}
+}
