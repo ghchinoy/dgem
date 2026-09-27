@@ -6,8 +6,8 @@ counted as zero latency).
 
 | Target | Endpoint | Hardware | Image | Engine settings |
 | :--- | :--- | :--- | :--- | :--- |
-| `l4` | Vertex `4217256562927861760` | `g2-standard-16` + 1× L4 | pre-`ab208dd` | `DISABLE_MM=1`, `KV_CACHE_GB=2`, no in-flight limiter |
-| `g4` | Vertex `4423577720856772608` | `g4-standard-48` + 1× RTX PRO 6000 | `dgemma:ab208dd` | `DISABLE_MM=0`, `KV_CACHE_GB=12`, `MAX_SEQS=32`, `MAX_INFLIGHT=8`, replicas 1–2 |
+| `l4` | Vertex `<legacy-endpoint-id>` | `g2-standard-16` + 1× L4 | pre-`ab208dd` | `DISABLE_MM=1`, `KV_CACHE_GB=2`, no in-flight limiter |
+| `g4` | Vertex `<endpoint-id>` | `g4-standard-48` + 1× RTX PRO 6000 | `dgemma:ab208dd` | `DISABLE_MM=0`, `KV_CACHE_GB=12`, `MAX_SEQS=32`, `MAX_INFLIGHT=8`, replicas 1–2 |
 | `cloudrun` | Cloud Run `dgemma` | 1× RTX PRO 6000 | pre-`ab208dd` | `DISABLE_MM=0`, `GPU_UTIL=0.40`, `KV_CACHE_GB=2`; Cloud Run may scale out instances |
 
 Engine settings are not identical across targets (see table); single-request latency is dominated

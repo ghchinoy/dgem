@@ -20,8 +20,9 @@ import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_PATTERNS = os.path.join(REPO, "scratch", "leak-patterns.txt")
-# Paths excluded from --check: historical receipts, internal scratch, and this tool.
-CHECK_EXCLUDES = [":!benchmarks", ":!scratch"]
+# Paths excluded from --check: raw JSON receipts, internal scratch, and this tool.
+# Markdown under benchmarks/ (run READMEs, deployment logs) is public prose and is scanned.
+CHECK_EXCLUDES = [":!benchmarks/*.json", ":!benchmarks/*.jsonl", ":!scratch"]
 
 
 def load_patterns(path):

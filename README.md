@@ -28,7 +28,7 @@ Choose the option matching your hardware:
   ```
 * **Any Linux/Windows Workstation with NVIDIA GPU (Docker)**:
   ```bash
-  # Pre-baked weights container (instant start, 0.0s network download):
+  # Pre-baked weights container (no weight download at boot):
   docker run --gpus all -p 8080:8080 \
     us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
   ```

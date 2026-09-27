@@ -20,7 +20,7 @@ Images are hosted in `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/`:
 
 ### B. Self-Contained Variant (`dgem-weights:56baadf` or `dgem-weights:latest`)
 * **Size**: `~26 GB` compressed.
-* **Weights**: NVFP4 weights pre-baked into `/opt/dgemma/weights`. **0.0s network download** on cold start.
+* **Weights**: NVFP4 weights pre-baked into `/opt/dgemma/weights`, so no weight download at boot. The larger image pull replaces it; cold start for this variant has not been measured yet (see [Path to Production §5](path-to-production.md#5-cold-start-options-for-scale-to-zero-deployments)).
 * **Pinned URI**: `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a`
 
 ---
@@ -34,7 +34,8 @@ Before deploying to Cloud Run GPU or Vertex AI, verify that your Google Cloud pr
 gcloud beta quotas info describe NvidiaRtxPro6000GpuAllocNoZonalRedundancyPerProjectRegion \
   --service=run.googleapis.com \
   --project="<your-project-id>" \
-  --format="value(dimensionsInfos[0].details.value)"
+  --format=json \
+  | jq -r '.dimensionsInfos[] | select(.dimensions.region == "us-central1") | .details.value'   # your region; dimensionsInfos[0] may be another region
 ```
 * If `0` or unset: Request a quota increase in the Google Cloud Console under **IAM & Admin $\to$ Quotas $\to$ Cloud Run Admin API $\to$ `NvidiaRtxPro6000GpuAllocNoZonalRedundancyPerProjectRegion`** (or `NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion`).
 
@@ -43,7 +44,8 @@ gcloud beta quotas info describe NvidiaRtxPro6000GpuAllocNoZonalRedundancyPerPro
 gcloud beta quotas info describe CustomModelServingRTXPRO6000GPUsPerProjectPerRegion \
   --service=aiplatform.googleapis.com \
   --project="<your-project-id>" \
-  --format="value(dimensionsInfos[0].details.value)"
+  --format=json \
+  | jq -r '.dimensionsInfos[] | select(.dimensions.region == "us-central1") | .details.value'   # your region; dimensionsInfos[0] may be another region
 ```
 *Note: In many newly activated GCP projects, Cloud Run GPU quota is 0 by default while Vertex AI custom model serving quota (`CustomModelServingRTXPRO6000GPUsPerProjectPerRegion` or `CustomModelServingL4GPUsPerProjectPerRegion`) is already enabled. If Cloud Run GPU quota is 0, Vertex AI Dedicated Endpoints offer the fastest path to running.*
 
