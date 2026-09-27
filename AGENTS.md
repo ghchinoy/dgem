@@ -71,7 +71,7 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
   - The official base image is pinned by commit and digest to `vllm/vllm-openai:nightly-a9eafde59cbd55182dc2265cc398b7186f0a0eaa@sha256:896b7652343b6230cf788f4f1744563539f461f0454f30c5c7bb96ee9f8a34be`, which natively incorporates PR #57250 (*"[Core] structured generation mode"*) and PR #58216 (*"[Perf] constrained reads"*).
   - Public container images are published to **`dgem-diffusiongemma`** (Distribution & Registry Project ONLY; `allUsers` public read):
     - `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest` (~10 GB, downloads public NVFP4 weights on boot).
-    - `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest` (~29 GB, pre-baked NVFP4 weights in `/opt/dgemma/weights` for 0.0s cold start).
+    - `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest` (~26 GB, pre-baked NVFP4 weights in `/opt/dgemma/weights` for 0.0s cold start).
   - Pull telemetry is recorded via Artifact Registry `DATA_READ` audit logs (see `scratch/production-testing-howto.md`).
   - **Project Isolation Mandate**: Never deploy running compute services (Cloud Run GPU, Vertex AI, GCE) to `dgem-diffusiongemma`. Compute must be hosted in dedicated testing/hosting projects.
   - `pkg/client` requests `logprobs: true, top_logprobs: 5` on every `Decide` call and uses `ParseStructuredContentWithLogprobs` to compute calibrated slot probability $\exp(\text{logprob})$, Shannon entropy $H = -\sum p_k \ln p_k$, and top-$k$ candidate probabilities.

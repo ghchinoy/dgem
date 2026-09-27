@@ -179,10 +179,10 @@ All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`*
 ```
 
 ### D. Via `dgem` CLI (`--vertex-url`)
-Pass `--vertex-url <endpoint-id>` (the default) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
+Pass `--vertex-url <endpoint-id>` (or set `DGEM_VERTEX_URL=<endpoint-id>`) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
 
 ```bash
-# Single decision against the default Vertex AI Dedicated Endpoint (G4, <endpoint-id>):
+# Single decision against a Vertex AI Dedicated Endpoint (G4):
 ./bin/dgem decide --vertex-url <endpoint-id> --gcp-auth \
   -t templates/support_triage.json.tmpl \
   -v ticket="I was charged twice for my Pro subscription." -s
@@ -199,7 +199,7 @@ Pass `--vertex-url <endpoint-id>` (the default) on any `dgem` CLI command (`deci
 
 ```bash
 # 1. Upload dgemma with invokeRoutePrefix="/*" and deploy to a Dedicated Endpoint
-#    (VERTEX_PROFILE=g4-rtxpro6000 for G4 + RTX PRO 6000; default profile l4 = g2-standard-16 + 1x L4)
+#    (default profile: VERTEX_PROFILE=g4-rtxpro6000 for G4 + RTX PRO 6000; or VERTEX_PROFILE=l4 for g2-standard-16 + 1x L4)
 make vertex-deploy
 
 # 2. Undeploy replicas when zero-idle-cost ($0.00/hr) is desired
@@ -210,7 +210,7 @@ make vertex-teardown
 
 ## 5. 4-Phase Head-to-Head Benchmark Matrix (`scripts/compare_vertex_vs_cloudrun.sh`)
 
-All empirical receipts are stored in [`benchmarks/results_head_to_head_vertex_vs_cloudrun.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_head_to_head_vertex_vs_cloudrun.json), [`benchmarks/results_calibration_vertex_l4.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_calibration_vertex_l4.json), and [`benchmarks/results_rerank_vertex_l4.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_rerank_vertex_l4.json).
+All empirical receipts are stored in [`benchmarks/results_head_to_head_vertex_vs_cloudrun.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_head_to_head_vertex_vs_cloudrun.json), [`benchmarks/results_calibration_vertex_l4.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_calibration_vertex_l4.json), and [`benchmarks/results_rerank_vertex_l4.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_rerank_vertex_l4.json).
 
 ### Phase 1: Concurrency & Tail-Latency Scaling (`dgem bench` 30-Case Multi-Slot Suite)
 

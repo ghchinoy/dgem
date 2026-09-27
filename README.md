@@ -12,39 +12,45 @@
 | **Invariant Decision Calibration (IDC)** — *the novel part* | Checks whether a decision depends on **where options were listed**: divides out the model's "pick option A" habit and reads a **reversed ballot on the same canvas, in the same forward pass**. | [Confidence Beyond Shannon (IDC)](docs/confidence-beyond-shannon.md) |
 | **Entropy-gated cascade** | Answers low-uncertainty decisions directly and escalates the rest to Vertex AI `gemini-3.8-flash` with the Stage-1 probabilities attached. | [EXP-05](docs/experiments/exp-05-roadmap-cascades-and-dags.md) |
 | **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/studio-mcp-api.md) · [CLI reference](docs/cli-reference.md) |
-| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-13`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
+| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-17`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
 | **Serving** | Vertex AI Dedicated Endpoint on RTX PRO 6000 (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [Path to Production](docs/path-to-production.md) · [Vertex AI vs. Cloud Run](docs/vertex-ai-vs-cloudrun.md) |
 
-## Quick start
+## 5-Minute Quick Start
 
+Full walkthrough: **[5-Minute Quickstart Guide](docs/quickstart.md)**.
+
+### 1. Start an Inference Backend
+Choose the option matching your hardware:
+
+* **Local Apple Silicon Mac (Metal)** — No Docker or cloud needed:
+  ```bash
+  make setup && make download && make serve   # Starts diffgemma on :8080 ($0/hr)
+  ```
+* **Any Linux/Windows Workstation with NVIDIA GPU (Docker)**:
+  ```bash
+  # Pre-baked weights container (instant start, 0.0s network download):
+  docker run --gpus all -p 8080:8080 \
+    us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
+  ```
+* **Remote Google Cloud Endpoint**:
+  ```bash
+  export DGEM_VERTEX_URL="<endpoint-id>" DGEM_GCP_AUTH=1
+  ```
+
+### 2. Build CLI & Execute Your First Decision
 ```bash
-make build                                   # builds ./bin/dgem
+make build                                   # compiles ./bin/dgem
 ./bin/dgem decide -t templates/support_triage.json.tmpl \
   -v 'ticket=I was billed $500 twice for my annual renewal this morning!' --stats
-# Add --null-prior-debias to divide out the first-option habit (validate on your data first; see EXP-14).
 ```
 
-Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--vertex-url <endpoint-id>` (Vertex AI); see [Supported Deployment Environments](#supported-deployment-environments-4-serving-targets).
-
-### Pull Public Docker Container & Run on Any GPU
-
-Official public container images are available in Google Artifact Registry without requiring a Google Cloud account or credentials:
-
+### 3. Open Decision Studio (Web UI)
 ```bash
-# Pull official lean image (or :latest):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:56baadf@sha256:a7ace753973b6c3521dbc4c62ea4dfbea5384c582884e98a5ccae9f81b1f6dd9
-
-# Or pull self-contained image with pre-baked NVFP4 weights (0.0s network download):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
-
-# Run with GPU (downloads public NVFP4 weights on boot):
-docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
-
-# Or run in Decision Index certified mode (with wide-option tournament adapter):
-docker run --gpus all -p 8080:8080 -e ROLE=decision-index -e TEMPERATURE=1.0 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+./bin/dgem serve --port 8090
 ```
-See **[Public Container Images & Quickstart Guide](docs/public-image.md)** and **[Deploy on Your Own GPU](docs/deploy-your-own-gpu.md)**.
+Open **[http://localhost:8090](http://localhost:8090)** to inspect all 26+ templates, evaluate Stage 2 Gemini cascades, and visualize OpenTelemetry trace waterfalls.
+
+For deploying your own dedicated Cloud Run GPU or Vertex AI endpoints, see **[Public Container Images](docs/public-image.md)** and **[Deploy on Your Own Cloud GPU](docs/deploy-your-own-gpu.md)**.
 
 ---
 
@@ -219,7 +225,7 @@ urgent           | boolean    | yes                  | 99.9%      | 0.001 nats  
 
 ──────────────────────────────── STATS ────────────────────────────────
   Model:             nvidia/diffusiongemma-26B-A4B-it-NVFP4
-  Endpoint:          http://34.121.236.110:8080/v1/chat/completions
+  Endpoint:          http://127.0.0.1:8080/v1/chat/completions
   Total Wall Time:   856 ms
   KV Cache Reused:   169 tokens (82.8% hit rate)
   Denoise Steps:     1 step (policy: samples=1)

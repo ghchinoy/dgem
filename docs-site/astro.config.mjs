@@ -222,23 +222,49 @@ export default defineConfig({
           label: 'Getting Started',
           items: [
             { label: 'Overview', link: '/' },
-            { label: 'Decision Studio, MCP & HTTP API', slug: 'studio-mcp-api' },
-            { label: 'Experiment Authoring & Backend Guide', slug: 'experiment-authoring-guide' },
-            { label: 'Custom Dataset & Experiment Cookbook', slug: 'custom-dataset-guide' },
-            { label: 'CLI, HTTP Gateway & MCP Reference', slug: 'cli-reference' },
-            { label: 'Setup & Metal Engine', slug: 'setup' },
+            { label: '5-Minute Quickstart', slug: 'quickstart' },
+            { label: 'Setup & Local Metal Engine', slug: 'setup' },
             { label: 'dgem User Guide', slug: 'user-guide' },
+            { label: 'Decision Studio, MCP & HTTP API', slug: 'studio-mcp-api' },
+            { label: 'CLI, HTTP Gateway & MCP Reference', slug: 'cli-reference' },
           ],
         },
         {
-          label: 'Core Architecture',
+          label: 'Policy Authoring & Experiments',
+          items: [
+            { label: 'Custom Dataset & Experiment Cookbook', slug: 'custom-dataset-guide' },
+            { label: 'Backend Routing & Cascades', slug: 'experiment-authoring-guide' },
+            { label: 'Template Catalog (Policy-as-Code)', slug: 'templates' },
+            { label: 'Real-World Applications', slug: 'applications' },
+          ],
+        },
+        {
+          label: 'Core Architecture & Theory',
           items: [
             { label: 'The Journey to Decision Models', slug: 'decision-models-primer' },
             { label: 'Confidence Beyond Shannon (IDC)', slug: 'confidence-beyond-shannon' },
             { label: 'Discrete Diffusion vs. Autoregression', slug: 'architecture' },
             { label: 'Unclassified Grouping & Taxonomy Discovery', slug: 'taxonomy-discovery' },
             { label: 'Glossary & Mental Models', slug: 'glossary' },
-            { label: 'Template Catalog (Policy-as-Code)', slug: 'templates' },
+          ],
+        },
+        {
+          label: 'Deployment & Cloud',
+          items: [
+            { label: 'Public Container Images', slug: 'public-image' },
+            { label: 'Deploy on Your Own Cloud GPU', slug: 'deploy-your-own-gpu' },
+            { label: 'Connecting to Remote Endpoints', slug: 'remote-endpoints' },
+            { label: 'Path to Production (Scaling & Recommendations)', slug: 'path-to-production' },
+            { label: 'Vertex AI (/invoke/*) vs. Cloud Run', slug: 'vertex-ai-vs-cloudrun' },
+            { label: 'Cloud Run Architecture & Lessons', slug: 'cloudrun-lessons-learned' },
+            { label: 'OTel Traces & Cloud Observability', slug: 'observability-traces' },
+          ],
+        },
+        {
+          label: 'Benchmarks & Evaluation',
+          items: [
+            { label: 'Evaluation Report (Metal vs. Cloud)', slug: 'benchmarks' },
+            { label: 'Ecotone (WFST) vs. DiffusionGemma', slug: 'ecotone-comparison' },
           ],
         },
         {
@@ -255,31 +281,6 @@ export default defineConfig({
             { label: 'Letter Collision in the Mirror (EXP-15)', slug: 'experiments/exp-15-letter-collision' },
             { label: 'Slot Names Are Part of the Prompt (EXP-16)', slug: 'experiments/exp-16-slot-names' },
             { label: 'Separate-Pass Mirror (EXP-17)', slug: 'experiments/exp-17-separate-pass-mirror' },
-          ],
-        },
-        {
-          label: 'Use Cases & Patterns',
-          items: [
-            { label: 'Real-World Applications', slug: 'applications' },
-          ],
-        },
-        {
-          label: 'Deployment & Cloud',
-          items: [
-            { label: 'Public Container Images', slug: 'public-image' },
-            { label: 'Deploy on Your Own GPU', slug: 'deploy-your-own-gpu' },
-            { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
-            { label: 'Path to Production (Scaling & Recommendations)', slug: 'path-to-production' },
-            { label: 'Vertex AI (/invoke/*) vs. Cloud Run', slug: 'vertex-ai-vs-cloudrun' },
-            { label: 'Cloud Run Architecture & Lessons', slug: 'cloudrun-lessons-learned' },
-            { label: 'OTel Traces & Cloud Observability', slug: 'observability-traces' },
-          ],
-        },
-        {
-          label: 'Benchmarks & Evaluation',
-          items: [
-            { label: 'Evaluation Report (Metal vs. Cloud)', slug: 'benchmarks' },
-            { label: 'Ecotone (WFST) vs. DiffusionGemma', slug: 'ecotone-comparison' },
           ],
         },
       ],

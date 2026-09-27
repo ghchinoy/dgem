@@ -2,7 +2,11 @@
 
 For decades, software engineers and product teams had to choose between two extremes when building classification and decision systems: **fast, rigid classical models** (like Naive Bayes, Logistic Regression, DeBERTa encoders, and Finite-State Transducers) or **slow, expensive autoregressive Large Language Models** (like GPT-4 and Gemini).
 
+For decades, software engineers and product teams had to choose between two extremes when building classification and decision systems: **fast, rigid classical models** (like Naive Bayes, Logistic Regression, and BERT) or **slow, expensive autoregressive Large Language Models** (like GPT-4 and Gemini).
+
 **DiffusionGemma** introduces a third paradigm: **Discrete Diffusion Decision Models**.
+
+> ✨ **Interactive Walkthrough**: New to decision models? [**Open the plain-language walkthrough ➔**](https://ghchinoy.github.io/dgem/visualizer.html): what a decision model is, one pass vs. word-by-word, when to trust an answer (hesitation), and built-in guardrails. The full version, with a live IDC order-check demo and a glossary, is the **Concepts** tab in Decision Studio (`./bin/dgem serve --port 8090`).
 
 ---
 
@@ -45,7 +49,9 @@ Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Se
 ```
 
 ### Era 1: Classical Statistical ML & Discriminative Encoders (1960s–Present)
-* **Core Algorithms**: Naive Bayes, Logistic Regression, SVMs, XGBoost, Dual-Encoders (`GTR` / `Sentence-T5`), Tabular Foundation Models (`TabPFN`), and Fine-Tuned Cross-Encoder Heads (`BERT`, `DeBERTa-v3`).
+* **Core Algorithms**: Naive Bayes, Logistic Regression, Support Vector Machines (SVMs), Random Forests, XGBoost, Dual-Encoders (`GTR` / `Sentence-T5`), Tabular Foundation Models (`TabPFN`), and Fine-Tuned Cross-Encoder Heads (`BERT`, `DeBERTa-v3`).
+* **Mechanism**: Treat text as an unordered Bag-of-Words (BoW) matrix, static linear classification head, or pooled dense embedding vector $u \in \mathbb{R}^d$:
+  $$P(C \mid w_1, \dots, w_n) \propto P(C) \prod_{i=1}^n P(w_i \mid C)$$
 * **Strength**: Microsecond to 45 ms inference, minimal memory footprints, and fixed output schemas.
 * **Fatal Flaw**: **Zero-Shot Rigidity, Late-Pooling Loss & Independent Heads**. Classical statistical ML cannot model word order or negation (*"This is NOT an outage"*). Fine-tuned encoder classifiers understand context, but every policy change (adding a 4th severity level or a new department) requires curating thousands of labeled examples, retraining weights, and redeploying model binaries. Furthermore, evaluating 3 questions requires 3 separate classification heads that cannot attend to each other's predictions.
 

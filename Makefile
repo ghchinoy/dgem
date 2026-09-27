@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public
+.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public docs-sync-check
 
 .DEFAULT_GOAL := help
 
@@ -163,10 +163,32 @@ install: ## Install dgem binary to GOBIN
 
 check-public: ## Verify that no internal GCP project IDs, numbers, or private domains exist in public code/docs
 	@echo "==> Auditing repository for internal identifiers..."
-	@LEAKS=$$(git grep -n -E "(4423577720856772608|4217256562927861760|genai-blackbelt-fishfooding|882920967572|dgemma\.aaie\.cloud|aaie-decision-model)" -- . ':!benchmarks' ':!scratch' ':!Makefile' ':!scripts/redact_receipt.py' 2>/dev/null || true); \
+	@LEAKS=$$(git grep -n -E "(4423577720856772608|4217256562927861760|genai-blackbelt-fishfooding|882920967572|dgemma\.aaie\.cloud|aaie-decision-model|34\.121\.236\.110|35\.193\.147\.242)" -- . ':!benchmarks' ':!scratch' ':!Makefile' ':!scripts/redact_receipt.py' 2>/dev/null || true); \
 	if [ -n "$$LEAKS" ]; then \
 		echo "ERROR: Internal identifiers detected in tracked files:"; \
 		echo "$$LEAKS"; \
 		exit 1; \
 	fi; \
 	echo "✅ PASSED: No internal project IDs, numbers, endpoint IDs, or private domains found."
+
+docs-sync-check: ## Verify that documentation files in docs/ and docs-site/ are synchronized
+	@echo "==> Auditing documentation parity between docs/ and docs-site/..."
+	@MISSING=0; \
+	for f in $$(find docs -maxdepth 2 -name "*.md" | grep -v "/archive/"); do \
+		rel=$${f#docs/}; \
+		base=$${rel%.md}; \
+		if [ ! -f "docs-site/src/content/docs/$$rel" ] && \
+		   [ ! -f "docs-site/src/content/docs/$${base}.mdx" ] && \
+		   [ ! -f "docs-site/src/content/docs/$${base}/index.md" ] && \
+		   [ ! -f "docs-site/src/content/docs/$${base}/index.mdx" ]; then \
+			if [ "$$rel" != "benchmarks-report.md" ] && [ "$$rel" != "experiments/README.md" ]; then \
+				echo "Missing in docs-site: $$rel"; \
+				MISSING=$$((MISSING + 1)); \
+			fi; \
+		fi; \
+	done; \
+	if [ $$MISSING -gt 0 ]; then \
+		echo "ERROR: $$MISSING documentation files are missing from docs-site/"; \
+		exit 1; \
+	fi; \
+	echo "✅ PASSED: All documentation files are synchronized with docs-site/."

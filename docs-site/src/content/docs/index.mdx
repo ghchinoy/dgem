@@ -7,17 +7,17 @@ hero:
   image:
     file: ../../assets/hero.svg
   actions:
-    - text: Decision Studio, MCP & API
-      link: /dgem/studio-mcp-api/
+    - text: 5-Minute Quickstart
+      link: /dgem/quickstart/
       icon: rocket
       variant: primary
-    - text: Vertex AI (/invoke/*) vs. Cloud Run
-      link: /dgem/vertex-ai-vs-cloudrun/
-      icon: setting
+    - text: Decision Studio, MCP & API
+      link: /dgem/studio-mcp-api/
+      icon: laptop
       variant: secondary
-    - text: Experiment Authoring Guide
-      link: /dgem/experiment-authoring-guide/
-      icon: open-book
+    - text: Deploy on Your Own GPU
+      link: /dgem/deploy-your-own-gpu/
+      icon: setting
       variant: secondary
     - text: Benchmark Report
       link: /dgem/benchmarks/
@@ -28,26 +28,20 @@ hero:
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 import JevParityDashboard from '../../components/JevParityDashboard.astro';
 
-## `EXP-11`: `JevBench v1.3.1` 4-Axis Parity & Calibration Gains
-
-<JevParityDashboard />
-
----
-
 ## Four Ways to Use `dgem`
 
 <CardGrid stagger>
   <Card title="🖥️ 1. Decision Studio Web App (dgem serve)" icon="laptop">
-    Embedded **Lit WebComponents** playground (`./bin/dgem serve`) featuring all **26+ `.json.tmpl` policies**, topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, interactive **SigLIP Bounding Box SVG Canvas (`EXP-09`)**, and **OpenTelemetry Trace Waterfall** inspection.
+    Embedded **Lit WebComponents** playground (`./bin/dgem serve --port 8090`) featuring all **26+ `.json.tmpl` policies**, topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, interactive **SigLIP Bounding Box SVG Canvas (`EXP-09`)**, and **OpenTelemetry Trace Waterfall** inspection.
   </Card>
   <Card title="🤖 2. Model Context Protocol (MCP) Server" icon="puzzle">
     Connect **Gemini CLI**, **Claude Desktop**, **Cursor**, or cloud agents via `dgem mcp` (`stdio`) or `POST /mcp` (`Streamable HTTP`). Exposes **6 native MCP tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) with `backend` (`vertex_first` \| `vertex` \| `cloudrun`) and Stage 2 Gemini Cascade parameters.
   </Card>
   <Card title="🌐 3. HTTP Gateway REST API (/api/decide & /v1/systemone)" icon="external">
-    Call `POST /api/decide/{template}` or `POST /v1/systemone` with `X-DGem-Backend: vertex_first | vertex | cloudrun` (`X-DGem-Backend-Used` returned on every response). Automatically routes to the warm Vertex AI Dedicated Endpoint (`0.0 s` wakeup, `~490 ms` GPU denoise) with seamless Cloud Run failover.
+    Call `POST /api/decide/{template}` or `POST /v1/systemone` with `X-DGem-Backend: vertex_first | vertex | cloudrun` (`X-DGem-Backend-Used` returned on every response). Automatically routes to the warm Vertex AI Dedicated Endpoint (`0.0 s` wakeup, `57.5 ms` GPU denoise) with seamless Cloud Run failover.
   </Card>
-  <Card title="⌨️ 4. CLI & 7 Benchmark Harnesses" icon="terminal">
-    Execute sub-second decisions (`dgem decide --vertex-url <endpoint-id>`), generative prompts (`dgem ask`), and seven reproducible benchmark suites (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`).
+  <Card title="⌨️ 4. CLI & 9 Benchmark Harnesses" icon="terminal">
+    Execute sub-second decisions (`dgem decide`), generative prompts (`dgem ask`), and nine reproducible benchmark suites (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`, `bench-permutation`, `bench-decision-index`).
   </Card>
 </CardGrid>
 
@@ -62,6 +56,25 @@ import JevParityDashboard from '../../components/JevParityDashboard.astro';
   <Card title="📊 Uncertainty Gate & Stage 2 Gemini Cascade" icon="random">
     Every field comes with its own probabilities and Shannon entropy $H$, which rises when human annotators disagree (`EXP-04`). Routing only high-entropy items to **`gemini-3.8-flash`** lifted a 50-item public calibration suite from 88% to **98.0%** while escalating 34% of items (`EXP-05b`).
   </Card>
+  <Card title="🎯 Invariant Decision Calibration (IDC)" icon="seti:todo">
+    Cancels DiffusionGemma's default first-option ballot-order bias ($p_0$) via **Dual-Mirror Canvas Readout (`EXP-13`)** in a single pass ($O(1)$) or zero-cost prior debiasing (`EXP-14`), surfacing true epistemic hesitation.
+  </Card>
+  <Card title="⚡ Single-Step Slot Denoise (O(1))" icon="rocket">
+    Unmask all decision slots simultaneously in **one forward step** (~57.5 ms on Vertex G4, ~210 ms on Apple Silicon Metal), completely eliminating autoregressive token-by-token generation overhead.
+  </Card>
+</CardGrid>
+
+---
+
+## `EXP-11`: `JevBench v1.3.1` 4-Axis Parity & Calibration Gains
+
+<JevParityDashboard />
+
+---
+
+## Core Capabilities
+
+<CardGrid stagger>
   <Card title="⚖️ Confidence Beyond Shannon (IDC)" icon="approve-check">
     Like voters ticking the first name on a ballot, the model favors option `A`, which can make a toss-up look 99.9% certain. **Invariant Decision Calibration** removes that habit and reads a reversed ballot **in the same forward pass** to flag order-dependent answers. [Read the plain-English guide →](/dgem/confidence-beyond-shannon/)
   </Card>

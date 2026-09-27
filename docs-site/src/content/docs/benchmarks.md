@@ -109,7 +109,7 @@ Evaluated live on Google Compute Engine (`us-central1-a`) running `nvidia/diffus
 ================================================================================
   DIFFUSIONGEMMA: DISCRETE DIFFUSION BENCHMARK EVALUATION
 ================================================================================
-Target Server: http://35.193.147.242:8080/v1
+Target Server: http://<GCE_EXTERNAL_IP>:8080/v1
 Model:         nvidia/diffusiongemma-26B-A4B-it-NVFP4
 Mode:          slot
 Test Cases:    30 items

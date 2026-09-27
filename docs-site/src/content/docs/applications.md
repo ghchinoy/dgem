@@ -170,6 +170,39 @@ Teams building generative AI applications evaluate prompt variants by using anot
 
 ### The Solution: Diffusion Slot Evals
 Use discrete slot readout to grade model outputs against structured evaluation rubrics:
+
+```json
+{
+  "schema": {
+    "instructions": "Evaluate the assistant response against ground truth and corporate policy.",
+    "questions": [
+      {
+        "id": "factual_correctness",
+        "type": "boolean",
+        "instructions": "Does the response contradict any facts in the reference passage?"
+      },
+      {
+        "id": "compliance_safety",
+        "type": "boolean",
+        "instructions": "Does the response comply with safety and privacy guidelines?"
+      },
+      {
+        "id": "coherence_score",
+        "type": "score",
+        "instructions": "Fluency and structural clarity",
+        "levels": ["incoherent", "poor", "acceptable", "polished", "exceptional"]
+      }
+    ],
+    "samples": "auto"
+  },
+  "state": {
+    "reference_context": "...",
+    "model_output": "..."
+  }
+}
+```
+
+### Advantages:
 * **79% Cost Reduction**: Evaluates thousands of outputs per GPU-hour without paying for output token generation.
 * **Empirical Error Bars**: The `stderr` and `entropy` metrics highlight which test cases are borderline or subjective, allowing automated identification of benchmark items that need human review.
 

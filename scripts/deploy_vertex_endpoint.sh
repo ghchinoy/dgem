@@ -31,7 +31,7 @@ ARTIFACT_URI="${ARTIFACT_URI:-gs://${GCS_BUCKET}/dgemma}"
 #   g4-rtxpro6000  g4-standard-48 + 1x NVIDIA_RTX_PRO_6000 (Blackwell, native FP4, 180 GB host RAM).
 #                  SigLIP on (multimodal parity with Cloud Run). Names: dgemma-dedicated-g4 / dgemma-invoke-g4.
 # Any VERTEX_* / engine variable below still overrides the profile.
-VERTEX_PROFILE="${VERTEX_PROFILE:-l4}"
+VERTEX_PROFILE="${VERTEX_PROFILE:-g4-rtxpro6000}"
 case "$VERTEX_PROFILE" in
   l4)
     P_MACHINE=g2-standard-16; P_ACCEL=NVIDIA_L4; P_COUNT=1; P_MM=1; P_KV=2; P_SEQS=32; P_MAXREP=1

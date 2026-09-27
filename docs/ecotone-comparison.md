@@ -78,7 +78,7 @@ Adapted directly from Ecotone's failure-hunting suite (`../ecotone/docs/reports/
 
 ## 4. Verbatim Empirical Findings: Where Each Engine Wins
 
-The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semiotics.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_ecotone_gce_l4_semiotics.json) and [`benchmarks/results_ecotone_gce_l4_challenge.json`](file:///Users/ghchinoy/projects/dgem/benchmarks/results_ecotone_gce_l4_challenge.json)) expose the exact mechanics of both architectures:
+The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semiotics.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_ecotone_gce_l4_semiotics.json) and [`benchmarks/results_ecotone_gce_l4_challenge.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_ecotone_gce_l4_challenge.json)) expose the exact mechanics of both architectures:
 
 | Case ID | Input Sentence & Target Slot | `ecotone` C++ WFST Actual Output (`data/nemo_en/`) | `ecotone` Verdict & Latency | `dgem` Slot Output (`NVFP4` L4, `s=1`) | `dgem` Verdict & Latency |
 | :--- | :--- | :--- | :--- | :--- | :--- |

@@ -15,19 +15,20 @@ A common question when moving from open-ended autoregressive LLMs to a **Zero-Sh
 
 In `dgem`'s primary decision path (`structured_server.py`), every `"type": "choice"` question maps its options (`2..26` alternatives) to single uppercase ASCII tokens (`A`–`Z`) on a bidirectional `[MASK]` canvas.
 
-* **Why `[A–Z]` slot readout is separated from label invention**: Unmasking a single token (`A`–`Z`) per question guarantees **`~490 ms` $O(1)$ latency**, **100% enum compliance**, and **exact restricted-softmax probabilities** ($p_k = \exp(\ell_k) / \sum_j \exp(\ell_j)$).
+* **Why `[A–Z]` slot readout is separated from label invention**: Unmasking a single token (`A`–`Z`) per question guarantees **ultra-low $O(1)$ latency** (`57.5 ms` GPU denoise on Vertex G4, `107 ms` on Cloud Run RTX PRO 6000), **100% enum compliance**, and **exact restricted-softmax probabilities** ($p_k = \exp(\ell_k) / \sum_j \exp(\ell_j)$).
 * **How new classes are proposed**: When an input lands in the `"other"` catch-all slot—or exhibits high **Shannon entropy** ($H = -\sum p_k \ln p_k \ge 0.35\text{ nats}$) across existing slots—`dgem` activates **DiffusionGemma's `"think"` channel** (`<|channel>thought...<channel|>`) or **Stage-2 Gemini 3.8 Flash** to synthesize a copy-pasteable `{"name", "description"}` option.
 
 ```mermaid
 flowchart TD
     A["Incoming Unstructured Event / Ticket / Log"] --> B["Pre-Flight: dgem decide --suggest-expansions"]
-    B -->|"Injects other_unclassified if absent"| C["Stage 1: DiffusionGemma O(1) Canvas Readout (~490 ms)"]
-    C --> D{"Slot == 'other*' OR Entropy H >= 0.35 nats?"}
+    B -->|"Injects other_unclassified if absent"| C["Stage 1: DiffusionGemma O(1) Canvas Readout (57.5 ms)"]
+    D{"Slot == 'other*' OR Entropy H >= 0.35 nats?"}
+    C --> D
     D -->|"No (~90%+ Known Traffic)"| E["Return Calibrated Choice + Confidence (0 ms extra overhead)"]
     D -->|"Yes (Unclassified or Ambiguous)"| F["Expansion Synthesis (DiffusionGemma 'think' Channel / Stage-2 Gemini 3.8 Flash)"]
     F --> G["Emit ProposedOption: {'name': '<snake_case>', 'description': '<1-line rubric>'}"]
     G --> H["Append to .json.tmpl options[] (Zero Fine-Tuning Required)"]
-    H -.->|"Next call classifies in ~490 ms"| C
+    H -.->|"Next call classifies in 57.5 ms"| C
 ```
 
 ---
@@ -53,7 +54,7 @@ You do not need to rewrite existing `.json.tmpl` policies to discover missing ca
      "description": "Unclassified, emerging topic, or out-of-scope pattern not covered by the listed options"
    }
    ```
-2. **Pass-1 Detection (`other*` or $H \ge 0.35\text{ nats}$)**: Evaluates the schema in a single `~490 ms` pass. If all `choice` slots match known options with low entropy ($H < 0.35\text{ nats}$), `dgem` exits immediately with zero generative overhead.
+2. **Pass-1 Detection (`other*` or $H \ge 0.35\text{ nats}$)**: Evaluates the schema in a single ultra-fast pass (`57.5 ms` GPU denoise on Vertex G4). If all `choice` slots match known options with low entropy ($H < 0.35\text{ nats}$), `dgem` exits immediately with zero generative overhead.
 3. **Triggered Option Proposal (`SynthesizeTaxonomyExpansions`)**: If any `choice` slot selects `"other_unclassified"` or exceeds `--expansion-entropy`, `dgem` prompts DiffusionGemma's `"think": 64` channel (with Stage-2 `gemini-3.8-flash` fallback) using the existing option rubrics and Stage-1 probability priors, printing an actionable expansion hint:
 
 ```text

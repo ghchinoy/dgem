@@ -1,5 +1,9 @@
 # Lessons Learned: Deploying Experimental vLLM on Google Cloud Run with GPU
 
+> [!NOTE]
+> **Historical Archive & Evolution**: This document records the empirical findings and architectural lessons learned during the prototype phase of containerizing vLLM and DiffusionGemma on Cloud Run (including legacy fork overlays and ABI mismatches).
+> As of commit `56baadf`, `dgem` builds directly on official upstream `vllm-project/vllm:main` nightly images with native PR #57250 and PR #58216 support. For current production deployment procedures, refer to [Public Container Images](public-image.md) and [Deploy on Your Own Cloud GPU](deploy-your-own-gpu.md).
+
 This document records the empirical findings, architectural trade-offs, and operational lessons learned while attempting to deploy Google DeepMind's **DiffusionGemma** on **Google Cloud Run with GPUs** using an experimental vLLM discrete block diffusion branch (PR #57250), along with a concrete blueprint for building custom CUDA C++ extensions in the future.
 
 

@@ -3,6 +3,8 @@ title: Setup & Metal Engine Guide
 description: Step-by-step instructions for running DiffusionGemma locally on Apple Silicon Metal.
 ---
 
+# DiffusionGemma on Apple Silicon: Setup, Architecture, and Operational Guide
+
 This guide covers setting up, running, and querying **DiffusionGemma 26B-A4B** locally on Apple Silicon (tested on Apple M5 with 32 GB unified memory) using **`diffgemma`** (a native Rust + Metal inference engine) and **`dgem`** (a Go-based CLI assistant for structured decisions and generative queries).
 
 ---
@@ -14,7 +16,7 @@ This guide covers setting up, running, and querying **DiffusionGemma 26B-A4B** l
 Unlike traditional autoregressive language models that generate text token-by-token from left to right, DiffusionGemma utilizes **discrete block diffusion**:
 * **Canvas-based generation**: It operates on a 256-token canvas with bidirectional cross-attention.
 * **Parallel denoising**: It iteratively denoises blocks of tokens in parallel, generating 15–20 tokens per forward pass.
-* **Fast structured decisions ("System-1" Judgment)**: By seeding a canvas with a predefined JSON template and leaving answer slots as noise, the model can evaluate classification, categorization, and scale choices in **a single forward pass (~880 ms)** without generating conversational filler.
+* **Fast structured decisions ("System-1" Judgment)**: By seeding a canvas with a predefined JSON template and leaving answer slots as noise, the model can evaluate classification, categorization, and scale choices in **a single forward pass (~210 ms on Apple Silicon Metal)** without generating conversational filler.
 
 ### Moving Beyond "Noul": The Boolean Decision
 
@@ -31,39 +33,70 @@ DiffusionGemma's full-precision BF16 checkpoint is ~50 GB, which cannot fit into
 
 ### Unified Memory Budgeting
 
-On macOS Apple Silicon, unified memory is shared between the CPU and the Metal GPU. To prevent macOS memory pressure or swap file thrashing:
+By default, macOS allocates a maximum of ~66% of unified memory to the GPU. On a 32 GB machine, this limit is ~21.5 GB—leaving little headroom for the KV cache or other running processes.
 
-| Configuration | Model Weights | KV Cache (Working Set) | Total Memory | Safe for 32 GB Mac? |
-| :--- | :--- | :--- | :--- | :--- |
-| `--ctx 131072` (default 128k) | 18.84 GiB | ~12–14 GiB | ~31–33 GiB | ⚠️ Near boundary, may swap |
-| **`--ctx 32768` (Recommended)** | **18.84 GiB** | **~2.5 GiB** | **~21.3 GiB** | **✅ Optimal (leaves ~10 GB for OS)** |
-| `--ctx 16384` (Lightweight) | 18.84 GiB | ~1.2 GiB | ~20.0 GiB | **✅ Very safe** |
+To allocate up to 28 GB (87%) of memory to the Metal GPU, run:
+
+```bash
+# Set Metal alloc limit to 28 GB (requires sudo):
+sudo sysctl iogpu.wired_mem_limit=28672
+```
+
+To make this persistent across reboots, add the setting to `/etc/sysctl.conf`.
 
 ---
 
 ## 3. Prerequisites
 
-Ensure you have the following installed on your Mac:
-* **macOS 15+** with Apple Silicon (M1/M2/M3/M4/M5).
-* **Xcode Command Line Tools**: `xcode-select --install`
-* **Rust toolchain (1.85+)**: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-* **Go (1.22+)**: `brew install go`
-* **cURL** and **jq**: standard on macOS.
+* **macOS 14.0+ (Sonoma or Sequoia)** running on Apple Silicon (M1/M2/M3/M4/M5).
+* **32 GB unified memory minimum** for the 4-bit quantization pack (64 GB+ recommended for running unquantized weights or large KV caches).
+* **Xcode Command Line Tools**:
+  ```bash
+  xcode-select --install
+  ```
+* **Rust toolchain (1.85+)**:
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  source "$HOME/.cargo/env"
+  ```
+* **Go toolchain (1.23+)** (for the `dgem` CLI tool):
+  ```bash
+  brew install go
+  ```
 
 ---
 
-## 4. Installation & Model Download
+## 4. Automated Setup via Makefile
 
-### Step 1: Install `diffgemma`
-Compile and install the Metal-accelerated inference binary directly from upstream (or run `make setup`):
+The repository includes a complete automated setup pipeline:
 
 ```bash
-cargo install --git https://github.com/mmastrac/diffgemma diffgemma
+# 1. Run the prerequisite check and install the diffgemma binary:
+make setup
+
+# 2. Download the 4-bit model checkpoint (~18.8 GB from Hugging Face):
+make download
+
+# 3. Compile the dgem Go CLI tool:
+make build
 ```
 
-Verify the binary is in your `$PATH`:
+---
+
+## 5. Step-by-Step Manual Setup
+
+If you prefer to configure components manually:
+
+### Step 1: Install the `diffgemma` Binary
+Install the official pre-compiled engine or compile from the upstream repository:
+
 ```bash
-diffgemma
+cargo install --git https://github.com/mmastrac/diffgemma.git --tag v0.1.0 diffgemma
+```
+
+Verify installation:
+```bash
+diffgemma --version
 ```
 
 ### Step 2: Download Model Weights
@@ -71,44 +104,19 @@ Run the built-in downloader to fetch the canonical 4-bit quantization pack from 
 
 ```bash
 # In your project directory (or 'make download'):
-diffgemma download --jobs 8
+mkdir -p model/diffgemma-26b-a4b-it-q4
+huggingface-cli download mmastrac/diffgemma-26b-a4b-it-q4 \
+  --local-dir model/diffgemma-26b-a4b-it-q4 \
+  --local-dir-use-symlinks False
 ```
 
-This downloads 76 chunks totaling **18.84 GiB** into `model/diffgemma-26b-a4b-it-q4/` and verifies the blob against internal SHA256 checksums.
-
-### Step 3: Run a Sanity Check
-Test generation directly from the command line:
+### Step 3: Launch the Engine Daemon
+Start the server in background with a 32k context window on port 8080:
 
 ```bash
-diffgemma ask -m model/diffgemma-26b-a4b-it-q4 --ctx 16384 --max-new-tokens 128 \
-  -p "Explain discrete text diffusion in two sentences."
-```
-
-*Note: On the first run, `diffgemma` compiles the Metal shaders for your specific GPU core configuration and saves the binary archive to `~/.cache/diffgemma/metal-pipelines/`. Subsequent runs load immediately in fractions of a second.*
-
----
-
-## 5. Running the Local OpenAI-Compatible Server
-
-`diffgemma serve` exposes an OpenAI-compatible HTTP server (`POST /v1/chat/completions`) capable of handling both standard conversational chat and Jev-style structured decisions.
-
-### Starting and Stopping Local Services
-
-You can manage the standalone `diffgemma` engine or the full local stack (engine + Decision Studio Gateway) using `Makefile` targets:
-
-```bash
-# Full local stack: diffgemma engine (:8080) + dgem gateway & Web Studio (:8090)
-make local-up      # Starts both services in background
-make local-status  # Displays health and PID status of both services
-make local-down    # Cleanly stops both services
-
-# Standalone diffgemma engine (:8080 only)
-make serve         # Starts diffgemma serve in background (writes diffgemma.pid and server.log)
-make stop          # Stops the background diffgemma engine process
-
-# Standalone dgem gateway (:8090 only, targets existing diffgemma)
-make gateway-up    # Starts dgem serve gateway (:8090)
-make gateway-down  # Stops the dgem gateway process
+# Using the repository script:
+make serve
+# Or: ./scripts/serve.sh
 ```
 
 Or run directly:
@@ -123,14 +131,25 @@ diffgemma serve \
 ```bash
 curl -s http://127.0.0.1:8080/v1/models | jq .
 ```
+Expected response:
+```json
+{
+  "data": [
+    {"id": "diffgemma-26b-a4b-it-q4", "object": "model", "owned_by": "local"},
+    {"id": "diffgemma-26b-a4b-it-q4:think", "object": "model", "owned_by": "local"},
+    {"id": "diffgemma-26b-a4b-it-q4:think=false", "object": "model", "owned_by": "local"}
+  ],
+  "object": "list"
+}
+```
 
-> **Cloud Deployment**: If you want to host DiffusionGemma on Google Cloud Run with an NVIDIA RTX Pro 6000 or L4 GPU instead of running locally, see the [Remote Endpoints & Cloud Deployment Guide](remote-endpoints.md) or run `make cloudrun-deploy`.
+> **Cloud Deployment**: If you want to host DiffusionGemma on Google Cloud Run with an NVIDIA RTX Pro 6000 or L4 GPU instead of running locally, see the [Remote Endpoints & Cloud Deployment Guide](/dgem/remote-endpoints/) or run `make cloudrun-deploy`.
 
 ---
 
-## 6. Jev-Style Structured Decision Reading
+## 6. Discrete Diffusion Slot Readout (Single-Pass Decisions)
 
-A request containing a JSON question schema in the `system` role automatically triggers the structured-decision pathway. The user message provides the target state or text.
+A request containing a JSON question schema in the `system` role automatically triggers the discrete diffusion slot-readout pathway (informally termed "Jev-style" in early 2026 community benchmarks). The user message provides the target state or text.
 
 ### Supported Question Types
 
@@ -140,6 +159,33 @@ A request containing a JSON question schema in the `system` role automatically t
    Categorical selection from a list of named options (up to 26 single-token labels `A`, `B`, `C`...).
 3. **`score`**:
    Ordered scalar evaluation (e.g. `["calm", "frustrated", "furious"]`). Returns the expected numerical level and the top level.
+
+### Example cURL Request
+
+```bash
+curl -s http://127.0.0.1:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {
+        "role": "system",
+        "content": "{\"instructions\": \"Triage customer tickets\", \"questions\": [{\"id\": \"urgent\", \"type\": \"boolean\", \"instructions\": \"Immediate escalation required?\"}, {\"id\": \"team\", \"type\": \"choice\", \"instructions\": \"Owning team\", \"options\": [{\"name\": \"billing\"}, {\"name\": \"support\"}, {\"name\": \"engineering\"}]}, {\"id\": \"sentiment\", \"type\": \"score\", \"instructions\": \"Customer distress\", \"levels\": [\"calm\", \"frustrated\", \"furious\"]}]}"
+      },
+      {
+        "role": "user",
+        "content": "{\"ticket\": \"Our production database is returning 500 across all cluster nodes!\"}"
+      }
+    ]
+  }' | jq .
+```
+
+### Understanding the Response Diagnostics
+The response includes `answers` and a comprehensive `diagnostics` object:
+* **`confidence`**: Mean probability of the winning choice.
+* **`stderr`**: Standard error computed across noise draws.
+* **`agreement`**: Proportion of noise draws that agreed on the winning label.
+* **`timing.reused_tokens`**: Indicates that the system prompt schema was reused directly from the KV cache (zero-recomputation prefill).
+* **`samples.policy`**: When set to `"auto"`, the engine stops at 1 read if entropy is low (<0.10 nats), or automatically gathers up to 4 reads if ambiguity is detected.
 
 ---
 
