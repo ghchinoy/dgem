@@ -71,7 +71,7 @@ that gracefully holds and retries requests while a scale-to-zero Cloud Run GPU w
 }
 
 func init() {
-	serveCmd.Flags().IntVarP(&servePort, "port", "p", 8080, "HTTP port to listen on (overrides PORT env var if specified)")
+	serveCmd.Flags().IntVarP(&servePort, "port", "p", 8090, "HTTP port to listen on (overrides PORT env var if specified)")
 	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host interface to bind")
 	serveCmd.Flags().StringVar(&serveTemplatesDir, "templates-dir", "./templates", "Directory containing .json.tmpl policy definitions")
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
@@ -416,6 +416,31 @@ func invalidateVertexStatusCache() {
 	vertexStatusCacheMu.Lock()
 	vertexStatusCacheExpires = time.Time{}
 	vertexStatusCacheMu.Unlock()
+}
+
+// deriveAvailableBackends returns the list of inference backends that are actually
+// configured and usable based on flags, environment variables, and endpoint URLs.
+func deriveAvailableBackends(vxURL, crURL, locURL string, locMode bool) []string {
+	if locMode {
+		return []string{"local"}
+	}
+	var backends []string
+	hasVertex := strings.TrimSpace(vxURL) != ""
+	hasCloudRun := strings.TrimSpace(crURL) != "" && !isLoopbackURL(crURL)
+	hasLocal := strings.TrimSpace(locURL) != "" || isLoopbackURL(crURL)
+
+	if hasVertex && hasCloudRun {
+		backends = append(backends, "vertex_first", "vertex", "cloudrun")
+	} else if hasVertex {
+		backends = append(backends, "vertex_first", "vertex")
+	} else if hasCloudRun {
+		backends = append(backends, "cloudrun")
+	}
+
+	if hasLocal || len(backends) == 0 {
+		backends = append(backends, "local")
+	}
+	return backends
 }
 
 func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertexEndpointLiveStatus {
@@ -955,10 +980,24 @@ func runServe(cmd *cobra.Command, args []string) error {
 		proj := detectGCPProjectID()
 		vSt := inspectVertexEndpointState(r.Context(), vxURL)
 
-		availableBackends := []string{"vertex_first", "vertex", "cloudrun"}
-		localAvailable := locURL != "" || locMode
-		if localAvailable {
-			availableBackends = append(availableBackends, "local")
+		availableBackends := deriveAvailableBackends(vxURL, viper.GetString("url"), locURL, locMode)
+		defBValid := false
+		for _, b := range availableBackends {
+			if b == defB {
+				defBValid = true
+				break
+			}
+		}
+		if !defBValid && len(availableBackends) > 0 {
+			defB = availableBackends[0]
+		}
+
+		localAvailable := false
+		for _, b := range availableBackends {
+			if b == "local" {
+				localAvailable = true
+				break
+			}
 		}
 
 		var localStatus map[string]interface{}
