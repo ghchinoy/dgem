@@ -12,13 +12,17 @@ UPSTREAM_SERVICE="${UPSTREAM_SERVICE:-dgemma}"
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
 IMAGE="us-central1-docker.pkg.dev/${PROJECT}/dgem/dgemma-gateway:${IMAGE_TAG}"
 ALLOW_GROUP="${ALLOW_GROUP:-}"
+if [[ -z "${ALLOW_GROUP}" ]]; then
+  echo "Error: ALLOW_GROUP is required (e.g. ALLOW_GROUP=my-team@example.com). An IAP-secured gateway requires an authorized group or user." >&2
+  exit 1
+fi
 GATEWAY_SA_NAME="dgemma-gateway-sa"
 GATEWAY_SA="${GATEWAY_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
 
 echo "================================================================"
 echo " Deploying ${GATEWAY_SERVICE} (Go HTTP API & Web Studio Gateway)"
 echo " Project: ${PROJECT} | Region: ${REGION}"
-echo " Gateway SA: ${GATEWAY_SA} | Group: ${ALLOW_GROUP:-<none>}"
+echo " Gateway SA: ${GATEWAY_SA} | Group: ${ALLOW_GROUP}"
 echo "================================================================"
 
 if ! gcloud iam service-accounts describe "${GATEWAY_SA}" --project="${PROJECT}" >/dev/null 2>&1; then
@@ -60,8 +64,29 @@ gcloud builds submit "${TMP_CTX}" \
 
 GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"
 VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-}"
+if [[ -z "${VERTEX_ENDPOINT_ID}" && "${ALLOW_NO_VERTEX:-0}" != "1" ]]; then
+  echo "Error: DGEM_VERTEX_URL is required (e.g. DGEM_VERTEX_URL=<endpoint-id> or full /invoke/* URL). Set ALLOW_NO_VERTEX=1 to deploy Cloud Run-only." >&2
+  exit 1
+fi
 
-echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID})..."
+ENV_VARS="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1,DGEM_GPU_IDLE_TTL=${GPU_IDLE_TTL},DGEM_DEFAULT_BACKEND=${DEFAULT_BACKEND:-vertex_first}"
+if [[ -n "${VERTEX_ENDPOINT_ID}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID}"
+fi
+if [[ -n "${DGEM_VERTEX_MODEL_ID:-}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_VERTEX_MODEL_ID=${DGEM_VERTEX_MODEL_ID}"
+fi
+if [[ -n "${DGEM_VERTEX_SA:-}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_VERTEX_SA=${DGEM_VERTEX_SA}"
+fi
+if [[ -n "${DGEM_GATEWAY_HOSTS:-}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_GATEWAY_HOSTS=${DGEM_GATEWAY_HOSTS}"
+fi
+if [[ -n "${GCP_PROJECT_NUMBER:-}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_GCP_PROJECT_NUMBER=${GCP_PROJECT_NUMBER}"
+fi
+
+echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID:-<none>})..."
 gcloud run deploy "${GATEWAY_SERVICE}" \
   --project="${PROJECT}" \
   --region="${REGION}" \
@@ -75,7 +100,7 @@ gcloud run deploy "${GATEWAY_SERVICE}" \
   --concurrency=80 \
   --timeout=600 \
   --no-allow-unauthenticated \
-  --set-env-vars="UPSTREAM_DGEMMA_URL=${UPSTREAM_URL}/v1,DGEM_GCP_AUTH=1,DGEM_GPU_IDLE_TTL=${GPU_IDLE_TTL},DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID}" \
+  --set-env-vars="${ENV_VARS}" \
   --quiet
 
 # Ensure Gateway SA has Vertex AI User role to query/invoke Dedicated Endpoint ${VERTEX_ENDPOINT_ID}

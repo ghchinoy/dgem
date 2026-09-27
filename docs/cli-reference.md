@@ -1,21 +1,21 @@
 ---
 title: "CLI, HTTP Gateway & MCP Reference"
-description: "Complete command-line flag reference for dgem (--vertex-url, dgem serve --default-backend vertex_first --cascade-model gemini-3.8-flash), HTTP Gateway proxy routes (/api/decide, /v1/systemone), and Model Context Protocol (MCP) tool parameters."
+description: "Complete command-line flag reference for dgem (--vertex-url, dgem serve --default-backend vertex_first --cascade-model gemini-3.8-flash, dgem systemone serve), HTTP Gateway proxy routes (/api/decide, /v1/systemone), and Model Context Protocol (MCP) tool parameters."
 ---
 
 # `dgem` CLI, HTTP Gateway & MCP Reference
 
-This reference documents the global `dgem` CLI flags, the `dgem serve` Decision Studio & Gateway server options, the `/v1/systemone` and `/api/decide` HTTP routes, and the Model Context Protocol (`MCP`) tool schemas.
+This reference documents the global `dgem` CLI flags, the `dgem serve` Decision Studio & Gateway server options, the `dgem systemone serve` tournament adapter, the `/v1/systemone` and `/api/decide` HTTP routes, and the Model Context Protocol (`MCP`) tool schemas.
 
 ---
 
 ## 1. Global CLI Flags (`dgem`)
 
-All `dgem` subcommands (`decide`, `ask`, `serve`, `mcp`, `bench`, `bench-calibration`, `bench-rerank`, `bench-bbox`, `bench-intents`, `bench-ecotone`, `bench-jev`) share the following global flags and `DGEM_*` environment variables:
+All `dgem` subcommands (`decide`, `ask`, `serve`, `systemone`, `mcp`, `bench`, `bench-calibration`, `bench-rerank`, `bench-bbox`, `bench-intents`, `bench-ecotone`, `bench-jev`) share the following global flags and `DGEM_*` environment variables:
 
 | Flag | Env Var | Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`--vertex-url`** | `DGEM_VERTEX_URL` | **`<endpoint-id>`** | Vertex AI Dedicated Endpoint ID (`<endpoint-id>`) or full `/invoke/v1` URL (`https://<endpoint-id>.<region>-<project-number>.prediction.vertexai.goog/v1/projects/<project-number>/locations/us-central1/endpoints/<endpoint-id>/invoke/v1`). When specified on CLI commands (`dgem decide --vertex-url <endpoint-id> --gcp-auth`), `dgem` mints an OAuth2 `cloud-platform` access token (`gcloud auth print-access-token`) and routes directly to `/invoke/v1/*`. |
+| **`--vertex-url`** | `DGEM_VERTEX_URL` | `""` | Target Vertex AI Dedicated Endpoint ID (`<endpoint-id>`) or full `/invoke/v1` URL (`https://<endpoint-id>.<region>-<project-number>.prediction.vertexai.goog/v1/projects/<project-number>/locations/us-central1/endpoints/<endpoint-id>/invoke/v1`). When specified on CLI commands (`dgem decide --vertex-url <endpoint-id> --gcp-auth`), `dgem` mints an OAuth2 `cloud-platform` access token (`gcloud auth print-access-token`) and routes directly to `/invoke/v1/*`. |
 | **`-u, --url`** | `DGEM_URL` | `http://127.0.0.1:8080/v1` | Base URL of the upstream server (Local Apple Silicon `diffgemma`, Serverless Cloud Run `dgemma`, or `dgemma-gateway`). |
 | **`-m, --model`** | `DGEM_MODEL` | `diffgemma-26b-a4b-it-q4` | Model identifier (`/model` or `/mnt/gcs/dgemma` on Vertex AI / Cloud Run). |
 | **`--gcp-auth`** | `DGEM_GCP_AUTH` | `false` | Automatically mint Google Cloud authentication tokens (`gcloud auth print-access-token` for Vertex AI `/invoke/*` and Stage 2 Gemini `generateContent`; `gcloud auth print-identity-token` for Cloud Run). |
@@ -56,16 +56,40 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `mcp`, `bench`, `bench-calibra
 
 | Flag | Env Var | Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`--default-backend`** | `DGEM_DEFAULT_BACKEND` | **`vertex_first`** | Default upstream GPU routing policy when a request does not specify `X-DGem-Backend` or `backend`:<br/>• **`vertex_first`** *(Recommended)*: Routes to the warm Vertex AI Dedicated Endpoint (`--vertex-url`) for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically fails over to Serverless Cloud Run GPU (`-u`) if Vertex is updating or scaled to zero.<br/>• **`vertex`**: Strictly pins requests to the Vertex AI Dedicated Endpoint (`/invoke/*`).<br/>• **`cloudrun`**: Strictly pins requests to Serverless Cloud Run GPU (`dgemma`). |
-| **`--vertex-url`** | `DGEM_VERTEX_URL` | **`<endpoint-id>`** | Target Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL used by `vertex_first` and `vertex` routing modes. |
+| **`--default-backend`** | `DGEM_DEFAULT_BACKEND` | **`vertex_first`** | Default upstream GPU routing policy when a request does not specify `X-DGem-Backend` or `backend`:<br/>• **`vertex_first`** *(Recommended)*: Routes to the warm Vertex AI Dedicated Endpoint (`--vertex-url`) for `0.0 s` wakeup and `~490 ms` GPU denoise, and automatically falls back to Serverless Cloud Run GPU (`-u`) if Vertex is updating or scaled to zero.<br/>• **`vertex`**: Strictly pins requests to the Vertex AI Dedicated Endpoint (`/invoke/*`).<br/>• **`cloudrun`**: Strictly pins requests to Serverless Cloud Run GPU (`dgemma`). |
+| **`--vertex-url`** | `DGEM_VERTEX_URL` | `""` | Target Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL used by `vertex_first` and `vertex` routing modes. |
 | **`--cascade-model`** | `DGEM_CASCADE_MODEL` | **`gemini-3.8-flash`** | Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash`, `gemini-3.7-flash`, or `gemini-3.5-flash-lite`). |
 | **`--cascade-models`** | `DGEM_CASCADE_MODELS` | **`gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite`** | Comma-separated list of selectable Stage 2 Vertex AI Gemini 3.x models exposed in `GET /api/backend-config` and the Web Studio. |
+| **`--systemone-mode`** | `DGEM_SYSTEMONE_MODE` | `passthrough` | Mode for `/v1/systemone` route: `passthrough` (direct proxy) or `adapter` (runs wide-canvas batching and bracket tournaments). |
+| **`--systemone-temperature`** | `DGEM_SYSTEMONE_TEMPERATURE` | `1.0` | Post-hoc slot logit temperature scaling $T^*$ for `/v1/systemone` decisions. |
 | **`-u, --url`** | `DGEM_URL` | `http://127.0.0.1:8080/v1` | Upstream Serverless Cloud Run GPU `/v1` URL used by `cloudrun` routing and `vertex_first` failover. |
 | **`--port`** | `PORT` | `8080` | HTTP listener port. |
 
 ---
 
-## 3. HTTP Gateway Endpoints (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)
+## 3. `dgem systemone serve` (Decision Index Adapter)
+
+`dgem systemone serve` runs a dedicated, high-performance HTTP adapter conforming to the upstream `POST /v1/systemone` protocol (for `apolinario/decision-index`). It transparently resolves arbitrary-cardinality label taxonomies via dual-stage bracket tournaments within the 26-slot single-token constraint:
+
+```bash
+# Launch adapter listening on 8080, forwarding to local structured_server on 8081:
+dgem systemone serve --port 8080 --upstream-url http://127.0.0.1:8081/v1/systemone --temperature 1.0
+
+# Protect adapter with an optional Bearer API key:
+dgem systemone serve --port 8080 --api-key "my-secret-key"
+```
+
+| Flag | Env Var | Default | Description |
+| :--- | :--- | :--- | :--- |
+| **`--port`** | `PORT` | `8080` | Local HTTP port to bind. |
+| **`--upstream-url`** | `UPSTREAM_URL` | `http://127.0.0.1:8081/v1/systemone` | Destination URL for structured reads. |
+| **`--temperature`** | `TEMPERATURE` | `1.0` | Post-hoc slot temperature scaling $T^*$. |
+| **`--api-key`** | `API_KEY` | `""` | Optional authorization Bearer token to require on incoming requests. |
+| **`--canvas`** | `CANVAS` | `128` | Served diffusion canvas size in tokens. |
+
+---
+
+## 4. HTTP Gateway Endpoints (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)
 
 Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts backend selection via HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun`, query parameter `?backend=vertex_first`, or JSON body field `"backend": "vertex_first"`, and returns the **`X-DGem-Backend-Used: vertex | cloudrun`** response header.
 
@@ -75,18 +99,37 @@ Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation). Supports both `application/json` (`{"state": ..., "questions": ...}`) and `multipart/form-data` (`image` file + JSON fields), routing to `/invoke/v1/systemone` on Vertex AI or `/v1/systemone` on Cloud Run GPU. |
 | **`/v1/chat/completions`** | `POST` | OpenAI-compatible structured diffusion decision envelope proxy with `vertex_first` auto-failover and automatic GCP token injection. |
 | **`/v1/raw/chat/completions`** | `POST` | Direct pass-through proxy to `vLLM`'s raw `/v1/chat/completions` endpoint. |
-| **`/api/backend-config`** (live `vertex_status`), **`/api/vertex/deploy`**, **`/api/vertex/teardown`** | `GET` / `POST` | Live Vertex AI Dedicated Endpoint (`<endpoint-id>`) replica telemetry and 1-click provisioning/teardown (`g2-standard-16` `1× NVIDIA L4`). |
+| **`/api/backend-config`** (live `vertex_status`), **`/api/vertex/deploy`**, **`/api/vertex/teardown`** | `GET` / `POST` | Live Vertex AI Dedicated Endpoint replica telemetry and 1-click provisioning/teardown (`g4-standard-48` `1× NVIDIA RTX PRO 6000`). |
 
 ---
 
-## 4. Model Context Protocol (`MCP`) Tool Parameters (`POST /mcp` & `dgem mcp`)
+## 5. Model Context Protocol (`MCP`) Tool Parameters (`POST /mcp` & `dgem mcp`)
 
 The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate_bounding_boxes`) accept the following backend routing and Stage 2 Gemini Cascade parameters:
 
 | MCP Argument | Type | Allowed Values / Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` | Selects the GPU execution target (`vertex_first` routes to warm Vertex AI `<endpoint-id>` with automatic Cloud Run failover). |
-| **`vertex_url`** | `string` | `"<endpoint-id>"` *(optional)* | Custom Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. |
+| **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` | Selects the GPU execution target (`vertex_first` routes to warm Vertex AI Dedicated Endpoint with automatic Cloud Run failover). |
+| **`vertex_url`** | `string` | `""` *(optional)* | Custom Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. |
 | **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`). |
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
 | **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
+
+---
+
+## 6. Environment Variables Reference
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| **`DGEM_VERTEX_URL`** | `""` | Target Vertex AI Dedicated Endpoint ID or `/invoke/*` URL. |
+| **`DGEM_VERTEX_ENDPOINT_ID`** | `""` | Dedicated Endpoint ID override. |
+| **`DGEM_VERTEX_MODEL_ID`** | `""` | Target Vertex AI Model ID deployed by `/api/vertex/deploy`. |
+| **`DGEM_VERTEX_SA`** | `""` | Dedicated Service Account for Vertex AI model deployment. |
+| **`DGEM_DEFAULT_BACKEND`** | `vertex_first` | Default backend selector (`vertex_first`, `vertex`, `cloudrun`, `local`). |
+| **`DGEM_CASCADE_MODEL`** | `gemini-3.8-flash` | Default Gemini model for Stage 2 escalation. |
+| **`DGEM_CASCADE_MODELS`** | `gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite` | List of enabled Gemini cascade models. |
+| **`DGEM_GATEWAY_HOSTS`** | `""` | Comma-separated extra hostnames recognized as remote GCP endpoints for token injection. |
+| **`DGEM_REMOTE_URL`** | `""` | Remote gateway endpoint used by `dgem mcp --remote`. |
+| **`GCP_PROJECT`** | `""` | Google Cloud project ID (falls back to GCP metadata server). |
+| **`GCP_PROJECT_NUMBER`** | `""` | Google Cloud numeric project ID (detected automatically if on GCP). |
+| **`GCP_REGION`** | `us-central1` | Default Google Cloud region for services and endpoints. |

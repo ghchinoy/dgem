@@ -163,7 +163,7 @@ install: ## Install dgem binary to GOBIN
 
 check-public: ## Verify that no internal GCP project IDs, numbers, or private domains exist in public code/docs
 	@echo "==> Auditing repository for internal identifiers..."
-	@LEAKS=$$(git grep -n -E "(4423577720856772608|4217256562927861760|genai-blackbelt-fishfooding|882920967572|dgemma\.aaie\.cloud|aaie-decision-model)" -- . ':!benchmarks' ':!scratch' ':!Makefile' 2>/dev/null || true); \
+	@LEAKS=$$(git grep -n -E "(4423577720856772608|4217256562927861760|genai-blackbelt-fishfooding|882920967572|dgemma\.aaie\.cloud|aaie-decision-model)" -- . ':!benchmarks' ':!scratch' ':!Makefile' ':!scripts/redact_receipt.py' 2>/dev/null || true); \
 	if [ -n "$$LEAKS" ]; then \
 		echo "ERROR: Internal identifiers detected in tracked files:"; \
 		echo "$$LEAKS"; \

@@ -40,11 +40,12 @@ gcloud beta quotas info describe NvidiaRtxPro6000GpuAllocNoZonalRedundancyPerPro
 
 ### Vertex AI GPU Quota Check
 ```bash
-gcloud beta quotas info describe CustomModelServingNvidiaRtxPro6000GpusPerProjectRegion \
+gcloud beta quotas info describe CustomModelServingRTXPRO6000GPUsPerProjectPerRegion \
   --service=aiplatform.googleapis.com \
   --project="<your-project-id>" \
   --format="value(dimensionsInfos[0].details.value)"
 ```
+*Note: In many newly activated GCP projects, Cloud Run GPU quota is 0 by default while Vertex AI custom model serving quota (`CustomModelServingRTXPRO6000GPUsPerProjectPerRegion` or `CustomModelServingL4GPUsPerProjectPerRegion`) is already enabled. If Cloud Run GPU quota is 0, Vertex AI Dedicated Endpoints offer the fastest path to running.*
 
 ---
 
