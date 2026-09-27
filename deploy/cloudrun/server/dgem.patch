@@ -105,7 +105,17 @@
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1303,6 +1356,8 @@
+@@ -1276,7 +1329,8 @@
+             )
+         if self.path == "/v1/systemone":
+             return self._systemone(req, images)
+-        if self.path == "/v1/chat/completions":
++        # dgem: /predict and /rawPredict keep regional Vertex :rawPredict callers working.
++        if self.path in ("/v1/chat/completions", "/predict", "/rawPredict"):
+             return self._chat(req)
+         return self._json(404, {"error": {"message": "unknown route"}})
+ 
+@@ -1303,6 +1357,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -114,7 +124,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1373,12 @@
+@@ -1318,6 +1374,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -127,7 +137,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1487,7 +1548,7 @@
+@@ -1487,7 +1549,7 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -136,7 +146,7 @@
      srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
      threading.Thread(target=srv.serve_forever, daemon=True).start()
      return srv
-@@ -1537,7 +1598,7 @@
+@@ -1537,7 +1599,7 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )

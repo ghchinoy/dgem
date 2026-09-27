@@ -1329,7 +1329,8 @@ class Handler(BaseHTTPRequestHandler):
             )
         if self.path == "/v1/systemone":
             return self._systemone(req, images)
-        if self.path == "/v1/chat/completions":
+        # dgem: /predict and /rawPredict keep regional Vertex :rawPredict callers working.
+        if self.path in ("/v1/chat/completions", "/predict", "/rawPredict"):
             return self._chat(req)
         return self._json(404, {"error": {"message": "unknown route"}})
 
