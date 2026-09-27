@@ -43,6 +43,7 @@ var (
 	jevFamilyFilter      string
 	jevTopicFilter       string
 	jevLimit             int
+	jevOffset            int
 	jevWorkers           int
 	jevSamples           string
 	jevTempScale         float64
@@ -107,6 +108,7 @@ func init() {
 	benchJevCmd.Flags().StringVar(&jevFamilyFilter, "family", "", "Filter by JevBench family (e.g., 'long_policy', 'temporal_numeric', 'multi_hop', 'trap', 'probability')")
 	benchJevCmd.Flags().StringVar(&jevTopicFilter, "topic", "", "Filter by subject topic (e.g., 'math', 'coding', 'law_policy', 'finance_commerce', 'support_ops')")
 	benchJevCmd.Flags().IntVarP(&jevLimit, "limit", "n", 0, "Limit number of items to evaluate (0 = all)")
+	benchJevCmd.Flags().IntVar(&jevOffset, "offset", 0, "Start offset index in dataset (0 = beginning)")
 	benchJevCmd.Flags().IntVarP(&jevWorkers, "workers", "w", 1, "Number of concurrent evaluation workers")
 	benchJevCmd.Flags().StringVar(&jevSamples, "samples", "1", "DiffusionGemma samples policy ('1', '2', '4', or 'auto')")
 	benchJevCmd.Flags().Float64Var(&jevTempScale, "temperature-scale", 1.0, "Post-hoc slot logit temperature scaling factor T > 0")
@@ -279,12 +281,21 @@ func runBenchJev(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("local JevBench snapshot %q not found\n  Hint: Run 'dgem bench-jev --sync' once to fetch and verify the 231 public JevBench items", jevDataset)
 	}
 
-	tasks, err := loadJevTasks(jevDataset, jevTierFilter, jevFamilyFilter, jevTopicFilter, jevLimit)
+	tasks, err := loadJevTasks(jevDataset, jevTierFilter, jevFamilyFilter, jevTopicFilter, 0)
 	if err != nil {
 		return fmt.Errorf("failed to load JevBench dataset %q: %w", jevDataset, err)
 	}
 	if len(tasks) == 0 {
 		return fmt.Errorf("no JevBench tasks matched filters (tier=%q, family=%q, topic=%q)\n  Hint: Run 'dgem bench-jev' without filters to evaluate all 231 public items", jevTierFilter, jevFamilyFilter, jevTopicFilter)
+	}
+	if jevOffset > 0 {
+		if jevOffset >= len(tasks) {
+			return fmt.Errorf("--offset %d exceeds total tasks %d", jevOffset, len(tasks))
+		}
+		tasks = tasks[jevOffset:]
+	}
+	if jevLimit > 0 && len(tasks) > jevLimit {
+		tasks = tasks[:jevLimit]
 	}
 
 	var lock JevManifestLock
