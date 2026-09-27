@@ -1,5 +1,5 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-17)"
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-18)"
 description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, JevBench v1.3.1 Parity, Decision Index, Permutation Invariance, and Next-Horizon Cascades."
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-17`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-18`)
 
 ### Part A — Completed Empirical Studies
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-17`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-18`)
 
 Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](/dgem/experiments/exp-05-roadmap-cascades-and-dags/)**, `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](/dgem/experiments/exp-10-listwise-diffusion-reranking/)**, `EXP-11` is documented in **[`exp-11-jevbench-parity.md`](/dgem/experiments/exp-11-jevbench-parity/)**, `EXP-12` is documented in **[`exp-12-decision-index.md`](/dgem/experiments/exp-12-decision-index/)**, and `EXP-13` is documented in **[`exp-13-permutation-invariance.md`](/dgem/experiments/exp-13-permutation-invariance/)**.
 
@@ -68,6 +68,7 @@ Detailed architectural specifications, mathematical formulations, and empirical 
 | **`EXP-15`** | **Letter Collision in the Dual-Mirror (`PROP-11`)** | Same-canvas mirror damage comes from shared letters: on JevBench (231, Vertex G4, 3 baselines 182–189), an identical copy (184) and a digit-labelled reversed slot (182) are within noise, while the letter-labelled reversed slot drops to 154; forward answers change on 67% of same-letter items vs 6% otherwise (p≈1e-19). [Details](/dgem/experiments/exp-15-letter-collision/) | `benchmarks/jevbench/jevbench_public.jsonl` | `dgem bench-jev --dual-mirror --mirror-mode`<br>`scripts/analyze_idc.py collision`<br>`benchmarks/runs/20260925-prop11-letter-collision` | ✅ Completed |
 | **`EXP-16`** | **Slot Names Are Part of the Prompt (`PROP-16`)** | Single-slot ids (`q1`, random, `mirror`, `check`) are within the baseline band (183–189) on JevBench; a loaded second-slot id (`__mirror_rev`, identical options so no letter collision) drops accuracy to 162 (second slot 135) vs 181 for `__rev`. Style rule: neutral ids in multi-question schemas. [Details](/dgem/experiments/exp-16-slot-names/) | `benchmarks/jevbench/jevbench_public.jsonl` | `dgem bench-jev --slot-id`<br>`benchmarks/runs/20260926-prop16-slot-names` | ✅ Completed |
 | **`EXP-17`** | **Separate-Pass Mirror (`PROP-12`)** | Forward vs. separately-run reversed pass on JevBench (231, Vertex G4): order disagreement relates to errors beyond hesitation (mean partial Spearman 0.133, CI [0.025, 0.240]), but two forward passes show a similar non-significant value (0.083) and CV AUROC improves by ≤ 0.016 at double the cost. [Details](/dgem/experiments/exp-17-separate-pass-mirror/) | `benchmarks/jevbench/jevbench_public.jsonl` | `dgem bench-jev --flip-options`<br>`scripts/analyze_idc.py separate-pass`<br>`benchmarks/runs/20260926-prop12-separate-pass` | ✅ Completed |
+| **`EXP-18`** | **Judge Capabilities With and Without an Autoregressive Autorater (mizan Experiment 07)** | Gold-scored, same-session comparison over 13 human-labelled judge suites (n=100 each) and 650 computation items: DiffusionGemma matches gemini-3.8-flash on safety (76 vs 75) and faithfulness (82 vs 76, n.s.) and RewardBench with a mirror read (91 vs 90), trails on toxicity (79 vs 89.8, p=0.003) and on instruction-following / expert / multi-turn pairwise (−9 to −14, significant); a fixed 35%-hesitation cascade reaches 80–84 on safety/faithfulness with 10–31% escalation; p50 97 ms (G4) vs 3,050 ms. No-model metrics: mizan local = Vertex on exact/tool/trajectory (350/350). [Details](/dgem/experiments/exp-18-mizan-judge-capability/) | mizan `judge-eval` pack; suites built by mizan `scripts/judge-eval/build_suites.py` (BeaverTails, ToxicChat, HaluBench, MT-Bench human, RewardBench, HelpSteer2, SummEval) | `mizan eval compare-engines`<br>mizan `scripts/judge-eval/run_all.sh` | ✅ Completed |
 
 ---
 

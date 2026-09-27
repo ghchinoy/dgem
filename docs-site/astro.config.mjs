@@ -270,7 +270,7 @@ export default defineConfig({
         {
           label: 'Experiments & Research Log',
           items: [
-            { label: 'Experiment Ledger (EXP-01 – EXP-17)', slug: 'experiments' },
+            { label: 'Experiment Ledger (EXP-01 – EXP-18)', slug: 'experiments' },
             { label: 'Proposed Experiments Register', slug: 'experiments/proposed' },
             { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
             { label: 'Listwise Diffusion Reranking (EXP-10)', slug: 'experiments/exp-10-listwise-diffusion-reranking' },
@@ -281,6 +281,7 @@ export default defineConfig({
             { label: 'Letter Collision in the Mirror (EXP-15)', slug: 'experiments/exp-15-letter-collision' },
             { label: 'Slot Names Are Part of the Prompt (EXP-16)', slug: 'experiments/exp-16-slot-names' },
             { label: 'Separate-Pass Mirror (EXP-17)', slug: 'experiments/exp-17-separate-pass-mirror' },
+            { label: 'Judge Capabilities, mizan (EXP-18)', slug: 'experiments/exp-18-mizan-judge-capability' },
           ],
         },
       ],

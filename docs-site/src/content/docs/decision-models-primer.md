@@ -144,6 +144,8 @@ Because decision models project onto restricted candidate vocabularies rather th
 
 When human annotators agree, DiffusionGemma resolves the slot with **100% accuracy** and near-zero entropy (`0.0744 nats`). When the human crowd splits evenly across options, DiffusionGemma's internal entropy spikes **8.0× higher (`0.5932 nats`)**, giving engineers a deterministic threshold ($H > 0.30\text{ nats}$) to trigger abstention or escalate to a Tier-3 reasoning model.
 
+> **Provenance note (2026-09-25):** The entropies in this table are the raw (T=1) values from the first version of `results_calibration_cloudrun.json` (commit `d0a3fce`). Commit `fb6583c` rewrote that file with temperature scaling at T=1.35. The rescaled values are 0.1878 nats for low-entropy and 0.7334 nats for high-entropy, a 3.9× multiplier instead of 8.0×. Accuracy is unchanged. Each ChaosNLI tier has only n=3 items, so treat the multiplier as illustrative.
+
 > **But raw entropy can be fooled.** The table above uses one fixed option order, and only 3 items sit in each ChaosNLI tier, so treat the 8× figure as a direction rather than a constant. `DiffusionGemma` has a strong habit of picking whichever option is listed first ("Box A"). On a borderline question that habit can make a coin flip *look* like 99.9% certainty, and the entropy gate then waves it through. **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](/dgem/confidence-beyond-shannon/)** explains the problem with a worked example, describes the checks `dgem` adds (removing the Box-A habit, reading a reversed ballot in the same pass, temperature scaling), and reports what the evidence does and doesn't show so far.
 
 ### 5. Templates as Executable Decision Policies (`Policy-as-Code`)

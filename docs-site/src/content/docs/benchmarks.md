@@ -228,16 +228,22 @@ Stratifying the 50 benchmark items by their human annotator disagreement tier (`
 
 * **Why This Matters for Production Guardrails**: On `ChaosNLI`, when 100 human annotators agree (`low-entropy`), DiffusionGemma achieves **100% accuracy** with near-zero entropy (`H = 0.0744 nats`). When the human crowd itself splits evenly across `entailment`, `neutral`, and `contradiction` (`high-entropy`), DiffusionGemma's internal Shannon entropy spikes **8.0× higher (`H = 0.5932 nats`)**—providing an uncalibrated autoregressive LLM's missing signal: **a mathematically grounded abstention / escalation gate**.
 
+> **Provenance note (2026-09-25):** The entropies in this table are the raw (T=1) values from the first version of `results_calibration_cloudrun.json` (commit `d0a3fce`). Commit `fb6583c` rewrote that file with temperature scaling at T=1.35. The rescaled values are 0.1878 nats for low-entropy and 0.7334 nats for high-entropy, a 3.9× multiplier instead of 8.0×. Accuracy is unchanged. Each ChaosNLI tier has only n=3 items, so treat the multiplier as illustrative.
+
 ### 8.3 Head-to-Head: DiffusionGemma 26B vs. `gemini-3.8-flash` and `gemini-3.5-flash-lite`
 
-Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/results_calibration_gemini38.json`](../benchmarks/results_calibration_gemini38.json)) and cross-referencing the 46-case `mizan eval compare-engines` sweep across `gemini-3.5-flash-lite` and `gemini-3.8-flash`, we compared single-pass discrete diffusion readout on a Cloud Run L4 GPU (`NVFP4`) against Vertex AI autoregressive models:
+Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/results_calibration_gemini38.json`](../benchmarks/results_calibration_gemini38.json)), we compared single-pass diffusion readout on a Cloud Run L4 GPU (`NVFP4`) with Vertex AI autoregressive models. The 46-item column rescores the same dgem result files on the 46 IDs that `mizan-templates/packs/calibration` shares with this suite.
 
-| Engine / Architecture | 46-Case `mizan` YAML Acc | 50-Case `dgem` Schema Acc | Avg Latency / Req | Speedup vs. `3.8-flash` | Architectural Strength |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **`gemini-3.5-flash-lite`** (Vertex AI Autoregressive) | 82.6% (38 / 46) | — | 905 ms | 3.77× | Fast general-purpose autoregressive lite model |
-| **`DiffusionGemma 26B`** (Cloud Run 1× L4 `NVFP4`, `s=1`) | **89.1% (41 / 46)** | **88.0% (44 / 50)** | **712 ms** ⭐ | **4.79× faster** ⭐ | **100% AgentDrift (`693 ms`), 100% Guardrail (`669 ms`), 100% Intent (`765 ms`)**, calibrated Shannon entropy $H$ |
-| **`gemini-3.8-flash`** (Vertex AI Autoregressive) | 87.0% (40 / 46) | **98.0% (49 / 50)** 🏆 | 3,412 ms | 1.00× (Baseline) | **100% ANLI (`3/3`), 100% ChaosNLI (`6/6`), 100% Toxicity (`6/6`)** via multi-hop reasoning |
-| **Entropy-Gated Cascade** (`dgemma` $\xrightarrow{H \ge 0.35}$ `3.8-flash`) | **93.5% (43 / 46)** | **94.0% (47 / 50)** ⭐ | **1,824 ms** | **1.87× faster** (`72%` local) | **100% on `ambiguous` (`9/9`), `high-entropy` (`3/3`), and `toxicity` (`6/6`)** while escalating only 28% of traffic |
+> **Correction (2026-09-25):** An earlier version of this table included a "46-case `mizan eval compare-engines`" column: gemini-3.5-flash-lite 38/46, DiffusionGemma 41/46, gemini-3.8-flash 40/46. Those numbers have no result file and don't match the committed dgem results, so they have been removed. On the committed results, **gemini-3.8-flash alone is more accurate than DiffusionGemma alone.** The value of DiffusionGemma here is latency and cost per item, plus an entropy gate that lets a cascade match Gemini's accuracy. The same-session re-run is [EXP-14](/experiments/exp-14-idc-rerun/); the mizan-side judge-capability re-run is [EXP-18](/experiments/exp-18-mizan-judge-capability/).
+
+| Engine | 46 shared IDs | 50-case suite | Avg latency | Result file |
+| :--- | :---: | :---: | :---: | :--- |
+| **`DiffusionGemma 26B`** (Cloud Run 1× L4 `NVFP4`, `s=1`) | 42 / 46 | 44 / 50 (88.0%) | **712 ms** | `results_calibration_cloudrun.json` |
+| **`gemini-3.8-flash`** (Vertex AI) | **45 / 46** | **49 / 50 (98.0%)** | 3,412 ms | `results_calibration_gemini38.json` |
+| **Cascade** (`dgemma` $\xrightarrow{H \ge 0.35}$ `3.8-flash`, 28% escalated) | 43 / 46 | 47 / 50 (94.0%) | 1,824 ms | `results_calibration_cascade.json` |
+| **Cascade** (`H_norm ≥ 0.16`, prior-guided, 34% escalated) | **46 / 46** | **49 / 50 (98.0%)** | 2,105 ms avg / 753 ms p50 | `results_calibration_cascade_normalized.json` |
+
+gemini-3.5-flash-lite has no result file on this suite, so it isn't listed. Categories hold 2-9 items each, so the per-category percentages below are anecdotal.
 
 #### Category-by-Category Latency & Accuracy (`DiffusionGemma 26B` vs. `gemini-3.8-flash`)
 
