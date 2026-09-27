@@ -13,15 +13,15 @@ DiffusionGemma (`dgem`) container images are published to Google Artifact Regist
 
 Images are hosted in `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/`:
 
-### A. Lean Variant (`dgem:latest` or `dgem:<git-sha>`)
+### A. Lean Variant (`dgem:56baadf` or `dgem:latest`)
 * **Size**: `~10 GB` compressed.
 * **Weights**: Downloads public, ungated NVFP4 weights from [`nvidia/diffusiongemma-26B-A4B-it-NVFP4`](https://huggingface.co/nvidia/diffusiongemma-26B-A4B-it-NVFP4) at container startup (or mounts local storage / GCS).
-* **Image URI**: `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest`
+* **Pinned URI**: `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:56baadf@sha256:a7ace753973b6c3521dbc4c62ea4dfbea5384c582884e98a5ccae9f81b1f6dd9`
 
-### B. Self-Contained Variant (`dgem-weights:latest` or `dgem-weights:<git-sha>`)
+### B. Self-Contained Variant (`dgem-weights:56baadf` or `dgem-weights:latest`)
 * **Size**: `~26 GB` compressed.
 * **Weights**: NVFP4 weights pre-baked into `/opt/dgemma/weights`. **0.0s network download** on cold start.
-* **Image URI**: `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest`
+* **Pinned URI**: `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a`
 
 ---
 
@@ -56,7 +56,7 @@ Deploy using the pre-baked weights image for rapid startup without Hugging Face 
 ```bash
 export GCP_PROJECT="<your-project-id>"
 export GCP_REGION="us-central1"
-export IMAGE="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest"
+export IMAGE="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a"
 
 gcloud run deploy dgemma \
   --project="$GCP_PROJECT" \
@@ -104,7 +104,7 @@ For persistent, low-latency production endpoints, deploy using the automated pro
 ```bash
 export GCP_PROJECT="<your-project-id>"
 export GCP_REGION="us-central1"
-export IMAGE_URI="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest"
+export IMAGE_URI="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:56baadf@sha256:a7ace753973b6c3521dbc4c62ea4dfbea5384c582884e98a5ccae9f81b1f6dd9"
 export VERTEX_PROFILE="g4-rtxpro6000"
 
 ./scripts/deploy_vertex_endpoint.sh

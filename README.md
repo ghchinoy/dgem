@@ -31,8 +31,11 @@ Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--v
 Official public container images are available in Google Artifact Registry without requiring a Google Cloud account or credentials:
 
 ```bash
-# Pull official image (open to all users globally):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+# Pull official lean image (or :latest):
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:56baadf@sha256:a7ace753973b6c3521dbc4c62ea4dfbea5384c582884e98a5ccae9f81b1f6dd9
+
+# Or pull self-contained image with pre-baked NVFP4 weights (0.0s network download):
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
 
 # Run with GPU (downloads public NVFP4 weights on boot):
 docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
