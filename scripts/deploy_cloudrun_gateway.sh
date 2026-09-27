@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT="${GCP_PROJECT:-genai-blackbelt-fishfooding}"
+PROJECT="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
+if [[ -z "$PROJECT" ]]; then
+  echo "Error: No GCP project detected. Set GCP_PROJECT=<project-id>."
+  exit 1
+fi
 REGION="${GCP_REGION:-us-central1}"
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-dgemma-gateway}"
 UPSTREAM_SERVICE="${UPSTREAM_SERVICE:-dgemma}"

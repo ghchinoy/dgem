@@ -5,7 +5,11 @@
 # ==============================================================================
 set -euo pipefail
 
-PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || echo "genai-blackbelt-fishfooding")}"
+PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
+if [[ -z "$PROJECT_ID" ]]; then
+  echo "Error: No GCP project detected. Set GCP_PROJECT=<project-id>."
+  exit 1
+fi
 REGION="${GCP_REGION:-us-central1}"
 ENDPOINT_DISPLAY_NAME="${VERTEX_ENDPOINT_NAME:-dgemma-dedicated}"
 API_BASE="https://${REGION}-aiplatform.googleapis.com/v1beta1"

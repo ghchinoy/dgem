@@ -19,14 +19,16 @@ SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-dgemma}"
 GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}" # nvidia-l4 or nvidia-rtx-pro-6000
 BUCKET="${GCS_BUCKET:-dgem-weights-${PROJECT_ID}}"
 
-# Image resolution: Prefer Artifact Registry image in user's project, fallback to ghcr.io/taeold/djev-run:latest
+# Image resolution: Prefer Artifact Registry image in user's project, fallback to public dgem-diffusiongemma image
+IMAGE_PROJECT="${IMAGE_PROJECT:-dgem-diffusiongemma}"
 DEFAULT_AR_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/dgem/dgemma:latest"
+PUBLIC_AR_IMAGE="${REGION}-docker.pkg.dev/${IMAGE_PROJECT}/dgem/dgem:latest"
 if [[ -n "${CLOUDRUN_IMAGE:-}" ]]; then
   IMAGE_TAG="$CLOUDRUN_IMAGE"
 elif gcloud artifacts docker images describe "$DEFAULT_AR_IMAGE" --project="$PROJECT_ID" >/dev/null 2>&1; then
   IMAGE_TAG="$DEFAULT_AR_IMAGE"
 else
-  IMAGE_TAG="ghcr.io/taeold/djev-run:latest"
+  IMAGE_TAG="$PUBLIC_AR_IMAGE"
 fi
 
 if [[ -z "$PROJECT_ID" ]]; then

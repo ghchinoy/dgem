@@ -266,7 +266,9 @@ export default defineConfig({
         {
           label: 'Deployment & Cloud',
           items: [
+            { label: 'Public Container Images', slug: 'public-image' },
             { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
+            { label: 'Production Testing How-To', slug: 'production-testing-howto' },
             { label: 'Path to Production (Scaling & Recommendations)', slug: 'path-to-production' },
             { label: 'Vertex AI (/invoke/*) vs. Cloud Run', slug: 'vertex-ai-vs-cloudrun' },
             { label: 'Cloud Run Architecture & Lessons', slug: 'cloudrun-lessons-learned' },

@@ -97,12 +97,9 @@ from transformers import AutoTokenizer
 
 ARGS = None
 TOK = None
-API_KEY = os.environ.get("API_KEY", "")
-DEFAULT_SAMPLES = os.environ.get("DEFAULT_SAMPLES", "1")
-MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
-INFLIGHT_WAIT_S = float(os.environ.get("INFLIGHT_WAIT_S", "30.0"))
-_INFLIGHT = threading.BoundedSemaphore(MAX_INFLIGHT) if MAX_INFLIGHT > 0 else None
-_upstream_ready = False  # when set, POST routes need "Authorization: Bearer <key>"
+API_KEY = os.environ.get(
+    "API_KEY", ""
+)  # when set, POST routes need "Authorization: Bearer <key>"
 CANVAS_LEN = 64  # the served canvas length. A request may be narrower.
 CANVAS_STEP = 16  # request widths are multiples of this
 VOCAB = 262144
@@ -216,8 +213,7 @@ def parse_schema(value):
                     f"must be among {names}"
                 )
     schedule(qs)  # refuses a cycle
-    def_samples = int(DEFAULT_SAMPLES) if DEFAULT_SAMPLES.isdigit() else DEFAULT_SAMPLES
-    samples = value.get("samples", def_samples)
+    samples = value.get("samples", "auto")
     if samples == "auto":
         policy = {
             "mode": "auto",
@@ -436,24 +432,7 @@ def label_id_union(slots):
     return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
 
 
-def _wait_for_upstream(max_wait=180):
-    global _upstream_ready
-    if _upstream_ready:
-        return
-    deadline = time.time() + max_wait
-    url = ARGS.upstream.rstrip("/") + "/health"
-    while time.time() < deadline:
-        try:
-            with urllib.request.urlopen(url, timeout=1.5) as r:
-                if r.status == 200:
-                    _upstream_ready = True
-                    return
-        except Exception:
-            time.sleep(1.0)
-
-
 def upstream_chat(body, timeout=600):
-    _wait_for_upstream()
     req = urllib.request.Request(
         ARGS.upstream.rstrip("/") + "/v1/chat/completions",
         data=json.dumps(body).encode(),
@@ -463,7 +442,6 @@ def upstream_chat(body, timeout=600):
 
 
 def upstream_completions(body, timeout=600):
-    _wait_for_upstream()
     req = urllib.request.Request(
         ARGS.upstream.rstrip("/") + "/v1/completions",
         data=json.dumps(body).encode(),
@@ -1236,8 +1214,6 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path in ("/health", "/invoke/health", "/"):
-            return self._json(200, {"status": "ok", "server": "dgem-structured-server"})
         if self.path == "/health":
             return self._json(200, {"status": "ok"})
         return self._json(404, {"error": {"message": "unknown route"}})
@@ -1327,8 +1303,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def _decide(self, schema, state, seed):
         """-> (status, body) with the error body already shaped."""
-        if _INFLIGHT is not None and not _INFLIGHT.acquire(timeout=INFLIGHT_WAIT_S):
-            return 503, {"error": {"message": f"server busy: {MAX_INFLIGHT} decisions in flight", "type": "overloaded"}}
         try:
             return 200, decide(schema, state, seed)
         except SchemaError as e:
@@ -1344,12 +1318,6 @@ class Handler(BaseHTTPRequestHandler):
             }
         except Exception as e:
             return 500, {"error": {"message": repr(e), "type": "server_error"}}
-        finally:
-            if _INFLIGHT is not None:
-                try:
-                    _INFLIGHT.release()
-                except ValueError:
-                    pass
 
     def _systemone(self, req, images):
         try:
