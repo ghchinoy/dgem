@@ -221,8 +221,12 @@ export class DgemStudio extends LitElement {
   @state() private mcpLatencyMs = 0;
   @state() private copiedSnippet = '';
 
-  // Inference Backend Target ('vertex_first' vs 'cloudrun' vs 'vertex' /invoke/*)
-  @state() private backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' = 'vertex_first';
+  // Inference Backend Target ('vertex_first' vs 'cloudrun' vs 'vertex' vs 'local')
+  @state() private backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' | 'local' = 'vertex_first';
+  @state() private availableBackends: ('vertex_first' | 'cloudrun' | 'vertex' | 'local')[] = ['vertex_first', 'cloudrun', 'vertex'];
+  @state() private localAvailable = false;
+  @state() private localUrl = 'http://127.0.0.1:8080/v1';
+  @state() private localStatus: { available: boolean; reachable: boolean; url?: string; tier?: string } | null = null;
   @state() private vertexUrl = '4423577720856772608';
   @state() private backendSettingsOpen = false;
   @state() private vertexStatus: {
@@ -1027,11 +1031,26 @@ export class DgemStudio extends LitElement {
       const resp = await fetch('/api/backend-config');
       if (!resp.ok) return;
       const data = await resp.json();
-      const storedBackend = localStorage.getItem('dgem-backend-v2') as 'vertex_first' | 'cloudrun' | 'vertex' | null;
+      if (Array.isArray(data.available_backends)) {
+        this.availableBackends = data.available_backends;
+      }
+      this.localAvailable = !!data.local_available;
+      if (data.local_url) {
+        this.localUrl = data.local_url;
+      }
+      if (data.local_status) {
+        this.localStatus = data.local_status;
+      }
+
+      const storedBackend = localStorage.getItem('dgem-backend-v2') as 'vertex_first' | 'cloudrun' | 'vertex' | 'local' | null;
       const storedVertexUrl = localStorage.getItem('dgem-vertex-url');
-      if (storedBackend === 'vertex_first' || storedBackend === 'vertex' || storedBackend === 'cloudrun') {
+      if (
+        storedBackend &&
+        ['vertex_first', 'vertex', 'cloudrun', 'local'].includes(storedBackend) &&
+        (this.availableBackends.length === 0 || this.availableBackends.includes(storedBackend))
+      ) {
         this.backendTarget = storedBackend;
-      } else if (data.default_backend === 'vertex' || data.default_backend === 'cloudrun' || data.default_backend === 'vertex_first') {
+      } else if (data.default_backend) {
         this.backendTarget = data.default_backend;
       }
       if (storedVertexUrl && storedVertexUrl.trim() !== '') {
@@ -1048,7 +1067,7 @@ export class DgemStudio extends LitElement {
     }
   }
 
-  private async saveBackendConfig(backend: 'vertex_first' | 'cloudrun' | 'vertex', vertexUrl: string) {
+  private async saveBackendConfig(backend: 'vertex_first' | 'cloudrun' | 'vertex' | 'local', vertexUrl: string) {
     this.backendTarget = backend;
     this.vertexUrl = (vertexUrl || '4423577720856772608').trim();
     localStorage.setItem('dgem-backend-v2', this.backendTarget);
@@ -1060,6 +1079,7 @@ export class DgemStudio extends LitElement {
         body: JSON.stringify({
           default_backend: this.backendTarget,
           vertex_url: this.vertexUrl,
+          local_url: this.localUrl,
         }),
       });
       if (resp.ok) {
@@ -1070,6 +1090,9 @@ export class DgemStudio extends LitElement {
         }
         if (data.vertex_status) {
           this.vertexStatus = data.vertex_status;
+        }
+        if (data.local_status) {
+          this.localStatus = data.local_status;
         }
       }
     } catch {
@@ -1594,43 +1617,54 @@ export class DgemStudio extends LitElement {
 
     const activeBackend =
       this.gpuStatus?.active_backend ||
-      (this.backendTarget === 'cloudrun'
-        ? 'cloudrun'
-        : this.vertexStatus?.state === 'deployed'
-          ? 'vertex'
-          : this.backendTarget === 'vertex'
+      (this.backendTarget === 'local'
+        ? 'local'
+        : this.backendTarget === 'cloudrun'
+          ? 'cloudrun'
+          : this.vertexStatus?.state === 'deployed'
             ? 'vertex'
-            : 'cloudrun');
+            : this.backendTarget === 'vertex'
+              ? 'vertex'
+              : 'cloudrun');
     const isVertexBackend = activeBackend === 'vertex';
+    const isLocalBackend = activeBackend === 'local';
 
     const dotClass = isWarm ? 'dot--ready' : isWarming ? 'dot--warming' : 'dot--cold';
-    const stateLabel = isVertexBackend
+    const stateLabel = isLocalBackend
       ? isWarm
-        ? 'Vertex G4 Warm & Ready'
-        : isWarming
-          ? phaseLabel || 'Vertex G4 Scaling Up...'
-          : 'Vertex G4 Quiesced (0 Replicas)'
-      : isWarm
-        ? this.backendTarget === 'vertex_first'
-          ? 'Cloud Run Failover Warm'
-          : 'Cloud Run GPU Warm'
-        : isWarming
-          ? phaseLabel || 'Cloud Run GPU Waking...'
-          : this.backendTarget === 'vertex_first'
-            ? 'Cloud Run Failover Standby'
-            : 'Cloud Run Scaled-to-Zero';
+        ? 'Local Metal Ready'
+        : 'Local diffgemma Offline'
+      : isVertexBackend
+        ? isWarm
+          ? 'Vertex G4 Warm & Ready'
+          : isWarming
+            ? phaseLabel || 'Vertex G4 Scaling Up...'
+            : 'Vertex G4 Quiesced (0 Replicas)'
+        : isWarm
+          ? this.backendTarget === 'vertex_first'
+            ? 'Cloud Run Failover Warm'
+            : 'Cloud Run GPU Warm'
+          : isWarming
+            ? phaseLabel || 'Cloud Run GPU Waking...'
+            : this.backendTarget === 'vertex_first'
+              ? 'Cloud Run Failover Standby'
+              : 'Cloud Run Scaled-to-Zero';
 
-    const subDetail = isVertexBackend
+    const subDetail = isLocalBackend
       ? isWarm
-        ? `(RTX PRO 6000 · ~${lastReadoutMs > 0 ? lastReadoutMs : 100}ms readout · 0s wake)`
-        : isWarming
-          ? `(0 → 1 replica · g4-standard-48)`
-          : `($0/hr idle · G4 unprovisioned)`
-      : isWarm
-        ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
-        : isWarming
-          ? `(${elapsedSec}s / ~${ewmaWakeSec}s EWMA)`
-          : `($0/hr idle · ~${ewmaWakeSec}s wake)`;
+        ? `(Apple Silicon · ~${lastReadoutMs > 0 ? lastReadoutMs : 850}ms readout · $0/hr)`
+        : `(${this.localUrl} unreachable · run diffgemma)`
+      : isVertexBackend
+        ? isWarm
+          ? `(RTX PRO 6000 · ~${lastReadoutMs > 0 ? lastReadoutMs : 100}ms readout · 0s wake)`
+          : isWarming
+            ? `(0 → 1 replica · g4-standard-48)`
+            : `($0/hr idle · G4 unprovisioned)`
+        : isWarm
+          ? `(${lastReadoutMs > 0 ? `${lastReadoutMs}ms readout · ` : ''}${idleMinsLeft}m TTL)`
+          : isWarming
+            ? `(${elapsedSec}s / ~${ewmaWakeSec}s EWMA)`
+            : `($0/hr idle · ~${ewmaWakeSec}s wake)`;
 
     return html`
       <header>
@@ -1655,17 +1689,19 @@ export class DgemStudio extends LitElement {
                     await this.fetchBackendConfig();
                   }
                 }}
-                title="Switch Inference Backend: Vertex First (Auto-Failover), Cloud Run GPU, or Vertex AI Strict (/invoke/*)"
+                title="Switch Inference Backend: Local Metal, Vertex First (Auto-Failover), Cloud Run GPU, or Vertex AI Strict (/invoke/*)"
               >
                 <span class="material-symbols-outlined">
-                  ${this.backendTarget === 'cloudrun' ? 'cloud_done' : 'hub'}
+                  ${this.backendTarget === 'local' ? 'laptop_mac' : this.backendTarget === 'cloudrun' ? 'cloud_done' : 'hub'}
                 </span>
                 <span>
-                  ${this.backendTarget === 'vertex_first'
-                    ? 'Vertex First (Auto)'
-                    : this.backendTarget === 'vertex'
-                      ? 'Vertex AI (/invoke/*)'
-                      : 'Cloud Run GPU'}
+                  ${this.backendTarget === 'local'
+                    ? 'Local Metal'
+                    : this.backendTarget === 'vertex_first'
+                      ? 'Vertex First (Auto)'
+                      : this.backendTarget === 'vertex'
+                        ? 'Vertex AI (/invoke/*)'
+                        : 'Cloud Run GPU'}
                 </span>
                 <span class="material-symbols-outlined" style="font-size:13px; opacity:0.85">
                   expand_more
@@ -1715,6 +1751,32 @@ export class DgemStudio extends LitElement {
                           Routes to Vertex AI Dedicated Endpoint (<code>4423577720856772608</code>) when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
                         </div>
                       </button>
+
+                      ${this.localAvailable || this.availableBackends.includes('local')
+                        ? html`
+                            <button
+                              type="button"
+                              style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'local' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'local' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
+                              @click=${async () => {
+                                await this.saveBackendConfig('local', this.vertexUrl);
+                                this.backendSettingsOpen = false;
+                              }}
+                            >
+                              <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                                <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
+                                  <span class="material-symbols-outlined" style="font-size:16px; color:#2563eb;">laptop_mac</span>
+                                  <span>Local · Apple Silicon Metal</span>
+                                </div>
+                                <span style="font-size:0.62rem; font-weight:700; padding:0.1rem 0.35rem; border-radius:4px; background:${this.localStatus?.reachable ? 'rgba(22, 163, 74, 0.16)' : 'rgba(100, 116, 139, 0.18)'}; color:${this.localStatus?.reachable ? '#16a34a' : (this.resolvedTheme === 'dark' ? '#cbd5e1' : '#475569')};">
+                                  ${this.localStatus?.reachable ? 'READY' : 'OFFLINE'}
+                                </span>
+                              </div>
+                              <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
+                                On-device diffgemma (Unified Memory) · $0.00/hr · <code>${this.localUrl}</code> (text-only)
+                              </div>
+                            </button>
+                          `
+                        : ''}
 
                       <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.55rem;">
                         <button
@@ -1824,13 +1886,15 @@ export class DgemStudio extends LitElement {
 
                       <div style="display:flex; justify-content:space-between; align-items:center; padding-top:0.2rem;">
                         <span style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#64748b'};">
-                          Active: <strong>${this.backendTarget === 'vertex_first'
-                            ? isVertexBackend
-                              ? 'Vertex First → Vertex AI G4 (/invoke/*)'
-                              : 'Vertex First → Cloud Run GPU (Failover)'
-                            : this.backendTarget === 'vertex'
-                              ? 'Vertex AI Strict (/invoke/*)'
-                              : 'Cloud Run GPU (Strict)'}</strong>
+                          Active: <strong>${this.backendTarget === 'local'
+                            ? 'Local diffgemma (Apple Silicon Metal)'
+                            : this.backendTarget === 'vertex_first'
+                              ? isVertexBackend
+                                ? 'Vertex First → Vertex AI G4 (/invoke/*)'
+                                : 'Vertex First → Cloud Run GPU (Failover)'
+                              : this.backendTarget === 'vertex'
+                                ? 'Vertex AI Strict (/invoke/*)'
+                                : 'Cloud Run GPU (Strict)'}</strong>
                         </span>
                         <button
                           class="btn btn--sm btn--brand"

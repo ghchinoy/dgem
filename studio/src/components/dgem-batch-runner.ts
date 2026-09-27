@@ -132,7 +132,7 @@ const DEFAULT_CUSTOM_DATASET_JSONL = [
 @customElement('dgem-batch-runner')
 export class DgemBatchRunner extends LitElement {
   @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'light';
-  @property({ type: String }) backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' = 'vertex_first';
+  @property({ type: String }) backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' | 'local' = 'vertex_first';
   @property({ type: String }) vertexUrl = '';
 
   @state() private suites: BatchPresetSuite[] = [];

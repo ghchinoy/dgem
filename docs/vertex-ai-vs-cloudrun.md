@@ -126,14 +126,15 @@ We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/ev
 | **`vertex_first` (Default)** | Routes to **Vertex AI Dedicated Endpoint (`4423577720856772608`, G4)** whenever `deployed` (`0s` cold start). Automatically fails over to **Cloud Run GPU (`dgemma`)** if Vertex AI is `deploying` or `quiesced`. | **Internal Teams & Production Agents** (Guaranteed `0s` cold start when Vertex is up; zero downtime during maintenance). |
 | **`vertex` (Strict Pin)** | Routes strictly to **Vertex AI (`/invoke/*`)**. Never falls back to Cloud Run. | **Pure Vertex AI Benchmarking** (`dgem bench`). |
 | **`cloudrun` (Strict Pin)** | Routes strictly to **Serverless Cloud Run GPU (`dgemma`)**. | **Pure Cloud Run Benchmarking** & scale-to-zero testing. |
+| **`local` (Strict Pin)** | Routes strictly to **local Apple Silicon Metal diffgemma** (`--local-url` or `-u`, default `http://127.0.0.1:8080/v1`). | **Local Development & Zero-Cost Agentic Decision-Making** (Free, on-device, zero token cost; text-only). |
 
-### A. In the Web Studio UI (`https://<your-dgem-gateway>`)
-1. Click the **`Vertex First (Auto)` / `Cloud Run GPU` / `Vertex AI (/invoke/*)`** selector in the top header bar to open the solid opaque Backend Target panel.
-2. Choose **Vertex First · Cloud Run Failover (Recommended)**, **Cloud Run GPU (Strict)**, or **Vertex AI Strict (`/invoke/*`)**.
-3. The panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated-g4` · `4423577720856772608`)** with 1-click **Provision Vertex GPU (1× L4)** and **Teardown Replica ($0/hr)** buttons.
+### A. In the Web Studio UI (`https://<your-dgem-gateway>` or `http://localhost:8090`)
+1. Click the **`Vertex First (Auto)` / `Local Metal` / `Cloud Run GPU` / `Vertex AI (/invoke/*)`** selector in the top header bar to open the solid opaque Backend Target panel.
+2. Choose **Local · Apple Silicon Metal**, **Vertex First · Cloud Run Failover (Recommended)**, **Cloud Run GPU (Strict)**, or **Vertex AI Strict (`/invoke/*`)**.
+3. When cloud backends are configured, the panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated-g4` · `4423577720856772608`)** with 1-click **Provision Vertex GPU (G4)** and **Teardown Replica ($0/hr)** buttons.
 
 ### B. Via HTTP API (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`, `/v1/raw/chat/completions`)
-Pass `X-DGem-Backend: vertex_first | vertex | cloudrun` (or query parameter `?backend=vertex` or JSON body field `"backend": "vertex"`) on any gateway route. Every response includes `X-DGem-Backend-Used: vertex | cloudrun`:
+Pass `X-DGem-Backend: vertex_first | vertex | cloudrun | local` (or query parameter `?backend=local` or JSON body field `"backend": "local"`) on any gateway route. Every response includes `X-DGem-Backend-Used: vertex | cloudrun | local`:
 
 ```bash
 # 1. Policy-as-Template Decision (/api/decide)
@@ -161,7 +162,7 @@ curl -sS "https://<your-dgem-gateway>/v1/systemone?backend=vertex" \
 ```
 
 ### C. Via MCP Server (`https://<your-dgem-gateway>/mcp`)
-All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`** — the MCP equivalent of `/v1/systemone`, and **`locate_bounding_boxes`**) accept an optional `backend` parameter (`"vertex_first"` | `"vertex"` | `"cloudrun"`):
+All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`** — the MCP equivalent of `/v1/systemone`, and **`locate_bounding_boxes`**) accept an optional `backend` parameter (`"vertex_first"` | `"vertex"` | `"cloudrun"` | `"local"`):
 
 ```json
 {

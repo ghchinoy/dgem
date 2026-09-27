@@ -172,6 +172,14 @@ func isRemoteGCPURL(u string) bool {
 		client.IsVertexEndpointURL(u)
 }
 
+func isLoopbackURL(u string) bool {
+	lower := strings.ToLower(strings.TrimSpace(u))
+	return strings.Contains(lower, "127.0.0.1") ||
+		strings.Contains(lower, "localhost") ||
+		strings.Contains(lower, "::1") ||
+		strings.Contains(lower, "0.0.0.0")
+}
+
 // FetchGCPAccessToken mints an OAuth2 access token (cloud-platform scope) for Vertex AI Endpoints (:rawPredict).
 // It checks (1) GOOGLE_OAUTH_ACCESS_TOKEN, (2) GCP Metadata Server, (3) pure-Go ADC (application_default_credentials.json), and (4) gcloud CLI.
 func FetchGCPAccessToken() string {
@@ -355,7 +363,7 @@ func GetClientForURL(targetURL string) *client.Client {
 	token := viper.GetString("token")
 	iapAud := viper.GetString("iap_client_id")
 
-	if token == "" && (viper.GetBool("gcp_auth") || iapAud != "" || isRemoteGCPURL(targetURL)) {
+	if token == "" && !isLoopbackURL(targetURL) && (viper.GetBool("gcp_auth") || iapAud != "" || isRemoteGCPURL(targetURL)) {
 		aud := iapAud
 		if client.IsVertexEndpointURL(targetURL) {
 			aud = ""
