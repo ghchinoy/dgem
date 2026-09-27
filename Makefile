@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown
+.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown
 
 .DEFAULT_GOAL := help
 
@@ -31,7 +31,7 @@ fmt: ## Format Go source code
 	go fmt ./...
 
 clean: ## Remove compiled binaries and temporary artifacts
-	rm -rf bin/ dgem diffgemma.pid
+	rm -rf bin/ dgem diffgemma.pid dgem-gateway.pid
 
 setup: ## Verify prerequisites and install diffgemma engine
 	./scripts/setup_diffgemma.sh
@@ -44,6 +44,46 @@ serve: ## Start the diffgemma server in background (32k context on 127.0.0.1:808
 
 stop: ## Stop the background diffgemma server
 	./scripts/stop_server.sh
+
+gateway-up: build ## Start the dgem gateway & Decision Studio in background (:8090)
+	./scripts/serve_gateway.sh
+
+gateway-down: ## Stop the background dgem gateway
+	./scripts/stop_gateway.sh
+
+local-up: serve gateway-up ## Start full local stack: diffgemma engine (:8080) + dgem gateway (:8090)
+
+local-down: gateway-down stop ## Stop full local stack: dgem gateway (:8090) + diffgemma engine (:8080)
+
+local-status: ## Check running status of local diffgemma (:8080) and dgem gateway (:8090)
+	@echo "=== Local DiffusionGemma Services Status ==="
+	@if [ -f diffgemma.pid ] && kill -0 $$(cat diffgemma.pid) 2>/dev/null; then \
+		echo "  • diffgemma engine:  RUNNING (PID $$(cat diffgemma.pid), port 8080)"; \
+	elif lsof -i :8080 >/dev/null 2>&1; then \
+		echo "  • diffgemma engine:  LISTENING (port 8080, unmanaged PID $$(lsof -t -i :8080 | tr '\n' ' '))"; \
+	else \
+		echo "  • diffgemma engine:  STOPPED"; \
+	fi
+	@if [ -f dgem-gateway.pid ] && kill -0 $$(cat dgem-gateway.pid) 2>/dev/null; then \
+		echo "  • dgem gateway:      RUNNING (PID $$(cat dgem-gateway.pid), port 8090)"; \
+	elif lsof -i :8090 >/dev/null 2>&1; then \
+		echo "  • dgem gateway:      LISTENING (port 8090, unmanaged PID $$(lsof -t -i :8090 | tr '\n' ' '))"; \
+	else \
+		echo "  • dgem gateway:      STOPPED"; \
+	fi
+	@echo ""
+	@if curl -s -m 1 http://127.0.0.1:8080/v1/models >/dev/null 2>&1; then \
+		echo "  ✓ diffgemma API:     http://127.0.0.1:8080/v1 (ready)"; \
+	else \
+		echo "  ✗ diffgemma API:     offline"; \
+	fi
+	@if curl -s -m 1 http://127.0.0.1:8090/health >/dev/null 2>&1; then \
+		echo "  ✓ Decision Studio:   http://localhost:8090 (ready)"; \
+		echo "  ✓ REST API:          http://localhost:8090/api/decide"; \
+		echo "  ✓ MCP Streamable:    http://localhost:8090/mcp"; \
+	else \
+		echo "  ✗ Decision Studio:   offline"; \
+	fi
 
 bench: build ## Run the local Jev vs autoregressive benchmark suite
 	./bin/dgem bench

@@ -89,11 +89,23 @@ diffgemma ask -m model/diffgemma-26b-a4b-it-q4 --ctx 16384 --max-new-tokens 128 
 
 `diffgemma serve` exposes an OpenAI-compatible HTTP server (`POST /v1/chat/completions`) capable of handling both standard conversational chat and Jev-style structured decisions.
 
-### Starting and Stopping the Server
-You can use the convenient `Makefile` targets:
+### Starting and Stopping Local Services
+
+You can manage the standalone `diffgemma` engine or the full local stack (engine + Decision Studio Gateway) using `Makefile` targets:
+
 ```bash
-make serve   # Starts diffgemma serve in background (writes diffgemma.pid and server.log)
-make stop    # Stops the background server process cleanly
+# Full local stack: diffgemma engine (:8080) + dgem gateway & Web Studio (:8090)
+make local-up      # Starts both services in background
+make local-status  # Displays health and PID status of both services
+make local-down    # Cleanly stops both services
+
+# Standalone diffgemma engine (:8080 only)
+make serve         # Starts diffgemma serve in background (writes diffgemma.pid and server.log)
+make stop          # Stops the background diffgemma engine process
+
+# Standalone dgem gateway (:8090 only, targets existing diffgemma)
+make gateway-up    # Starts dgem serve gateway (:8090)
+make gateway-down  # Stops the dgem gateway process
 ```
 
 Or run directly:
