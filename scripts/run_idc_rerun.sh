@@ -10,7 +10,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%d)-vertex-idc}"
-ENDPOINT="${ENDPOINT:-4423577720856772608}"
+ENDPOINT="${ENDPOINT:-${DGEM_VERTEX_URL:-}}"
+if [[ -z "${ENDPOINT}" ]]; then
+  echo "Error: ENDPOINT or DGEM_VERTEX_URL is required" >&2
+  exit 1
+fi
 GEMINI="${GEMINI:-gemini-3.8-flash}"
 WORKERS="${WORKERS:-4}"
 STEPS="${STEPS:-calibration permutation jevbench gemini}"

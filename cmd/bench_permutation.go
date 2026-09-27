@@ -50,7 +50,7 @@ positional letter-token bias (P('A') > P('B')) and single-pass Shannon entropy b
      256-token diffusion canvas in ONE forward pass (reads=1), canceling first-order positional bias
      and triggering an epistemic escalation gate whenever MirrorDisagreed || H(bar_p)/ln(K) >= tau.`,
 	Example: `  # Run live EXP-13 Permutation Sensitivity & Dual-Mirror Canvas suite against Cloud Run GPU
-  dgem bench-permutation -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth -w 2
+  dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2
 
   # Replay and audit from the saved Cloud Run GPU receipt
   dgem bench-permutation --from-receipt benchmarks/results_permutation_cloudrun.json`,

@@ -50,12 +50,36 @@ var (
 )
 
 func detectGCPProjectID() string {
-	for _, env := range []string{"GOOGLE_CLOUD_PROJECT", "GCP_PROJECT", "GCLOUD_PROJECT"} {
+	for _, env := range []string{"GOOGLE_CLOUD_PROJECT", "GCP_PROJECT", "GCLOUD_PROJECT", "DGEM_GCP_PROJECT"} {
 		if v := strings.TrimSpace(os.Getenv(env)); v != "" {
 			return v
 		}
 	}
 	req, err := http.NewRequest("GET", "http://metadata.google.internal/computeMetadata/v1/project/project-id", nil)
+	if err == nil {
+		req.Header.Set("Metadata-Flavor", "Google")
+		hc := &http.Client{Timeout: 800 * time.Millisecond}
+		if resp, err := hc.Do(req); err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				if b, err := io.ReadAll(resp.Body); err == nil {
+					if p := strings.TrimSpace(string(b)); p != "" {
+						return p
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func detectGCPProjectNumber() string {
+	for _, env := range []string{"GCP_PROJECT_NUMBER", "GOOGLE_CLOUD_PROJECT_NUMBER", "DGEM_GCP_PROJECT_NUMBER"} {
+		if v := strings.TrimSpace(os.Getenv(env)); v != "" {
+			return v
+		}
+	}
+	req, err := http.NewRequest("GET", "http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id", nil)
 	if err == nil {
 		req.Header.Set("Metadata-Flavor", "Google")
 		hc := &http.Client{Timeout: 800 * time.Millisecond}

@@ -5,9 +5,9 @@ description: "The same-canvas mirror hurts the forward answer because the two sl
 
 # EXP-15: Letter Collision in the Dual-Mirror (`PROP-11`)
 
-**Date:** 2026-09-25 · **Backend:** Vertex AI G4 endpoint `4423577720856772608` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`, 1 replica available) ·
+**Date:** 2026-09-25 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`, 1 replica available) ·
 **Run:** [`benchmarks/runs/20260925-prop11-letter-collision`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260925-prop11-letter-collision/manifest.json) · **Code:** commit `1a7c13f` (`--mirror-mode`)
-**Reproduce:** `./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 --dual-mirror --mirror-mode <mode>`, then
+**Reproduce:** `./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 --dual-mirror --mirror-mode <mode>`, then
 `python3 scripts/analyze_idc.py collision --baselines <b1> <b2> <b3> -- <receipts...>`
 
 ## Question and pre-registered rule

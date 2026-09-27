@@ -63,7 +63,7 @@ flowchart TD
 
 ## 3. Live Cloud Run GPU Scorecard (`results_decision_index_cloudrun.json`)
 
-Evaluated live against `dgemma` on Serverless Cloud Run GPU (`https://dgemma-tkb3aiuiea-uc.a.run.app/v1`, `T* = 1.25`):
+Evaluated live against `dgemma` on Serverless Cloud Run GPU (`https://dgemma-<hash>-uc.a.run.app/v1`, `T* = 1.25`):
 
 ### A. Official 5-Area Decision Index Scorecard
 
@@ -135,8 +135,8 @@ Because the Decision Index treats every capacity refusal as wrong (`0.0`), `mmas
 ./bin/dgem bench-decision-index --from-receipt benchmarks/decision_index/results_decision_index_cloudrun.json
 
 # 2. Run live against Cloud Run GPU with Naive vs. Wide-Canvas ablation
-./bin/dgem bench-decision-index -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth --compare-naive -w 2
+./bin/dgem bench-decision-index -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth --compare-naive -w 2
 
 # 3. Launch the /v1/systemone HTTP adapter for upstream apolinario/decision-index Python runner
-./bin/dgem bench-decision-index -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth --serve-systemone :8095
+./bin/dgem bench-decision-index -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth --serve-systemone :8095
 ```

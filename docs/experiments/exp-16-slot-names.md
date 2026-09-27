@@ -5,7 +5,7 @@ description: "Question ids are visible to the model. A single slot's id does not
 
 # EXP-16: Slot Names Are Part of the Prompt (`PROP-16`)
 
-**Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `4423577720856772608` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`) ·
+**Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`) ·
 **Run:** [`benchmarks/runs/20260926-prop16-slot-names`](../../benchmarks/runs/20260926-prop16-slot-names/manifest.json) · **Code:** commit `58cae3a` (`bench-jev --slot-id`)
 
 ## Question and pre-registered rule

@@ -55,7 +55,7 @@ Launching `dgem serve` starts the embedded **Lit WebComponents Decision Studio**
 ```bash
 # Launch Decision Studio locally on port 8090 pointing at a Serverless Cloud Run GPU backend
 ./bin/dgem serve \
-  -u "https://dgemma-882920967572.us-central1.run.app/v1" \
+  -u "https://dgemma-<hash>-uc.a.run.app/v1" \
   --gcp-auth \
   --port 8090
 ```
@@ -102,7 +102,7 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 
 ### 3.1 Configuring `dgem mcp` (Automatic ADC Auth) in `Antigravity` (`~/.gemini/config/mcp_config.json`), `Gemini CLI` (`~/.gemini/settings.json`), or `Claude Desktop`
 
-`dgem mcp` automatically reads **Application Default Credentials (ADC: `~/.config/gcloud/application_default_credentials.json`)** in pure Go to mint and cache both OIDC `id_token`s (accepted by Cloud Run IAP `programmaticClients` on your gateway) and OAuth2 `access_token`s (for Vertex AI Dedicated Endpoint `4423577720856772608`).
+`dgem mcp` automatically reads **Application Default Credentials (ADC: `~/.config/gcloud/application_default_credentials.json`)** in pure Go to mint and cache both OIDC `id_token`s (accepted by Cloud Run IAP `programmaticClients` on your gateway) and OAuth2 `access_token`s (for Vertex AI Dedicated Endpoint `<endpoint-id>`).
 
 #### Option A: Connect to a Remote `dgem serve` Gateway via ADC (`--remote`)
 ```json
@@ -182,7 +182,7 @@ Any service or script can query `dgem serve` (`https://<your-dgem-gateway>` or l
 | **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders `{template}.json.tmpl` (or inline `custom_template`) with `{"variables": {...}, "backend": "vertex_first", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}`, runs 1-pass `DiffusionGemma` readout, and returns `answers`, `diagnostics`, `backend_used`, `max_entropy`, `gpu_forward_ms`, and `trace_spans`. |
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` multipart image + JSON `state`/`questions` schema evaluation) across Vertex AI (`/invoke/v1/systemone`) or Cloud Run GPU (`/v1/systemone`). Returns HTTP 501 on `local` backend. |
 | **`/api/templates`** | `GET` | Returns the full JSON catalog of discovered `.json.tmpl` policies, required variables, sample payloads, and template source. |
-| **`/api/status` & `/api/backend-config`** | `GET` | Returns real-time health, `available_backends` (`["vertex_first", "vertex", "cloudrun", "local"]`), and replica state for Cloud Run GPU (`dgemma`), Vertex AI Dedicated Endpoint (`4423577720856772608`), and local diffgemma (Apple Silicon Metal). |
+| **`/api/status` & `/api/backend-config`** | `GET` | Returns real-time health, `available_backends` (`["vertex_first", "vertex", "cloudrun", "local"]`), and replica state for Cloud Run GPU (`dgemma`), Vertex AI Dedicated Endpoint (`<endpoint-id>`), and local diffgemma (Apple Silicon Metal). |
 | **`/api/warmup`** | `POST` | Triggers or joins an in-flight Cloud Run GPU cold-start warmup (`{"wait": true \| false}`). |
 | **`/api/traces`** | `GET` | Returns recent OpenTelemetry traces (`?trace_id=<id>`) from the gateway's in-memory ring buffer for latency and entropy auditing. |
 | **`/v1/chat/completions` & `/v1/raw/chat/completions`** | `POST` | OpenAI-compatible structured envelope and raw vLLM pass-through proxies with `vertex_first` auto-failover and automatic GCP IAM/OAuth2 token injection. |

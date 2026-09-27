@@ -5,12 +5,12 @@ description: "Architectural comparison of Google Cloud Vertex AI Dedicated Endpo
 
 # Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU
 
-`dgem` supports **four execution infrastructures** using the exact same `.json.tmpl` decision policies, OpenTelemetry instrumentation, and `dgemma` container (`us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:latest`):
+`dgem` supports **four execution infrastructures** using the exact same `.json.tmpl` decision policies, OpenTelemetry instrumentation, and `dgemma` container (`us-central1-docker.pkg.dev/<your-project-id>/dgem/dgemma:latest`):
 
 1. **Local Apple Silicon Metal (`diffgemma`)** — Developer laptop prototyping & offline eval.
 2. **GCE VM (`g2-standard-8` L4 / `a2-highgpu-2g` A100)** — Raw VM benchmarking & custom kernel profiling.
 3. **Serverless Cloud Run GPU (`dgemma`)** — Scale-to-zero failover and batch backend (`--min-instances=0`, `$0/hr` idle, NVIDIA RTX PRO 6000 or L4).
-4. **Vertex AI Dedicated Endpoints (`invokeRoutePrefix: "/*"`)** — **Default production backend** (`vertex_first`): `dgemma-dedicated-g4` (`4423577720856772608`, RTX PRO 6000) (the L4 endpoint `4217256562927861760` was retired on 2026-09-25; Cloud Run provides failover).
+4. **Vertex AI Dedicated Endpoints (`invokeRoutePrefix: "/*"`)** — **Default production backend** (`vertex_first`): `dgemma-dedicated-g4` (`<endpoint-id>`, RTX PRO 6000) (the L4 endpoint `<legacy-l4-endpoint>` was retired on 2026-09-25; Cloud Run provides failover).
 
 ---
 
@@ -20,8 +20,8 @@ description: "Architectural comparison of Google Cloud Vertex AI Dedicated Endpo
 | :--- | :--- | :--- | :--- |
 | **Crawl** | Apple Silicon Metal (`diffgemma`, q4) | Offline development and template authoring | ~0.9 s; different engine from production, so numbers don't transfer |
 | **Walk → run** | Cloud Run GPU (`dgemma`, 1× RTX PRO 6000) | Batch evaluation, research, scale-to-zero failover | 65 ms denoise / 144 ms wall (p50); 90–120 s cold start |
-| **Run (default)** | Vertex AI Dedicated Endpoint **`4423577720856772608`** (`g4-standard-48` + 1× RTX PRO 6000) | Production: always warm, IAM, replica autoscaling (1–2), multimodal | **57.5 ms denoise / 143 ms wall (p50)**; images 66.5 ms |
-| Retired (2026-09-25) | Vertex AI `4217256562927861760` (`g2-standard-16` + 1× L4) | Model undeployed; endpoint kept empty (redeploy with `VERTEX_PROFILE=l4`) | 188 ms / 271 ms; crashed under load (see below) |
+| **Run (default)** | Vertex AI Dedicated Endpoint **`<endpoint-id>`** (`g4-standard-48` + 1× RTX PRO 6000) | Production: always warm, IAM, replica autoscaling (1–2), multimodal | **57.5 ms denoise / 143 ms wall (p50)**; images 66.5 ms |
+| Retired (2026-09-25) | Vertex AI `<legacy-l4-endpoint>` (`g2-standard-16` + 1× L4) | Model undeployed; endpoint kept empty (redeploy with `VERTEX_PROFILE=l4`) | 188 ms / 271 ms; crashed under load (see below) |
 
 Measurements: [`benchmarks/runs/20260925-serving-speed`](../benchmarks/runs/20260925-serving-speed/README.md)
 (50 requests per cell, same session). Why G4 rather than A100/H100: the checkpoint is NVFP4 (4-bit), which
@@ -99,7 +99,7 @@ flowchart LR
 
 ## 2.1 Empirical 30-Case Benchmark Comparison (`dgem bench`, historical: L4 endpoint)
 
-We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/eval_dataset.jsonl`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/eval_dataset.jsonl) across `support`, `code_review`, and `security`) on our live **Vertex AI Dedicated Endpoint (`4217256562927861760`, `g2-standard-16` · `1× NVIDIA L4` · `/invoke/v1`)** and **Serverless Cloud Run GPU (`dgemma`)**:
+We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/eval_dataset.jsonl`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/eval_dataset.jsonl) across `support`, `code_review`, and `security`) on our live **Vertex AI Dedicated Endpoint (`<legacy-l4-endpoint>`, `g2-standard-16` · `1× NVIDIA L4` · `/invoke/v1`)** and **Serverless Cloud Run GPU (`dgemma`)**:
 
 | Backend Target | Hardware Profile | Cold-Start / Wakeup | Single-Pass (`N=1`) Denoise | 4-Sample (`N=4`) Avg GPU Denoise | Avg End-to-End Wall Time (`30 cases`) | Proxy / Network Overhead | Multi-Domain Slot Accuracy | Receipt |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -123,7 +123,7 @@ We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/ev
 
 | Mode (`backend` / `X-DGem-Backend`) | Routing Behavior | Recommended Use Case |
 | :--- | :--- | :--- |
-| **`vertex_first` (Default)** | Routes to **Vertex AI Dedicated Endpoint (`4423577720856772608`, G4)** whenever `deployed` (`0s` cold start). Automatically fails over to **Cloud Run GPU (`dgemma`)** if Vertex AI is `deploying` or `quiesced`. | **Internal Teams & Production Agents** (Guaranteed `0s` cold start when Vertex is up; zero downtime during maintenance). |
+| **`vertex_first` (Default)** | Routes to **Vertex AI Dedicated Endpoint (`<endpoint-id>`, G4)** whenever `deployed` (`0s` cold start). Automatically fails over to **Cloud Run GPU (`dgemma`)** if Vertex AI is `deploying` or `quiesced`. | **Internal Teams & Production Agents** (Guaranteed `0s` cold start when Vertex is up; zero downtime during maintenance). |
 | **`vertex` (Strict Pin)** | Routes strictly to **Vertex AI (`/invoke/*`)**. Never falls back to Cloud Run. | **Pure Vertex AI Benchmarking** (`dgem bench`). |
 | **`cloudrun` (Strict Pin)** | Routes strictly to **Serverless Cloud Run GPU (`dgemma`)**. | **Pure Cloud Run Benchmarking** & scale-to-zero testing. |
 | **`local` (Strict Pin)** | Routes strictly to **local Apple Silicon Metal diffgemma** (`--local-url` or `-u`, default `http://127.0.0.1:8080/v1`). | **Local Development & Zero-Cost Agentic Decision-Making** (Free, on-device, zero token cost; text-only). |
@@ -131,7 +131,7 @@ We evaluated the exact same 30-case multi-domain decision suite ([`benchmarks/ev
 ### A. In the Web Studio UI (`https://<your-dgem-gateway>` or `http://localhost:8090`)
 1. Click the **`Vertex First (Auto)` / `Local Metal` / `Cloud Run GPU` / `Vertex AI (/invoke/*)`** selector in the top header bar to open the solid opaque Backend Target panel.
 2. Choose **Local · Apple Silicon Metal**, **Vertex First · Cloud Run Failover (Recommended)**, **Cloud Run GPU (Strict)**, or **Vertex AI Strict (`/invoke/*`)**.
-3. When cloud backends are configured, the panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated-g4` · `4423577720856772608`)** with 1-click **Provision Vertex GPU (G4)** and **Teardown Replica ($0/hr)** buttons.
+3. When cloud backends are configured, the panel also displays the live replica status of **Vertex AI Dedicated Endpoint (`dgemma-dedicated-g4` · `<endpoint-id>`)** with 1-click **Provision Vertex GPU (G4)** and **Teardown Replica ($0/hr)** buttons.
 
 ### B. Via HTTP API (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`, `/v1/raw/chat/completions`)
 Pass `X-DGem-Backend: vertex_first | vertex | cloudrun | local` (or query parameter `?backend=local` or JSON body field `"backend": "local"`) on any gateway route. Every response includes `X-DGem-Backend-Used: vertex | cloudrun | local`:
@@ -179,16 +179,16 @@ All three MCP inference tools (**`decide_policy`**, **`decide_custom_questions`*
 ```
 
 ### D. Via `dgem` CLI (`--vertex-url`)
-Pass `--vertex-url 4423577720856772608` (the default) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
+Pass `--vertex-url <endpoint-id>` (the default) on any `dgem` CLI command (`decide`, `bench`, `bench-calibration`, `bench-rerank`, `bench-jev`):
 
 ```bash
-# Single decision against the default Vertex AI Dedicated Endpoint (G4, 4423577720856772608):
-./bin/dgem decide --vertex-url 4423577720856772608 --gcp-auth \
+# Single decision against the default Vertex AI Dedicated Endpoint (G4, <endpoint-id>):
+./bin/dgem decide --vertex-url <endpoint-id> --gcp-auth \
   -t templates/support_triage.json.tmpl \
   -v ticket="I was charged twice for my Pro subscription." -s
 
 # Full 30-case benchmark suite against Vertex AI Dedicated Endpoint:
-./bin/dgem bench --vertex-url 4423577720856772608 --gcp-auth \
+./bin/dgem bench --vertex-url <endpoint-id> --gcp-auth \
   -d benchmarks/eval_dataset.jsonl \
   -o benchmarks/results_vertex_l4_invoke.json
 ```
@@ -223,7 +223,7 @@ All empirical receipts are stored in [`benchmarks/results_head_to_head_vertex_vs
 
 ### Phase 2: 50-Case Public Dataset Calibration & Guardrail Suite (`dgem bench-calibration`, `EXP-04`)
 
-| Metric | **Vertex AI Dedicated Endpoint (`4217256562927861760`)** | **Serverless Cloud Run GPU (`dgemma`)** |
+| Metric | **Vertex AI Dedicated Endpoint (`<legacy-l4-endpoint>`)** | **Serverless Cloud Run GPU (`dgemma`)** |
 | :--- | :--- | :--- |
 | **Overall Suite Accuracy (`50` cases)** | **`88.0%` (`44/50`)** | **`82.0%` (`41/50`)** |
 | **Chance-Corrected Accuracy (`JevBench`)** | **`83.05%`** | **`74.57%`** |
@@ -234,7 +234,7 @@ All empirical receipts are stored in [`benchmarks/results_head_to_head_vertex_vs
 
 ### Phase 3: 30-Query (300-Passage) 12-Slot Listwise Diffusion Reranking (`dgem bench-rerank`, `EXP-10`)
 
-| Metric | **Vertex AI Dedicated Endpoint (`4217256562927861760`)** | **Serverless Cloud Run GPU (`dgemma`)** |
+| Metric | **Vertex AI Dedicated Endpoint (`<legacy-l4-endpoint>`)** | **Serverless Cloud Run GPU (`dgemma`)** |
 | :--- | :--- | :--- |
 | **Simultaneous Slots per Forward Pass** | `12` slots (`10` passage grades + `poisoned_passage` + `answer_present`) | `12` slots (`10` passage grades + `poisoned_passage` + `answer_present`) |
 | **Mean Wall Latency (`12` Slots / ~2,000 tokens)** | **`1,631.9 ms`** (`~136 ms/slot`) | **`1,454.3 ms` – `2,336.4 ms`** |

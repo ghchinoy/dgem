@@ -25,8 +25,8 @@ func TestIsLoopbackURL(t *testing.T) {
 	}
 
 	nonLoopbacks := []string{
-		"https://dgemma-882920967572.us-central1.run.app/v1",
-		"https://dgemma.aaie.cloud/v1",
+		"https://dgemma-example-uc.a.run.app/v1",
+		"https://gateway.example.com/v1",
 		"https://us-central1-aiplatform.googleapis.com/v1/projects/foo/locations/us-central1/endpoints/123:rawPredict",
 	}
 	for _, u := range nonLoopbacks {

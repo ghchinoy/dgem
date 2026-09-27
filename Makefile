@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown
+.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public
 
 .DEFAULT_GOAL := help
 
@@ -160,3 +160,13 @@ vertex-teardown: ## Undeploy models and delete Vertex AI Dedicated Endpoint to e
 
 install: ## Install dgem binary to GOBIN
 	go install -ldflags="$(LDFLAGS)" .
+
+check-public: ## Verify that no internal GCP project IDs, numbers, or private domains exist in public code/docs
+	@echo "==> Auditing repository for internal identifiers..."
+	@LEAKS=$$(git grep -n -E "(4423577720856772608|4217256562927861760|genai-blackbelt-fishfooding|882920967572|dgemma\.aaie\.cloud|aaie-decision-model)" -- . ':!benchmarks' ':!scratch' ':!Makefile' 2>/dev/null || true); \
+	if [ -n "$$LEAKS" ]; then \
+		echo "ERROR: Internal identifiers detected in tracked files:"; \
+		echo "$$LEAKS"; \
+		exit 1; \
+	fi; \
+	echo "✅ PASSED: No internal project IDs, numbers, endpoint IDs, or private domains found."

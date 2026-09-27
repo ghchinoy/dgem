@@ -645,8 +645,8 @@ MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
 			backendConfigMu.Unlock()
 		} else {
 			viper.Set("gcp_auth", true)
-			if viper.GetString("url") == "http://127.0.0.1:8080/v1" {
-				viper.Set("url", "https://dgemma-882920967572.us-central1.run.app/v1")
+			if remoteURL := strings.TrimSpace(os.Getenv("DGEM_REMOTE_URL")); remoteURL != "" {
+				viper.Set("url", remoteURL)
 			}
 		}
 		if _, err := os.Stat(serveTemplatesDir); err != nil {
@@ -1374,7 +1374,7 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 // MCP Tool Input/Output Structs
 
 type StatusToolInput struct {
-	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint 4423577720856772608), 'cloudrun' (Serverless Cloud Run GPU), or 'local' (Apple Silicon Metal)."`
+	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint), 'cloudrun' (Serverless Cloud Run GPU), or 'local' (Apple Silicon Metal)."`
 }
 
 type DecidePolicyToolInput struct {
@@ -1382,7 +1382,7 @@ type DecidePolicyToolInput struct {
 	Variables         map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
 	Image             string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
 	Backend           string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), 'cloudrun' (strict Serverless Cloud Run GPU), or 'local' (Apple Silicon Metal diffgemma)."`
-	VertexURL         string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4423577720856772608)."`
+	VertexURL         string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
 	CascadeMode       string                 `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
 	CascadeThreshold  float64                `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
 	CascadeModel      string                 `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`
