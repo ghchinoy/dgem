@@ -929,7 +929,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 			if targetLoc == "" {
 				targetLoc = "http://127.0.0.1:8080/v1"
 			}
-			locHealth := strings.TrimSuffix(targetLoc, "/") + "/models"
+			locHealth := strings.TrimSuffix(targetLoc, "/")
+			if !strings.HasSuffix(locHealth, "/v1") {
+				locHealth = locHealth + "/v1"
+			}
+			locHealth = locHealth + "/models"
 			locReachable := false
 			if resp, err := (&http.Client{Timeout: 1200 * time.Millisecond}).Get(locHealth); err == nil {
 				if resp.StatusCode == http.StatusOK {

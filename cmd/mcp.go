@@ -1004,7 +1004,11 @@ func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOv
 		if modelName == "" {
 			modelName = "diffgemma-26b-a4b-it-q4"
 		}
-		healthURL := strings.TrimSuffix(targetLocalURL, "/") + "/models"
+		healthURL := strings.TrimSuffix(targetLocalURL, "/")
+		if !strings.HasSuffix(healthURL, "/v1") {
+			healthURL = healthURL + "/v1"
+		}
+		healthURL = healthURL + "/models"
 		isReady := false
 		detail := fmt.Sprintf("Local diffgemma endpoint %s is unreachable.", targetLocalURL)
 		if resp, err := (&http.Client{Timeout: 1500 * time.Millisecond}).Get(healthURL); err == nil {
