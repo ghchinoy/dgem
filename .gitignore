@@ -18,7 +18,7 @@ server.log
 *.log
 diffgemma.pid
 dgem-gateway.pid
-deploy/decision-index/dgem
+deploy/cloudrun/dgem
 
 # Scratch and exploratory scripts
 scratch/

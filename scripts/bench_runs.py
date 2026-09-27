@@ -44,7 +44,7 @@ def git(*args):
         return ""
 
 
-VERTEX_PROJECT = os.environ.get("VERTEX_PROJECT", "genai-blackbelt-fishfooding")
+VERTEX_PROJECT = os.environ.get("VERTEX_PROJECT") or os.environ.get("GCP_PROJECT", "")
 VERTEX_REGION = os.environ.get("GCP_REGION", "us-central1")
 VERTEX_ENDPOINT = os.environ.get("DGEM_VERTEX_URL", "4423577720856772608")
 

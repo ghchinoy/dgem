@@ -1,0 +1,18 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.weights'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:$SHORT_SHA'
+      - '.'
+images:
+  - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest'
+  - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:$SHORT_SHA'
+options:
+  machineType: 'E2_HIGHCPU_32'
+  diskSizeGb: 200
+timeout: '3600s'

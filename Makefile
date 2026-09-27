@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status di-image bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown
+.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown
 
 .DEFAULT_GOAL := help
 
@@ -109,17 +109,24 @@ studio-dev: ## Launch Vite HMR dev server for Decision Studio (proxies /api to 1
 cloudrun-build: ## Build and push the self-contained Cloud Run container image to Artifact Registry
 	./scripts/build_cloudrun_image.sh
 
-di-image: ## Build and push public Decision Index container to dgem-diffusiongemma Artifact Registry
+image: ## Build and push public dgem container (weights pulled on startup) to dgem-diffusiongemma Artifact Registry
 	@echo "==> Building static Linux dgem binary for container..."
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o deploy/decision-index/dgem .
-	@echo "==> Submitting Cloud Build in project dgem-diffusiongemma..."
-	gcloud builds submit deploy/decision-index \
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o deploy/cloudrun/dgem .
+	@echo "==> Submitting Cloud Build for dgem (lean base) in project dgem-diffusiongemma..."
+	gcloud builds submit deploy/cloudrun \
 		--project=dgem-diffusiongemma \
-		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-systemone:latest" \
-		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-systemone:$$(git rev-parse --short HEAD)" \
-		--timeout=1800 \
+		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest" \
+		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$$(git rev-parse --short HEAD)" \
+		--timeout=2400 \
 		--machine-type=e2-highcpu-32
-	@rm -f deploy/decision-index/dgem
+	@rm -f deploy/cloudrun/dgem
+
+image-weights: ## Build and push self-contained dgem-weights container (baked NVFP4 weights) to dgem-diffusiongemma
+	@echo "==> Submitting Cloud Build for dgem-weights (baked NVFP4) in project dgem-diffusiongemma..."
+	gcloud builds submit deploy/cloudrun \
+		--project=dgem-diffusiongemma \
+		--config=deploy/cloudrun/cloudbuild-weights.yaml \
+		--substitutions=SHORT_SHA=$$(git rev-parse --short HEAD)
 
 cloudrun-stage: ## Pre-stage model weights in GCS for Cloud Run GCS FUSE volume mounting
 	./scripts/stage_model_gcs.sh

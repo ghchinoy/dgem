@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || echo 'genai-blackbelt-fishfooding')}"
+PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
+if [[ -z "$PROJECT_ID" ]]; then
+  echo "Error: No GCP project detected. Set GCP_PROJECT=<project-id>."
+  exit 1
+fi
 DASHBOARD_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/deploy/monitoring/dgem-operational-dashboard.json"
 
 echo "================================================================================"

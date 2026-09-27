@@ -9,12 +9,19 @@ DISABLE_MM="${DISABLE_MM:-1}"
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-fork}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
-# Vertex AI Online Prediction has no /mnt/gcs/dgemma FUSE mount:
-# Stage tokenizer + 4MB safetensors headers synchronously (<2s) so structured_server.py (:8080/health)
-# starts immediately for Vertex AI health probes, while 64-stream HTTPS Range downloads tensor bodies in parallel!
-if [ ! -d "$MODEL" ]; then
-  export GCS_URI="${DGEM_WEIGHTS_URI:-${AIP_STORAGE_URI:-gs://dgem-weights-genai-blackbelt-fishfooding/dgemma}}"
-  echo "[init] Vertex AI mode (no FUSE mount at $MODEL); fast-staging tokenizer + headers from $GCS_URI to /tmp/dgemma..."
+ROLE="${ROLE:-default}"
+TEMPERATURE="${TEMPERATURE:-1.0}"
+API_KEY="${API_KEY:-}"
+
+# 1. Resolve model weights
+if [ -d "/opt/dgemma/weights" ] && [ -f "/opt/dgemma/weights/config.json" ]; then
+  echo "[init] Using baked NVFP4 model weights at /opt/dgemma/weights (0.0s download)..."
+  MODEL="/opt/dgemma/weights"
+elif [ -d "$MODEL" ] && [ -f "$MODEL/config.json" ]; then
+  echo "[init] Using mounted model weights at $MODEL..."
+elif [ -n "${DGEM_WEIGHTS_URI:-}" ] || [ -n "${AIP_STORAGE_URI:-}" ]; then
+  export GCS_URI="${DGEM_WEIGHTS_URI:-${AIP_STORAGE_URI}}"
+  echo "[init] Staging weights from GCS: $GCS_URI to /tmp/dgemma..."
   mkdir -p /tmp/dgemma
   python3 -c '
 import json, os, urllib.request
@@ -120,6 +127,18 @@ print(f"[init] Vertex AI 64-stream GCS HTTPS staging completed in {time.time()-t
     touch /tmp/dgemma/.ready
   ) &
   MODEL="/tmp/dgemma"
+else
+  # Default: Download public weights from Hugging Face
+  MODEL_HF="${MODEL_HF:-nvidia/diffusiongemma-26B-A4B-it-NVFP4}"
+  LOCAL_WEIGHTS="/tmp/dgemma"
+  if [ -d "$LOCAL_WEIGHTS" ] && [ -f "$LOCAL_WEIGHTS/config.json" ]; then
+    echo "[init] Using pre-downloaded weights at $LOCAL_WEIGHTS..."
+  else
+    echo "[init] Downloading public model weights from Hugging Face: $MODEL_HF..."
+    mkdir -p "$LOCAL_WEIGHTS"
+    python3 -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='$MODEL_HF', local_dir='$LOCAL_WEIGHTS')"
+  fi
+  MODEL="$LOCAL_WEIGHTS"
 fi
 
 mkdir -p /root/.cache/flashinfer /root/.triton /root/.cache/vllm
@@ -133,7 +152,18 @@ fi
 # Record container boot and warmup stage telemetry in /tmp/dgemma/warmup_state.json
 mkdir -p /tmp/dgemma
 export BOOT_TS="$(date +%s.%N)"
-export GCS_BUCKET="${GCS_BUCKET:-dgem-weights-genai-blackbelt-fishfooding}"
+DETECTED_PROJECT="${GCP_PROJECT:-}"
+if [ -z "$DETECTED_PROJECT" ]; then
+  DETECTED_PROJECT=$(python3 -c '
+import urllib.request
+try:
+    req = urllib.request.Request("http://metadata.google.internal/computeMetadata/v1/project/project-id", headers={"Metadata-Flavor": "Google"})
+    print(urllib.request.urlopen(req, timeout=1).read().decode().strip())
+except Exception:
+    print("")
+' 2>/dev/null || true)
+fi
+export GCS_BUCKET="${GCS_BUCKET:-dgem-weights-${DETECTED_PROJECT}}"
 printf '{"phase":"mounting_gcs","boot_ts":%s,"bytes_staged_gb":0.0}\n' "$BOOT_TS" > /tmp/dgemma/warmup_state.json
 
 # On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /tmp/dgemma via 64-stream Direct GCS HTTPS Range API overlapped with vLLM initialization
@@ -190,7 +220,7 @@ req = urllib.request.Request(
 with urllib.request.urlopen(req, timeout=5) as r:
     token = json.loads(r.read().decode())["access_token"]
 
-bucket = os.environ.get("GCS_BUCKET", "dgem-weights-genai-blackbelt-fishfooding")
+bucket = os.environ.get("GCS_BUCKET", "")
 src_files = sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors"))
 hdr = 4 * 1024 * 1024
 chunk = 64 * 1024 * 1024
@@ -264,14 +294,28 @@ else
   printf '{"phase":"loading_vllm_siglip","boot_ts":%s,"stage_start_ts":%s,"stage_end_ts":%s,"bytes_staged_gb":17.53}\n' "$BOOT_TS" "$BOOT_TS" "$BOOT_TS" > /tmp/dgemma/warmup_state.json
 fi
 
-echo "[init] Starting structured_server proxy on port $PORT (upstream: http://127.0.0.1:8000)..."
+SS_PORT="$PORT"
+if [ "${ROLE:-default}" = "decision-index" ]; then
+  SS_PORT=8081
+fi
+
+echo "[init] Starting structured_server proxy on port $SS_PORT (upstream: http://127.0.0.1:8000)..."
 python3 /opt/dgemma/structured_server.py \
   --upstream http://127.0.0.1:8000 \
   --model dgemma \
   --tokenizer "$MODEL" \
   --canvas "$CANVAS" \
   --host 0.0.0.0 \
-  --port "$PORT" &
+  --port "$SS_PORT" &
+
+if [ "${ROLE:-default}" = "decision-index" ]; then
+  echo "[init] Starting dgem systemone adapter on port $PORT -> http://127.0.0.1:8081/v1 (T*=${TEMPERATURE:-1.0})..."
+  /usr/local/bin/dgem systemone serve \
+    --port "$PORT" \
+    --upstream "http://127.0.0.1:8081/v1" \
+    --temperature "${TEMPERATURE:-1.0}" \
+    --api-key "${API_KEY:-}" &
+fi
 
 VLLM_EXTRA_ARGS=()
 if [ "$ENFORCE_EAGER" = "1" ]; then

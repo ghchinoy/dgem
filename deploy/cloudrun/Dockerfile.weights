@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+# DiffusionGemma Self-Contained Baked-Weights Image (~29 GB)
+# Bakes nvidia/diffusiongemma-26B-A4B-it-NVFP4 weights directly into /opt/dgemma/weights
+
+ARG BASE=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+FROM ${BASE}
+
+USER root
+
+RUN mkdir -p /opt/dgemma/weights && \
+    python3 -c "\
+from huggingface_hub import snapshot_download; \
+print('==> Downloading NVFP4 weights into container image layer...'); \
+snapshot_download(repo_id='nvidia/diffusiongemma-26B-A4B-it-NVFP4', local_dir='/opt/dgemma/weights')\
+"
+
+ENV MODEL=/opt/dgemma/weights
+ENV WEIGHTS_SOURCE=baked
+EXPOSE 8080 8081 8000
+ENTRYPOINT ["/entrypoint.sh"]

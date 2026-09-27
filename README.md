@@ -26,6 +26,23 @@ make build                                   # builds ./bin/dgem
 
 Point it at a backend with `-u <url>/v1` (Cloud Run / GCE / local Metal) or `--vertex-url <endpoint-id>` (Vertex AI); see [Supported Deployment Environments](#supported-deployment-environments-4-serving-targets).
 
+### Pull Public Docker Container & Run on Any GPU
+
+Official public container images are available in Google Artifact Registry without requiring a Google Cloud account or credentials:
+
+```bash
+# Pull official image (open to all users globally):
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+
+# Run with GPU (downloads public NVFP4 weights on boot):
+docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+
+# Or run in Decision Index certified mode (with wide-option tournament adapter):
+docker run --gpus all -p 8080:8080 -e ROLE=decision-index -e TEMPERATURE=1.0 \
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+```
+See **[Public Container Images & Quickstart Guide](docs/public-image.md)** and **[Deploy on Your Own GPU](docs/deploy-your-own-gpu.md)**.
+
 ---
 
 ## Confidence Beyond Shannon: Invariant Decision Calibration (IDC)

@@ -14,8 +14,12 @@
 # ==============================================================================
 set -euo pipefail
 
-PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || echo "genai-blackbelt-fishfooding")}"
-PROJECT_NUMBER="${GCP_PROJECT_NUMBER:-$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || echo "882920967572")}"
+PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
+if [[ -z "$PROJECT_ID" ]]; then
+  echo "Error: No GCP project detected. Set GCP_PROJECT=<project-id>."
+  exit 1
+fi
+PROJECT_NUMBER="${GCP_PROJECT_NUMBER:-$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)' 2>/dev/null || true)}"
 REGION="${GCP_REGION:-us-central1}"
 IMAGE_URI="${IMAGE_URI:-${REGION}-docker.pkg.dev/${PROJECT_ID}/dgem/dgemma:latest}"
 GCS_BUCKET="${GCS_BUCKET:-dgem-weights-${PROJECT_ID}}"

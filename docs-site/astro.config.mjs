@@ -266,6 +266,8 @@ export default defineConfig({
         {
           label: 'Deployment & Cloud',
           items: [
+            { label: 'Public Container Images', slug: 'public-image' },
+            { label: 'Deploy on Your Own GPU', slug: 'deploy-your-own-gpu' },
             { label: 'Remote Endpoints & Cloud', slug: 'remote-endpoints' },
             { label: 'Path to Production (Scaling & Recommendations)', slug: 'path-to-production' },
             { label: 'Vertex AI (/invoke/*) vs. Cloud Run', slug: 'vertex-ai-vs-cloudrun' },
