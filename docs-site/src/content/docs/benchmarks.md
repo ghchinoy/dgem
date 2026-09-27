@@ -124,7 +124,7 @@ Test Cases:    30 items
 
 ## 6. Cloud GPU Findings: 16-Bit Unquantized `bfloat16` (GCE `a2-highgpu-2g`, 2× NVIDIA A100-40GB)
 
-Evaluated live on Google Compute Engine (`us-central1-b`) in project `genai-blackbelt-fishfooding` running Google DeepMind's official unquantized 16-bit weights (`google/diffusiongemma-26B-A4B-it`, 50.14 GiB across 2× A100 GPUs via NCCL Tensor Parallelism `TP=2`, with 10.62 GiB KV cache per GPU, [`benchmarks/results_gce_a100_bf16.json`](../benchmarks/results_gce_a100_bf16.json)):
+Evaluated live on Google Compute Engine (`us-central1-b`) in project `<your-project-id>` running Google DeepMind's official unquantized 16-bit weights (`google/diffusiongemma-26B-A4B-it`, 50.14 GiB across 2× A100 GPUs via NCCL Tensor Parallelism `TP=2`, with 10.62 GiB KV cache per GPU, [`benchmarks/results_gce_a100_bf16.json`](../benchmarks/results_gce_a100_bf16.json)):
 
 ```text
 ================================================================================
@@ -343,7 +343,7 @@ make gce-deploy
   -c benchmarks/intents/clinc150_eval.jsonl --samples 1 -o benchmarks/results_intents_clinc150.json
 
 # Or deploy 16-bit unquantized bfloat16 on a2-highgpu-2g (2x A100):
-export GCP_PROJECT="genai-blackbelt-fishfooding"
+export GCP_PROJECT="<your-project-id>"
 export GCP_ZONE="us-central1-b"
 export PRECISION="16"
 make gce-deploy

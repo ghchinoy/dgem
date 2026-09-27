@@ -227,7 +227,7 @@ export class DgemStudio extends LitElement {
   @state() private localAvailable = false;
   @state() private localUrl = 'http://127.0.0.1:8080/v1';
   @state() private localStatus: { available: boolean; reachable: boolean; url?: string; tier?: string } | null = null;
-  @state() private vertexUrl = '4423577720856772608';
+  @state() private vertexUrl = '';
   @state() private backendSettingsOpen = false;
   @state() private vertexStatus: {
     endpoint_id: string;
@@ -1069,7 +1069,7 @@ export class DgemStudio extends LitElement {
 
   private async saveBackendConfig(backend: 'vertex_first' | 'cloudrun' | 'vertex' | 'local', vertexUrl: string) {
     this.backendTarget = backend;
-    this.vertexUrl = (vertexUrl || '4423577720856772608').trim();
+    this.vertexUrl = (vertexUrl || this.vertexStatus?.endpoint_id || '').trim();
     localStorage.setItem('dgem-backend-v2', this.backendTarget);
     localStorage.setItem('dgem-vertex-url', this.vertexUrl);
     try {
@@ -1103,13 +1103,13 @@ export class DgemStudio extends LitElement {
 
   private async handleProvisionVertex() {
     this.vertexActionBusy = true;
+    const targetEp = this.vertexUrl || this.vertexStatus?.endpoint_id || '';
     try {
       const resp = await fetch('/api/vertex/deploy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          endpoint_id: '4423577720856772608',
-          model_id: '2976360933959401472',
+          endpoint_id: targetEp,
         }),
       });
       const data = await resp.json();
@@ -1118,7 +1118,7 @@ export class DgemStudio extends LitElement {
       }
       this.warmupToast =
         data.message ||
-        'Started provisioning a G4 (RTX PRO 6000) replica on Vertex AI Dedicated Endpoint 4423577720856772608 (~10 min)...';
+        `Started provisioning a G4 (RTX PRO 6000) replica on Vertex AI Dedicated Endpoint ${targetEp} (~10 min)...`;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : 'Failed to start Vertex AI deployment';
     } finally {
@@ -1130,12 +1130,13 @@ export class DgemStudio extends LitElement {
 
   private async handleTeardownVertex() {
     this.vertexActionBusy = true;
+    const targetEp = this.vertexUrl || this.vertexStatus?.endpoint_id || '';
     try {
       const resp = await fetch('/api/vertex/teardown', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          endpoint_id: '4423577720856772608',
+          endpoint_id: targetEp,
         }),
       });
       const data = await resp.json();
@@ -1144,7 +1145,7 @@ export class DgemStudio extends LitElement {
       }
       this.warmupToast =
         data.message ||
-        'Tearing down Vertex AI replica on 4423577720856772608 ($0.00/hr idle state restored)...';
+        `Tearing down Vertex AI replica on ${targetEp} ($0.00/hr idle state restored)...`;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : 'Failed to teardown Vertex AI replica';
     } finally {
@@ -1739,7 +1740,7 @@ export class DgemStudio extends LitElement {
                         type="button"
                         style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex_first' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex_first' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                         @click=${async () => {
-                          await this.saveBackendConfig('vertex_first', this.vertexUrl || '4423577720856772608');
+                          await this.saveBackendConfig('vertex_first', this.vertexUrl);
                           this.backendSettingsOpen = false;
                         }}
                       >
@@ -1748,7 +1749,7 @@ export class DgemStudio extends LitElement {
                           <span>Vertex First · Cloud Run Failover (Recommended)</span>
                         </div>
                         <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                          Routes to Vertex AI Dedicated Endpoint (<code>4423577720856772608</code>) when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
+                          Routes to Vertex AI Dedicated Endpoint when active, and automatically falls back to Cloud Run GPU when Vertex is deploying or scaled down.
                         </div>
                       </button>
 
@@ -1800,7 +1801,7 @@ export class DgemStudio extends LitElement {
                           type="button"
                           style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem; padding:0.65rem 0.75rem; border-radius:8px; cursor:pointer; text-align:left; border:2px solid ${this.backendTarget === 'vertex' ? '#2563eb' : this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.backendTarget === 'vertex' ? (this.resolvedTheme === 'dark' ? '#1e293b' : '#eff6ff') : (this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc')}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                           @click=${async () => {
-                            await this.saveBackendConfig('vertex', this.vertexUrl || '4423577720856772608');
+                            await this.saveBackendConfig('vertex', this.vertexUrl);
                           }}
                         >
                           <div style="display:flex; align-items:center; gap:0.35rem; font-weight:700; font-size:0.78rem;">
@@ -1808,7 +1809,7 @@ export class DgemStudio extends LitElement {
                             <span>Vertex AI Strict (/invoke/*)</span>
                           </div>
                           <div style="font-size:0.67rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.3;">
-                            Dedicated Endpoint · <code>4423577720856772608</code>
+                            Dedicated Endpoint (/invoke/*)
                           </div>
                         </button>
                       </div>
@@ -1832,7 +1833,7 @@ export class DgemStudio extends LitElement {
                         </div>
                         <div style="font-size:0.68rem; color:${this.resolvedTheme === 'dark' ? '#94a3b8' : '#475569'}; line-height:1.35;">
                           ${this.vertexStatus?.message ||
-                          'Endpoint 4423577720856772608 (Model 5387194109486170112, invokeRoutePrefix="/*") is registered in us-central1.'}
+                          'Vertex AI Dedicated Endpoint (/invoke/*) registered in us-central1.'}
                         </div>
                         <div style="display:flex; gap:0.45rem; margin-top:0.15rem;">
                           ${this.vertexStatus?.state === 'deployed' || this.vertexStatus?.state === 'deploying'
@@ -1875,11 +1876,11 @@ export class DgemStudio extends LitElement {
                         </label>
                         <input
                           type="text"
-                          .value=${this.vertexUrl || '4423577720856772608'}
+                          .value=${this.vertexUrl}
                           @input=${(e: Event) => {
                             this.vertexUrl = (e.target as HTMLInputElement).value;
                           }}
-                          placeholder="4423577720856772608"
+                          placeholder="Endpoint ID or Dedicated /invoke/* URL"
                           style="width:100%; box-sizing:border-box; font-family:'JetBrains Mono', monospace; font-size:0.72rem; padding:0.45rem 0.6rem; border-radius:6px; border:1px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                         />
                       </div>
@@ -1899,7 +1900,7 @@ export class DgemStudio extends LitElement {
                         <button
                           class="btn btn--sm btn--brand"
                           @click=${async () => {
-                            await this.saveBackendConfig(this.backendTarget, this.vertexUrl || '4423577720856772608');
+                            await this.saveBackendConfig(this.backendTarget, this.vertexUrl);
                             this.backendSettingsOpen = false;
                           }}
                         >
@@ -1926,10 +1927,10 @@ export class DgemStudio extends LitElement {
                   : this.handleWarmupGPU(false)}
               title=${isVertexBackend
                 ? isWarm
-                  ? 'Vertex AI Dedicated Endpoint 4423577720856772608 (RTX PRO 6000 · g4-standard-48) is warm and ready'
+                  ? 'Vertex AI Dedicated Endpoint (RTX PRO 6000 · g4-standard-48) is warm and ready'
                   : isWarming
                     ? 'Vertex AI Dedicated Endpoint replica is currently scaling up (0 → 1)'
-                    : 'Provision a G4 (RTX PRO 6000) replica on Vertex AI Dedicated Endpoint 4423577720856772608'
+                    : 'Provision a G4 (RTX PRO 6000) replica on Vertex AI Dedicated Endpoint'
                 : isWarm
                   ? 'Cloud Run GPU vLLM EngineCore & SigLIP are warm and ready'
                   : isWarming

@@ -10,7 +10,7 @@ REGION="${GCP_REGION:-us-central1}"
 GPU_SERVICE="${UPSTREAM_SERVICE:-dgemma}"
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-dgemma-gateway}"
 BUCKET="${GCS_BUCKET:-dgem-weights-${PROJECT}}"
-ALLOW_GROUP="${ALLOW_GROUP:-aaie-decision-model@google.com}"
+ALLOW_GROUP="${ALLOW_GROUP:-}"
 
 GPU_SA_NAME="dgemma-gpu-sa"
 GPU_SA="${GPU_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
@@ -84,7 +84,7 @@ if gcloud run services describe "${GPU_SERVICE}" --project="${PROJECT}" --region
     --quiet >/dev/null
 fi
 
-# 4. Attach dgemma-gateway-sa to dgemma-gateway and bind group:aaie-decision-model@google.com
+# 4. Attach dgemma-gateway-sa to dgemma-gateway and bind authorized invokers
 echo "-> Granting roles/cloudtrace.agent and roles/aiplatform.user on project ${PROJECT} to ${GATEWAY_SA}..."
 gcloud projects add-iam-policy-binding "${PROJECT}" \
   --member="serviceAccount:${GATEWAY_SA}" \

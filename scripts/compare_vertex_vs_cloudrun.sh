@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERTEX_ID="${VERTEX_ID:-4423577720856772608}"
-CLOUDRUN_URL="${CLOUDRUN_URL:-https://dgemma-tkb3aiuiea-uc.a.run.app/v1}"
+VERTEX_ID="${VERTEX_ID:-${DGEM_VERTEX_URL:-}}"
+CLOUDRUN_URL="${CLOUDRUN_URL:-}"
+
+if [[ -z "${VERTEX_ID}" || -z "${CLOUDRUN_URL}" ]]; then
+  echo "Usage: VERTEX_ID=<endpoint-id> CLOUDRUN_URL=<cloudrun-v1-url> ./scripts/compare_vertex_vs_cloudrun.sh" >&2
+  exit 1
+fi
 
 echo "========================================================================"
 echo "  Head-to-Head Benchmark Matrix: Vertex AI Dedicated Endpoint vs Cloud Run"

@@ -77,13 +77,13 @@ Can also run as a standalone HTTP server (--serve-systemone :8095) implementing 
 for direct execution with the upstream Python runner:
   python -m decision_index run --engine http --endpoint http://127.0.0.1:8095/v1/systemone`,
 	Example: `  # Run live Decision Index evaluation against Cloud Run GPU with Naive vs Wide-Canvas comparison
-  dgem bench-decision-index -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth --compare-naive
+  dgem bench-decision-index -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth --compare-naive
 
   # Replay and audit from a saved Cloud Run GPU receipt
   dgem bench-decision-index --from-receipt benchmarks/decision_index/results_decision_index_cloudrun.json
 
   # Serve POST /v1/systemone adapter for upstream apolinario/decision-index Python CLI
-  dgem bench-decision-index -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth --serve-systemone :8095`,
+  dgem bench-decision-index -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth --serve-systemone :8095`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 

@@ -105,7 +105,7 @@ When the GPU is already warm (`dgem.warmup_attempts = 1` and `dgem.gpu.cold_star
 `initGatewayTracer` (`cmd/otel.go`) exports telemetry to four surfaces simultaneously:
 
 ### A. Google Cloud Trace (Visual Waterfall)
-* **Console URL**: `https://console.cloud.google.com/traces/list?project=genai-blackbelt-fishfooding`
+* **Console URL**: `https://console.cloud.google.com/traces/list?project=<your-project-id>`
 * Filter by service name **`dgemma-gateway`** or span name **`dgem.gateway.decide`**.
 * Every `/api/decide` response returns an HTTP header **`X-Dgem-Trace-Id`** and JSON property **`trace_id`**. Paste this 32-character hex ID into Cloud Trace to inspect the correlated `dgemma-gateway` $\to$ `dgemma` span waterfall.
 

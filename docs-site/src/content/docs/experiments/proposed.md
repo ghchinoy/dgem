@@ -161,7 +161,7 @@ The [Experiment Ledger](/dgem/experiments/) records experiments we have **run**.
 
 * **Motivation:** The IDC comparisons in the docs mix runs from different days and Cloud Run revisions (`/mnt/gcs/dgemma` on 2026-09-20 vs `diffgemma-26b-a4b-it-q4` on 2026-09-23). Without a noise floor, a 2-point accuracy difference on 50 items can't be interpreted.
 * **Hypothesis (H10):** Repeating the 50-item calibration suite 3× against one revision, and 1× against each of two revisions, gives accuracy variation of ≤ 2 points and Brier variation of ≤ 0.01 within a revision. Differences between revisions are reported separately.
-* **Design:** Run the same items, same flags, and `-w 1` for determinism where possible, on Vertex AI (`4217256562927861760`) and Cloud Run.
+* **Design:** Run the same items, same flags, and `-w 1` for determinism where possible, on Vertex AI (`<legacy-l4-endpoint>`) and Cloud Run.
 * **Metrics:** Standard deviation within a revision and differences between revisions for accuracy, Brier score, ECE, and per-item answer agreement.
 * **Decision:** Sets the minimum effect size that later entries (`PROP-01`–`PROP-09`) must exceed to count as real.
 

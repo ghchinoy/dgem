@@ -20,7 +20,7 @@ Commands
 Examples
 --------
   scripts/bench_runs.py exec --run 20260925-vertex-idc --suite calibration --config baseline -- \
-      ./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 4 -o {out}
+      ./bin/dgem bench-calibration --vertex-url <endpoint-id> --gcp-auth -w 4 -o {out}
   scripts/bench_runs.py compare --suite calibration
 """
 
@@ -46,7 +46,7 @@ def git(*args):
 
 VERTEX_PROJECT = os.environ.get("VERTEX_PROJECT") or os.environ.get("GCP_PROJECT", "")
 VERTEX_REGION = os.environ.get("GCP_REGION", "us-central1")
-VERTEX_ENDPOINT = os.environ.get("DGEM_VERTEX_URL", "4423577720856772608")
+VERTEX_ENDPOINT = os.environ.get("DGEM_VERTEX_URL", "")
 
 
 def _adc_token():

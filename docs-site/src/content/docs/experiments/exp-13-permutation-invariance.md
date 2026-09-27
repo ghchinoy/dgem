@@ -33,7 +33,7 @@ where:
 
 ## 3. Empirical Results on Live Cloud Run GPU (`dgemma`)
 
-Executed via `./bin/dgem bench-permutation -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth -w 2` (`benchmarks/results_permutation_cloudrun.json`).
+Executed via `./bin/dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2` (`benchmarks/results_permutation_cloudrun.json`).
 
 ### 3.1 `EXP-13B`: Measured Content-Free Positional Null Priors ($p_0$)
 
@@ -101,5 +101,5 @@ Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k
 ./bin/dgem bench-permutation --from-receipt benchmarks/results_permutation_cloudrun.json
 
 # Run live against Cloud Run GPU (executes 13B Null-Prior probes + 13A K-Cyclic shifts + 13C Dual-Mirror Canvas):
-./bin/dgem bench-permutation -u "https://dgemma-tkb3aiuiea-uc.a.run.app/v1" --gcp-auth -w 2
+./bin/dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2
 ```

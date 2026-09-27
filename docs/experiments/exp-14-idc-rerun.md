@@ -5,7 +5,7 @@ description: "Pre-registered follow-ups PROP-01, PROP-02 (offline), PROP-05, PRO
 
 # EXP-14: Same-Session IDC Re-run on Vertex AI
 
-**Date:** 2026-09-25 · **Backend:** Vertex AI Dedicated Endpoint `4217256562927861760` (1× L4) · **Stage 2:** `gemini-3.8-flash`
+**Date:** 2026-09-25 · **Backend:** Vertex AI Dedicated Endpoint `<legacy-l4-endpoint>` (1× L4) · **Stage 2:** `gemini-3.8-flash`
 **Runs:** [`benchmarks/runs/20260925-vertex-idc`](../../benchmarks/runs/20260925-vertex-idc/manifest.json),
 [`20260925-vertex-idc-mirrorfix`](../../benchmarks/runs/20260925-vertex-idc-mirrorfix/manifest.json),
 [`20260925-offline-prop01`](../../benchmarks/runs/20260925-offline-prop01/cv_temperature.json) ·
@@ -123,7 +123,7 @@ standalone Gemini). Three JevBench Gemini calls failed with HTTP 429 after retri
 
 ## Addendum: replication on Vertex G4 (run `20260925-g4-idc`)
 
-Same four configurations re-run on the new G4 endpoint (`4423577720856772608`, `g4-standard-48` + RTX PRO 6000,
+Same four configurations re-run on the new G4 endpoint (`<endpoint-id>`, `g4-standard-48` + RTX PRO 6000,
 image `dgemma:ab208dd`, mirror suffix `__rev`), all in one session. Results agree with the findings above.
 
 | Suite | Config | Correct | Brier (T=1) | ECE-10 (T=1) | Mean Mirror TVD |

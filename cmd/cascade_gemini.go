@@ -112,7 +112,10 @@ func getSharedGenaiClient(ctx context.Context) (*genai.Client, string, error) {
 
 	proj := resolveGCPProject(serveVertexProject)
 	if proj == "" {
-		proj = "genai-blackbelt-fishfooding"
+		proj = detectGCPProjectID()
+	}
+	if proj == "" {
+		return nil, "", fmt.Errorf("gemini cascade requires GCP project (set GCP_PROJECT or DGEM_GCP_PROJECT)")
 	}
 	if cascadeGenaiClient != nil && cascadeGenaiProj == proj {
 		return cascadeGenaiClient, proj, nil

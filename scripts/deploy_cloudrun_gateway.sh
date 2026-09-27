@@ -11,14 +11,14 @@ GATEWAY_SERVICE="${GATEWAY_SERVICE:-dgemma-gateway}"
 UPSTREAM_SERVICE="${UPSTREAM_SERVICE:-dgemma}"
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
 IMAGE="us-central1-docker.pkg.dev/${PROJECT}/dgem/dgemma-gateway:${IMAGE_TAG}"
-ALLOW_GROUP="${ALLOW_GROUP:-aaie-decision-model@google.com}"
+ALLOW_GROUP="${ALLOW_GROUP:-}"
 GATEWAY_SA_NAME="dgemma-gateway-sa"
 GATEWAY_SA="${GATEWAY_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
 
 echo "================================================================"
 echo " Deploying ${GATEWAY_SERVICE} (Go HTTP API & Web Studio Gateway)"
 echo " Project: ${PROJECT} | Region: ${REGION}"
-echo " Gateway SA: ${GATEWAY_SA} | Group: ${ALLOW_GROUP}"
+echo " Gateway SA: ${GATEWAY_SA} | Group: ${ALLOW_GROUP:-<none>}"
 echo "================================================================"
 
 if ! gcloud iam service-accounts describe "${GATEWAY_SA}" --project="${PROJECT}" >/dev/null 2>&1; then
@@ -59,7 +59,7 @@ gcloud builds submit "${TMP_CTX}" \
   --quiet
 
 GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"
-VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-4423577720856772608}"
+VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-}"
 
 echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID})..."
 gcloud run deploy "${GATEWAY_SERVICE}" \

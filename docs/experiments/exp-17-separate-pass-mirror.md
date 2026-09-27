@@ -5,9 +5,9 @@ description: "Reading the options reversed in a second, separate pass gives an o
 
 # EXP-17: Separate-Pass Mirror (`PROP-12`)
 
-**Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `4423577720856772608` (image `dgemma:ab208dd`) ·
+**Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (image `dgemma:ab208dd`) ·
 **Run:** [`benchmarks/runs/20260926-prop12-separate-pass`](../../benchmarks/runs/20260926-prop12-separate-pass/manifest.json)
-**Reproduce:** `./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 [--flip-options]`, then
+**Reproduce:** `./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 [--flip-options]`, then
 `python3 scripts/analyze_idc.py separate-pass --forward <F1> <F2> --reversed <R1> <R2>`
 
 ## Question and pre-registered rule

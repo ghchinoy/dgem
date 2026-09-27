@@ -69,7 +69,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&authToken, "token", "k", "", "Authorization Bearer token / API key")
 	RootCmd.PersistentFlags().BoolVar(&gcpAuth, "gcp-auth", false, "Automatically obtain GCP IAM identity token via gcloud auth print-identity-token or Cloud Run metadata server")
 	RootCmd.PersistentFlags().StringVar(&iapClientID, "iap-client-id", "", "OAuth 2.0 Client ID / Audience for Identity-Aware Proxy (IAP) protected endpoints (env: DGEM_IAP_CLIENT_ID)")
-	RootCmd.PersistentFlags().StringVar(&serveVertexURL, "vertex-url", "4423577720856772608", "Vertex AI Dedicated Endpoint ID or /invoke/* URL (env: DGEM_VERTEX_URL)")
+	RootCmd.PersistentFlags().StringVar(&serveVertexURL, "vertex-url", "", "Vertex AI Dedicated Endpoint ID or /invoke/* URL (env: DGEM_VERTEX_URL)")
 
 	viper.BindPFlag("url", RootCmd.PersistentFlags().Lookup("url"))
 	viper.BindPFlag("model", RootCmd.PersistentFlags().Lookup("model"))
@@ -164,12 +164,20 @@ func fetchADCTokens() (accessToken string, idToken string) {
 	return strings.TrimSpace(tokResp.AccessToken), strings.TrimSpace(tokResp.IDToken)
 }
 
-// isRemoteGCPURL returns true if u targets Cloud Run (*.run.app), the IAP gateway (dgemma.aaie.cloud), or Vertex AI.
+// isRemoteGCPURL returns true if u targets Cloud Run (*.run.app), Vertex AI, or custom gateway hosts in DGEM_GATEWAY_HOSTS.
 func isRemoteGCPURL(u string) bool {
 	lower := strings.ToLower(strings.TrimSpace(u))
-	return strings.Contains(lower, ".run.app") ||
-		strings.Contains(lower, "dgemma.aaie.cloud") ||
-		client.IsVertexEndpointURL(u)
+	if strings.Contains(lower, ".run.app") || client.IsVertexEndpointURL(u) {
+		return true
+	}
+	if extra := os.Getenv("DGEM_GATEWAY_HOSTS"); extra != "" {
+		for _, h := range strings.Split(extra, ",") {
+			if h = strings.TrimSpace(strings.ToLower(h)); h != "" && strings.Contains(lower, h) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func isLoopbackURL(u string) bool {
