@@ -130,7 +130,7 @@ At the target slot position, the model projects the latent representation direct
 ### 4. Dual-Mode Uncertainty Telemetry & Epistemic Calibration (`ChaosNLI`)
 Because decision models project onto restricted candidate vocabularies rather than open-ended decoding paths, they expose clean per-slot probabilities. These are a strong *uncertainty signal*, though not automatically *calibrated* probabilities (calibration to a real deployment needs labeled data; see [IDC](confidence-beyond-shannon.md)):
 * **Empirical Standard Error ($\pm\sigma$)**: On Apple Silicon Metal, multi-seed perturbation noise draws reveal whether the model has high consensus ($\pm 0.0000$) or ambiguity ($\pm 0.1500$).
-* **Monotonic Shannon Entropy ($H = -\sum p_k \ln p_k$)**: Evaluated on [`ChaosNLI`](benchmarks.md) (100 human annotators per item), DiffusionGemma's single-pass Shannon entropy correlates monotonically with human disagreement:
+* **Monotonic Shannon Entropy ($H = -\sum p_k \ln p_k$)**: Evaluated on [`ChaosNLI`](benchmarks-report.md) (100 human annotators per item), DiffusionGemma's single-pass Shannon entropy correlates monotonically with human disagreement:
 
 | Human Annotator Consensus Tier | Accuracy | Mean Confidence $P(y)$ | Mean Shannon Entropy $H$ | Entropy Multiplier |
 | :--- | :---: | :---: | :---: | :---: |

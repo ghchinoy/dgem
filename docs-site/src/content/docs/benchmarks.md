@@ -257,7 +257,7 @@ Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/res
 
 ### 8.4 Entropy-Gated Cascade (`EXP-05`: `DiffusionGemma` $\xrightarrow{H \ge 0.35\text{ nats}}$ `gemini-3.8-flash`)
 
-As detailed in [**`EXP-05` (`/dgem/experiments/exp-05-roadmap-cascades-and-dags/`)**](/dgem/experiments/exp-05-roadmap-cascades-and-dags/), DiffusionGemma's restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ acts as a **zero-overhead router** ([`benchmarks/results_calibration_cascade.json`](../benchmarks/results_calibration_cascade.json)):
+As detailed in [**`EXP-05`**](/dgem/experiments/exp-05-roadmap-cascades-and-dags/), DiffusionGemma's restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ acts as a **zero-overhead router** ([`benchmarks/results_calibration_cascade.json`](../benchmarks/results_calibration_cascade.json)):
 - **Pass 1 (`H < 0.35 nats` — 72.0% of traffic handled by DiffusionGemma at `712 ms`)**: All 36 low-entropy items exit immediately at Stage 1 without calling Vertex AI, achieving **100.0%** across `easy` (`17/17`), `localization` (`3/3`), `out-of-scope` (`2/2`), and `low-entropy` (`3/3`).
 - **Pass 2 (`H >= 0.35 nats` — 28.0% escalated to `gemini-3.8-flash`)**: Only the 14 high-entropy queries escalate to `gemini-3.8-flash`, resolving **all 3 `ChaosNLI` `high-entropy` splits (`3/3 = 100%`)**, **`tox-03` harsh journalistic criticism (`6/6 = 100%` toxicity)**, and **`anli-03` (`9/9 = 100%` across the `ambiguous` tier)**—lifting overall accuracy to **94.0% (47 / 50)** at **1,824 ms** effective latency (**1.87× faster** than standalone `gemini-3.8-flash`).
 
