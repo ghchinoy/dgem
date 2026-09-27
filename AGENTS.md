@@ -72,7 +72,7 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
   - Public container images are published to **`dgem-diffusiongemma`** (Distribution & Registry Project ONLY; `allUsers` public read):
     - `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest` (~10 GB, downloads public NVFP4 weights on boot).
     - `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest` (~29 GB, pre-baked NVFP4 weights in `/opt/dgemma/weights` for 0.0s cold start).
-  - Pull telemetry is recorded via Artifact Registry `DATA_READ` audit logs routed to BigQuery dataset `dgem_image_access`.
+  - Pull telemetry is recorded via Artifact Registry `DATA_READ` audit logs (see `scratch/production-testing-howto.md`).
   - **Project Isolation Mandate**: Never deploy running compute services (Cloud Run GPU, Vertex AI, GCE) to `dgem-diffusiongemma`. Compute must be hosted in dedicated testing/hosting projects.
   - `pkg/client` requests `logprobs: true, top_logprobs: 5` on every `Decide` call and uses `ParseStructuredContentWithLogprobs` to compute calibrated slot probability $\exp(\text{logprob})$, Shannon entropy $H = -\sum p_k \ln p_k$, and top-$k$ candidate probabilities.
 - **Local Apple Silicon Metal (`diffgemma`)**: Returns native `StructuredDecisionResponse` JSON (`answers` + `diagnostics`) with restricted-softmax `probabilities`, `first_read_max_entropy`, and `reused_tokens`.

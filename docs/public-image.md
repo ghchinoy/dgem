@@ -14,7 +14,9 @@ description: "How to pull and run official dgem DiffusionGemma container images 
 | Image Tag | Compressed Size | Weights Delivery | Recommended Use Case |
 | :--- | :---: | :--- | :--- |
 | **`dgem:latest`** (or `<git-sha>`) | `~10 GB` | Public HF download at container boot (`0.0s` if mounted or pre-cached) | **Ephemeral Cloud Run GPU, GCE VMs, Local Docker** |
-| **`dgem-weights:latest`** (or `<git-sha>`) | `~29 GB` | **Pre-baked NVFP4 weights** in `/opt/dgemma/weights` (`0.0s` cold-start download) | **Dedicated Vertex AI Endpoints, Offline Pods** |
+| **`dgem-weights:latest`** (or `<git-sha>`) | `~26 GB` | **Pre-baked NVFP4 weights** in `/opt/dgemma/weights` (`0.0s` cold-start download) | **Dedicated Vertex AI Endpoints, Offline Pods** |
+
+For deploying to Google Cloud Run GPU or Vertex AI Dedicated Endpoints, see [Deploy on Your Own Cloud GPU](deploy-your-own-gpu.md).
 
 ### Pulling the Image
 ```bash

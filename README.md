@@ -41,7 +41,7 @@ docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemm
 docker run --gpus all -p 8080:8080 -e ROLE=decision-index -e TEMPERATURE=1.0 \
   us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
 ```
-See **[Public Container Images & Quickstart Guide](docs/public-image.md)** and **[Production Testing How-To](docs/production-testing-howto.md)**.
+See **[Public Container Images & Quickstart Guide](docs/public-image.md)** and **[Deploy on Your Own GPU](docs/deploy-your-own-gpu.md)**.
 
 ---
 

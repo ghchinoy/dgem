@@ -220,7 +220,7 @@ req = urllib.request.Request(
 with urllib.request.urlopen(req, timeout=5) as r:
     token = json.loads(r.read().decode())["access_token"]
 
-bucket = os.environ.get("GCS_BUCKET", "dgem-weights-genai-blackbelt-fishfooding")
+bucket = os.environ.get("GCS_BUCKET", "")
 src_files = sorted(glob.glob("/mnt/gcs/dgemma/*.safetensors"))
 hdr = 4 * 1024 * 1024
 chunk = 64 * 1024 * 1024
