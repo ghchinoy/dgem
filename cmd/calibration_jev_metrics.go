@@ -19,7 +19,7 @@ type ReliabilityBin struct {
 	AbsGap       float64 `json:"abs_gap"`
 }
 
-// JevParitySummary holds the JevBench v1.3.1 4-Axis parity metrics and temperature-scaling comparison.
+// JevParitySummary holds the JevBench v1.3.1 & v1.4 4-Axis parity metrics and temperature-scaling comparison.
 type JevParitySummary struct {
 	ProtocolVersion        string             `json:"protocol_version"`
 	TemperatureApplied     float64            `json:"temperature_applied"`
@@ -44,6 +44,17 @@ type JevParitySummary struct {
 	RawT1CalibrationScore  float64            `json:"raw_t1_calibration_score"`
 	RawT1CompositeScore    float64            `json:"raw_t1_composite_score"`
 	ReliabilityBins        []ReliabilityBin   `json:"reliability_bins"`
+
+	// JevBench v1.4 Protocol Metrics (composite_v14.py)
+	EndpointKind          string  `json:"endpoint_kind,omitempty"`
+	RawSpeedScore         float64 `json:"raw_speed_score,omitempty"`
+	AdjustedSpeedScore    float64 `json:"adjusted_speed_score,omitempty"`
+	V14IntelligenceScore  float64 `json:"v14_intelligence_score,omitempty"`
+	V14CalibrationScore   float64 `json:"v14_calibration_score,omitempty"`
+	V14CompositeScore     float64 `json:"v14_composite_score,omitempty"`
+	V14PublicOnlyEstimate bool    `json:"v14_public_only_estimate,omitempty"`
+	SealedAccuracy        float64 `json:"sealed_accuracy,omitempty"`
+	GapPenaltyPct         float64 `json:"gap_penalty_pct,omitempty"`
 }
 
 // enrichAndScaleCaseResults populates VocabCardinality, ChanceBaseline, BrierScore, TVDGold,
@@ -382,6 +393,88 @@ func computeJevSpeedScore(p50Sec, p95Sec float64) float64 {
 	return 0.5 * (scoreOne(p50Sec) + scoreOne(p95Sec))
 }
 
+// computeJevSpeedScoreWithKind computes Speed axis with endpoint kind adjustment:
+// If endpointKind is "gpu" or "cpu" (self-hosted / evaluator pod), latency is adjusted
+// by 2.0x (+0.15s) following JevBench official method (composite_v13.py / composite_v14.py).
+// If endpointKind is "api", latency is unadjusted (1.0x).
+// Returns (adjustedSpeedScore, rawSpeedScore).
+func computeJevSpeedScoreWithKind(p50Sec, p95Sec float64, endpointKind string) (float64, float64) {
+	raw := computeJevSpeedScore(p50Sec, p95Sec)
+	ek := strings.ToLower(strings.TrimSpace(endpointKind))
+	if ek == "api" {
+		return raw, raw
+	}
+	// Self-hosted GPU or CPU endpoint
+	adjP50 := p50Sec*2.0 + 0.15
+	adjP95 := p95Sec*2.0 + 0.15
+	adj := computeJevSpeedScore(adjP50, adjP95)
+	return adj, raw
+}
+
+// computeJevV14CompositeScore computes the official JevBench v1.4 equal-weight harmonic mean
+// with the three <50 threshold penalties (Intelligence, Speed, Cost) from composite_v14.py:
+//   score = 4 / (1/I + 1/C + 1/S + 1/Cost)
+//   if I < 50:    score *= (I / 50)^2
+//   if S < 50:    score *= (S / 50)^2
+//   if Cost < 50: score *= (Cost / 50)^2
+func computeJevV14CompositeScore(intel, cal, speed, cost float64) float64 {
+	axes := []float64{intel, cal, speed, cost}
+	for _, v := range axes {
+		if v <= 0.0 {
+			return 0.0
+		}
+	}
+	harmonic := 4.0 / (1.0/intel + 1.0/cal + 1.0/speed + 1.0/cost)
+
+	const gateThreshold = 50.0
+	if intel < gateThreshold {
+		r := math.Max(0.0, intel) / gateThreshold
+		harmonic *= r * r
+	}
+	if speed < gateThreshold {
+		r := math.Max(0.0, speed) / gateThreshold
+		harmonic *= r * r
+	}
+	if cost < gateThreshold {
+		r := math.Max(0.0, cost) / gateThreshold
+		harmonic *= r * r
+	}
+	return harmonic
+}
+
+// computeJevV14Intelligence computes the official JevBench v1.4 Intelligence axis from composite_v14.py:
+// - If sealedAcc <= 0 (unknown/public-only), returns (publicIntel, 0.0, true).
+// - If sealedAcc > 0:
+//     I_sealed = clamp(100 * max(0, (sealedAcc - 0.293) / (1 - 0.293)))
+//     I_base   = 0.8 * publicIntel + 0.2 * I_sealed
+//     gap      = 100 * (publicAcc - sealedAcc)
+//     penalty  = max(0, gap - 25) / 100
+//     I        = I_base * (1 - penalty)
+func computeJevV14Intelligence(publicIntel, publicAcc, sealedAcc float64) (float64, float64, bool) {
+	if sealedAcc <= 0.0 {
+		return publicIntel, 0.0, true
+	}
+	const sealedWeight = 0.20
+	const sealedChance = 0.293
+	const gapAllowancePoints = 25.0
+	const gapPenaltyK = 1.0
+
+	sealedChanceCorr := 0.0
+	if sealedAcc > sealedChance {
+		sealedChanceCorr = 100.0 * (sealedAcc - sealedChance) / (1.0 - sealedChance)
+		if sealedChanceCorr > 100.0 {
+			sealedChanceCorr = 100.0
+		}
+	}
+
+	combined := (1.0-sealedWeight)*publicIntel + sealedWeight*sealedChanceCorr
+	gapPoints := 100.0 * (publicAcc - sealedAcc)
+	gapPenalty := math.Max(0.0, gapPoints-gapAllowancePoints) * gapPenaltyK / 100.0
+	finalIntel := combined * math.Max(0.0, 1.0-gapPenalty)
+
+	return finalIntel, gapPenalty * 100.0, false
+}
+
 // computeJevCostScore implements jevbench/composite_v13.py Cost axis:
 // clamp(100 - 30 * log10(usd_per_1000 / 0.001), 0, 100).
 func computeJevCostScore(usdPer1k float64) float64 {
@@ -549,10 +642,18 @@ func findOptimalTemperature(rawCases []CalibrationCaseResult) float64 {
 	return bestT
 }
 
-// buildJevParitySummary computes the complete JevBench v1.3.1 4-Axis telemetry and comparison against T=1.0.
+// buildJevParitySummary computes the complete JevBench v1.3.1 & v1.4 4-Axis telemetry and comparison against T=1.0.
 func buildJevParitySummary(rawCases []CalibrationCaseResult, activeTemp float64, targetModel string, cascade *CascadeSummary, overrideUSD float64) (*JevParitySummary, []CalibrationCaseResult) {
+	return buildJevParitySummaryWithKind(rawCases, activeTemp, targetModel, cascade, overrideUSD, "gpu", 0.0)
+}
+
+// buildJevParitySummaryWithKind computes both v1.3.1 and v1.4 metrics with optional endpoint kind adjustment and sealed accuracy.
+func buildJevParitySummaryWithKind(rawCases []CalibrationCaseResult, activeTemp float64, targetModel string, cascade *CascadeSummary, overrideUSD float64, endpointKind string, sealedAcc float64) (*JevParitySummary, []CalibrationCaseResult) {
 	if activeTemp <= 0 {
 		activeTemp = 1.0
+	}
+	if endpointKind == "" {
+		endpointKind = "gpu"
 	}
 	optT := findOptimalTemperature(rawCases)
 
@@ -601,17 +702,20 @@ func buildJevParitySummary(rawCases []CalibrationCaseResult, activeTemp float64,
 	calScore := computeJevCalibrationScore(ece, tvdMean)
 	chanceBasePct, chanceCorrPct, intelScore := computeJevWeightedIntelligence(scaledCases)
 	p50Sec, p95Sec := computeLatencyPercentilesSec(scaledCases)
-	speedScore := computeJevSpeedScore(p50Sec, p95Sec)
+	adjSpeed, rawSpeed := computeJevSpeedScoreWithKind(p50Sec, p95Sec, endpointKind)
 	usdPer1k := estimateUSDPer1kDecisions(targetModel, cascade, overrideUSD)
 	costScore := computeJevCostScore(usdPer1k)
 
-	composite := computeJevCompositeScore(intelScore, calScore, speedScore, costScore)
-	t1Composite := computeJevCompositeScore(intelScore, t1CalScore, speedScore, costScore)
+	composite := computeJevCompositeScore(intelScore, calScore, adjSpeed, costScore)
+	t1Composite := computeJevCompositeScore(intelScore, t1CalScore, adjSpeed, costScore)
+
+	v14Intel, gapPenalty, publicOnly := computeJevV14Intelligence(intelScore, chanceCorrPct/100.0, sealedAcc)
+	v14Composite := computeJevV14CompositeScore(v14Intel, calScore, adjSpeed, costScore)
 
 	// Weighted presets from jevbench/composite_v13.py
 	weightedGeo := func(wI, wCal, wS, wC float64) float64 {
 		c1 := func(x float64) float64 { return math.Max(1.0, math.Min(100.0, x)) }
-		return math.Exp(wI*math.Log(c1(intelScore)) + wCal*math.Log(c1(calScore)) + wS*math.Log(c1(speedScore)) + wC*math.Log(c1(costScore)))
+		return math.Exp(wI*math.Log(c1(intelScore)) + wCal*math.Log(c1(calScore)) + wS*math.Log(c1(adjSpeed)) + wC*math.Log(c1(costScore)))
 	}
 	presets := map[string]float64{
 		"JevBench Score (25:25:25:25)":       composite,
@@ -621,14 +725,14 @@ func buildJevParitySummary(rawCases []CalibrationCaseResult, activeTemp float64,
 	}
 
 	summary := &JevParitySummary{
-		ProtocolVersion:        "jevbench::v1.3.1-parity",
+		ProtocolVersion:        "jevbench::v1.4",
 		TemperatureApplied:     activeTemp,
 		OptimalTemperature:     optT,
 		ChanceBaselinePct:      chanceBasePct,
 		ChanceCorrectedAccPct:  chanceCorrPct,
 		IntelligenceScore:      intelScore,
 		CalibrationScore:       calScore,
-		SpeedScore:             speedScore,
+		SpeedScore:             adjSpeed,
 		CostScore:              costScore,
 		CompositeJevBenchScore: composite,
 		ECE10Bin:               ece,
@@ -644,11 +748,22 @@ func buildJevParitySummary(rawCases []CalibrationCaseResult, activeTemp float64,
 		RawT1CalibrationScore:  t1CalScore,
 		RawT1CompositeScore:    t1Composite,
 		ReliabilityBins:        bins,
+
+		// v1.4 additions
+		EndpointKind:          endpointKind,
+		RawSpeedScore:         rawSpeed,
+		AdjustedSpeedScore:    adjSpeed,
+		V14IntelligenceScore:  v14Intel,
+		V14CalibrationScore:   calScore,
+		V14CompositeScore:     v14Composite,
+		V14PublicOnlyEstimate: publicOnly,
+		SealedAccuracy:        sealedAcc,
+		GapPenaltyPct:         gapPenalty,
 	}
 	return summary, scaledCases
 }
 
-// printJevParityDashboard renders the JevBench v1.3.1 4-Axis Scorecard and 10-Bin Reliability Diagram.
+// printJevParityDashboard renders the JevBench v1.3.1 & v1.4 4-Axis Scorecard and 10-Bin Reliability Diagram.
 func printJevParityDashboard(report CalibrationReport) {
 	jp := report.JevParity
 	if jp == nil {
@@ -657,7 +772,7 @@ func printJevParityDashboard(report CalibrationReport) {
 
 	fmt.Println()
 	fmt.Println(styleAccent.Render("=========================================================================================="))
-	fmt.Println(styleAccent.Render("  Table 4: JevBench v1.3.1 4-Axis Parity Scorecard & Unit Economics"))
+	fmt.Println(styleAccent.Render("  Table 4: JevBench 4-Axis Parity Scorecard (v1.3.1 & v1.4 Official Method)"))
 	fmt.Println(styleAccent.Render("=========================================================================================="))
 	fmt.Printf("  • Chance Guessing Baseline:   %.2f%% -> Chance-Corrected Accuracy: %s (Raw: %.1f%%)\n",
 		jp.ChanceBaselinePct,
@@ -668,25 +783,56 @@ func printJevParityDashboard(report CalibrationReport) {
 		jp.TemperatureApplied, jp.OptimalTemperature)
 	fmt.Printf("  • Calibration Metrics:        10-Bin ECE = %.4f (Raw T=1.0: %.4f) | Multi-Class Brier = %.4f (Raw: %.4f)\n",
 		jp.ECE10Bin, jp.RawT1ECE10Bin, jp.BrierMean, jp.RawT1BrierMean)
-	fmt.Printf("  • Latency Percentiles:        p50 = %.3fs (%.0f ms) | p95 = %.3fs (%.0f ms)\n",
-		jp.P50LatencySec, jp.P50LatencySec*1000.0, jp.P95LatencySec, jp.P95LatencySec*1000.0)
+	endpointDesc := jp.EndpointKind
+	if endpointDesc == "" {
+		endpointDesc = "gpu"
+	}
+	fmt.Printf("  • Latency Percentiles:        p50 = %.3fs (%.0f ms) | p95 = %.3fs (%.0f ms) [endpoint=%s]\n",
+		jp.P50LatencySec, jp.P50LatencySec*1000.0, jp.P95LatencySec, jp.P95LatencySec*1000.0, endpointDesc)
 	fmt.Printf("  • Unit Economics:             $%.4f per 1,000 decisions\n", jp.USDPer1kDecisions)
 	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
-	fmt.Printf("  %-34s %14s %14s %14s\n", "JEVBENCH v1.3.1 AXIS (25% EACH)", "RAW (T=1.00)", fmt.Sprintf("SCALED (T=%.2f)", jp.TemperatureApplied), "DELTA")
+	fmt.Printf("  %-34s %14s %14s %14s\n", "JEVBENCH 4 AXES (25% EACH)", "RAW (T=1.00)", fmt.Sprintf("SCALED (T=%.2f)", jp.TemperatureApplied), "OFFICIAL v1.4")
 	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
-	fmt.Printf("  %-34s %14.2f %14.2f %+14.2f\n", "1. Intelligence (Chance-Corrected)", jp.IntelligenceScore, jp.IntelligenceScore, 0.0)
-	fmt.Printf("  %-34s %14.2f %14.2f %+14.2f\n", "2. Calibration (ECE + Soft TVD)", jp.RawT1CalibrationScore, jp.CalibrationScore, jp.CalibrationScore-jp.RawT1CalibrationScore)
-	fmt.Printf("  %-34s %14.2f %14.2f %+14.2f\n", "3. Speed (p50/p95 Log-Decade)", jp.SpeedScore, jp.SpeedScore, 0.0)
-	fmt.Printf("  %-34s %14.2f %14.2f %+14.2f\n", "4. Cost ($ / 1,000 Decisions)", jp.CostScore, jp.CostScore, 0.0)
+	intelV14Note := ""
+	if jp.V14PublicOnlyEstimate {
+		intelV14Note = " *"
+	}
+	fmt.Printf("  %-34s %14.2f %14.2f %14.2f%s\n", "1. Intelligence (Chance-Corrected)", jp.IntelligenceScore, jp.IntelligenceScore, jp.V14IntelligenceScore, intelV14Note)
+	fmt.Printf("  %-34s %14.2f %14.2f %14.2f\n", "2. Calibration (ECE + Soft TVD)", jp.RawT1CalibrationScore, jp.CalibrationScore, jp.V14CalibrationScore)
+	speedNote := ""
+	if jp.RawSpeedScore > 0 && jp.RawSpeedScore != jp.AdjustedSpeedScore {
+		speedNote = fmt.Sprintf(" (raw: %.1f)", jp.RawSpeedScore)
+	}
+	fmt.Printf("  %-34s %14.2f %14.2f %14.2f%s\n", "3. Speed (p50/p95 Log-Decade)", jp.SpeedScore, jp.SpeedScore, jp.AdjustedSpeedScore, speedNote)
+	fmt.Printf("  %-34s %14.2f %14.2f %14.2f\n", "4. Cost ($ / 1,000 Decisions)", jp.CostScore, jp.CostScore, jp.CostScore)
 	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
 	fmt.Printf("  %-34s %14.2f %14s %+14.2f\n",
-		"COMPOSITE JEVBENCH SCORE (GeoMean)",
+		"v1.3.1 COMPOSITE SCORE (GeoMean)",
 		jp.RawT1CompositeScore,
 		stylePass.Render(fmt.Sprintf("%14.2f", jp.CompositeJevBenchScore)),
 		jp.CompositeJevBenchScore-jp.RawT1CompositeScore,
 	)
+	v14ScoreDisplay := fmt.Sprintf("%14.2f", jp.V14CompositeScore)
+	if jp.V14PublicOnlyEstimate {
+		v14ScoreDisplay = stylePass.Render(v14ScoreDisplay) + "*"
+	} else {
+		v14ScoreDisplay = stylePass.Render(v14ScoreDisplay)
+	}
+	fmt.Printf("  %-34s %14s %14s %14s\n",
+		"v1.4 COMPOSITE SCORE (Harmonic)",
+		"--",
+		v14ScoreDisplay,
+		"(3 gates <50)",
+	)
 	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
-	fmt.Printf("  Preset Views: Balanced 33:33:33 = %.2f | Accuracy 60:20:20 = %.2f | Speed 20:60:20 = %.2f\n",
+	if jp.V14PublicOnlyEstimate {
+		fmt.Println(styleMuted.Render("  * Note: v1.4 is a public-only estimate. Official JevBench v1.4 scoring includes 308 private sealed"))
+		fmt.Println(styleMuted.Render("    decisions evaluated by the benchmark maintainer. Use --compare-leaderboard to view official rows."))
+	} else if jp.SealedAccuracy > 0 {
+		fmt.Printf("  * Official sealed accuracy: %.1f%% | Gap allowance: 25.0 pts | Gap penalty: %.1f%%\n",
+			jp.SealedAccuracy*100.0, jp.GapPenaltyPct)
+	}
+	fmt.Printf("  Preset Views (v1.3.1): Balanced 33:33:33 = %.2f | Accuracy 60:20:20 = %.2f | Speed 20:60:20 = %.2f\n",
 		jp.Presets["Balanced 33:33:33 (no calibration)"],
 		jp.Presets["Emphasis on Accuracy 60:20:20"],
 		jp.Presets["Emphasis on Speed 20:60:20"],

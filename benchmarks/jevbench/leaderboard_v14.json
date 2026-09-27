@@ -1,0 +1,166 @@
+{
+  "revision": "v1.4.2.1",
+  "protocol": "jevbench::v1.4",
+  "systems": [
+    {
+      "key": "plumb-4b",
+      "display": "Plumb-4B (crh225, JevK5 v0.2 + LoRA)",
+      "rank": 1,
+      "score": null,
+      "jevbench_score": 65.84344821613185,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 52.97892668438094,
+        "calibration": 75.48544394158392,
+        "speed": 93.49040479933188,
+        "cost": 55.76977914062651
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "decider-4b-v2",
+      "display": "decider-4b v2 (Mapika)",
+      "rank": 2,
+      "score": null,
+      "jevbench_score": 64.12889492043318,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 49.35289661364111,
+        "calibration": 74.99659054834055,
+        "speed": 92.93237918931897,
+        "cost": 60.92496476683517
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "jev-1.13.0",
+      "display": "Jev 1.13.0 (TypeSafe AI)",
+      "rank": 3,
+      "score": null,
+      "jevbench_score": 63.29205745601932,
+      "endpoint_kind": "api",
+      "axes": {
+        "intelligence": 53.05904597275748,
+        "calibration": 76.3389831504074,
+        "speed": 83.26811926100174,
+        "cost": 51.96616538951724
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "jevk5-v02",
+      "display": "JevK5 v0.2.0",
+      "rank": 4,
+      "score": null,
+      "jevbench_score": 62.04446598579722,
+      "endpoint_kind": "unknown",
+      "axes": {
+        "intelligence": 48.8938430961117,
+        "calibration": 74.53428390286419,
+        "speed": 91.09028776527087,
+        "cost": 59.517941238875515
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "cygnet",
+      "display": "Cygnet (blockbrain, frozen Gemma-4-12B-it)",
+      "rank": 5,
+      "score": null,
+      "jevbench_score": 61.76221691847706,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 49.51055476185943,
+        "calibration": 74.92580266255106,
+        "speed": 90.67084381968537,
+        "cost": 52.827265000089206
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "hopper",
+      "display": "Hopper",
+      "rank": 6,
+      "score": null,
+      "jevbench_score": 59.433442874809664,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 48.001323586436904,
+        "calibration": 79.05762339459613,
+        "speed": 86.80781551893452,
+        "cost": 58.728026855585874
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "djev",
+      "display": "djev (Maisa, diffusion-gemma)",
+      "rank": 9,
+      "score": null,
+      "jevbench_score": 52.228492110723586,
+      "endpoint_kind": "api",
+      "axes": {
+        "intelligence": 46.99529771527977,
+        "calibration": 55.355844103478105,
+        "speed": 91.35677310946093,
+        "cost": 57.57524920597589
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "openjev-razorback16",
+      "display": "OpenJev (DiffusionGemma 26B-A4B NVFP4, razorback16)",
+      "rank": 28,
+      "score": null,
+      "jevbench_score": 36.85070900932601,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 45.43523560052183,
+        "calibration": 54.993853529501855,
+        "speed": 83.1778984786352,
+        "cost": 45.49198106171689
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "djev-thinking",
+      "display": "djev (thinking)",
+      "rank": 67,
+      "score": null,
+      "jevbench_score": 15.201198018956955,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 71.62068248893371,
+        "calibration": 87.77774635807619,
+        "speed": 75.15117536916611,
+        "cost": 26.85351129959409
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    },
+    {
+      "key": "openjev-thinking",
+      "display": "OpenJev (thinking, BF16)",
+      "rank": 69,
+      "score": null,
+      "jevbench_score": 14.829064005607973,
+      "endpoint_kind": "gpu",
+      "axes": {
+        "intelligence": 58.08310902947819,
+        "calibration": 58.097048339645674,
+        "speed": 76.05530411890852,
+        "cost": 27.82225297231227
+      },
+      "public_acc": null,
+      "sealed_acc": null
+    }
+  ]
+}
