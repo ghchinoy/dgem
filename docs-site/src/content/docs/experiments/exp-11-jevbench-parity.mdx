@@ -121,9 +121,17 @@ flowchart LR
 1. **Unified 231-Task Dataset (`benchmarks/jevbench/jevbench_public.jsonl`)**:
    - Contains all **231 MIT-licensed public tasks** (`48` `easy`, `72` `standard`, `111` `hard`) normalized into a single canonical JSONL schema with explicit `tier`, `family` (18 families), `topic` (7 subject topics joined from `datasets/topics.json`), `group` (36 paraphrase consistency pairs), and `provenance.gold_probs` (for the 10 `probability` soft-label items).
 2. **Cryptographic Lockfile (`benchmarks/jevbench/manifest.lock.json`)**:
-   - Records the exact upstream commit SHA (`51a8d73fa79d292d07958b38477f5ce744353de3`), protocol version (`JevBench v1.3.1`), sync timestamp, per-split item counts, and SHA-256 digests (`easy`: `231df3c2c8e8...`, `original`: `5c2414edb300...`, `hard`: `89e9e6becb33...`).
-3. **Reference & Cascade Receipts (`benchmarks/jevbench/results_djev_*.json`)**:
+   - Records the exact upstream commit SHA (`1df665e3956d7aab7fa0208ff6c4f2d8557f9f90` pinned to `v1.4.2`), protocol version (`JevBench v1.4`), sync timestamp, per-split item counts, and SHA-256 digests (`easy`: `231df3c2c8e8...`, `original`: `5c2414edb300...`, `hard`: `89e9e6becb33...`).
+3. **Official Leaderboard Snapshot (`benchmarks/jevbench/leaderboard_v14.json`)**:
+   - Pinned snapshot of upstream `results/v1.4.2.1/jevbench-v1.4.2.1-results.json` enabling offline comparison against `#1 Plumb-4B` (`65.84`), `#2 decider-4b v2` (`64.13`), `#3 Jev 1.13.0` (`63.29`), `#9 djev` (`52.23`), and `#28 OpenJev` (`36.85`).
+4. **Reference & Cascade Receipts (`benchmarks/jevbench/results_djev_*.json`)**:
    - Enables instant `<50 ms` offline metric replay, temperature scaling, and threshold sweeps without requiring a live Cloud GPU.
+
+### 3.2 JevBench v1.4 Scoring & Official Leaderboard Comparison
+Upstream JevBench v1.4 introduced an updated evaluation methodology:
+1. **Harmonic Mean Composite ($p = -1$)**: Replaces geometric mean with an equal-weight harmonic mean of the 4 axes, enforcing three independent quadratic gates $(x / 50)^2$ whenever `Intelligence`, `Speed`, or `Cost` drops below `50.0`.
+2. **308 Private Sealed Decisions**: Upstream added 308 held-out sealed items evaluated directly by the benchmark maintainer. Evaluated runs without access to sealed items report a **public-only v1.4 estimate** (or pass `--sealed-acc <float>`).
+3. **Endpoint Latency Load Adjustment**: Upstream applies a `2.0× (+0.15 s)` adjustment for self-hosted GPU/CPU endpoints (`--endpoint-kind gpu`, default) to simulate production concurrency.
 
 ---
 
@@ -137,15 +145,23 @@ flowchart LR
 ./bin/dgem bench-calibration --from-receipt benchmarks/results_calibration_cascade_normalized.json --auto-temperature
 
 # 3. Check if local benchmarks/jevbench/manifest.lock.json is in sync with upstream fstandhartinger/jevbench
-./bin/dgem bench-jev --check-upstream
+./bin/dgem bench-jev --check-upstream --ref v1.4.2
 
-# 4. Sync & SHA-256 verify all 231 MIT-licensed JevBench tasks and upstream djev reference receipt
-./bin/dgem bench-jev --sync
+# 4. Sync & SHA-256 verify all 231 MIT-licensed JevBench tasks against upstream release v1.4.2
+./bin/dgem bench-jev --sync --ref v1.4.2
 
-# 5. Sweep Normalized Entropy Gate Thresholds [0.40..0.75] on JevBench
+# 5. Replay Vertex G4 receipt with JevBench v1.4 Harmonic Scoring and Leaderboard Comparison
+./bin/dgem bench-jev --from-receipt benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r1.json \
+  --endpoint-kind gpu --compare-leaderboard
+
+# 6. Replay local Apple M5 Metal receipt with Leaderboard Comparison
+./bin/dgem bench-jev --from-receipt scratch/runs/20260926-local-m5/bench_jev.json \
+  --endpoint-kind gpu --compare-leaderboard
+
+# 7. Sweep Normalized Entropy Gate Thresholds [0.40..0.75] on JevBench
 ./bin/dgem bench-jev --cascade-from benchmarks/jevbench/results_djev_upstream_ref.json --sweep-thresholds
 
-# 6. Run Phase 2B Entropy-Gated Escalation Cascade on JevBench (H_norm >= 0.50 -> 92.2% raw, 90.05 Intelligence, 90.66 Calibration)
+# 8. Run Phase 2B Entropy-Gated Escalation Cascade on JevBench (H_norm >= 0.50 -> 92.2% raw, 90.05 Intelligence, 90.66 Calibration)
 ./bin/dgem bench-jev --cascade-from benchmarks/jevbench/results_djev_upstream_ref.json \
   --vertex-model gemini-3.8-flash --cascade-threshold 0.50 --auto-temperature -w 12 \
   -o benchmarks/jevbench/results_djev_cascade_h50.json

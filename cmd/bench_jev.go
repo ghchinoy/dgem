@@ -52,10 +52,14 @@ var (
 	jevMultiSlotEvidence bool
 	jevNullPriorDebias   bool
 	jevDualMirror        bool
-	jevSlotID            string
-	jevPriorAlpha        float64
-	jevOutput            string
-	jevJSON              bool
+	jevSlotID             string
+	jevPriorAlpha         float64
+	jevScoringMode        string
+	jevEndpointKind       string
+	jevSealedAcc          float64
+	jevCompareLeaderboard bool
+	jevOutput             string
+	jevJSON               bool
 )
 
 var benchJevCmd = &cobra.Command{
@@ -117,6 +121,10 @@ func init() {
 	benchJevCmd.Flags().BoolVar(&jevMultiSlotEvidence, "multi-slot-evidence", false, "Co-allocate a companion 'evidence_focus' slot on the diffusion canvas in the same forward pass")
 	benchJevCmd.Flags().BoolVar(&jevNullPriorDebias, "null-prior-debias", false, "IDC: divide out the content-free positional ('A') prior before scoring")
 	benchJevCmd.Flags().StringVar(&jevSlotID, "slot-id", "decision", "Question id used for the decision slot (PROP-16: slot names are visible to the model)")
+	benchJevCmd.Flags().StringVar(&jevScoringMode, "scoring", "both", "JevBench scoring standard to evaluate: 'v1.3.1' (geomean), 'v1.4' (harmonic + 3 gates), or 'both' (default)")
+	benchJevCmd.Flags().StringVar(&jevEndpointKind, "endpoint-kind", "gpu", "Deployment kind for official latency load adjustment: 'gpu' (self-hosted x2+0.15s, default), 'api' (production API 1x), or 'cpu'")
+	benchJevCmd.Flags().Float64Var(&jevSealedAcc, "sealed-acc", 0.0, "Optional accuracy on the 308 private sealed JevBench items (0.0 = public-only estimate)")
+	benchJevCmd.Flags().BoolVar(&jevCompareLeaderboard, "compare-leaderboard", false, "Compare evaluated system against published official JevBench v1.4.2.1 leaderboard rows")
 	benchJevCmd.Flags().BoolVar(&jevDualMirror, "dual-mirror", false, "IDC: add a reversed-order mirror slot on the same canvas and record Mirror TVD")
 	benchJevCmd.Flags().Float64Var(&jevPriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for null-prior de-biasing")
 	benchJevCmd.Flags().BoolVar(&permutation.MirrorAliasNames, "mirror-alias-names", true, "Dual-mirror: rename reversed options item_1..item_K (default) instead of keeping real option names")
@@ -1233,7 +1241,7 @@ func buildJevReportWithCascade(rawCases []JevCaseResult, source, targetURL, targ
 		}
 		usdOverride = 0.0260 + escFrac*stage2Tariff
 	}
-	jevParity, scaledCal := buildJevParitySummary(calInput, activeTemp, targetModel, cascade, usdOverride)
+	jevParity, scaledCal := buildJevParitySummaryWithKind(calInput, activeTemp, targetModel, cascade, usdOverride, jevEndpointKind, jevSealedAcc)
 	jevParity.OptimalTemperature = findOptimalJevTemperature(rawCases)
 
 	// Recompute exact GoldProbs TVD when present on probability family items
@@ -1278,6 +1286,12 @@ func buildJevReportWithCascade(rawCases []JevCaseResult, source, targetURL, targ
 			jevParity.IntelligenceScore,
 			jevParity.CalibrationScore,
 			jevParity.SpeedScore,
+			jevParity.CostScore,
+		)
+		jevParity.V14CompositeScore = computeJevV14CompositeScore(
+			jevParity.V14IntelligenceScore,
+			jevParity.CalibrationScore,
+			jevParity.AdjustedSpeedScore,
 			jevParity.CostScore,
 		)
 	}
@@ -1423,9 +1437,107 @@ func printJevReportSummary(report JevReport, outPath string) {
 		JevParity:          report.JevParity,
 	})
 
+	if jevCompareLeaderboard && report.JevParity != nil {
+		printJevLeaderboardComparison(report.JevParity, report.TargetModel)
+	}
+
 	if outPath != "" {
 		fmt.Printf("\n  Saved JevBench report to: %s\n\n", styleID.Render(outPath))
 	}
+}
+
+// LeaderboardSystem represents an entry from benchmarks/jevbench/leaderboard_v14.json.
+type LeaderboardSystem struct {
+	Key           string             `json:"key"`
+	Display       string             `json:"display"`
+	Rank          int                `json:"rank"`
+	Score         *float64           `json:"score"`
+	JevbenchScore float64            `json:"jevbench_score"`
+	EndpointKind  string             `json:"endpoint_kind"`
+	Axes          map[string]float64 `json:"axes"`
+	PublicAcc     *float64           `json:"public_acc"`
+	SealedAcc     *float64           `json:"sealed_acc"`
+}
+
+type LeaderboardFile struct {
+	Revision string              `json:"revision"`
+	Protocol string              `json:"protocol"`
+	Systems  []LeaderboardSystem `json:"systems"`
+}
+
+func printJevLeaderboardComparison(jp *JevParitySummary, targetModel string) {
+	if jp == nil {
+		return
+	}
+	candidatePaths := []string{
+		"benchmarks/jevbench/leaderboard_v14.json",
+		"../benchmarks/jevbench/leaderboard_v14.json",
+	}
+	var lb LeaderboardFile
+	found := false
+	for _, p := range candidatePaths {
+		if b, err := os.ReadFile(p); err == nil {
+			if json.Unmarshal(b, &lb) == nil && len(lb.Systems) > 0 {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		return
+	}
+
+	fmt.Println()
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
+	fmt.Printf(styleAccent.Render("  Table 6: JevBench %s (%s) Official Leaderboard Comparison\n"), lb.Revision, lb.Protocol)
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
+	fmt.Printf("  %-4s  %-36s %7s   %6s   %6s   %6s   %6s   %-10s\n",
+		"RANK", "SYSTEM", "SCORE", "INTEL", "CALIB", "SPEED", "COST", "ENDPOINT")
+	fmt.Println(styleMuted.Render("  --------------------------------------------------------------------------------------------------------"))
+
+	for _, s := range lb.Systems {
+		rankStr := fmt.Sprintf("%4d", s.Rank)
+		scoreStr := fmt.Sprintf("%6.2f", s.JevbenchScore)
+		iStr := fmt.Sprintf("%5.1f", s.Axes["intelligence"])
+		cStr := fmt.Sprintf("%5.1f", s.Axes["calibration"])
+		sStr := fmt.Sprintf("%5.1f", s.Axes["speed"])
+		costStr := fmt.Sprintf("%5.1f", s.Axes["cost"])
+
+		nameStr := s.Display
+		if len(nameStr) > 36 {
+			nameStr = nameStr[:33] + "..."
+		}
+		if s.Key == "djev" || s.Key == "openjev-razorback16" {
+			nameStr = stylePass.Render(nameStr)
+		}
+		fmt.Printf("  %4s  %-36s %7s   %6s   %6s   %6s   %6s   %-10s\n",
+			rankStr, nameStr, scoreStr, iStr, cStr, sStr, costStr, s.EndpointKind)
+	}
+
+	fmt.Println(styleMuted.Render("  --------------------------------------------------------------------------------------------------------"))
+	modelLabel := targetModel
+	if modelLabel == "" {
+		modelLabel = "dgem-evaluated-system"
+	}
+	if len(modelLabel) > 30 {
+		modelLabel = modelLabel[:27] + "..."
+	}
+	thisRunLabel := fmt.Sprintf("THIS RUN (%s)", modelLabel)
+	v14Score := fmt.Sprintf("%6.2f*", jp.V14CompositeScore)
+	intelStr := fmt.Sprintf("%5.1f*", jp.V14IntelligenceScore)
+	if !jp.V14PublicOnlyEstimate {
+		v14Score = fmt.Sprintf("%6.2f", jp.V14CompositeScore)
+		intelStr = fmt.Sprintf("%5.1f", jp.V14IntelligenceScore)
+	}
+	fmt.Printf("  %4s  %-36s %7s   %6s   %6.1f   %6.1f   %6.1f   %-10s\n",
+		"---", styleAccent.Render(thisRunLabel), stylePass.Render(v14Score),
+		intelStr, jp.CalibrationScore, jp.AdjustedSpeedScore, jp.CostScore, jp.EndpointKind)
+	fmt.Println(styleMuted.Render("  --------------------------------------------------------------------------------------------------------"))
+	if jp.V14PublicOnlyEstimate {
+		fmt.Println(styleMuted.Render("  * Note: THIS RUN score is a public-only v1.4 estimate (308 sealed items are held privately upstream)."))
+		fmt.Println(styleMuted.Render("    djev (#9, Maisa) and openjev-razorback16 (#28, NVFP4) serve as official DiffusionGemma benchmarks."))
+	}
+	fmt.Println(styleAccent.Render("=========================================================================================================="))
 }
 
 func printJevThresholdSweep(cases []JevCaseResult) {
