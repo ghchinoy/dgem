@@ -6,7 +6,7 @@ description: Complete reference for dgem serve (Decision Studio & HTTP Gateway A
 `dgem` is the command-line companion, **Lit WebComponents Decision Studio (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp`)**, **HTTP Gateway REST API**, declarative policy engine (`Policy-as-Template`), and benchmark harness for **DiffusionGemma (`dgemma`, 26B-A4B MoE)** across **Local Apple Silicon Metal (`diffgemma`)**, **Serverless Cloud Run GPU (`dgemma`, `1× NVIDIA L4` & `1× NVIDIA RTX Pro 6000`)**, and **Cloud GPU vLLM (`GCE L4 / A100`)**.
 
 > [!TIP]
-> For a dedicated guide to the **Decision Studio Web App (`http://localhost:8080/`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `POST /mcp`)**, and **HTTP Gateway REST API (`POST /api/decide/{template}`)**, see **[Decision Studio Web App, MCP Server & HTTP Gateway API](/dgem/studio-mcp-api/)**.
+> For a dedicated guide to the **Decision Studio Web App (`http://localhost:8090/`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `POST /mcp`)**, and **HTTP Gateway REST API (`POST /api/decide/{template}`)**, see **[Decision Studio Web App, MCP Server & HTTP Gateway API (`studio-mcp-api.md`)](/dgem/studio-mcp-api/)**.
 
 It enables:
 1. **Decision Studio Web App & HTTP Gateway API (`dgem serve`)**: Launches an interactive browser playground (with 26+ `.json.tmpl` presets, `SigLIP` bounding-box SVG overlays, scale-to-zero GPU warmup, and OpenTelemetry trace waterfalls) alongside `POST /api/decide/{template}` and `POST /mcp`.
@@ -14,6 +14,28 @@ It enables:
 3. **Discrete Diffusion Slot Readout (`dgem decide`)**: Schema-governed multi-slot classification (`boolean`, `choice [A–Z]`, `score`) and **Conditional Policy DAGs (`depends_on` / `ask_if`)** executed in $O(1)$ forward passes (~458–712 ms on Cloud Run L4; ~880 ms on Apple Silicon M-series).
 4. **6 Reproducible Benchmark Harnesses (`dgem bench-*`)**: `bench` (`EXP-01`), `bench-ecotone` (`EXP-02`), `bench-intents` (`EXP-03`), `bench-calibration` (`EXP-04` / `EXP-05`), `bench-bbox` (`EXP-09` `SigLIP` spatial localization), and `bench-rerank` (`EXP-10` listwise diffusion canvas reranking).
 5. **Generative Prompt Execution (`dgem ask`) & Template Management (`dgem template`)**: Natural-language prompting with `<|think|>` control and local `.json.tmpl` policy rendering.
+
+---
+
+## Table of Contents
+
+1. [Configuration & Environment](#1-configuration--environment)
+2. [Command Reference](#2-command-reference)
+   - [`dgem serve` (Decision Studio & HTTP Gateway API)](/dgem/studio-mcp-api/)
+   - [`dgem mcp` (Model Context Protocol Server)](/dgem/studio-mcp-api/#3-model-context-protocol-mcp-server-dgem-mcp--post-mcp)
+   - [`dgem decide`](#dgem-decide)
+   - [`dgem bench-calibration`](#dgem-bench-calibration)
+   - [`dgem bench-rerank` (`EXP-10`)](/dgem/experiments/exp-10-listwise-diffusion-reranking/)
+   - [`dgem bench-bbox` (`EXP-09`)](/dgem/templates/#7-multimodal-spatial-grounding--detr-object-queries-exp-09)
+   - [`dgem bench`](#dgem-bench)
+   - [`dgem bench-intents`](#dgem-bench-intents)
+   - [`dgem bench-ecotone`](#dgem-bench-ecotone)
+   - [`dgem ask`](#dgem-ask)
+   - [`dgem template`](#dgem-template)
+3. [Understanding Decision Primitives & Conditional DAGs](#3-understanding-decision-primitives--conditional-dags)
+4. [Interpreting `--stats` & Normalized Entropy Telemetry](#4-interpreting---stats--normalized-entropy-telemetry)
+5. [Authoring Policy-as-Template Files (`.json.tmpl`)](#5-authoring-policy-as-template-files-jsontmpl)
+6. [Scripting & CI Integration](#6-scripting--ci-integration)
 
 ---
 
@@ -84,12 +106,6 @@ dgem serve [flags]
 * `POST /mcp`: Stateless Streamable HTTP Model Context Protocol endpoint. Specifically, the MCP inference tools (`decide_policy`, `decide_custom_questions`, `locate_bounding_boxes`) accept:
   - `backend`: `"vertex_first"` (default) | `"vertex"` | `"cloudrun"`
   - `vertex_url`: Optional Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override
-* `POST /api/decide` & `POST /api/decide/{template}`: Evaluates a named or inline `.json.tmpl` policy. Supports `X-DGem-Backend: vertex_first | vertex | cloudrun`, `?backend=...`, or JSON `"backend": "..."`, plus Stage 2 Gemini Cascade parameters (`"cascade_mode": "off" | "entropy" | "on_miss"`, `"cascade_threshold": 0.35`, `"cascade_model": "gemini-3.8-flash"`). Returns `X-DGem-Backend-Used: vertex | cloudrun`.
-* `POST /v1/systemone`: Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation) supporting both `application/json` and `multipart/form-data` (image + JSON `state`/`questions`). Honors `X-DGem-Backend` / `?backend=vertex_first|vertex|cloudrun` and returns `X-DGem-Backend-Used`.
-* `POST /v1/chat/completions` & `POST /v1/raw/chat/completions`: OpenAI-compatible structured envelope and raw vLLM pass-through proxies with `vertex_first` auto-failover.
-* `POST /mcp`: Stateless Streamable HTTP Model Context Protocol endpoint. Specifically, the MCP inference tools (`decide_policy`, `decide_custom_questions`, `locate_bounding_boxes`) accept:
-  - `backend`: `"vertex_first"` (default) | `"vertex"` | `"cloudrun"`
-  - `vertex_url`: Optional Vertex AI Dedicated Endpoint ID (`"<endpoint-id>"`) or `/invoke/v1` URL override
   - `cascade_mode`: `"off"` (default) | `"entropy"` | `"on_miss"`
   - `cascade_threshold`: `0.35` (default Shannon entropy $H$ threshold in nats)
   - `cascade_model`: `"gemini-3.8-flash"` (default), `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`

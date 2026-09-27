@@ -147,81 +147,26 @@ For interactive datasets (**10 to 250 rows**), you can build your template, uplo
 
 ---
 
-## Choosing an Inference Backend Target & Recommended Configuration (`vertex_first` vs. `vertex` vs. `cloudrun`)
+## Choosing a Backend & Enabling the Stage 2 Cascade
 
-`dgem` and `dgemma-gateway` (`https://<your-dgem-gateway>`) support routing any policy template or batch experiment across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**.
+Every surface (Studio, `/api/decide`, MCP, CLI) accepts the same backend selector and cascade parameters. The full reference — backend decision matrix, per-surface examples, and cascade parameters — lives in **[Backend Routing & Cascades](experiment-authoring-guide.md)**. The short version for dataset runs:
 
-### Backend Target Decision Matrix
-
-| Backend Mode (`backend` / `X-DGem-Backend`) | Target Infrastructure | Cold-Start / Wakeup | Warm GPU Denoise / Wall Time | Cost Profile | When to Choose |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`vertex_first`** *(Recommended Default — High-Availability Hybrid)* | Primary: **Vertex AI Dedicated Endpoint (`<endpoint-id>`, `g4-standard-48` `1× NVIDIA RTX PRO 6000`, `180 GB` RAM)**<br/>Auto-Failover: **Serverless Cloud Run GPU (`dgemma`)** | **`0.0 s`** when Vertex replica is active (`auto-failover` if updating or scaled to zero) | **`57.5 ms` single-read denoise** (`143 ms` wall, p50; `97.9 ms` at `N=4`) | Billed per replica-hour while provisioned; `$0.00/hr` Cloud Run standby | **Default for all interactive Web Studio sessions, MCP agents, and production APIs.** Guarantees `0.0 s` wakeup with automatic failover resilience if Vertex is ever updating or undeployed. |
-| **`vertex`** *(Strict Production SLA / Zero-Downtime Priority)* | **Vertex AI Dedicated Endpoint (`<endpoint-id>`, `/invoke/v1/*`)** (`g4-standard-48`, `1× NVIDIA RTX PRO 6000`, `180 GB` RAM) | **`0.0 s`** (`minReplicaCount >= 1`, permanently warm) | **`57.5 ms` single-read denoise** (`143 ms` wall, p50) | Billed per replica-hour until undeployed via `make vertex-teardown` | **Production pipelines, synchronous CI/CD gates, interactive agents, and shared internal platform services** where zero cold-start latency (`0.0 s`) and `180 GB` host RAM headroom (for multimodal `SigLIP` workloads) take priority over idle GPU reservation cost. |
-| **`cloudrun`** *(Strict Scale-to-Zero / Cost-Sensitive & Ad-Hoc Batch)* | **Serverless Cloud Run GPU (`dgemma`)** (`1× NVIDIA RTX Pro 6000` `48GB` or `1× NVIDIA L4` `24GB`, `min-instances=0`) | **`6–8 min`** first-request cold start from `0 → 1` (`0.0 s` while warm) | **`~427 ms` GPU denoise** (`~459 ms` wall time once warm) | **`$0.00/hr` when idle** (`min-instances=0`); billed per-second only during active bursts | **Episodic batch jobs, research experiments, and dev/test sandboxes** where **`$0.00/hr` idle cost** is the primary requirement and a `6–8 minute` first-request cold start is acceptable. |
-
-### Selecting the Backend Across All 4 Surfaces
-
-1. **Web Studio (`https://<your-dgem-gateway>`)**:
-   - Use the topbar **Backend Target** selector to switch between **`Vertex First (Auto)`**, **`Cloud Run GPU (Strict)`**, and **`Vertex AI Strict (/invoke/*)`**.
-   - You can also inspect live Vertex AI replica health (`<endpoint-id>`) and trigger 1-click **Provision Vertex GPU (G4)** or **Teardown Replica (`$0/hr`)**.
-2. **HTTP Gateway API (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)**:
-   - Pass the HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun`, the query parameter `?backend=vertex_first`, or the JSON request field `"backend": "vertex_first"`.
-   - Every response includes the `X-DGem-Backend-Used: vertex | cloudrun` response header and `"backend_used"` telemetry field confirming which GPU tier served the decision.
-3. **MCP Server (`https://<your-dgem-gateway>/mcp` or `dgem mcp`)**:
-   - Pass `"backend": "vertex_first" | "vertex" | "cloudrun"` (and an optional custom `"vertex_url"`) in the tool arguments for **`decide_policy`**, **`decide_custom_questions`**, and **`locate_bounding_boxes`**.
-4. **CLI (`dgem`)**:
-   - Pass `--vertex-url <endpoint-id> --gcp-auth` (or set `DGEM_VERTEX_URL=<endpoint-id>`) to route directly to the Vertex AI Dedicated Endpoint `/invoke/v1` route (or `-u https://<your-dgem-gateway>/v1 --gcp-auth` to route via the gateway).
-
----
-
-## Configuring the Stage 2 Gemini Cascade (`gemini-3.8-flash` Default)
-
-When a single-pass Stage 1 `DiffusionGemma` decision exhibits high epistemic uncertainty (Shannon entropy $H \ge 0.35\text{ nats}$) or misses an expected ground-truth label during batch evaluation, `dgem` can automatically escalate that item to a **Stage 2 Gemini Cascade** (`EXP-05`).
-
-> [!IMPORTANT]
-> **Supported Stage 2 Gemini Models**: Always use **`gemini-3.8-flash`** (default), **`gemini-3.7-flash`**, or **`gemini-3.5-flash-lite`** via standard Vertex AI `generateContent` endpoints. Never use legacy Gemini 2.x models.
-
-| Parameter | Allowed Values / Default | Description |
-| :--- | :--- | :--- |
-| **`cascade_mode`** | `"off"` (default) \| `"entropy"` \| `"on_miss"` | **`"off"`**: Stage 1 `dgemma` only.<br/>**`"entropy"`**: Production escalation gate — early-exits low-entropy decisions at Stage 1 ($H < \tau$, ~72% of traffic in `~536 ms`) and escalates only uncertain items ($H \ge \tau$) to Stage 2 Gemini.<br/>**`"on_miss"`**: Evaluation-time diagnostic cascade — escalates any row where Stage 1 disagrees with the dataset's `expected` label to verify whether Stage 2 resolves the error. |
-| **`cascade_threshold`** | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ for `"entropy"` mode (`0.35` nats raw, or `0.16` when using cardinality-normalized entropy $\tilde{H} = H / \ln|\mathcal{V}_m|$). |
-| **`cascade_model`** | `"gemini-3.8-flash"` *(default)* | Target Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
-
-### Example: Enabling `vertex_first` + Stage 2 `gemini-3.8-flash` Cascade via `/api/decide` and MCP
+* **Backend**: `vertex_first` (default: warm Vertex AI endpoint, Cloud Run fallback), `vertex`, `cloudrun`, or `local`. Pass it as the `X-DGem-Backend` header, `?backend=`, the JSON field `"backend"`, or the MCP `backend` argument. Only backends the server has configured are listed by `GET /api/backend-config`.
+* **Cascade**: set `"cascade_mode": "entropy"` to send only high-uncertainty items ($H \ge$ `cascade_threshold`, default `0.35` nats) to `cascade_model` (default `gemini-3.8-flash`). Use `"on_miss"` during batch evaluation to escalate rows that disagree with the dataset's `expected` label.
 
 ```bash
-# HTTP Gateway API (/api/decide/{template}) with vertex_first & Stage 2 Entropy Cascade:
 curl -sS "https://<your-dgem-gateway>/api/decide/calibration/nli_calibration" \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
-  -H "X-DGem-Backend: vertex_first" \
   -d '{
     "backend": "vertex_first",
     "cascade_mode": "entropy",
     "cascade_threshold": 0.35,
-    "cascade_model": "gemini-3.8-flash",
     "variables": {
       "premise": "All four quarterly regional budgets reached between 50% and 75% of the cap.",
       "hypothesis": "Every regional budget met the full annual cap."
     }
   }' | jq '{answers, backend_used, cascade}'
-```
-
-```json
-{
-  "name": "decide_policy",
-  "arguments": {
-    "template": "calibration/nli_calibration",
-    "backend": "vertex_first",
-    "cascade_mode": "entropy",
-    "cascade_threshold": 0.35,
-    "cascade_model": "gemini-3.8-flash",
-    "variables": {
-      "premise": "All four quarterly regional budgets reached between 50% and 75% of the cap.",
-      "hypothesis": "Every regional budget met the full annual cap."
-    }
-  }
-}
 ```
 
 ---

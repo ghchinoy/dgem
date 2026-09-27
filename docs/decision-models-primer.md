@@ -1,12 +1,10 @@
 # The Journey to Decision Models
 
-For decades, software engineers and product teams had to choose between two extremes when building classification and decision systems: **fast, rigid classical models** (like Naive Bayes, Logistic Regression, DeBERTa encoders, and Finite-State Transducers) or **slow, expensive autoregressive Large Language Models** (like GPT-4 and Gemini).
-
 For decades, software engineers and product teams had to choose between two extremes when building classification and decision systems: **fast, rigid classical models** (like Naive Bayes, Logistic Regression, and BERT) or **slow, expensive autoregressive Large Language Models** (like GPT-4 and Gemini).
 
 **DiffusionGemma** introduces a third paradigm: **Discrete Diffusion Decision Models**.
 
-> ✨ **Interactive Walkthrough**: New to decision models? [**Open the plain-language walkthrough ➔**](https://ghchinoy.github.io/dgem/visualizer.html): what a decision model is, one pass vs. word-by-word, when to trust an answer (hesitation), and built-in guardrails. The full version, with a live IDC order-check demo and a glossary, is the **Concepts** tab in Decision Studio (`./bin/dgem serve --port 8090`).
+> ✨ **Interactive Walkthrough**: New to decision models? [**Open the plain-language walkthrough ➔**](https://ghchinoy.github.io/dgem/visualizer.html): what a decision model is, one pass vs. word-by-word, when to trust an answer (hesitation), and built-in guardrails. The full version, with a live IDC order-check demo and a glossary, is the **Concepts** tab in Decision Studio (`./bin/dgem serve`).
 
 ---
 
@@ -35,7 +33,7 @@ flowchart TD
 ```
 
 * **When the signal is clear (`H < 0.35 nats`)**: `DiffusionGemma` is 98%+ confident. The request takes the **Green Fast Lane** (`72%` of traffic), finishing in sub-second latency at a fraction of LLM cost.
-* **When the request contains conflicting signals (`H ≥ 0.35 nats`)**: `DiffusionGemma` detects its own internal tug-of-war (`75.5% Technical` vs. `23.2% Billing`) and raises an **Amber Flag (`0.56 nats`)**. Your application automatically routes **only that ambiguous 28% slice** to a frontier model (or human reviewer)—passing along `DiffusionGemma`'s exact odds (`75% vs 23%`) as a diagnostic clue, lifting overall accuracy on the 50-item calibration suite from 88% to **94.0%**. A size-normalized variant ($\tilde{H} \ge 0.16$, threshold tuned on the same 50 items) reaches **98.0%** while escalating 34% (`EXP-05`).
+* **When the request contains conflicting signals (`H ≥ 0.35 nats`)**: `DiffusionGemma` detects its own internal tug-of-war (`75.5% Technical` vs. `23.2% Billing`) and raises an **Amber Flag (`0.56 nats`)**. Your application automatically routes **only that ambiguous 28% slice** to a frontier model (or human reviewer)—passing along `DiffusionGemma`'s exact odds (`75% vs 23%`) as a diagnostic clue, lifting overall accuracy on the 50-item calibration suite from 88% to **94.0%**. A size-normalized variant ($\tilde{H} \ge 0.16$, threshold tuned on the same 50 items) reaches **98.0%** while escalating 34% ([`EXP-05`](experiments/exp-05-roadmap-cascades-and-dags.md)).
 
 ---
 
@@ -53,7 +51,7 @@ Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Se
 * **Mechanism**: Treat text as an unordered Bag-of-Words (BoW) matrix, static linear classification head, or pooled dense embedding vector $u \in \mathbb{R}^d$:
   $$P(C \mid w_1, \dots, w_n) \propto P(C) \prod_{i=1}^n P(w_i \mid C)$$
 * **Strength**: Microsecond to 45 ms inference, minimal memory footprints, and fixed output schemas.
-* **Fatal Flaw**: **Zero-Shot Rigidity, Late-Pooling Loss & Independent Heads**. Classical statistical ML cannot model word order or negation (*"This is NOT an outage"*). Fine-tuned encoder classifiers understand context, but every policy change (adding a 4th severity level or a new department) requires curating thousands of labeled examples, retraining weights, and redeploying model binaries. Furthermore, evaluating 3 questions requires 3 separate classification heads that cannot attend to each other's predictions.
+* **Fatal Flaw**: **Zero-Shot Rigidity, Late-Pooling Loss & Independent Heads**. Classical statistical ML cannot model word order, grammatical modifiers, or negation. Fine-tuned encoder heads understand context but require dataset relabeling and weight retraining whenever policies change—and evaluating 3 questions requires 3 separate classification heads that cannot attend to each other.
 
 <details class="term-aside">
 <summary>💡 <strong>Concept Aside: What about pairing a <code>GTR</code> Dual-Encoder with a Zero-Shot Tabular FM (<code>TabPFN</code> / <code>TabFM</code>)?</strong> <em>(click to expand)</em></summary>
@@ -68,20 +66,37 @@ Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Se
 
 ### Era 2: Classical Symbolic NLP & Automata (1990s–Present)
 * **Core Algorithms**: Regular Grammars, Hidden Markov Models (HMMs), Weighted Finite-State Transducers (WFSTs like OpenFst, Google Sparrowhawk, NVIDIA NeMo).
+* **Mechanism**: Model sequential transitions using regular languages (Chomsky Type-3) and shortest-path algorithms over tropical semirings:
+  $$\text{ShortestPath}(T \circ \text{Input} \circ V)$$
 * **Strength**: Extremely fast (1–8 ms in C++), deterministic, zero hallucinations, and mathematically verifiable.
 * **Fatal Flaw**: **Local context horizon (1–3 token sliding window)**. WFSTs cannot build full-sentence dependency parse trees. As language complexity increases, grammar rulebooks explode into combinatorial conflicts (e.g., tuning a title rule for *"Dr. Smith"* causes street thoroughfares like *"Ocean Dr."* to expand to *"Ocean doctor"*).
 
 ### Era 3: Autoregressive Generative AI (2018–Present)
 * **Core Algorithms**: Causal Transformer Decoders (GPT-4, Gemini, LLaMA, Claude).
+* **Mechanism**: Autoregressive sequence generation. Starting from the prompt, the model serially predicts token $t+1$ conditioned exclusively on preceding tokens $t_1 \dots t$:
+  $$P(w_1, \dots, w_T) = \prod_{t=1}^T P(w_t \mid w_{<t})$$
 * **Strength**: Deep semantic reasoning, world knowledge, and zero-shot instruction following.
 * **Fatal Flaws for Structured Decisions**:
-  1. **The Sequential Token Tax**: To output a single word like `"billing"`, the model must serially generate thought rationales, markdown tags, or JSON formatting loops, consuming **2,000–17,500 ms** per request.
+  1. **The Sequential Token Tax**: To output a single word like `"billing"`, the model must serially generate thought rationales, markdown tags, or JSON formatting loops, consuming **2,000–15,000 ms** per request.
   2. **Formatting & Syntax Drift**: Autoregressive models can emit invalid JSON, wrap responses in conversational filler, or succumb to prompt injections.
   3. **Strict Causal Masking**: Tokens generated early cannot attend to tokens that appear later in the sequence.
 
 ---
 
-## 2. How Discrete Diffusion Decision Models Work
+## 2. The Four Dilemmas of Decision Engineering
+
+When deploying mission-critical systems (such as high-volume customer triage, automated trading, brand safety gating, or real-time speech synthesis), teams encounter four architectural dilemmas:
+
+| Decision Architecture Dilemma | Classical Statistical ML (Naive Bayes / SVM) | Symbolic Automata (WFSTs) | Autoregressive LLMs (GPT / Gemini) | Discrete Diffusion Decision Models (`dgem`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. The Context Horizon Dilemma** | **Zero context** (Bag-of-Words). Fails on negation. | **Local window (1–3 tokens)**. Fails on semiotic polysemy. | **Full sequence (unidirectional)**. Deep reasoning. | **Full sequence (bidirectional)**. Deep syntax + slot cross-attention. |
+| **2. The Latency & Compute Tax** | **Microseconds** (&lt; 1 ms on CPU). | **Single-digit ms** (1–5 ms on CPU). | **Multi-second** (2,000–15,000 ms sequential loop). | **Sub-second** (750–1,100 ms single forward pass). |
+| **3. The Syntactic Guarantee** | Categorical output guaranteed. | Regular grammar output guaranteed. | **Probabilistic formatting**. Can hallucinate or drift. | **100% Schema-Guaranteed**. Readout directly into pre-allocated slots. |
+| **4. Uncertainty Calibration** | **Overconfident** ($0.9999$ or $0.0001$). Unusable. | Static arc weights. No probabilistic variance. | Logprobs available, but tied to serial token branches. | **Per-slot probabilities & entropy** ($\pm\sigma$ and $H$); calibration via [IDC](confidence-beyond-shannon.md). |
+
+---
+
+## 3. How Discrete Diffusion Models Work
 
 Rather than generating sequential text, DiffusionGemma treats a decision as a **discrete canvas denoising problem**:
 
@@ -101,13 +116,21 @@ Rather than generating sequential text, DiffusionGemma treats a decision as a **
       (confidence: 99.1%)     (stderr: ±0.002)       (entropy: 0.04 nats)
 ```
 
-### 1. The Pre-Allocated Canvas & Bidirectional Cross-Attention
-Instead of starting an open-ended token generation loop, `dgem` sets aside a fixed-width discrete canvas (32 to 256 tokens). While autoregressive LLMs apply a causal mask, DiffusionGemma applies **bidirectional self-attention** across the entire prompt and canvas:
-* The slot tokens attend to all prompt tokens simultaneously.
-* Crucially, **the slot tokens attend to each other (`slot_1 <-> slot_2`)**. The model's classification of `team = engineering` directly informs its confidence on `urgent = yes` during the exact same forward pass.
+### 1. The Pre-Allocated Canvas
+Instead of starting an open-ended token generation loop, the system sets aside a fixed-width discrete canvas (typically 32 to 256 tokens). Each question in your decision schema ([`templates/support_triage.json.tmpl`](../templates)) is assigned specific token slots on this canvas.
 
-### 2. Dual-Mode Uncertainty Telemetry & Epistemic Calibration (`ChaosNLI`)
-Evaluated on [`ChaosNLI`](benchmarks-report.md) (100 human annotators per item), DiffusionGemma's single-pass restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ correlates monotonically with human disagreement:
+### 2. Full Bidirectional Attention
+While autoregressive LLMs apply a causal mask (token 5 cannot look ahead at token 20), DiffusionGemma applies **bidirectional self-attention** across the entire prompt and canvas.
+* The slot tokens attend to all prompt tokens simultaneously.
+* Crucially, **the slot tokens attend to each other**. The model's classification of `team = engineering` directly influences its confidence on `urgent = yes` during the exact same forward pass.
+
+### 3. Single-Pass Slot Readout (Restricted Softmax)
+At the target slot position, the model projects the latent representation directly against the authorized token vocabulary for that question. For a boolean question (`"type": "boolean"`), the softmax is restricted strictly to `{ "yes", "no" }`. For a categorical question (`"type": "choice"`), the projection is restricted strictly to the declared category options.
+
+### 4. Dual-Mode Uncertainty Telemetry & Epistemic Calibration (`ChaosNLI`)
+Because decision models project onto restricted candidate vocabularies rather than open-ended decoding paths, they expose clean per-slot probabilities. These are a strong *uncertainty signal*, though not automatically *calibrated* probabilities (calibration to a real deployment needs labeled data; see [IDC](confidence-beyond-shannon.md)):
+* **Empirical Standard Error ($\pm\sigma$)**: On Apple Silicon Metal, multi-seed perturbation noise draws reveal whether the model has high consensus ($\pm 0.0000$) or ambiguity ($\pm 0.1500$).
+* **Monotonic Shannon Entropy ($H = -\sum p_k \ln p_k$)**: Evaluated on [`ChaosNLI`](benchmarks-report.md) (100 human annotators per item), DiffusionGemma's single-pass Shannon entropy correlates monotonically with human disagreement:
 
 | Human Annotator Consensus Tier | Accuracy | Mean Confidence $P(y)$ | Mean Shannon Entropy $H$ | Entropy Multiplier |
 | :--- | :---: | :---: | :---: | :---: |
@@ -116,18 +139,55 @@ Evaluated on [`ChaosNLI`](benchmarks-report.md) (100 human annotators per item),
 | **`ambiguous` (Borderline Rater Splits)** | **77.8% (7/9)** | `0.861` | **`0.4061 nats`** | **5.5× higher $H$** |
 | **`high-entropy` (`ChaosNLI` 3-Way Crowd Split)** | **33.3% (1/3)** | `0.759` | **`0.5932 nats`** | **8.0× higher $H$** ⭐ |
 
-When human annotators agree, DiffusionGemma resolves the slot with **100% accuracy** and near-zero entropy (`0.0744 nats`). When the human crowd splits evenly, internal entropy spikes **8.0× higher (`0.5932 nats`)**, giving engineers a deterministic threshold ($H > 0.30\text{ nats}$) to trigger abstention or escalate to a Tier-3 reasoning model.
+When human annotators agree, DiffusionGemma resolves the slot with **100% accuracy** and near-zero entropy (`0.0744 nats`). When the human crowd splits evenly across options, DiffusionGemma's internal entropy spikes **8.0× higher (`0.5932 nats`)**, giving engineers a deterministic threshold ($H > 0.30\text{ nats}$) to trigger abstention or escalate to a Tier-3 reasoning model.
 
 > **But raw entropy can be fooled.** The table above uses one fixed option order, and only 3 items sit in each ChaosNLI tier, so treat the 8× figure as a direction rather than a constant. `DiffusionGemma` has a strong habit of picking whichever option is listed first ("Box A"). On a borderline question that habit can make a coin flip *look* like 99.9% certainty, and the entropy gate then waves it through. **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](confidence-beyond-shannon.md)** explains the problem with a worked example, describes the checks `dgem` adds (removing the Box-A habit, reading a reversed ballot in the same pass, temperature scaling), and reports what the evidence does and doesn't show so far.
 
-### 3. Templates as Executable Decision Policies (`Policy-as-Code`)
+### 5. Templates as Executable Decision Policies (`Policy-as-Code`)
+In classical ML or fine-tuned encoder architectures (such as `DeBERTa-v3` or `Llama-Guard`), the decision policy is baked into static linear classification weights. If security engineering adds a 4th trajectory hijack state (`injection_point` vs. `hijacked` vs. `failed_injection`), the classifier head must be retrained.
+
 In `dgem`, a declarative `.json.tmpl` file **is** the classifier head:
 * **Zero-Shot Policy Compilation**: Evaluating 50 items across 11 public benchmarks (`dgem bench-calibration`) without a single fine-tuned weight achieved **100% accuracy** on `AgentDrift` trajectory hijacks (`7/7`), `deepset/prompt-injections` (`4/4`), `LLM-AggreFact` RAG grounding (`2/2`), and `MS MARCO` passage relevance (`2/2`) in **664–793 ms**.
-* **Joint Multi-Slot Conditioning**: A single `.json.tmpl` policy evaluates boolean gates, `[A-Z]` categorical choices, and ordinal scores simultaneously in one forward pass (**458.9 ms** on Cloud Run L4).
+* **Joint Multi-Slot Conditioning (`slot_1 <-> slot_2`)**: Unlike encoder classifiers that require separate models for binary toxicity (`yes`/`no`) and ordinal severity (`1–5`), a single `.json.tmpl` policy evaluates all slots simultaneously in one forward pass (**458.9 ms** on Cloud Run L4).
 
 ---
 
-## 3. Summary
+## 4. The Unified AI Architecture: A Three-Tier Hierarchy
+
+DiffusionGemma does not replace FSTs or conversational LLMs; it fills the critical missing middle tier of modern enterprise architectures:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ Tier 1: Deterministic Fast Path (C++ OpenFst / WFSTs)                  │
+│ Latency: 0.5 – 5 ms | Compute: CPU | Scope: 90–95% of routine tokens   │
+│ Use Case: Currency ($5.99), phone numbers, dates, punctuation, regex.  │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Unresolved Ambiguity / Tied Arc Weights
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Tier 2: Discrete Diffusion Decision Model (DiffusionGemma / dgem)      │
+│ Latency: 458 – 712 ms | Compute: Cloud Run L4 / Metal | Scope: 5–10%   │
+│ Use Case: Polysemy, AgentDrift guardrails, RAG grounding, NLU routing. │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ High Epistemic Entropy (H > 0.30 nats)
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Tier 3: Conversational Autoregressive LLM (Vertex AI Gemini / GPT-4)  │
+│ Latency: 2,000 – 17,500 ms | Compute: Multi-Cloud Cluster | Scope: <1% │
+│ Use Case: Multi-hop scratchpad reasoning (ANLI-R3), open generation.   │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Tier 1 (The Deterministic Fast Path)**:
+   Use classical C++ WFSTs or regular expressions for unambiguous transformations. If text contains `"$5.99"`, an FST expands it to *"five dollars ninety-nine cents"* in 1 millisecond. Never pay GPU overhead for deterministic string replacement.
+2. **Tier 2 (The Discrete Decision Model)**:
+   When inputs exhibit semantic ambiguity, polysemy, negation, or require multi-rubric policy enforcement, route to **DiffusionGemma**. In **~459–712 ms**, it resolves the decision policy with full bidirectional context, 100% schema enforcement, and per-slot Shannon entropy $H$.
+3. **Tier 3 (The Conversational Reasoning Engine)**:
+   When DiffusionGemma's uncertainty telemetry flags high uncertainty ($H > 0.30$ nats—such as on human-contested `ChaosNLI` items or multi-hop `ANLI-R3` traps), escalate to a Thinking / Autoregressive LLM (like Google Cloud Vertex AI Gemini) to execute serial scratchpad reasoning or synthesize an explanation for a human reviewer.
+
+---
+
+## 5. Summary
 
 | Question | Classical ML / Encoders | Autoregressive LLMs | Discrete Diffusion Decision Models (`dgem`) |
 | :--- | :--- | :--- | :--- |
@@ -137,3 +197,5 @@ In `dgem`, a declarative `.json.tmpl` file **is** the classifier head:
 | **Can slots attend to each other?** | No (independent heads) | Unidirectional (`left -> right` only) | **Yes (`slot_1 <-> slot_2` bidirectionally)** |
 | **Does it know when it's unsure?** | Overconfident out-of-domain | Uncalibrated sequence logprobs | **Often: entropy rises with human disagreement, but option order can hide it ([IDC](confidence-beyond-shannon.md))** |
 | **Can it handle vision?** | Separate vision classifiers | Yes (multimodal autoregression) | **Yes (native SigLIP vision canvas)** |
+
+By decoupling **deep contextual reasoning** from **slow sequential text generation**, DiffusionGemma and `dgem` bring the power of 26B foundation models to sub-second, zero-shot decision engineering.

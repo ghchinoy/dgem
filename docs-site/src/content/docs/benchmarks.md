@@ -10,7 +10,7 @@ This report presents empirical benchmark metrics comparing **Discrete Diffusion 
 4. **Google Compute Engine (`a2-highgpu-2g`, 2× NVIDIA A100-40GB, `TP=2`)** — **16-bit Unquantized `bfloat16`** (`google/diffusiongemma-26B-A4B-it`)
 
 > [!NOTE]
-> For details on building and deploying the self-contained container image, GCS FUSE weight streaming, and C++ CUDA extension ABI compatibility on Cloud Run, see **[Cloud Run Lessons Learned & Native CUDA Build Guide](cloudrun-lessons-learned.md)**.
+> For details on building and deploying the self-contained container image, GCS FUSE weight streaming, and C++ CUDA extension ABI compatibility on Cloud Run, see **[Cloud Run Lessons Learned & Native CUDA Build Guide](/dgem/cloudrun-lessons-learned/)**.
 
 ---
 
@@ -32,7 +32,7 @@ This report presents empirical benchmark metrics comparing **Discrete Diffusion 
 
 ## 2. Experimental Design, Dataset & Sample Cases
 
-The evaluation suite (`./bin/dgem bench`) tests structured multi-question decision accuracy and latency across a standardized 30-case dataset ([`benchmarks/eval_dataset.jsonl`](../benchmarks/eval_dataset.jsonl)). For the deep mechanical explanation of 256-token canvas seeding and restricted softmax readout, see **[Architecture: Discrete Diffusion vs. Autoregression](architecture.md)**.
+The evaluation suite (`./bin/dgem bench`) tests structured multi-question decision accuracy and latency across a standardized 30-case dataset ([`benchmarks/eval_dataset.jsonl`](../benchmarks/eval_dataset.jsonl)). For the deep mechanical explanation of 256-token canvas seeding and restricted softmax readout, see **[Architecture: Discrete Diffusion vs. Autoregression](/dgem/architecture/)**.
 
 ### 2.1 Multi-Domain Evaluation Corpus (30 Cases)
 Each test item injects structured input variables into a domain-specific Go template and simultaneously evaluates **three distinct question types** (`boolean`, `choice`, and `score`) in a single request:
@@ -257,7 +257,7 @@ Using `dgem bench-calibration --vertex-model gemini-3.8-flash` ([`benchmarks/res
 
 ### 8.4 Entropy-Gated Cascade (`EXP-05`: `DiffusionGemma` $\xrightarrow{H \ge 0.35\text{ nats}}$ `gemini-3.8-flash`)
 
-As detailed in [**`EXP-05` (`/dgem/experiments/exp-05-roadmap-cascades-and-dags/`)**](/dgem/experiments/exp-05-roadmap-cascades-and-dags/), DiffusionGemma's restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ acts as a **zero-overhead router** ([`benchmarks/results_calibration_cascade.json`](../benchmarks/results_calibration_cascade.json)):
+As detailed in [**`EXP-05`**](/dgem/experiments/exp-05-roadmap-cascades-and-dags/), DiffusionGemma's restricted-softmax Shannon entropy $H = -\sum p_k \ln p_k$ acts as a **zero-overhead router** ([`benchmarks/results_calibration_cascade.json`](../benchmarks/results_calibration_cascade.json)):
 - **Pass 1 (`H < 0.35 nats` — 72.0% of traffic handled by DiffusionGemma at `712 ms`)**: All 36 low-entropy items exit immediately at Stage 1 without calling Vertex AI, achieving **100.0%** across `easy` (`17/17`), `localization` (`3/3`), `out-of-scope` (`2/2`), and `low-entropy` (`3/3`).
 - **Pass 2 (`H >= 0.35 nats` — 28.0% escalated to `gemini-3.8-flash`)**: Only the 14 high-entropy queries escalate to `gemini-3.8-flash`, resolving **all 3 `ChaosNLI` `high-entropy` splits (`3/3 = 100%`)**, **`tox-03` harsh journalistic criticism (`6/6 = 100%` toxicity)**, and **`anli-03` (`9/9 = 100%` across the `ambiguous` tier)**—lifting overall accuracy to **94.0% (47 / 50)** at **1,824 ms** effective latency (**1.87× faster** than standalone `gemini-3.8-flash`).
 

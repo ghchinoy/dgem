@@ -76,9 +76,9 @@ Position 13 had been refactored in the C++ extension to accept a Tensor, while t
   This configuration forces Cloud Run to wait 4 full minutes before performing the first probe. If the container finishes in 60 seconds, it still sits idle. Worse, with `failureThreshold=1`, a single failed ping immediately terminates the container.
 * **Best-Practice Pattern**:
   ```bash
-  --startup-probe tcpSocket.port=8080,initialDelaySeconds=10,periodSeconds=10,failureThreshold=60,timeoutSeconds=4
+  --startup-probe httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,periodSeconds=5,timeoutSeconds=4,failureThreshold=120
   ```
-  This begins probing after 10 seconds and polls every 10 seconds. The moment the server binds to port 8080, the instance is marked healthy immediately. With 60 retries, it provides a 10-minute readiness window for weight downloads and memory profiling.
+  This begins probing after 10 seconds and polls `/health` every 5 seconds (the settings used by `scripts/deploy_cloudrun_vllm.sh`). As soon as the server answers on port 8080, the instance is marked healthy. With 120 retries, it provides a 10-minute readiness window for weight staging and memory profiling.
 
 
 
@@ -115,7 +115,9 @@ dgem (100% Self-Contained in this Repository)
       • scripts/deploy_cloudrun_vllm.sh (adaptive sizing for L4 and RTX Pro 6000)
 ```
 
-### The Three Breakthrough Fixes
+### The Three Breakthrough Fixes (at the time)
+
+> Status today: fix 1 (`patch_vllm.py`) was removed with the move to the upstream vLLM base; fix 2 evolved into Direct VPC Egress weight staging (~83 s staging, ~2.5 min cold start; see [Path to Production](path-to-production.md)); in fix 3, `DISABLE_MM=1` is no longer the default (`DISABLE_MM=0` keeps the SigLIP vision tower on).
 
 1. **The Eager-Mode Worker Bypass (`patch_vllm.py`)**:
    In standard vLLM startup, `v1/worker/gpu_worker.py` executes `self.model_runner.profile_run()` and `kernel_warmup()`, which trigger full CUDA graph capture and compilation. Under eager mode with DiffusionGemma's custom block diffusion canvas, this graph capture crashes.
@@ -127,7 +129,7 @@ dgem (100% Self-Contained in this Repository)
    --add-volume=name=weights,type=cloud-storage,bucket=$BUCKET,readonly=false,mount-options=enable-buffered-read=true \
    --add-volume-mount=volume=weights,mount-path=/mnt/gcs
    ```
-   Over Google's internal datacenter network, weights stream at **>1.05 GiB/s**, dropping model loading latency from 8+ minutes to under 20 seconds.
+   Over Google's internal datacenter network, weights stream at **>1.05 GiB/s**, dropping model loading latency from 8+ minutes to under 20 seconds in that prototype.
 
 3. **Optimized Serverless GPU Environment Flags**:
    - `TORCH_COMPILE_DISABLE=1`: Disables torch.compile overhead.

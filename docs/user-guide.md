@@ -3,7 +3,7 @@
 `dgem` is the command-line companion, **Lit WebComponents Decision Studio (`dgem serve`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp`)**, **HTTP Gateway REST API**, declarative policy engine (`Policy-as-Template`), and benchmark harness for **DiffusionGemma (`dgemma`, 26B-A4B MoE)** across **Local Apple Silicon Metal (`diffgemma`)**, **Serverless Cloud Run GPU (`dgemma`, `1× NVIDIA L4` & `1× NVIDIA RTX Pro 6000`)**, and **Cloud GPU vLLM (`GCE L4 / A100`)**.
 
 > [!TIP]
-> For a dedicated guide to the **Decision Studio Web App (`http://localhost:8080/`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `POST /mcp`)**, and **HTTP Gateway REST API (`POST /api/decide/{template}`)**, see **[Decision Studio Web App, MCP Server & HTTP Gateway API (`studio-mcp-api.md`)](./studio-mcp-api.md)**.
+> For a dedicated guide to the **Decision Studio Web App (`http://localhost:8090/`)**, **Model Context Protocol (`MCP`) Server (`dgem mcp` & `POST /mcp`)**, and **HTTP Gateway REST API (`POST /api/decide/{template}`)**, see **[Decision Studio Web App, MCP Server & HTTP Gateway API (`studio-mcp-api.md`)](./studio-mcp-api.md)**.
 
 It enables:
 1. **Decision Studio Web App & HTTP Gateway API (`dgem serve`)**: Launches an interactive browser playground (with 26+ `.json.tmpl` presets, `SigLIP` bounding-box SVG overlays, scale-to-zero GPU warmup, and OpenTelemetry trace waterfalls) alongside `POST /api/decide/{template}` and `POST /mcp`.

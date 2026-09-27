@@ -1,9 +1,9 @@
 ---
-title: Experiment Authoring Guide & Backend Target Selection
+title: "Backend Routing & Cascades"
 description: Step-by-step guide for designing .json.tmpl decision policies, selecting between Vertex AI Dedicated Endpoints (vertex_first / vertex) and Serverless Cloud Run GPU (cloudrun), and configuring the Stage 2 Gemini Cascade (gemini-3.8-flash default).
 ---
 
-# Experiment Authoring Guide & Backend Target Selection
+# Backend Routing & Cascades
 
 > **Target Audience**: Applied AI Engineers, Researchers & Domain Experts  
 > **Studio & API Gateway**: run `./bin/dgem serve --port 8090` locally (`http://localhost:8090`) or deploy your own gateway (`./scripts/deploy_cloudrun_gateway.sh`). Examples below use `https://<your-dgem-gateway>` as a placeholder for your gateway URL.

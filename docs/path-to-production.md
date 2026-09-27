@@ -140,7 +140,7 @@ image as a second model on the endpoint, move the traffic split to it, then unde
 ## 5. Cold start: options for scale-to-zero deployments
 
 A scale-to-zero Cloud Run GPU service pays a cold start on the first request after idle. Measured on 1× RTX PRO 6000
-(`benchmarks/runs/20260925-serving-speed/deployments.md`):
+([deployment log](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260925-serving-speed/deployments.md)):
 
 | Configuration | Weight staging (17.53 GiB) | Container start → ready and warmed | Extra cost |
 | :--- | ---: | ---: | :--- |

@@ -14,7 +14,7 @@ Beyond the command-line evaluation harness (`dgem decide`, `dgem bench-*`), **`d
 ```mermaid
 flowchart LR
     subgraph Clients["Four Ways to Interact with dgem"]
-        UI["1. Decision Studio Web App\nBrowser UI (Lit WebComponents)\nhttp://localhost:8080/"]
+        UI["1. Decision Studio Web App\nBrowser UI (Lit WebComponents)\nhttp://localhost:8090/"]
         MCP["2. AI Agents via MCP\nGemini CLI · Claude · Cursor\ndgem mcp (stdio) & POST /mcp"]
         REST["3. Microservices & curl\nSimplified REST JSON API\nPOST /api/decide/{template}"]
         CLI["4. Terminal & CI/CD\nGo CLI & Benchmark Suites\ndgem decide / dgem bench-*"]
@@ -41,7 +41,7 @@ flowchart LR
 
 | Interaction Surface | Command / Endpoint | Target Audience | Key Capabilities |
 | :--- | :--- | :--- | :--- |
-| **1. Decision Studio Web App** | `dgem serve` $\rightarrow$ `http://localhost:8080/` | Engineers, PMs, Security & AI Researchers | Interactive **Lit WebComponents** playground with live `.json.tmpl` policy catalog (`core`, `calibration`, `multimodal`, `rerank`), `SigLIP` bounding-box SVG canvas (`EXP-09`), one-click scale-to-zero GPU warmup, and OpenTelemetry span waterfall viewer. |
+| **1. Decision Studio Web App** | `dgem serve` $\rightarrow$ `http://localhost:8090/` | Engineers, PMs, Security & AI Researchers | Interactive **Lit WebComponents** playground with live `.json.tmpl` policy catalog (`core`, `calibration`, `multimodal`, `rerank`), `SigLIP` bounding-box SVG canvas (`EXP-09`), one-click scale-to-zero GPU warmup, and OpenTelemetry span waterfall viewer. |
 | **2. Model Context Protocol (`MCP`)** | `dgem mcp` (`stdio`) or `POST /mcp` (`Streamable HTTP`) | AI Agents (`Gemini CLI`, `Claude Desktop`, `Cursor`, `Antigravity`) | Exposes **6 native MCP tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) over both `stdio` and stateless `Streamable HTTP`. |
 | **3. HTTP Gateway REST API** | `POST /api/decide/{template}` & `POST /v1/chat/completions` | Microservices, Web Backends, `curl` / Python scripts | Execute named `.json.tmpl` policies with a simple JSON variable map—no local `dgem` CLI or `.json.tmpl` files required by the caller. Automatically mints GCP IAM/IAP tokens and holds requests while scale-to-zero Cloud Run GPUs wake up. |
 | **4. `dgem` CLI & Benchmarks** | `dgem decide`, `dgem ask`, `dgem bench-*` | Terminal workflows, CI/CD pipelines, Reproducible research | Direct single-pass decisions (`--stats`) and full evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`). |

@@ -117,7 +117,7 @@ flowchart LR
 1. **Unified 231-Task Dataset (`benchmarks/jevbench/jevbench_public.jsonl`)**:
    - Contains all **231 MIT-licensed public tasks** (`48` `easy`, `72` `standard`, `111` `hard`) normalized into a single canonical JSONL schema with explicit `tier`, `family` (18 families), `topic` (7 subject topics joined from `datasets/topics.json`), `group` (36 paraphrase consistency pairs), and `provenance.gold_probs` (for the 10 `probability` soft-label items).
 2. **Cryptographic Lockfile (`benchmarks/jevbench/manifest.lock.json`)**:
-   - Cryptographic lockfile recording the exact upstream commit SHA (`1df665e3956d7aab7fa0208ff6c4f2d8557f9f90` pinned to `v1.4.2`), protocol version (`JevBench v1.4`), sync timestamp, per-split item counts, and SHA-256 digests (`easy`: `231df3c2c8e8...`, `original`: `5c2414edb300...`, `hard`: `89e9e6becb33...`).
+   - Records the exact upstream commit SHA (`1df665e3956d7aab7fa0208ff6c4f2d8557f9f90` pinned to `v1.4.2`), protocol version (`JevBench v1.4`), sync timestamp, per-split item counts, and SHA-256 digests (`easy`: `231df3c2c8e8...`, `original`: `5c2414edb300...`, `hard`: `89e9e6becb33...`).
 3. **Official Leaderboard Snapshot (`benchmarks/jevbench/leaderboard_v14.json`)**:
    - Pinned snapshot of upstream `results/v1.4.2.1/jevbench-v1.4.2.1-results.json` enabling offline comparison against `#1 Plumb-4B` (`65.84`), `#2 decider-4b v2` (`64.13`), `#3 Jev 1.13.0` (`63.29`), `#9 djev` (`52.23`), and `#28 OpenJev` (`36.85`).
 4. **Reference & Cascade Receipts (`benchmarks/jevbench/results_djev_*.json`)**:

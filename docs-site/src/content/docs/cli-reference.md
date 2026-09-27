@@ -60,8 +60,8 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `systemone`, `mcp`, `bench`, `
 | **`--vertex-url`** | `DGEM_VERTEX_URL` | `""` | Target Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL used by `vertex_first` and `vertex` routing modes. |
 | **`--cascade-model`** | `DGEM_CASCADE_MODEL` | **`gemini-3.8-flash`** | Default Vertex AI Gemini model for Stage 2 Escalation Cascades (`gemini-3.8-flash`, `gemini-3.7-flash`, or `gemini-3.5-flash-lite`). |
 | **`--cascade-models`** | `DGEM_CASCADE_MODELS` | **`gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite`** | Comma-separated list of selectable Stage 2 Vertex AI Gemini 3.x models exposed in `GET /api/backend-config` and the Web Studio. |
-| **`--systemone-mode`** | `DGEM_SYSTEMONE_MODE` | `passthrough` | Mode for `/v1/systemone` route: `passthrough` (direct proxy) or `adapter` (runs wide-canvas batching and bracket tournaments). |
-| **`--systemone-temperature`** | `DGEM_SYSTEMONE_TEMPERATURE` | `1.0` | Post-hoc slot logit temperature scaling $T^*$ for `/v1/systemone` decisions. |
+| **`--systemone-mode`** | `DGEM_SYSTEMONE_MODE` | `adapter` | Mode for the `/v1/systemone` route: `adapter` (bracket tournaments and multi-slot batching, default) or `passthrough` (direct proxy). |
+| **`--systemone-temperature`** | `DGEM_SYSTEMONE_TEMP` | `1.0` | Post-hoc slot logit temperature scaling $T^*$ for `/v1/systemone` decisions. |
 | **`-u, --url`** | `DGEM_URL` | `http://127.0.0.1:8080/v1` | Upstream Serverless Cloud Run GPU `/v1` URL used by `cloudrun` routing and `vertex_first` failover. |
 | **`--port`** | `PORT` | `8080` | HTTP listener port. |
 
@@ -69,23 +69,33 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `systemone`, `mcp`, `bench`, `
 
 ## 3. `dgem systemone serve` (Decision Index Adapter)
 
-`dgem systemone serve` runs a dedicated, high-performance HTTP adapter conforming to the upstream `POST /v1/systemone` protocol (for `apolinario/decision-index`). It transparently resolves arbitrary-cardinality label taxonomies via dual-stage bracket tournaments within the 26-slot single-token constraint:
+`dgem systemone serve` runs a standalone HTTP adapter that implements `POST /v1/systemone` (the protocol used by `apolinario/decision-index`). It splits choices with more than 26 options into 2-stage bracket tournaments and batches more than 8 questions across forward passes, sending sub-requests to an upstream DiffusionGemma server over `/v1/chat/completions`.
 
 ```bash
-# Launch adapter listening on 8080, forwarding to local structured_server on 8081:
-dgem systemone serve --port 8080 --upstream-url http://127.0.0.1:8081/v1/systemone --temperature 1.0
+# In front of a local structured server / vLLM:
+dgem systemone serve --port 8080 --upstream http://127.0.0.1:8081/v1
 
-# Protect adapter with an optional Bearer API key:
+# In front of a Vertex AI Dedicated Endpoint (a GCP access token is added automatically):
+dgem systemone serve --port 8095 \
+  --upstream "https://<endpoint-id>.<region>-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/<region>/endpoints/<endpoint-id>/invoke/v1"
+
+# Require a Bearer key on incoming requests:
 dgem systemone serve --port 8080 --api-key "my-secret-key"
 ```
 
 | Flag | Env Var | Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`--port`** | `PORT` | `8080` | Local HTTP port to bind. |
-| **`--upstream-url`** | `UPSTREAM_URL` | `http://127.0.0.1:8081/v1/systemone` | Destination URL for structured reads. |
-| **`--temperature`** | `TEMPERATURE` | `1.0` | Post-hoc slot temperature scaling $T^*$. |
-| **`--api-key`** | `API_KEY` | `""` | Optional authorization Bearer token to require on incoming requests. |
-| **`--canvas`** | `CANVAS` | `128` | Served diffusion canvas size in tokens. |
+| **`-p, --port`** | `PORT`, then `SYSTEMONE_PORT` | `8080` | Port to listen on. |
+| **`--host`** | — | `0.0.0.0` | Interface to bind. |
+| **`--upstream`** | `SYSTEMONE_UPSTREAM_URL`, then `UPSTREAM_DGEMMA_URL` | `-u` / `--url` if set, else `http://127.0.0.1:8081/v1` | Upstream `/v1` base URL (local server, Cloud Run, or a Vertex `.../invoke/v1` URL). |
+| **`--temperature`** | — | `1.0` | Post-hoc slot temperature scaling $T^*$ (`1.0` = unscaled). |
+| **`--max-slots`** | — | `8` | Maximum questions per forward pass before batching. |
+| **`--bracket-size`** | — | `20` | Maximum options per round-1 tournament bracket. |
+| **`--api-key`** | `SYSTEMONE_API_KEY`, then `API_KEY` | `""` (open) | If set, requests must send `Authorization: Bearer <key>`. |
+| **`--null-prior-debias`** | — | `false` | Divide out the positional option-`A` prior (validate on your data first). |
+| **`--prior-alpha`** | — | `0.50` | Exponent for null-prior de-biasing. |
+| **`--dual-mirror`** | — | `false` | Also read a reversed option ordering (research diagnostic). |
+| **`--naive-limits`** | — | `false` | Reproduce the naive 26-option / 10-question rejections (benchmark ablation only). |
 
 ---
 

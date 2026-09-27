@@ -156,5 +156,5 @@ All surfaces of `dgem serve` and `dgem mcp` support taxonomy expansion natively:
   Both MCP tools accept `"suggest_expansions": true` and `"expansion_entropy": 0.35`, and `list_policy_templates` exposes `taxonomy_discovery` (`templates/taxonomy_discovery.json.tmpl`).
 * **OpenTelemetry Waterfall Span (`dgem.taxonomy.expand`)**:
   Whenever expansion synthesis runs, the gateway emits a dedicated child span `dgem.taxonomy.expand` under `dgem.gateway.decide` (rendered in magenta `#ec4899` in the Studio Gantt Waterfall) with attributes `dgem.taxonomy.triggered`, `dgem.taxonomy.suggestions_count`, `dgem.taxonomy.injected_catch_all_count`, and `dgem.taxonomy.proposed_names`.
-* **Decision Studio Web App (`http://localhost:8080/`)**:
+* **Decision Studio Web App (`http://localhost:8090/`)**:
   Toggle **`Suggest Taxonomy Expansions (--suggest-expansions)`** in the policy panel. When an unclassified or high-entropy input triggers a proposal, click **`➕ Add Option to Policy & Re-Run`** on the result card to splice the new `{"name", "description"}` option directly into the active policy and re-evaluate in `< 1 second`.

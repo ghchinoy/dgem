@@ -1,9 +1,9 @@
 ---
-title: Experiment Authoring Guide & Backend Target Selection
+title: "Backend Routing & Cascades"
 description: Step-by-step guide for designing .json.tmpl decision policies, selecting between Vertex AI Dedicated Endpoints (vertex_first / vertex) and Serverless Cloud Run GPU (cloudrun), and configuring the Stage 2 Gemini Cascade (gemini-3.8-flash default).
 ---
 
-# Experiment Authoring Guide & Backend Target Selection
+# Backend Routing & Cascades
 
 > **Target Audience**: Applied AI Engineers, Researchers & Domain Experts  
 > **Studio & API Gateway**: run `./bin/dgem serve --port 8090` locally (`http://localhost:8090`) or deploy your own gateway (`./scripts/deploy_cloudrun_gateway.sh`). Examples below use `https://<your-dgem-gateway>` as a placeholder for your gateway URL.
@@ -14,7 +14,7 @@ This guide covers how to author declarative **Policy-as-Template (`.json.tmpl`)*
 
 ## 1. Choosing an Inference Backend Target & Recommended Configuration (`vertex_first` vs. `vertex` vs. `cloudrun`)
 
-`dgem` and `dgemma-gateway` (`https://<your-dgem-gateway>`) support routing any policy template, ad-hoc `/v1/systemone` query, or batch evaluation across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown and empirical benchmark receipts, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)**.
+`dgem` and `dgemma-gateway` (`https://<your-dgem-gateway>`) support routing any policy template, ad-hoc `/v1/systemone` query, or batch evaluation across **Vertex AI Dedicated Endpoints (`/invoke/*`)** and **Serverless Cloud Run GPU (`dgemma`)**. For a deep architectural breakdown and empirical benchmark receipts, see **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](../vertex-ai-vs-cloudrun/)**.
 
 ### Backend Target Decision Matrix
 
@@ -149,4 +149,4 @@ curl -sS "https://<your-dgem-gateway>/api/decide/calibration/nli_calibration" \
 2. **Single-Pass Readout (`reads=1`)**:
    - Omit `depends_on` and `ask_if` unless you explicitly want a 2-stage conditional policy DAG (`reads=2`). All `level 0` slots (`boolean`, `choice [A–Z]`, `score`) are resolved simultaneously in a single forward pass.
 3. **Registering New Experiments (`EXP-XX`)**:
-   - Whenever you add a new benchmark harness, `.jsonl` dataset, or cascade study, register it in [`docs/experiments/README.md`](experiments/README.md) with links to its `.json.tmpl` template, CLI command, and JSON receipt (`benchmarks/results_*.json`). For the full step-by-step Python batch runner (`run_dgem_dataset.py`), see the **[Custom Dataset & Experiment Cookbook](custom-dataset-guide.md)**.
+   - Whenever you add a new benchmark harness, `.jsonl` dataset, or cascade study, register it in [`docs/experiments/`](../experiments/) with links to its `.json.tmpl` template, CLI command, and JSON receipt (`benchmarks/results_*.json`). For the full step-by-step Python batch runner (`run_dgem_dataset.py`), see the **[Custom Dataset & Experiment Cookbook](../custom-dataset-guide/)**.

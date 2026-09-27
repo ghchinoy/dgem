@@ -54,6 +54,21 @@ Weighted Finite State Transducers ($\text{ShortestPath}(T \circ \text{Input} \ci
 
 By contrast, **DiffusionGemma** applies **full bidirectional cross-attention** across the entire sentence before denoising the target slot, resolving both `St.` #1 (*"Saint"*) and `St.` #2 (*"Street"*) in a single forward pass.
 
+### Sidebar: Why Not a Classical Statistical Classifier (e.g., Naive Bayes or N-Grams)?
+
+Engineers steeped in classical machine learning often ask: *If WFSTs struggle with polysemic context, why not simply augment the FST with a fast classical statistical model like Naive Bayes, Logistic Regression, or an N-gram language model rather than a 26-billion-parameter diffusion model?*
+
+Historically, production speech synthesis teams attempted exactly this approach during the 1990s and 2000s, and encountered three fundamental mathematical roadblocks:
+
+1. **The Zeroth-Order Bag-of-Words Trap (Naive Bayes)**:
+   Naive Bayes assumes conditional feature independence: $P(w_1, w_2, \dots \mid C) = \prod P(w_i \mid C)$. In *"123 St. Mark St."*, both occurrences of `St.` share the **exact same unordered bag of words**. A Naive Bayes classifier cannot differentiate the first `St.` from the second because it has no representation of positional syntax. It must assign identical probabilities to both, guaranteeing at least one error.
+2. **The Context Horizon Dilemma (N-Grams)**:
+   Bigram and trigram Markov models ($k=2,3$) capture local adjacency (`P(Street | Mark, St.)`), but semiotic disambiguation frequently hinges on syntactic cues located far outside a 3-token horizon. In *"In 1984, the author published a novel..."* vs. *"In 1984, 1984 citizens protested against the ordinance..."*, the decisive disambiguation signal for the second `1984` is the subject-predicate relationship with *"citizens protested"*, which lies well beyond an n-gram window.
+3. **Severe Probability Overconfidence**:
+   Because classical naive models multiply dozens of non-independent lexical probabilities, their output scores degenerate into uncalibrated extremes ($0.99999$ or $0.00001$). They cannot provide the reliable Shannon entropy or standard error metrics required to safely trigger an escalation gate in high-reliability speech or triage pipelines.
+
+Discrete block diffusion bridges this gap: it brings full bidirectional self-attention to parse sentence-wide syntactic dependency structures, but evaluates the discrete slot in a single forward pass (~800 ms) without paying the multi-second serial generation penalty of conversational autoregressive LLMs.
+
 ---
 
 ## 3. Experimental Design & Benchmark Corpora
@@ -62,9 +77,9 @@ To evaluate both engines without bias, the benchmark (`./bin/dgem bench-ecotone`
 
 ### Corpus A: Context-Dependent Semiotic Polysemy (`benchmarks/ecotone/tn_semiotics.jsonl` — 30 Cases)
 Targets **5 classic semiotic traps** where a 1–3 token finite-state sliding window lacks syntactic depth:
-1. **In-Sentence Abbreviation Polysemy (`tn-01`–`tn-02`, `tn-05`–`tn-08`, `tn-11`–`tn-12`)**:Identical surface abbreviations appearing twice in the same sentence with distinct spoken realizations (`123 St. Mark St.` -> *Saint* vs. *Street*; `Dr. Smith ... Ocean Dr.` -> *Doctor* vs. *Drive*; `20 st. and 6 ft.` -> *stone* vs. *feet*).
+1. **In-Sentence Abbreviation Polysemy (`tn-01`–`tn-02`, `tn-05`–`tn-08`, `tn-11`–`tn-12`)**: Identical surface abbreviations appearing twice in the same sentence with distinct spoken realizations (`123 St. Mark St.` $\rightarrow$ *Saint* vs. *Street*; `Dr. Smith ... Ocean Dr.` $\rightarrow$ *Doctor* vs. *Drive*; `20 st. and 6 ft.` $\rightarrow$ *stone* vs. *feet*).
 2. **Syntactic Role Collisions (`tn-03`–`tn-04`, `tn-09`–`tn-10`, `tn-13`–`tn-14`)**: Identical numeric/Roman strings functioning as temporal adverbials vs. cardinal quantities (`In 1984, 1984 citizens...`; `On 3/4 of the trials, the event occurred on 3/4/2026`; `King Henry VIII` vs. `Chapter VIII`).
-3. **Heteronym Phonemic Disambiguation (`tn-25`–`tn-26`)**: Homographs requiring G2P phonemic selection (`heavy lead pipes` -> *led* vs. `lead the review` -> *leed*).
+3. **Heteronym Phonemic Disambiguation (`tn-25`–`tn-26`)**: Homographs requiring G2P phonemic selection (`heavy lead pipes` $\rightarrow$ *led* vs. `lead the review` $\rightarrow$ *leed*).
 4. **Technical, Code & Math Expressions (`tn-15`–`tn-16`, `tn-27`–`tn-30`)**: Software versions (`v2.4.1`), asymptotic complexity (`O(N log N)`), sports scores (`108-104`), and inequalities (`x > 10`, `y <= 20`).
 
 ### Corpus B: Deterministic NSW & WFST Boundary Challenge (`benchmarks/ecotone/tn_challenge_en.jsonl` — 19 Cases)
@@ -78,7 +93,7 @@ Adapted directly from Ecotone's failure-hunting suite (`../ecotone/docs/reports/
 
 ## 4. Verbatim Empirical Findings: Where Each Engine Wins
 
-The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semiotics.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_ecotone_gce_l4_semiotics.json) and [`benchmarks/results_ecotone_gce_l4_challenge.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/results_ecotone_gce_l4_challenge.json)) expose the exact mechanics of both architectures:
+The side-by-side execution receipts (`benchmarks/results_ecotone_gce_l4_semiotics.json` and `benchmarks/results_ecotone_gce_l4_challenge.json`) expose the exact mechanics of both architectures:
 
 | Case ID | Input Sentence & Target Slot | `ecotone` C++ WFST Actual Output (`data/nemo_en/`) | `ecotone` Verdict & Latency | `dgem` Slot Output (`NVFP4` L4, `s=1`) | `dgem` Verdict & Latency |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -97,95 +112,34 @@ The side-by-side execution receipts ([`benchmarks/results_ecotone_gce_l4_semioti
 | **`ch-14`** | `"It costs $5.99 today."` (`$5.99`) | `"It costs five dollars ninety nine cents today."` | ✅ **PASS** (`7.55 ms`) | **`"five dollars ninety nine cents"`** | ✅ **PASS** (`1,693 ms`) |
 | **`ch-19`** | `"Counted 2500000 items."` (`2500000`) | `"Counted two five zero zero zero zero zero items."` *(7-digit phone rule)* | ❌ **FAIL** (`17.44 ms`) | **`"two million five hundred thousand"`** | ✅ **PASS** (`689 ms`) |
 
-### Key Analytical Insights
-1. **Why Ecotone Leaves `St.` Unexpanded (`tn-01`/`tn-02`) and Flips `Ocean Dr.` (`tn-06`)**:
-   - In NVIDIA NeMo's English WFST (`data/nemo_en/`), `St.` before a capitalized word has competing transducer weights between *Saint* and *Street*, so the grammar conservatively leaves `123 St. Mark St.` unexpanded as raw `"St."`. Conversely, `Dr.` has a lower arc weight for `"doctor"` than `"drive"`, causing *"Ocean Dr."* to be misverbalized as ***"Ocean doctor"*** in `1.75 ms`.
-   - DiffusionGemma attends bidirectionally across the entire sentence (`"123 St. Mark St., Apt. 4B"` and `"drove 5 miles down Ocean Dr. to the clinic"`), resolving `St.` #1 -> **Saint** (`926 ms`), `St.` #2 -> **Street** (`1,026 ms`), `Dr.` #1 -> **Doctor** (`688 ms`), and `Dr.` #2 -> **Drive** (`932 ms`).
-2. **Why Ecotone Wins on Deterministic Patterns (`tn-10`, `ch-01`–`ch-17`)**:
-   - On `tn-10` (*"On 3/4 of the trials, the event occurred on 3/4/2026."*), Ecotone's `M/D/Y` date transducer deterministically matched the `/2026` suffix and expanded `3/4/2026` to ***"march fourth twenty twenty six"*** in **`2.51 ms`**, whereas 4-bit `NVFP4` (`samples=1`) anchored on the earlier `3/4` fraction.
-   - On standard dates (`3/5/2026` in `1.54 ms`, `9/1/2025` in `1.35 ms`), currencies (`$5.99` in `7.55 ms`), and fractions, Ecotone is **500× to 700× faster** than a neural GPU forward pass while running on a single CPU core.
-3. **Resolving Ecotone's Honest Boundary Gap (`ch-19`: Bare 7+ Digit Cardinals)**:
-   - NeMo's WFST grammar intentionally reads bare 7+ digit numbers (`2500000`) digit-by-digit (*"two five zero zero..."*) so unformatted 7-digit phone numbers or account numbers aren't read as millions. However, in *"Counted 2500000 items."*, the syntactic frame (`Counted ... items`) makes it unambiguously a cardinal quantity—which DiffusionGemma resolves to ***"two million five hundred thousand"*** in **`689 ms`**.
-
 ---
 
 ## 5. The Production Synthesis: The "Cascaded Normalizer"
 
 Rather than replacing Ecotone with a neural model or accepting WFST polysemy errors, the optimal production architecture is a **Cascaded Normalizer**:
 
-```
-Raw Text Input (e.g. "Dr. Smith drove 5 miles down Ocean Dr. on 3/5/2026 for $5.99")
-                         │
-                         ▼
-             ┌───────────────────────┐
-             │   Ecotone C++ WFST    │ ──1.5 ms──► Fast-path:
-             │  (unix:///ecotone)    │             • 5 -> "five"
-             └───────────┬───────────┘             • 3/5/2026 -> "march fifth twenty twenty six"
-                         │                         • $5.99 -> "five dollars ninety nine cents"
-                         │
-                         │ (Ambiguity Escalation: Polysemic/Verbatim Token "Dr." / "St." / 7+ digit bare int)
-                         ▼
-             ┌───────────────────────┐
-             │      dgem decide      │ ──688 ms──► 1-Pass Bidirectional Slot Readout (GCE L4):
-             │  DiffusionGemma Slot  │             • Slot 1 ("Dr. Smith") = "Doctor" (p=1.00)
-             │        Readout        │             • Slot 2 ("Ocean Dr.") = "Drive"  (p=1.00)
-             └───────────┬───────────┘
-                         │
-                         ▼
-      Combined Output: "Doctor Smith drove five miles down Ocean Drive on march fifth twenty twenty six for five dollars ninety nine cents"
-```
-
-### Blended Performance Profile (95% Fast Path / 5% Ambiguity Escalation)
 - **Fast Path (95% of utterances)**: Processed entirely by `ecotone` C++ WFST over UDS in **1.54 ms p50** (`8.42 ms` mean).
 - **Ambiguity Escalation (5% of utterances)**: Triggered only when `ecotone` encounters a polysemic abbreviation (`St.`, `Dr.`, `st.`), a verbatim fallback (`VIII`, `O(N log N)`, `<=`), or a bare 7+ digit integer (`2500000`), escalating that single slot to `dgem decide` (`960.1 ms` mean on L4 GPU).
 - **Effective Blended Latency**:
   $$\text{Blended Mean Latency} = \underbrace{(0.95 \times 1.54\text{ ms})}_{\text{Tier 1: WFST Fast Path (1.46 ms)}} + \underbrace{(0.05 \times 960.1\text{ ms})}_{\text{Tier 2: Neural Escalation (48.01 ms)}} = \mathbf{49.47\text{ ms}}$$
-  (More than **10× faster** than Google Cloud TTS's ~500 ms server-side normalizer penalty, while lifting semiotic accuracy from **36.7% -> 93.3%**!)
+  (More than **10× faster** than Google Cloud TTS's ~500 ms server-side normalizer penalty, while lifting semiotic accuracy from **36.7% $\rightarrow$ 93.3%**!)
 
-#### Term-by-Term Latency Breakdown
+### Term-by-Term Latency Breakdown
 
 | Term | Value | What It Represents in the Benchmark |
 | :--- | :--- | :--- |
 | **`0.95`** | **95% Fast-Path Share** | The proportion of real-world utterances containing only standard words and deterministic Non-Standard Words (NSWs) such as slash dates (`3/5/2026`), currency (`$5.99`), or simple cardinals (`5 miles`). |
-| **`1.54 ms`** | **`ecotone` Fast-Path Latency** | The representative p50 latency of the C++ `ecotone_server` (`OpenFst 1.8.4` + NVIDIA NeMo `.far` grammars) over a local Unix Domain Socket (`unix:///tmp/ecotone.sock`), e.g., case `ch-01` (`3/5/2026` -> *"march fifth twenty twenty six"* in `1.54 ms`). Contribution to blended mean: **`1.46 ms`**. |
+| **`1.54 ms`** | **`ecotone` Fast-Path Latency** | The representative p50 latency of the C++ `ecotone_server` (`OpenFst 1.8.4` + NVIDIA NeMo `.far` grammars) over a local Unix Domain Socket (`unix:///tmp/ecotone.sock`), e.g., case `ch-01` (`3/5/2026` $\rightarrow$ *"march fifth twenty twenty six"* in `1.54 ms`). Contribution to blended mean: **`1.46 ms`**. |
 | **`0.05`** | **5% Escalation Rate** | The fraction of utterances that trigger the ambiguity gate because `ecotone` encounters a known polysemic abbreviation (`St.`, `Dr.`, `st.`), leaves an OOV token verbatim (`VIII`, `O(N log N)`), or hits a 7+ digit bare integer boundary (`2500000`). |
 | **`960.1 ms`** | **`dgem` GPU Slot Latency** | The measured mean latency of `nvidia/diffusiongemma-26B-A4B-it-NVFP4` (`samples=1`) on a GCE `g2-standard-8` (1× NVIDIA L4 GPU) across `benchmarks/results_ecotone_gce_l4_semiotics.json` to denoise the target slot via `dgem decide`. Contribution to blended mean: **`48.01 ms`**. |
 | **`49.47 ms`** | **Blended Mean Latency** | The expected latency per utterance ($1.463\text{ ms} + 48.005\text{ ms} = 49.468\text{ ms}$). Notably, **median (p50) latency remains `1.54 ms`**, while the 5% GPU tail shifts the arithmetic mean to `49.47 ms`. |
 
-#### Why >10× Faster Than Cloud TTS's ~500 ms Server-Side Penalty
+### Why >10× Faster Than Cloud TTS's ~500 ms Server-Side Penalty
 Cloud-hosted neural TTS pipelines (such as Google Cloud TTS) incur a **$\sim 500\text{ ms}$** server-side normalization and network round-trip penalty on *every* request before audio synthesis begins—even for trivial sentences. By running `ecotone` locally over UDS (`1.54 ms`) and calling the L4 GPU (`960.1 ms`) only on the 5% of sentences containing semiotic ambiguity:
 $$\frac{500\text{ ms (Cloud Server-Side Normalizer)}}{49.47\text{ ms (Cascaded Blended Mean)}} \approx \mathbf{10.1\times \text{ faster mean}} \quad (\text{and } \mathbf{>320\times \text{ faster at p50}})$$
 
-#### How Semiotic Accuracy Lifts from `36.7%` -> `93.3%`
+### How Semiotic Accuracy Lifts from `36.7%` $\rightarrow$ `93.3%`
 In **Corpus A** (`benchmarks/ecotone/tn_semiotics.jsonl`, 30 context-dependent polysemic traps):
 1. **Standalone `ecotone` (`36.7%` — 11 / 30):** Fails on 19 of 30 cases because its 1–3 token finite-state window either abstains on ambiguous abbreviations (`"123 St. Mark St."` left as raw `"St."` in `tn-01`/`tn-02`) or collapses to a static default arc weight (`"Ocean Dr."` misread as *"Ocean doctor"* in `tn-06`).
-2. **Standalone `dgem` (`90.0%` — 27 / 30):** Resolves full-sentence bidirectional syntax (`St.` #1 -> **`"Saint"`**, `St.` #2 -> **`"Street"`**, `Dr.` #1 -> **`"Doctor"`**, `Dr.` #2 -> **`"Drive"`** with `p=1.00`), missing only 3 cases under 4-bit `NVFP4` quantization (`samples=1`), such as `tn-10` where `dgem` anchored on an earlier `3/4` fraction instead of the date `3/4/2026`.
-3. **Hybrid Cascaded Normalizer (`93.3%` — 28 / 30):** `ecotone`'s deterministic `M/D/Y` transducer handles `3/4/2026` (`tn-10`) on the fast path (`2.51 ms` -> *"march fourth twenty twenty six"*), while escalating `ecotone`'s polysemic/verbatim slots to `dgem` recovers 17 additional cases—combining `11` WFST passes + `17` `dgem` rescues = **`28 / 30` (`93.3%`)**.
-
----
-
-## 6. Reproducing the Head-to-Head Benchmark
-
-`dgem` includes a native Go gRPC client (`pkg/ecotone`) that connects directly to the local `ecotone` Unix Domain Socket (`unix:///tmp/ecotone.sock`) alongside local Metal or remote vLLM endpoints:
-
-```bash
-# 1. Start the local Ecotone C++ WFST daemon (from ../ecotone)
-ECOTONE_DATA=/Users/ghchinoy/projects/ecotone/data/nemo_en \
-  ../ecotone/scripts/run_local.sh start
-
-# 2. Evaluate Corpus A (30-case Semiotic Polysemy Suite)
-./bin/dgem bench-ecotone \
-  -u "http://<GCE_L4_IP>:8080/v1" \
-  -m "nvidia/diffusiongemma-26B-A4B-it-NVFP4" \
-  -c benchmarks/ecotone/tn_semiotics.jsonl \
-  --samples 1 \
-  -o benchmarks/results_ecotone_gce_l4_semiotics.json
-
-# 3. Evaluate Corpus B (19-case Deterministic NSW & Boundary Suite)
-./bin/dgem bench-ecotone \
-  -u "http://<GCE_L4_IP>:8080/v1" \
-  -m "nvidia/diffusiongemma-26B-A4B-it-NVFP4" \
-  -c benchmarks/ecotone/tn_challenge_en.jsonl \
-  --samples 1 \
-  -o benchmarks/results_ecotone_gce_l4_challenge.json
-```
+2. **Standalone `dgem` (`90.0%` — 27 / 30):** Resolves full-sentence bidirectional syntax (`St.` #1 $\rightarrow$ **`"Saint"`**, `St.` #2 $\rightarrow$ **`"Street"`**, `Dr.` #1 $\rightarrow$ **`"Doctor"`**, `Dr.` #2 $\rightarrow$ **`"Drive"`** with `p=1.00`), missing only 3 cases under 4-bit `NVFP4` quantization (`samples=1`), such as `tn-10` where `dgem` anchored on an earlier `3/4` fraction instead of the date `3/4/2026`.
+3. **Hybrid Cascaded Normalizer (`93.3%` — 28 / 30):** `ecotone`'s deterministic `M/D/Y` transducer handles `3/4/2026` (`tn-10`) on the fast path (`2.51 ms` $\rightarrow$ *"march fourth twenty twenty six"*), while escalating `ecotone`'s polysemic/verbatim slots to `dgem` recovers 17 additional cases—combining `11` WFST passes + `17` `dgem` rescues = **`28 / 30` (`93.3%`)**.

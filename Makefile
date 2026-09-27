@@ -161,34 +161,10 @@ vertex-teardown: ## Undeploy models and delete Vertex AI Dedicated Endpoint to e
 install: ## Install dgem binary to GOBIN
 	go install -ldflags="$(LDFLAGS)" .
 
-check-public: ## Verify that no internal GCP project IDs, numbers, or private domains exist in public code/docs
+check-public: ## Verify no internal identifiers exist in tracked files (patterns in gitignored scratch/leak-patterns.txt)
 	@echo "==> Auditing repository for internal identifiers..."
-	@LEAKS=$$(git grep -n -E "(4423577720856772608|4217256562927861760|genai-blackbelt-fishfooding|882920967572|dgemma\.aaie\.cloud|aaie-decision-model|34\.121\.236\.110|35\.193\.147\.242)" -- . ':!benchmarks' ':!scratch' ':!Makefile' ':!scripts/redact_receipt.py' 2>/dev/null || true); \
-	if [ -n "$$LEAKS" ]; then \
-		echo "ERROR: Internal identifiers detected in tracked files:"; \
-		echo "$$LEAKS"; \
-		exit 1; \
-	fi; \
-	echo "✅ PASSED: No internal project IDs, numbers, endpoint IDs, or private domains found."
+	@python3 scripts/redact_receipt.py --check
 
-docs-sync-check: ## Verify that documentation files in docs/ and docs-site/ are synchronized
+docs-sync-check: ## Compare docs/ and docs-site/ page content (front matter, titles, and link targets ignored)
 	@echo "==> Auditing documentation parity between docs/ and docs-site/..."
-	@MISSING=0; \
-	for f in $$(find docs -maxdepth 2 -name "*.md" | grep -v "/archive/"); do \
-		rel=$${f#docs/}; \
-		base=$${rel%.md}; \
-		if [ ! -f "docs-site/src/content/docs/$$rel" ] && \
-		   [ ! -f "docs-site/src/content/docs/$${base}.mdx" ] && \
-		   [ ! -f "docs-site/src/content/docs/$${base}/index.md" ] && \
-		   [ ! -f "docs-site/src/content/docs/$${base}/index.mdx" ]; then \
-			if [ "$$rel" != "benchmarks-report.md" ] && [ "$$rel" != "experiments/README.md" ]; then \
-				echo "Missing in docs-site: $$rel"; \
-				MISSING=$$((MISSING + 1)); \
-			fi; \
-		fi; \
-	done; \
-	if [ $$MISSING -gt 0 ]; then \
-		echo "ERROR: $$MISSING documentation files are missing from docs-site/"; \
-		exit 1; \
-	fi; \
-	echo "✅ PASSED: All documentation files are synchronized with docs-site/."
+	@python3 scripts/docs_sync_check.py
