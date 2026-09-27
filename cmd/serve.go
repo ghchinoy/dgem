@@ -38,6 +38,8 @@ var (
 	serveGPUIdleTTL     time.Duration
 	serveVertexURL      string
 	serveVertexProject  string
+	serveLocalURL       string
+	serveLocalMode      bool
 	serveDefaultBackend string
 	serveCascadeModel   string
 	serveCascadeModels  string
@@ -72,7 +74,9 @@ func init() {
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
-	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "vertex_first", "Default upstream inference backend: 'vertex_first' (Vertex primary + Cloud Run failover), 'vertex', or 'cloudrun' (env: DGEM_DEFAULT_BACKEND)")
+	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "vertex_first", "Default upstream inference backend: 'vertex_first' (Vertex primary + Cloud Run failover), 'vertex', 'cloudrun', or 'local' (env: DGEM_DEFAULT_BACKEND)")
+	serveCmd.Flags().StringVar(&serveLocalURL, "local-url", "", "Local diffgemma endpoint URL (e.g. http://127.0.0.1:8080/v1; env: DGEM_LOCAL_URL)")
+	serveCmd.Flags().BoolVar(&serveLocalMode, "local", false, "Run gateway targeting local diffgemma (Apple Silicon Metal) without cloud failover (env: DGEM_SERVE_LOCAL)")
 	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'; env: DGEM_CASCADE_MODEL)")
 	serveCmd.Flags().StringVar(&serveCascadeModels, "cascade-models", DefaultCascadeGeminiModels, "Comma-separated list of selectable Stage-2 Vertex AI Gemini 3.x models exposed in the API & Web Studio (env: DGEM_CASCADE_MODELS)")
 
@@ -536,23 +540,35 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 	return st
 }
 
-// resolveBackendTargetFromParams determines whether a request should route to "vertex" or "cloudrun"
-// supporting 3 routing policies:
+// resolveBackendTargetFromParams determines whether a request should route to "vertex", "cloudrun", or "local"
+// supporting 4 routing policies:
 // - "vertex_first" (default): routes to Vertex AI Dedicated Endpoint (/invoke/*) when deployed, and automatically fails over to Cloud Run GPU when Vertex is deploying/quiesced.
 // - "vertex" (strict pin): routes strictly to Vertex AI (/invoke/*).
 // - "cloudrun" (strict pin): routes strictly to Serverless Cloud Run GPU.
+// - "local" (strict pin): routes strictly to local Apple Silicon Metal diffgemma (-u or --local-url).
 func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requestedVertexURL string) (string, string, error) {
 	backendConfigMu.RLock()
 	defBackend := serveDefaultBackend
 	defVertexURL := serveVertexURL
+	locURL := serveLocalURL
 	backendConfigMu.RUnlock()
 
 	mode := strings.ToLower(strings.TrimSpace(requestedMode))
 	if mode == "" {
 		mode = strings.ToLower(strings.TrimSpace(defBackend))
 	}
-	if mode != "vertex" && mode != "cloudrun" && mode != "vertex_first" {
+	if mode != "vertex" && mode != "cloudrun" && mode != "vertex_first" && mode != "local" {
 		mode = "vertex_first"
+	}
+
+	if mode == "local" {
+		if locURL == "" {
+			locURL = viper.GetString("url")
+			if locURL == "" || isRemoteGCPURL(locURL) {
+				locURL = "http://127.0.0.1:8080/v1"
+			}
+		}
+		return "local", locURL, nil
 	}
 
 	rawVx := strings.TrimSpace(requestedVertexURL)
@@ -615,7 +631,16 @@ func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent st
 		targetURL = strings.TrimSpace(targetURLOverride[0])
 	}
 	isVertex := client.IsVertexEndpointURL(targetURL)
-	backendName := map[bool]string{true: "vertex", false: "cloudrun"}[isVertex]
+	backendConfigMu.RLock()
+	locURL := serveLocalURL
+	backendConfigMu.RUnlock()
+	isLocal := (locURL != "" && strings.HasPrefix(targetURL, locURL)) || isLoopbackURL(targetURL)
+	backendName := "cloudrun"
+	if isVertex {
+		backendName = "vertex"
+	} else if isLocal {
+		backendName = "local"
+	}
 
 	ctx, orchSpan := gatewayTracer().Start(ctx, "dgem.gpu.orchestrate")
 	defer orchSpan.End()
@@ -628,7 +653,7 @@ func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent st
 
 	deadline := time.Now().Add(serveWakeupTimeout)
 	orchStart := time.Now()
-	if !isVertex {
+	if !isVertex && !isLocal {
 		NotifyColdStartWarmup()
 	}
 	attempts := 0
@@ -791,6 +816,23 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if envDefB := os.Getenv("DGEM_DEFAULT_BACKEND"); envDefB != "" && !cmd.Flags().Changed("default-backend") {
 		serveDefaultBackend = strings.ToLower(strings.TrimSpace(envDefB))
 	}
+	if envLocal := os.Getenv("DGEM_SERVE_LOCAL"); envLocal == "1" || envLocal == "true" {
+		serveLocalMode = true
+	}
+	if envLocalURL := os.Getenv("DGEM_LOCAL_URL"); envLocalURL != "" && !cmd.Flags().Changed("local-url") {
+		serveLocalURL = envLocalURL
+	}
+	if serveLocalMode {
+		if serveLocalURL == "" {
+			serveLocalURL = viper.GetString("url")
+			if serveLocalURL == "" || isRemoteGCPURL(serveLocalURL) {
+				serveLocalURL = "http://127.0.0.1:8080/v1"
+			}
+		}
+		if !cmd.Flags().Changed("default-backend") && os.Getenv("DGEM_DEFAULT_BACKEND") == "" {
+			serveDefaultBackend = "local"
+		}
+	}
 	if os.Getenv("DGEM_GCP_AUTH") == "1" || os.Getenv("DGEM_GCP_AUTH") == "true" {
 		viper.Set("gcp_auth", true)
 	}
@@ -825,6 +867,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			var body struct {
 				DefaultBackend      string   `json:"default_backend"`
 				VertexURL           string   `json:"vertex_url"`
+				LocalURL            string   `json:"local_url"`
 				DefaultCascadeModel string   `json:"default_cascade_model"`
 				CascadeModels       []string `json:"cascade_models"`
 			}
@@ -840,11 +883,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 				return
 			}
 			backendConfigMu.Lock()
-			if body.DefaultBackend == "vertex_first" || body.DefaultBackend == "vertex" || body.DefaultBackend == "cloudrun" {
+			if body.DefaultBackend == "vertex_first" || body.DefaultBackend == "vertex" || body.DefaultBackend == "cloudrun" || body.DefaultBackend == "local" {
 				serveDefaultBackend = body.DefaultBackend
 			}
 			if body.VertexURL != "" || body.DefaultBackend == "cloudrun" || body.DefaultBackend == "vertex_first" {
 				serveVertexURL = normVx
+			}
+			if strings.TrimSpace(body.LocalURL) != "" {
+				serveLocalURL = strings.TrimSpace(body.LocalURL)
 			}
 			if strings.TrimSpace(body.DefaultCascadeModel) != "" {
 				serveCascadeModel = SanitizeCascadeModel(body.DefaultCascadeModel)
@@ -857,6 +903,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 		backendConfigMu.RLock()
 		defB := serveDefaultBackend
 		vxURL := serveVertexURL
+		locURL := serveLocalURL
+		locMode := serveLocalMode
 		defCascade := SanitizeCascadeModel("")
 		cascadeList := GetConfiguredCascadeModels()
 		backendConfigMu.RUnlock()
@@ -868,12 +916,53 @@ func runServe(cmd *cobra.Command, args []string) error {
 			proj = "genai-blackbelt-fishfooding"
 		}
 		vSt := inspectVertexEndpointState(r.Context(), vxURL)
+
+		availableBackends := []string{"vertex_first", "vertex", "cloudrun"}
+		localAvailable := locURL != "" || locMode
+		if localAvailable {
+			availableBackends = append(availableBackends, "local")
+		}
+
+		var localStatus map[string]interface{}
+		if localAvailable {
+			targetLoc := locURL
+			if targetLoc == "" {
+				targetLoc = "http://127.0.0.1:8080/v1"
+			}
+			locHealth := strings.TrimSuffix(targetLoc, "/")
+			if !strings.HasSuffix(locHealth, "/v1") {
+				locHealth = locHealth + "/v1"
+			}
+			locHealth = locHealth + "/models"
+			locReachable := false
+			if resp, err := (&http.Client{Timeout: 1200 * time.Millisecond}).Get(locHealth); err == nil {
+				if resp.StatusCode == http.StatusOK {
+					locReachable = true
+				}
+				resp.Body.Close()
+			}
+			localStatus = map[string]interface{}{
+				"available": true,
+				"reachable": locReachable,
+				"url":       targetLoc,
+				"tier":      "Apple Silicon Metal (Unified Memory)",
+			}
+		} else {
+			localStatus = map[string]interface{}{
+				"available": false,
+			}
+		}
+
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"available_backends":    availableBackends,
 			"default_backend":       defB,
 			"cloudrun_url":          viper.GetString("url"),
 			"vertex_url":            vxURL,
 			"vertex_configured":     vxURL != "",
 			"vertex_status":         vSt,
+			"local_available":       localAvailable,
+			"local_url":             locURL,
+			"local_status":          localStatus,
 			"project_id":            proj,
 			"region":                "us-central1",
 			"default_cascade_model": defCascade,
@@ -1389,6 +1478,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 			MarkGPUWarm(gpuForwardMs)
 		} else if backendTarget == "vertex" {
 			RecordVertexReadoutLatency(gpuForwardMs)
+		} else if backendTarget == "local" {
+			RecordLocalReadoutLatency(gpuForwardMs)
 		}
 		coldWaitMs := orchElapsedMs - gpuForwardMs
 		if coldWaitMs < 0 {
@@ -1477,6 +1568,19 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 
 		reqPath := r.URL.Path // e.g. "/v1/systemone", "/v1/chat/completions", "/v1/raw/chat/completions"
+		if reqPath == "/v1/systemone" && backendTarget == "local" {
+			proxySpan.SetStatus(codes.Error, "systemone_not_supported_on_local")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotImplemented)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": map[string]string{
+					"message": "POST /v1/systemone is not supported on the local Apple Silicon Metal backend (text-only diffgemma; requires Cloud Run or Vertex AI with SigLIP)",
+					"type":    "not_implemented",
+				},
+			})
+			return
+		}
+
 		var targetURL string
 		if backendTarget == "vertex" {
 			if idx := strings.Index(resolvedURL, "/invoke/"); idx != -1 {
@@ -1484,6 +1588,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 			} else {
 				targetURL = resolvedURL
 			}
+		} else if backendTarget == "local" {
+			upstreamBase := strings.TrimSuffix(resolvedURL, "/")
+			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
+			targetURL = upstreamBase + reqPath
 		} else {
 			upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
 			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
@@ -1499,6 +1607,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		deadline := time.Now().Add(serveWakeupTimeout)
 		for attempt := 1; ; attempt++ {
+			attemptStart := time.Now()
 			attemptCtx, attemptSpan := gatewayTracer().Start(ctx, "dgem.gpu.proxy_forward")
 			attemptSpan.SetAttributes(attribute.Int("dgem.attempt", attempt))
 			req, err := http.NewRequestWithContext(attemptCtx, "POST", targetURL, bytes.NewReader(bodyBytes))
@@ -1513,6 +1622,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 				if tok := FetchGCPAccessToken(); tok != "" {
 					req.Header.Set("Authorization", "Bearer "+tok)
 				}
+			} else if backendTarget == "local" || isLoopbackURL(targetURL) {
+				// No cloud token for local backend
 			} else if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
 				if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), targetURL); tok != "" {
 					req.Header.Set("Authorization", "Bearer "+tok)
@@ -1526,6 +1637,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			if err == nil {
 				respBody, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
+				attemptMs := time.Since(attemptStart).Milliseconds()
 				attemptSpan.SetAttributes(attribute.Int("http.status_code", resp.StatusCode))
 				if resp.StatusCode >= 500 && strings.Contains(string(respBody), "ConnectionRefusedError") && time.Now().Before(deadline) {
 					attemptSpan.SetStatus(codes.Error, "cold_start_connection_refused")
@@ -1533,9 +1645,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 					time.Sleep(6 * time.Second)
 					continue
 				}
-				if resp.StatusCode == http.StatusOK && backendTarget == "cloudrun" {
+				if resp.StatusCode == http.StatusOK {
 					attemptSpan.SetStatus(codes.Ok, "ok")
-					MarkGPUWarm()
+					if backendTarget == "cloudrun" {
+						MarkGPUWarm()
+					} else if backendTarget == "local" {
+						RecordLocalReadoutLatency(attemptMs)
+					}
 				}
 				attemptSpan.End()
 				w.Header().Set("Content-Type", "application/json")

@@ -17,6 +17,7 @@ model/
 server.log
 *.log
 diffgemma.pid
+dgem-gateway.pid
 
 # Scratch and exploratory scripts
 scratch/

@@ -190,7 +190,10 @@ func inferWarmupPhaseAndLabel(elapsedSec int, ewmaSec int, phaseHint string, byt
 	return "phase_4_triton_jit", "Stage 4/4: First Decision Readout & Triton Kernel JIT"
 }
 
-var mcpRemoteURL string
+var (
+	mcpRemoteURL    string
+	mcpLocalBackend bool
+)
 
 // runRemoteMCPProxy bridges stdio JSON-RPC messages to a remote Streamable HTTP MCP endpoint
 // (such as https://<your-dgem-gateway>/mcp), automatically attaching Application Default Credentials
@@ -616,19 +619,35 @@ and Cloud Run IAP / IAM services without requiring manual tokens.
 
 Pass --remote https://<your-dgem-gateway>/mcp to bridge stdio directly to a remote dgem serve
 MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
-	Example: `  # Bridge stdio to a remote dgem serve MCP gateway using ADC automatically
-  dgem mcp --remote https://<your-dgem-gateway>/mcp
+	Example: `  # Run local stdio MCP server targeting local diffgemma (Apple Silicon Metal)
+  dgem mcp --local
 
   # Run local stdio MCP server with automatic ADC (vertex_first -> Cloud Run failover)
-  dgem mcp`,
+  dgem mcp
+
+  # Bridge stdio to a remote dgem serve MCP gateway using ADC automatically
+  dgem mcp --remote https://<your-dgem-gateway>/mcp`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defaultRetriesForLongRunning()
 		if strings.TrimSpace(mcpRemoteURL) != "" {
 			return runRemoteMCPProxy(strings.TrimSpace(mcpRemoteURL))
 		}
-		viper.Set("gcp_auth", true)
-		if viper.GetString("url") == "http://127.0.0.1:8080/v1" {
-			viper.Set("url", "https://dgemma-882920967572.us-central1.run.app/v1")
+		isLocal := mcpLocalBackend || os.Getenv("DGEM_MCP_LOCAL") == "1" || os.Getenv("DGEM_MCP_LOCAL") == "true"
+		if isLocal {
+			backendConfigMu.Lock()
+			serveDefaultBackend = "local"
+			if serveLocalURL == "" {
+				serveLocalURL = viper.GetString("url")
+				if serveLocalURL == "" || isRemoteGCPURL(serveLocalURL) {
+					serveLocalURL = "http://127.0.0.1:8080/v1"
+				}
+			}
+			backendConfigMu.Unlock()
+		} else {
+			viper.Set("gcp_auth", true)
+			if viper.GetString("url") == "http://127.0.0.1:8080/v1" {
+				viper.Set("url", "https://dgemma-882920967572.us-central1.run.app/v1")
+			}
 		}
 		if _, err := os.Stat(serveTemplatesDir); err != nil {
 			if exe, exErr := os.Executable(); exErr == nil {
@@ -645,6 +664,7 @@ MCP gateway (e.g. on Cloud Run behind IAP) using ADC.`,
 
 func init() {
 	mcpCmd.Flags().StringVar(&mcpRemoteURL, "remote", "", "Remote Streamable HTTP MCP endpoint URL (e.g. https://<your-dgem-gateway>/mcp) to proxy over stdio using ADC")
+	mcpCmd.Flags().BoolVar(&mcpLocalBackend, "local", false, "Route MCP tool calls directly to local diffgemma backend (-u, default http://127.0.0.1:8080/v1) without ADC or cloud fallback (env: DGEM_MCP_LOCAL)")
 	RootCmd.AddCommand(mcpCmd)
 }
 
@@ -686,33 +706,48 @@ func startGPUKeepaliveLoop() {
 				}
 			}
 
-			// On gateway startup, probe upstream Cloud Run /health once with a 3s timeout: if the GPU container
-			// is already warm ("phase":"ready" / "vllm_ready":true), sync gateway state immediately.
+			// On gateway startup, probe upstream Cloud Run /health (or local /v1/models) once with a 3s timeout:
+			// if the GPU container is already warm, sync gateway state immediately.
 			upstreamBase := strings.TrimSuffix(viper.GetString("url"), "/")
 			upstreamBase = strings.TrimSuffix(upstreamBase, "/v1")
+			isLocalTarget := strings.Contains(upstreamBase, "127.0.0.1") || strings.Contains(upstreamBase, "localhost")
 			if upstreamBase != "" {
 				healthURL := upstreamBase + "/health"
+				if isLocalTarget {
+					healthURL = upstreamBase + "/v1/models"
+				}
 				if req, err := http.NewRequest("GET", healthURL, nil); err == nil {
-					if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
-						if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), healthURL); tok != "" {
+					if !isLocalTarget {
+						if viper.GetBool("gcp_auth") || viper.GetString("iap_client_id") != "" {
+							if tok := FetchGCPIdentityToken(viper.GetString("iap_client_id"), healthURL); tok != "" {
+								req.Header.Set("Authorization", "Bearer "+tok)
+							}
+						} else if tok := viper.GetString("token"); tok != "" {
 							req.Header.Set("Authorization", "Bearer "+tok)
 						}
-					} else if tok := viper.GetString("token"); tok != "" {
-						req.Header.Set("Authorization", "Bearer "+tok)
 					}
 					hc := &http.Client{Timeout: 4 * time.Second}
 					if resp, err := hc.Do(req); err == nil {
-						var st struct {
-							Phase     string `json:"phase"`
-							VLLMReady bool   `json:"vllm_ready"`
+						if isLocalTarget && resp.StatusCode == http.StatusOK {
+							RecordLocalReadoutLatency(850)
+						} else {
+							var st struct {
+								Phase     string `json:"phase"`
+								VLLMReady bool   `json:"vllm_ready"`
+							}
+							_ = json.NewDecoder(resp.Body).Decode(&st)
+							if st.VLLMReady || st.Phase == "ready" {
+								MarkGPUWarm()
+							}
 						}
-						_ = json.NewDecoder(resp.Body).Decode(&st)
 						resp.Body.Close()
-						if st.VLLMReady || st.Phase == "ready" {
-							MarkGPUWarm()
-						}
 					}
 				}
+			}
+
+			if serveLocalMode || (isLocalTarget && defB == "local") {
+				// In local-only mode, skip remote Cloud Run keepalive heartbeat loop
+				return
 			}
 
 			ticker := time.NewTicker(4 * time.Minute)
@@ -786,6 +821,7 @@ func NotifyColdStartWarmup() {
 }
 
 var lastVertexReadoutLatencyMs int64 = 490
+var lastLocalReadoutLatencyMs int64 = 850
 
 // RecordVertexReadoutLatency records the most recent Vertex AI /invoke/* readout latency
 // without marking the scale-to-zero Cloud Run GPU container as warm.
@@ -795,6 +831,17 @@ func RecordVertexReadoutLatency(latencyMs int64) {
 	}
 	gpuStateMu.Lock()
 	lastVertexReadoutLatencyMs = latencyMs
+	gpuStateMu.Unlock()
+}
+
+// RecordLocalReadoutLatency records the most recent local diffgemma (Metal) readout latency
+// without marking the scale-to-zero Cloud Run GPU container as warm.
+func RecordLocalReadoutLatency(latencyMs int64) {
+	if latencyMs <= 0 {
+		return
+	}
+	gpuStateMu.Lock()
+	lastLocalReadoutLatencyMs = latencyMs
 	gpuStateMu.Unlock()
 }
 
@@ -859,7 +906,7 @@ func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOv
 	backendConfigMu.RUnlock()
 
 	reqMode := strings.ToLower(strings.TrimSpace(backendOverride))
-	if reqMode == "vertex" || reqMode == "cloudrun" || reqMode == "vertex_first" {
+	if reqMode == "vertex" || reqMode == "cloudrun" || reqMode == "vertex_first" || reqMode == "local" {
 		defB = reqMode
 	}
 
@@ -944,6 +991,66 @@ func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOv
 		}
 	}
 
+	// 2. If Local is the effective backend, inspect local diffgemma (Metal)
+	if defB == "local" {
+		targetLocalURL := serveLocalURL
+		if targetLocalURL == "" {
+			targetLocalURL = viper.GetString("url")
+			if targetLocalURL == "" || isRemoteGCPURL(targetLocalURL) {
+				targetLocalURL = "http://127.0.0.1:8080/v1"
+			}
+		}
+		modelName := viper.GetString("model")
+		if modelName == "" {
+			modelName = "diffgemma-26b-a4b-it-q4"
+		}
+		healthURL := strings.TrimSuffix(targetLocalURL, "/")
+		if !strings.HasSuffix(healthURL, "/v1") {
+			healthURL = healthURL + "/v1"
+		}
+		healthURL = healthURL + "/models"
+		isReady := false
+		detail := fmt.Sprintf("Local diffgemma endpoint %s is unreachable.", targetLocalURL)
+		if resp, err := (&http.Client{Timeout: 1500 * time.Millisecond}).Get(healthURL); err == nil {
+			if resp.StatusCode == http.StatusOK {
+				isReady = true
+				detail = fmt.Sprintf("Local diffgemma (Apple Silicon Metal) is Warm & Ready at %s.", targetLocalURL)
+			}
+			resp.Body.Close()
+		}
+		gpuStateMu.RLock()
+		lastReadMs := lastLocalReadoutLatencyMs
+		gpuStateMu.RUnlock()
+		if lastReadMs <= 0 {
+			lastReadMs = 850
+		}
+		gpuState := "scaled_to_zero"
+		if isReady {
+			gpuState = "warm_and_ready"
+		}
+		return HealthAndGPUStatusOutput{
+			GatewayHealthy:       true,
+			GPUAvailable:         isReady,
+			GPUState:             gpuState,
+			ActiveBackend:        "local",
+			RequestedBackend:     defB,
+			ContainerReachable:   isReady,
+			WarmupInProgress:     false,
+			EWMAWakeSeconds:      0,
+			SecondsSinceLastRead: 0,
+			IdleRemainingSeconds: 0,
+			IdleTTLSeconds:       0,
+			LastReadoutMs:        lastReadMs,
+			EstimatedWakeSeconds: 0,
+			UpstreamURL:          targetLocalURL,
+			Model:                modelName,
+			GPUTier:              "Apple Silicon Metal (Unified Memory)",
+			TemplatesAvailable:   len(catalog),
+			AuthenticatedUser:    userEmail,
+			Detail:               detail,
+		}
+	}
+
 	gpuStateMu.Lock()
 	// Safety expiry: never allow warmupInProgress to stay stuck past serveWakeupTimeout (10m)
 	if warmupInProgress && time.Since(warmupStartedAt) > 10*time.Minute {
@@ -965,13 +1072,17 @@ func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOv
 	}
 	gpuStateMu.Unlock()
 
+	upstreamURL := viper.GetString("url")
+	modelName := "nvidia/diffusiongemma-26B-A4B-it-NVFP4"
+	gpuTier := "1x NVIDIA RTX Pro 6000 (48GB VRAM, SigLIP Multimodal)"
+
 	out := HealthAndGPUStatusOutput{
 		GatewayHealthy:       true,
 		ActiveBackend:        "cloudrun",
 		RequestedBackend:     defB,
-		UpstreamURL:          viper.GetString("url"),
-		Model:                "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
-		GPUTier:              "1x NVIDIA RTX Pro 6000 (48GB VRAM, SigLIP Multimodal)",
+		UpstreamURL:          upstreamURL,
+		Model:                modelName,
+		GPUTier:              gpuTier,
 		TemplatesAvailable:   len(catalog),
 		AuthenticatedUser:    userEmail,
 		WarmupInProgress:     warming,
@@ -1263,14 +1374,14 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 // MCP Tool Input/Output Structs
 
 type StatusToolInput struct {
-	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint 4423577720856772608), or 'cloudrun' (Serverless Cloud Run GPU)."`
+	Backend string `json:"backend,omitempty" jsonschema:"Optional inference backend selector to inspect: 'vertex_first' (default), 'vertex' (Vertex AI Dedicated Endpoint 4423577720856772608), 'cloudrun' (Serverless Cloud Run GPU), or 'local' (Apple Silicon Metal)."`
 }
 
 type DecidePolicyToolInput struct {
 	Template          string                 `json:"template" jsonschema:"Policy template ID (e.g. 'support_triage', 'taxonomy_discovery', 'code_review', 'secops_conditional_dag', 'calibration/hallucination_judge')."`
 	Variables         map[string]interface{} `json:"variables" jsonschema:"Key-value map of template variables (e.g. {'ticket': 'Double charged on invoice #9481'})."`
 	Image             string                 `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI for multimodal policies."`
-	Backend           string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), or 'cloudrun' (strict Serverless Cloud Run GPU)."`
+	Backend           string                 `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI Dedicated Endpoint primary with Cloud Run GPU failover), 'vertex' (strict Vertex AI /invoke/*), 'cloudrun' (strict Serverless Cloud Run GPU), or 'local' (Apple Silicon Metal diffgemma)."`
 	VertexURL         string                 `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override (defaults to 4423577720856772608)."`
 	CascadeMode       string                 `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
 	CascadeThreshold  float64                `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
@@ -1283,7 +1394,7 @@ type DecidePolicyToolInput struct {
 type LocateBBoxToolInput struct {
 	Image     string `json:"image" jsonschema:"Image URL or base64 data URI (data:image/png;base64,...) to analyze with Gemma 4 SigLIP vision."`
 	Target    string `json:"target" jsonschema:"Natural language description of the object to localize (e.g. 'red vintage pickup truck', 'the wine glass closest to the bottle')."`
-	Backend   string `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default), 'vertex', or 'cloudrun'."`
+	Backend   string `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default), 'vertex', or 'cloudrun' (note: 'local' Metal does not support SigLIP vision)."`
 	VertexURL string `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
 }
 
@@ -1317,7 +1428,7 @@ type CustomQuestionSpec struct {
 type DecideCustomToolInput struct {
 	Context           string               `json:"context" jsonschema:"Input text, document, code diff, or event log to evaluate."`
 	Questions         []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
-	Backend           string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', or 'cloudrun'."`
+	Backend           string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', 'cloudrun', or 'local' (Apple Silicon Metal diffgemma)."`
 	VertexURL         string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
 	CascadeMode       string               `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
 	CascadeThreshold  float64              `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
@@ -1440,8 +1551,13 @@ func buildMCPServer() *mcp.Server {
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
+		readoutMs := time.Since(start).Milliseconds()
 		if backendTarget == "cloudrun" {
-			MarkGPUWarm()
+			MarkGPUWarm(readoutMs)
+		} else if backendTarget == "vertex" {
+			RecordVertexReadoutLatency(readoutMs)
+		} else if backendTarget == "local" {
+			RecordLocalReadoutLatency(readoutMs)
 		}
 
 		var cascadeSummary *CascadeExecutionSummary
@@ -1533,13 +1649,19 @@ func buildMCPServer() *mcp.Server {
 		if bErr != nil {
 			return nil, LocateBBoxToolOutput{}, bErr
 		}
+		if backendTarget == "local" {
+			return nil, LocateBBoxToolOutput{}, fmt.Errorf("locate_bounding_boxes is not supported on the local Apple Silicon Metal backend (text-only diffgemma; SigLIP vision tower is not available on Metal). Please use backend: 'vertex_first' or 'cloudrun'")
+		}
 		start := time.Now()
 		resp, _, _, err := executeDecideWithWarmup(ctx, schemaContent, stateContent, []string{input.Image}, targetURL)
 		if err != nil {
 			return nil, LocateBBoxToolOutput{}, err
 		}
+		readoutMs := time.Since(start).Milliseconds()
 		if backendTarget == "cloudrun" {
-			MarkGPUWarm()
+			MarkGPUWarm(readoutMs)
+		} else if backendTarget == "vertex" {
+			RecordVertexReadoutLatency(readoutMs)
 		}
 
 		expYMin, argYMin := computeExpectedCoord(resp.Answers["ymin"])
@@ -1619,8 +1741,13 @@ func buildMCPServer() *mcp.Server {
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
+		readoutMs := time.Since(start).Milliseconds()
 		if backendTarget == "cloudrun" {
-			MarkGPUWarm()
+			MarkGPUWarm(readoutMs)
+		} else if backendTarget == "vertex" {
+			RecordVertexReadoutLatency(readoutMs)
+		} else if backendTarget == "local" {
+			RecordLocalReadoutLatency(readoutMs)
 		}
 
 		var cascadeSummary *CascadeExecutionSummary
