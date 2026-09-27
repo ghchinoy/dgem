@@ -4,6 +4,8 @@ steps:
       - 'build'
       - '-f'
       - 'Dockerfile.weights'
+      - '--build-arg'
+      - 'BASE=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$SHORT_SHA'
       - '-t'
       - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest'
       - '-t'

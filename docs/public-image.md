@@ -11,20 +11,20 @@ description: "How to pull and run official dgem DiffusionGemma container images 
 
 ## 1. Published Container Images
 
-| Image Tag | Compressed Size | Weights Delivery | Recommended Use Case |
-| :--- | :---: | :--- | :--- |
-| **`dgem:latest`** (or `<git-sha>`) | `~10 GB` | Public HF download at container boot (`0.0s` if mounted or pre-cached) | **Ephemeral Cloud Run GPU, GCE VMs, Local Docker** |
-| **`dgem-weights:latest`** (or `<git-sha>`) | `~26 GB` | **Pre-baked NVFP4 weights** in `/opt/dgemma/weights` (`0.0s` cold-start download) | **Dedicated Vertex AI Endpoints, Offline Pods** |
+| Image Tag | Digest | Compressed Size | Weights Delivery | Recommended Use Case |
+| :--- | :--- | :---: | :--- | :--- |
+| **`dgem:latest`** (or `dgem:56baadf`) | `sha256:a7ace753973b...` | `~10 GB` | Public HF download at container boot (`0.0s` if mounted or pre-cached) | **Ephemeral Cloud Run GPU, GCE VMs, Local Docker** |
+| **`dgem-weights:latest`** (or `dgem-weights:56baadf`) | `sha256:893f45a29e77...` | `~26 GB` | **Pre-baked NVFP4 weights** in `/opt/dgemma/weights` (`0.0s` cold-start download) | **Dedicated Vertex AI Endpoints, Offline Pods** |
 
 For deploying to Google Cloud Run GPU or Vertex AI Dedicated Endpoints, see [Deploy on Your Own Cloud GPU](deploy-your-own-gpu.md).
 
 ### Pulling the Image
 ```bash
-# Pull lean image (downloads public weights on startup):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+# Pull lean image (pinned digest):
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:56baadf@sha256:a7ace753973b6c3521dbc4c62ea4dfbea5384c582884e98a5ccae9f81b1f6dd9
 
-# Or pull self-contained image with pre-baked NVFP4 weights:
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest
+# Or pull self-contained image with pre-baked NVFP4 weights (pinned digest):
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
 ```
 
 ---

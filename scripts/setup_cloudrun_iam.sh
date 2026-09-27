@@ -11,6 +11,10 @@ GPU_SERVICE="${UPSTREAM_SERVICE:-dgemma}"
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-dgemma-gateway}"
 BUCKET="${GCS_BUCKET:-dgem-weights-${PROJECT}}"
 ALLOW_GROUP="${ALLOW_GROUP:-}"
+if [[ -z "${ALLOW_GROUP}" ]]; then
+  echo "Error: ALLOW_GROUP is required (e.g. ALLOW_GROUP=my-team@example.com). An IAP gateway requires an authorized group or user." >&2
+  exit 1
+fi
 
 GPU_SA_NAME="dgemma-gpu-sa"
 GPU_SA="${GPU_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
