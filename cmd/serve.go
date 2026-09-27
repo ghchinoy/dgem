@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ghchinoy/dgem/pkg/client"
+	"github.com/ghchinoy/dgem/pkg/decisionindex"
 	"github.com/ghchinoy/dgem/pkg/template"
 	"github.com/ghchinoy/dgem/studio"
 	"github.com/spf13/cobra"
@@ -43,6 +44,8 @@ var (
 	serveDefaultBackend string
 	serveCascadeModel   string
 	serveCascadeModels  string
+	serveSystemOneMode  string
+	serveSystemOneTemp  float64
 	backendConfigMu     sync.RWMutex
 )
 
@@ -79,6 +82,8 @@ func init() {
 	serveCmd.Flags().BoolVar(&serveLocalMode, "local", false, "Run gateway targeting local diffgemma (Apple Silicon Metal) without cloud failover (env: DGEM_SERVE_LOCAL)")
 	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'; env: DGEM_CASCADE_MODEL)")
 	serveCmd.Flags().StringVar(&serveCascadeModels, "cascade-models", DefaultCascadeGeminiModels, "Comma-separated list of selectable Stage-2 Vertex AI Gemini 3.x models exposed in the API & Web Studio (env: DGEM_CASCADE_MODELS)")
+	serveCmd.Flags().StringVar(&serveSystemOneMode, "systemone-mode", "adapter", "Serving mode for POST /v1/systemone: 'adapter' (applies wide-option bracket tournaments & multi-slot canvas batching, default) or 'passthrough'")
+	serveCmd.Flags().Float64Var(&serveSystemOneTemp, "systemone-temperature", 1.0, "Post-hoc slot logit temperature scaling factor T* for /v1/systemone (default 1.0)")
 
 	RootCmd.AddCommand(serveCmd)
 }
@@ -836,6 +841,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if os.Getenv("DGEM_GCP_AUTH") == "1" || os.Getenv("DGEM_GCP_AUTH") == "true" {
 		viper.Set("gcp_auth", true)
 	}
+	if envSOMode := os.Getenv("DGEM_SYSTEMONE_MODE"); envSOMode != "" && !cmd.Flags().Changed("systemone-mode") {
+		serveSystemOneMode = strings.ToLower(strings.TrimSpace(envSOMode))
+	}
+	if envSOTemp := os.Getenv("DGEM_SYSTEMONE_TEMP"); envSOTemp != "" && !cmd.Flags().Changed("systemone-temperature") {
+		if t, err := strconv.ParseFloat(envSOTemp, 64); err == nil && t > 0 {
+			serveSystemOneTemp = t
+		}
+	}
 
 	shutdownTracer := initGatewayTracer(context.Background())
 	defer func() {
@@ -1568,13 +1581,44 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 
 		reqPath := r.URL.Path // e.g. "/v1/systemone", "/v1/chat/completions", "/v1/raw/chat/completions"
+
+		// If this is a JSON POST /v1/systemone request and adapter mode is enabled, evaluate via decisionindex.ExecuteSystemOne
+		if reqPath == "/v1/systemone" && serveSystemOneMode != "passthrough" && r.URL.Query().Get("raw") != "1" && !strings.Contains(r.Header.Get("Content-Type"), "multipart") {
+			var soReq decisionindex.SystemOneRequest
+			if err := json.Unmarshal(bodyBytes, &soReq); err == nil && len(soReq.Questions) > 0 {
+				soOpts := decisionindex.DefaultEngineOptions()
+				soOpts.TemperatureScale = serveSystemOneTemp
+				cli := GetClientForURL(resolvedURL)
+				soResp, soErr := decisionindex.ExecuteSystemOne(ctx, cli, soReq, soOpts)
+				if soErr != nil {
+					errStr := soErr.Error()
+					if strings.Contains(errStr, "HTTP 422") ||
+						strings.Contains(errStr, "options per choice") ||
+						strings.Contains(errStr, "the canvas holds at most") ||
+						strings.Contains(errStr, "too many tokens") ||
+						strings.Contains(errStr, "maximum context length") ||
+						strings.Contains(errStr, "context window") {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						_, _ = w.Write([]byte(errStr))
+						return
+					}
+					http.Error(w, soErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-DGem-Backend-Used", backendTarget)
+				_ = json.NewEncoder(w).Encode(soResp)
+				return
+			}
+		}
+
 		if reqPath == "/v1/systemone" && backendTarget == "local" {
 			proxySpan.SetStatus(codes.Error, "systemone_not_supported_on_local")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotImplemented)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": map[string]string{
-					"message": "POST /v1/systemone is not supported on the local Apple Silicon Metal backend (text-only diffgemma; requires Cloud Run or Vertex AI with SigLIP)",
+					"message": "POST /v1/systemone raw/multipart pass-through is not supported on the local Apple Silicon Metal backend (text-only diffgemma; requires Cloud Run or Vertex AI with SigLIP)",
 					"type":    "not_implemented",
 				},
 			})

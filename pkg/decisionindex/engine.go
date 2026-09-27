@@ -42,8 +42,9 @@ type SystemOneRequest struct {
 // SystemOneAnswer matches the per-question answer validated by decision_index.engines.base:validate().
 type SystemOneAnswer struct {
 	Type          string             `json:"type"`
-	Choice        string             `json:"choice"`
-	Probabilities map[string]float64 `json:"probabilities"`
+	Choice        string             `json:"choice,omitempty"`
+	Probabilities map[string]float64 `json:"probabilities,omitempty"`
+	Noul          *float64           `json:"noul,omitempty"`
 	Entropy       float64            `json:"entropy,omitempty"`
 	NormalizedH   float64            `json:"normalized_entropy,omitempty"`
 	PassesUsed    int                `json:"passes_used,omitempty"`
@@ -71,23 +72,28 @@ type EngineOptions struct {
 	MaxSlotsPerPass   int
 	MaxOptionsPerSlot int
 	NaiveLimits       bool    // If true, mimics naive 26-option / 10-slot capacity rejections (HTTP 422 Unsupported)
-	TemperatureScale  float64 // Post-hoc slot temperature scaling T* (1.0 = unscaled)
+	TemperatureScale  float64 // Post-hoc slot temperature scaling T* (1.0 = unscaled, default)
 	MaxConcurrency    int
 	DualMirror        bool    // EXP-13C: Evaluate forward + reversed option orderings on the same diffusion canvas
 	NullPriorDebias   bool    // EXP-13B: Divide out content-free positional 'A'-bias prior
 	PriorAlpha        float64 // Damping exponent alpha in [0, 1] for null-prior de-biasing
 }
 
-// DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled.
+// DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled (T*=1.0).
 func DefaultEngineOptions() EngineOptions {
 	return EngineOptions{
 		MaxSlotsPerPass:   MaxSlotsPerPass,
 		MaxOptionsPerSlot: MaxOptionsPerSlot,
 		NaiveLimits:       false,
-		TemperatureScale:  1.25,
+		TemperatureScale:  1.0,
 		MaxConcurrency:    4,
 		PriorAlpha:        0.50,
 	}
+}
+
+func isNoulType(t string) bool {
+	lower := strings.ToLower(strings.TrimSpace(t))
+	return lower == "noul" || lower == "bool" || lower == "boolean"
 }
 
 // FormatState converts an arbitrary Decision Index state (string or JSON object) into a valid JSON string for structured_server.py.
@@ -176,11 +182,12 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	wideQs := 0
 	multiBatches := 0
 
-	// Partition questions into standard (K <= 26) vs wide (K > 26)
+	// Partition questions into standard (K <= 26 or noul) vs wide (K > 26)
 	var standardKeys []string
 	var wideKeys []string
 	for _, k := range qKeys {
-		if len(req.Questions[k].Criteria) > opts.MaxOptionsPerSlot {
+		q := req.Questions[k]
+		if !isNoulType(q.Type) && len(q.Criteria) > opts.MaxOptionsPerSlot {
 			wideKeys = append(wideKeys, k)
 		} else {
 			standardKeys = append(standardKeys, k)
@@ -248,20 +255,28 @@ func evaluateStandardBatch(
 	questionsPayload := make([]map[string]any, 0, len(batchKeys))
 	for _, qKey := range batchKeys {
 		qSpec := allQuestions[qKey]
-		optKeys := sortedOptionKeys(qSpec.Criteria)
-		optObjs := make([]map[string]string, 0, len(optKeys))
-		for _, ok := range optKeys {
-			optObjs = append(optObjs, map[string]string{
-				"name":        ok,
-				"description": strings.TrimSpace(qSpec.Criteria[ok]),
+		if isNoulType(qSpec.Type) {
+			questionsPayload = append(questionsPayload, map[string]any{
+				"id":           qKey,
+				"type":         "boolean",
+				"instructions": FormatInstructions(qSpec.Instructions),
+			})
+		} else {
+			optKeys := sortedOptionKeys(qSpec.Criteria)
+			optObjs := make([]map[string]string, 0, len(optKeys))
+			for _, ok := range optKeys {
+				optObjs = append(optObjs, map[string]string{
+					"name":        ok,
+					"description": strings.TrimSpace(qSpec.Criteria[ok]),
+				})
+			}
+			questionsPayload = append(questionsPayload, map[string]any{
+				"id":           qKey,
+				"type":         "choice",
+				"instructions": FormatInstructions(qSpec.Instructions),
+				"options":      optObjs,
 			})
 		}
-		questionsPayload = append(questionsPayload, map[string]any{
-			"id":           qKey,
-			"type":         "choice",
-			"instructions": FormatInstructions(qSpec.Instructions),
-			"options":      optObjs,
-		})
 	}
 
 	schemaEnvelope := map[string]any{
@@ -301,8 +316,51 @@ func evaluateStandardBatch(
 	out := make(map[string]SystemOneAnswer, len(batchKeys))
 	for _, qKey := range batchKeys {
 		qSpec := allQuestions[qKey]
-		optKeys := sortedOptionKeys(qSpec.Criteria)
 		rawAns, exists := resp.Answers[qKey]
+
+		if isNoulType(qSpec.Type) {
+			pYes := 0.5
+			if exists {
+				if rawAns.Noul > 0 {
+					pYes = rawAns.Noul
+				} else if rawAns.Confidence > 0 && (strings.EqualFold(rawAns.Label, "yes") || strings.EqualFold(rawAns.Label, "true")) {
+					pYes = rawAns.Confidence
+				} else if rawAns.Confidence > 0 && (strings.EqualFold(rawAns.Label, "no") || strings.EqualFold(rawAns.Label, "false")) {
+					pYes = 1.0 - rawAns.Confidence
+				} else if rawAns.Probabilities != nil {
+					if py, ok := rawAns.Probabilities["yes"]; ok {
+						pYes = py
+					} else if pt, ok := rawAns.Probabilities["true"]; ok {
+						pYes = pt
+					} else if pn, ok := rawAns.Probabilities["no"]; ok {
+						pYes = 1.0 - pn
+					}
+				}
+			}
+			if tempScale != 1.0 && tempScale > 0 {
+				logitYes := math.Log(math.Max(1e-12, pYes)) / tempScale
+				logitNo := math.Log(math.Max(1e-12, 1.0-pYes)) / tempScale
+				maxLogit := math.Max(logitYes, logitNo)
+				ey := math.Exp(logitYes - maxLogit)
+				en := math.Exp(logitNo - maxLogit)
+				pYes = ey / (ey + en)
+			}
+			pYes = math.Max(0.0, math.Min(1.0, pYes))
+			normH := 0.0
+			if rawAns.Entropy > 0 {
+				normH = rawAns.Entropy / math.Ln2
+			}
+			out[qKey] = SystemOneAnswer{
+				Type:        "noul",
+				Noul:        &pYes,
+				PassesUsed:  1,
+				Entropy:     rawAns.Entropy,
+				NormalizedH: normH,
+			}
+			continue
+		}
+
+		optKeys := sortedOptionKeys(qSpec.Criteria)
 		probs := make(map[string]float64, len(optKeys))
 
 		if exists && len(rawAns.Probabilities) > 0 {
@@ -582,11 +640,17 @@ func NewSystemOneHTTPHandler(cli *client.Client, opts EngineOptions) http.Handle
 		}
 		resp, err := ExecuteSystemOne(r.Context(), cli, req, opts)
 		if err != nil {
-			if strings.Contains(err.Error(), "HTTP 422 Unsupported") {
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			errStr := err.Error()
+			if strings.Contains(errStr, "HTTP 422") ||
+				strings.Contains(errStr, "options per choice") ||
+				strings.Contains(errStr, "the canvas holds at most") ||
+				strings.Contains(errStr, "too many tokens") ||
+				strings.Contains(errStr, "maximum context length") ||
+				strings.Contains(errStr, "context window") {
+				http.Error(w, errStr, http.StatusUnprocessableEntity)
 				return
 			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, errStr, http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")

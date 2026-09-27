@@ -5,23 +5,26 @@ description: "Evaluating DiffusionGemma (dgem) across the 5-Area Decision Index 
 
 # EXP-12: `jev-decision-index` (`apolinario/decision-index`) Benchmark Harness & Wide-Canvas Adapter
 
-- **Status**: Verified on Serverless Cloud Run GPU (`https://dgemma-tkb3aiuiea-uc.a.run.app/v1`)
-- **Upstream Benchmark**: [`multimodalart/jev-decision-index`](https://huggingface.co/spaces/multimodalart/jev-decision-index) / [`apolinario/decision-index`](https://github.com/apolinario/decision-index) (`suite_edition: 2026-04-decision-index-37`)
+- **Status**: Stand-in Suite Verified on Serverless Cloud Run GPU (`results_decision_index_cloudrun.json`)
+- **Upstream Benchmark**: [`apolinario/decision-index`](https://github.com/apolinario/decision-index) (pinned to commit [`87d4650b`](https://github.com/apolinario/decision-index/commit/87d4650b), Edition `0.2.1` released 2026-09-27; live Space at [`multimodalart/jev-decision-index`](https://huggingface.co/spaces/multimodalart/jev-decision-index))
 - **Harness & Adapter**: `dgem bench-decision-index` ([`cmd/bench_decision_index.go`](../../cmd/bench_decision_index.go)), [`pkg/decisionindex/engine.go`](../../pkg/decisionindex/engine.go), [`pkg/decisionindex/scorer.go`](../../pkg/decisionindex/scorer.go)
-- **Dataset & Receipt**: [`benchmarks/decision_index/panel_suite.jsonl`](../../benchmarks/decision_index/panel_suite.jsonl), [`benchmarks/decision_index/results_decision_index_cloudrun.json`](../../benchmarks/decision_index/results_decision_index_cloudrun.json)
+- **Dataset & Receipt**: [`benchmarks/decision_index/panel_suite.jsonl`](../../benchmarks/decision_index/panel_suite.jsonl) (22-request representative stand-in suite), [`benchmarks/decision_index/results_decision_index_cloudrun.json`](../../benchmarks/decision_index/results_decision_index_cloudrun.json)
 
 ---
 
 ## 1. Executive Summary & Architectural Motivation
 
-While **`JevBench v1.3.1` (`EXP-11`)** evaluates tricky adversarial rule-following across 231 single-slot prompts (`K <= 6` options), **[`apolinario/decision-index`](https://github.com/apolinario/decision-index)** (`multimodalart/jev-decision-index`) evaluates whether a **System-1 Decision Model** can act as a general-purpose structured decision engine across **5 Equal-Weight Capability Areas** (19 scored panel benchmarks + display benchmarks, `132,422` requests and `775,202` decision fields in the full upstream hub):
+While **`JevBench v1.4` (`EXP-11`)** evaluates tricky adversarial rule-following across 231 single-slot prompts (`K <= 6` options), **[`apolinario/decision-index`](https://github.com/apolinario/decision-index)** evaluates whether a **System-1 Decision Model** can act as a general-purpose structured decision engine across **5 Capability Areas** (38 scored panel benchmarks, 120,340 requests in the full upstream suite):
 
-1. **Knowledge & Reasoning** (`MMLU`, `GPQA Diamond`, `GSM8K`, `ChessBench`, `CRUXEval`, `CLadder`)
-2. **Language Understanding** (`ContractNLI`, `iSarcasmEval`, `VAST`)
-3. **Retrieval & Classification** (`BRIGHT`, `Amazon ESCI`)
-4. **Tools & Automation** (`BFCL`, `ToolRet`, `RouterBench`)
-5. **Arts & Human Judgment** (`BPoMP`, `Humicroedit`, `POP909-CL`, `cfcolor`, `Habermas Machine`)
-6. **High-Cardinality Wide-Option Benchmarks** (`API-Bank` [53 options], `BANKING77` [77 options], `CLINC150+OOS` [151 options])
+1. **Knowledge & Reasoning** (`MMLU-Pro ★`, `GPQA Diamond ★`, `BBH ★`, `HLE ★`, `GSM8K`, `ChessBench`, `CRUXEval`, `CLadder`)
+2. **Language Understanding** (`ContractNLI`, `ANLI ★`, `WinoGrande ★`, `HellaSwag ★`, `iSarcasmEval`, `VAST`, `RAGTruth`)
+3. **Retrieval & Classification** (`BANKING77 ★`, `CLINC150+OOS ★`, `BRIGHT ★`, `Amazon ESCI`)
+4. **Tools & Automation** (`BFCL ★`, `API-Bank ★`, `ToolRet`, `Home appliances`)
+5. **Arts & Human Judgment** (`BPoMP`, `Humicroedit`, `POP909-CL`, `cfcolor`, `New Yorker caption matching`)
+
+*(Note: ★ denotes Gold benchmarks weighted at 1.2 in Edition 0.2.1).*
+
+> **Important Methodology Disclosure**: The `46.90` / `98.89` metrics documented below are from `dgem`'s **22-request representative panel stand-in** (`benchmarks/decision_index/panel_suite.jsonl`), designed to test capacity bottlenecks and bracket routing. They are illustrative projections, **not** an official run of the full 120,340-request upstream suite. Official full-suite evaluation requires executing the upstream `pipeline` against a live GPU endpoint.
 
 ### The Hidden Capacity Trap in `apolinario/decision-index`
 
@@ -85,44 +88,43 @@ Evaluated live against `dgemma` on Serverless Cloud Run GPU (`https://dgemma-tkb
 
 ---
 
-## 4. Upstream `multimodalart/jev-decision-index` Leaderboard Comparison & Projected Rank
+## 4. Upstream `apolinario/decision-index` Leaderboard & DiffusionGemma Lineage
 
-On the live **[`multimodalart/jev-decision-index`](https://huggingface.co/spaces/multimodalart/jev-decision-index)** leaderboard (`data/index.json` **v0.2** with 49 entrants across 40 static panel benchmarks, and `data/index-v0.1.json` **v0.1** with 31 entrants across 19 panel benchmarks), there are **four existing `google/diffusiongemma-26B-A4B-it` entries** whose rankings are separated purely by their serving/inference harness capacity and probability calibration:
+On the live **Decision Index 0.2.1** board (2026-09-27, 67 evaluated entrants across 38 scored benchmarks in 5 capability areas, weighted by $\sqrt{N}$), the top systems and existing `DiffusionGemma 26B-A4B-it` entrants are:
 
-### A. Projected Rank Summary Across `jev-decision-index` (`v0.2`, `v0.1`) & `JevBench v1.3.1`
+### A. Live Edition 0.2.1 Reference Systems & DiffusionGemma Entrants
 
-| Benchmark / Leaderboard Edition | `dgem` Operating Mode | Projected Headline Score | Projected Rank | Current `#1` to Beat | Key Architectural Driver |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **`jev-decision-index` `v0.2`**<br>*(40-Benchmark Panel, `balanced_skill` Chance-Corrected, 49 Models)* | **Mode A: Pure System-1 `dgem`**<br>*(`dgemma` 26B-A4B + [`pkg/decisionindex`](../../pkg/decisionindex/engine.go) Wide-Canvas + $T^*=1.25$ / Null-Prior, `0%` LLM)* | **`46.90` Skill**<br>*(`59.92` Raw, `ECE ~ 0.037`)* | **`#3 / 49` Overall**<br>**(`#1` Diffusion)** | `#1 AutoJev-27B` (`50.94`)<br>`#2 Rune 26B` (`47.23`)<br>`#3 Decider 27B` (`46.08`) | Eliminates `vllm-pr57250`'s `12.0%` capacity refusals (`#18` $\rightarrow$ `#3`) & unlocks `ForecastBench` (`0.0` $\rightarrow$ `34.0`) via Brier calibration |
-| **`jev-decision-index` `v0.2`**<br>*(40-Benchmark Panel, `balanced_skill` Chance-Corrected, 49 Models)* | **Mode B: `dgem` Hybrid Entropy Cascade**<br>*([`EXP-05`](./exp-05-roadmap-cascades-and-dags.md) / [`EXP-11`](./exp-11-jevbench-parity.md): `72%` `dgemma` + `28%` `gemini-3.8-flash` on $\tilde{H} \ge 0.50$)* | **`53.94` Skill**<br>*(`~65.8` Raw)* | **`#1 / 49` Overall**<br>*(Beats TypeSafe `Jev`)* | **TypeSafe `Jev 1.13.0`** (`51.67`)<br>`#1 AutoJev-27B` (`50.94`) | `+10.51` Skill lift on high-entropy `Knowledge & Reasoning` (`GPQA`, `GSM8K`, `CRUXEval`, `CLadder`) while saving `71.9%` of LLM calls |
-| **`jev-decision-index` `v0.1`**<br>*(19-Benchmark Panel, `balanced_raw` Headline, 31 Models)* | **Pure System-1 `dgem`**<br>*(`dgemma` 26B-A4B + Wide-Canvas + $T^*=1.25$, `0%` LLM)* | **`56.51` Raw**<br>*(`42.26` Skill)* | **`#1 / 31` Overall**<br>**(`#1` Open Repro)** | `#1 Jevfire` (`55.74`)<br>`#2 JoshuaSP diffgemma` (`55.56`) | Lifts DiffusionGemma `+0.95 pts` past `#1 Jevfire` (`55.74`) via multi-slot batching & wide-option bracket tournaments |
-| **`JevBench v1.3.1` (`EXP-11`)**<br>*(231-Task Public Split, 4-Axis Geometric Mean)* | **Pure System-1 `dgem` (`T* = 1.25`)**<br>*([`results_djev_upstream_calibrated.json`](../../benchmarks/jevbench/results_djev_upstream_calibrated.json))* | **`75.70` Composite**<br>*(`76.54` Acc Preset)* | **`#1` Overall** | `#1 Hopper` (`75.40`)<br>Raw `djev` (`75.17`) | Post-hoc Slot Temperature Scaling ($T^*=1.25$) cuts ECE in `0 ms` while keeping `239 ms` p50 speed (`90.73`) |
+| Rank | Entrant ID / Engine | `balanced_skill` *(Headline)* | `balanced_raw` | Coverage | Notes & Failure Modes |
+| :---: | :--- | :---: | :---: | :---: | :--- |
+| **`#01`** | `Surogate Rune 26B-A4B v3` | **`57.44`** | `67.30` | `0.76` | Rebuilt Rune frontend; top open entrant |
+| **`#02`** | `Decider chat · Gemma-4-31B` | **`57.33`** | `67.22` | `0.76` | Autoregressive Gemma 4 with constrained search |
+| **`#03`** | `AutoJev-27B` | **`56.40`** | `66.89` | `0.76` | Full fine-tune on Qwen |
+| **`#09`** | `JoshuaSP diffusiongemma (open-jev)` | **`49.47`** | `61.28` | `0.76` | **#1 DiffusionGemma on Edition 0.2.1**; uses open-jev canvas |
+| **`#17`** | `djev` | **`40.28`** | `53.36` | `0.76` | Davipar/djev-dev single-readout baseline |
+| **`#25`** | `razorback16 openjev (NVFP4, vLLM)` | **`37.25`** | `50.90` | `0.76` | Single-read NVFP4 on vLLM |
+| **`#31`** | `mmastrac diffusiongemma (vLLM PR 57250)` | **`32.24`** | `45.72` | **`0.6927`** | Base `structured_server.py`; suffers **12.0% capacity refusals** on $K > 26$ |
+| *Proj.* | **`dgem` Wide-Canvas Adapter (Stand-in 22 reqs)** | *`46.90` (Proj)* | *`59.92`* | **`1.000`** | **100% coverage** via bracket tournaments on $K > 26$ & batching on $M > 8$ |
 
-### B. Why the Four Existing `DiffusionGemma` Entrants Rank `#18`, `#15`, `#11`, and `#6` on `v0.2`
+### B. Understanding the Capacity Refusal Gap (`mmastrac` #31 vs. `dgem`)
 
-| Live `v0.2` Rank | Entrant ID (`multimodalart/jev-decision-index`) | `balanced_skill` *(Headline)* | `balanced_raw` | Refusal Gap Rate | 10-Bin `ECE` / `Brier` | p50 Latency | Root Cause of Score Loss (And How `dgem` Resolves It) |
-| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **`#18`** | `vllm-pr57250`<br>*(mmastrac raw vLLM PR #57250)* | `31.10` | `45.77` | **`12.01%`** | `0.2129` / `0.5676` | `124.7 ms` | Raw `structured_server.py` rejects `K > 26` options (`"supports at most 26 answer options"`), scoring **`0.0`** on `BANKING77`, `CLINC150`, `API-Bank`, and `ChessBench`. |
-| **`#15`** | `razorback-one-read-3e296f08`<br>*(razorback16 NVFP4 vLLM)* | `34.99` | `49.73` | `0.0%` *(5.7% in v0.1)* | `0.2463` / `0.6272` | `76.7 ms` | Single-read NVFP4 fallback degrades multi-slot accuracy (`ContractNLI` `60.8%` vs `65.2%`) and suffers `T=1.0` overconfidence (`ECE = 0.2463`). |
-| **`#11`** | `djev`<br>*(Davipar/djev-dev)* | `37.59` | `51.33` | **`0.96%`** | `0.2323` / `0.5974` | `84.3 ms` | Fails with `"more questions per request than its answer canvas holds"` on multi-slot `ContractNLI` (`92.6%` coverage) and weak wide-option routing (`Retrieval` skill `34.46`). |
-| **`#06`** | `joshua-diffusion-full`<br>*(JoshuaSP/open-jev)* | **`44.16`** | **`57.69`** | `0.0%` | `0.2388` / `0.5677` | `266.1 ms` | Currently **#1 among all Diffusion models**, but scores **`0.00` on `ForecastBench`** because uncalibrated `T=1.0` probabilities (`Brier = 0.5677`) fail `clip((0.25 - Brier)/0.25)`. |
-| ⬆️ **`#03` (Proj.)** | **`dgem` (Pure System-1 Adapter)**<br>*([`cmd/bench_decision_index.go`](../../cmd/bench_decision_index.go))* | **`46.90`** | **`59.92`** | **`0.0%`** | **`~0.0371`** / **`0.0184`** | **`~84–125 ms`** | Combines `0%` refusal **Multi-Slot Batching** (`M > 8`), **2-Stage Bracket Tournaments** (`K > 26`), and **$T^*=1.25$ / Null-Prior Brier Calibration** (`ForecastBench` `0.0` $\rightarrow$ `~34.0`). |
-| ⬆️ **`#01` (Proj.)** | **`dgem` (Entropy-Gated Cascade)**<br>*([`cmd/cascade_gemini.go`](../../cmd/cascade_gemini.go))* | **`53.94`** | **`~65.80`** | **`0.0%`** | **`~0.0369`** | **`~110 ms` p50** | Escalates only high-entropy slots ($\tilde{H} \ge 0.50$, `28%` of traffic) to `gemini-3.8-flash`, surpassing **`#1 AutoJev-27B` (`50.94`)** and **TypeSafe `Jev` (`51.67`)**. |
+The raw `structured_server.py` implementation in vLLM PR #57250 enforces a strict single-letter ceiling:
+```python
+if len(q["choices"]) > 26:
+    raise SchemaError(f"question {qid!r}: at most 26 alternatives")
+```
+When evaluated against the full Decision Index suite, this causes immediate `HTTP 422` capacity rejections across:
+- **`BANKING77`** (32 options per request)
+- **`CLINC150+OOS`** (36 options per request)
+- **`API-Bank`** (30 options per request)
+- **`ContractNLI`** (17 simultaneous questions per request, exceeding 10-slot canvas limit)
 
-### C. 5-Area Category Comparison Against the `v0.2` Top 6 & TypeSafe `Jev 1.13.0`
+Because the Decision Index treats every capacity refusal as wrong (`0.0`), `mmastrac`'s coverage drops from `0.76` to `0.6927`, costing **`~14.7` skill points** (`32.24` vs. `JoshuaSP`'s `49.47`).
 
-| Rank | Engine / Model | **1. Knowledge** *(10 benches)* | **2. Language** *(10 benches)* | **3. Retrieval** *(7 benches)* | **4. Tools** *(6 benches)* | **5. Arts** *(7 benches)* | **Headline `balanced_skill`** | **`balanced_raw`** | **p50 Latency** |
-| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| *Ref* | **TypeSafe `Jev 1.13.0`** *(Proprietary)* | `41.18` | `62.41` | `46.85` | `68.12` | `39.79` | **`51.67`** | `63.87` | — |
-| 🏆 **#1 (Proj)** | **`dgem` Hybrid Cascade (`dgemma` + `28%` Gemini 3.8)** | **`44.28`** | **`61.44`** | **`52.32`** | **`68.52`** | **`43.12`** | **`53.94`** | **`~65.80`** | **`~110 ms`** |
-| `#1` | `autojev-27b` *(Qwen3.8-27B Full FT)* | `40.93` | `61.90` | `42.00` | `69.98` | `39.88` | **`50.94`** | `63.37` | `104.9 ms` |
-| `#2` | `rune-26b-a4b` *(Surogate Rune 26B-A4B)* | `37.80` | `58.12` | `44.10` | `64.90` | `31.23` | **`47.23`** | `59.39` | `679.7 ms` |
-| 🥉 **#3 (Proj)** | **`dgem` Pure System-1 (`dgemma` + Wide-Canvas + $T^*=1.25$)** | **`33.77`** | **`54.25`** | **`47.82`** | **`62.32`** | **`36.32`** | **`46.90`** | **`59.92`** | **`~84–125 ms`** |
-| `#3` | `decider-chat-qwen3.6-27b` *(Qwen3.6-27B)* | `36.14` | `56.82` | `41.95` | `63.41` | `32.08` | **`46.08`** | `58.98` | `917.6 ms` |
-| `#4` | `jevfire-uncapped` *(Qwen3.8-27B FP8)* | `30.23` | `51.79` | `49.46` | `64.49` | `32.70` | **`45.73`** | `59.17` | `78.1 ms` |
-| `#5` | `winnow-12b-q8` *(Gemma-4-12B LoRA)* | `34.01` | `55.44` | `41.83` | `63.82` | `30.17` | **`45.05`** | `58.00` | `64.3 ms` |
-| `#6` | `joshua-diffusion-full` *(DiffusionGemma 26B)* | `32.63` | `52.28` | `46.52` | `61.96` | `27.41` | **`44.16`** | `57.69` | `266.1 ms` |
-| `#11` | `djev` *(DiffusionGemma 26B)* | `26.12` | `49.16` | `34.46` | `47.20` | `31.01` | **`37.59`** | `51.33` | `84.3 ms` |
+`dgem`'s [`pkg/decisionindex`](../../pkg/decisionindex/engine.go) eliminates this gap by:
+1. **Multi-Slot Canvas Batching**: Automatically slicing requests with $M > 8$ simultaneous questions into canvas-safe sub-requests and stitching probability distributions.
+2. **2-Stage Bracket Tournaments**: Slicing $K > 26$ options into $\le 20$-option brackets in Pass 1 and running a Finals pass to yield normalized probabilities over all $K$ candidates without dropping options.
+
+> **Validation Roadmap**: `dgem` exposes `dgem systemone serve` and `/v1/systemone` to allow running the official `python -m decision_index pipeline --engine http` directly against our server for certified full-suite evaluation.
 
 ---
 
