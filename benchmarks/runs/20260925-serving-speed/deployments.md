@@ -17,6 +17,12 @@
 | 09-28 14:20 | Cloud Run `dgemma` → revision `00032` | Image `504638d` (no-traffic tag, verified, then 100%) | Contract identical | Revision `00031` |
 | 09-28 14:41–14:52 | Cloud Run `dgemma-gateway` → revision `00050` | Rebuilt from `main` (PRs #5–#11), `DGEM_GATEWAY_HOSTS` set, no-traffic tag then 100% | Backend config, all backends, MCP, IAP custom domain | Revision `00047` |
 
+| 09-28 15:39–16:35 | Public images `dgem:4b1b809`, `dgem-weights:4b1b809` (dgem-diffusiongemma) | First build with all serving fixes + digit-string samples; canary-validated | Contract identical to prod (plus samples "4"), 0 errors at 16/32 workers; baked image uses its weights | — |
+| 09-28 17:06–17:34 | Release **v0.1.0**: `dgem@sha256:5fa4a866…`, `dgem-weights@sha256:cbbb53c2…` | First versioned release (`make release`); images report `version` in `/health` | — | — |
+| 09-28 17:27–17:40 | Vertex `<endpoint-id>` | v0.1.0 deployed next to `504638d` at 0% (`VERTEX_NEW_TRAFFIC=0`), switched to 100% | Contract identical; GPU 55.2 / 91.0 / 63.2 ms (1 sample / 4 samples / image); 0 errors in 1,024 requests at 16/32 workers, up to 73.9 req/s | Move traffic back to the `504638d` deployed model (kept deployed) |
+| 09-28 17:20 | Cloud Run `dgemma` → revision `00034` (tag `v010`) | v0.1.0 via `deploy_cloudrun_vllm.sh CLOUDRUN_TAG=v010` (refreshes the embedded entrypoint), verified, 100% | `/health` version v0.1.0; contract identical | Revision `00032` |
+| 09-28 17:45 | Cloud Run `dgemma-gateway` → revision `00053` | Rebuilt from `main` (`v0.1.0-2-gbbcbc45`): PRs #13, #15, #17, MCP health text, client samples fix | Backend config, all three backends, MCP tools/list, decide summary fields, health tool, IAP custom domain, `dgem mcp --remote` | Revision `00050` |
+
 Follow-ups:
 - ~~Rotate the Hugging Face token~~ done (version 2).
 - ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show

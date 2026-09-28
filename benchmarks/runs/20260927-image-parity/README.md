@@ -124,3 +124,10 @@ Built in `dgem-diffusiongemma` from `4b1b809` (includes the four fixes above plu
 contract probe against production (identical except `samples: "4"`, which it now accepts), latency matched
 (61.5 ms / 101 ms / 75 ms GPU for 1 sample / 4 samples / image), and 256 requests at 16 and 32 workers had 0
 errors. The baked image loaded its own weights (no Cloud Storage copy).
+
+## v0.1.0 in production (2026-09-28)
+
+`v0.1.0` (`dgem@sha256:5fa4a866…`, same serving tree as `4b1b809`) now serves both production backends.
+On the production Vertex endpoint (`speed_modes_v010_g4.json`, `speed_sweep_v010_g4.json`): GPU p50 55.2 ms
+(1 sample), 91.0 ms (4 samples), 63.2 ms (image); 0 errors in 1,024 requests at 16 and 32 workers
+(73.9 decisions/s at 1 sample, 45.8/s at 4 samples).

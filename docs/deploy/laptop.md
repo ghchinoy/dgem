@@ -32,11 +32,11 @@ The public images need a GPU that can run the NVFP4 checkpoint (Blackwell, e.g. 
 ```bash
 # Lean image: downloads the public weights from Hugging Face on first boot (needs internet)
 docker run --gpus all -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:4b1b809@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26
 
 # Weights baked into the image: no download at boot, larger pull (works offline once pulled)
 docker run --gpus all -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:4b1b809@sha256:7cfbbb9207f50cb4ef5d4432c88cde97a893770dc1a04329e8d4d0f6aa0d3c56
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:v0.1.0@sha256:cbbb53c25d5c9bcf8a7159e2f953b364720fbe54e740e35f6e158e815644da73
 ```
 
 Current tags and digests: [Public container images](public-images.md). Wait until
