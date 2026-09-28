@@ -1,3 +1,5 @@
+# Baked-weights image on top of dgem:$SHORT_SHA (inherits its version labels and env). Only the commit tag is
+# pushed; release and :latest tags are added by `make release` / `make publish-latest`.
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -7,12 +9,9 @@ steps:
       - '--build-arg'
       - 'BASE=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$SHORT_SHA'
       - '-t'
-      - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest'
-      - '-t'
       - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:$SHORT_SHA'
       - '.'
 images:
-  - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:latest'
   - 'us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:$SHORT_SHA'
 options:
   machineType: 'E2_HIGHCPU_32'

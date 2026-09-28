@@ -56,9 +56,16 @@ touch "${TMP_CTX}/studio/dist/.gitkeep"
 cp deploy/gateway/Dockerfile "${TMP_CTX}/Dockerfile"
 
 echo "-> Building ${IMAGE} via Cloud Build..."
+GW_VERSION="$(git describe --tags --match 'v*' --always --dirty 2>/dev/null || echo dev)"
+cat > "${TMP_CTX}/cloudbuild.yaml" <<YAML
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, --build-arg=DGEM_VERSION=${GW_VERSION}, --build-arg=DGEM_REVISION=$(git rev-parse --short HEAD), -t, "${IMAGE}", .]
+images: ["${IMAGE}"]
+YAML
 gcloud builds submit "${TMP_CTX}" \
   --project="${PROJECT}" \
-  --tag="${IMAGE}" \
+  --config="${TMP_CTX}/cloudbuild.yaml" \
   --suppress-logs \
   --quiet
 

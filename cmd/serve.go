@@ -924,6 +924,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":          "ok",
 			"service":         "dgem-gateway",
+			"version":         Version,
+			"revision":        buildRevision(),
 			"default_backend": defB,
 			"upstream_url":    viper.GetString("url"),
 			"vertex_url":      vxURL,

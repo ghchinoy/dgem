@@ -67,6 +67,22 @@ When changing `deploy/cloudrun/server/structured_server.py`, keep it as vLLM's u
 re-applies. The patch must keep the `/health` readiness fields, HTTP/1.1 keep-alive with backlog 256,
 `MAX_INFLIGHT`, `DEFAULT_SAMPLES` and the `/predict` / `/rawPredict` aliases.
 
+## Release a new version
+
+Serving images, the gateway and the CLI share one version (`vMAJOR.MINOR.PATCH`, see
+[CHANGELOG.md](https://github.com/ghchinoy/dgem/blob/main/CHANGELOG.md)). A running service reports it: `/health` returns `version` and `revision`,
+images carry `org.opencontainers.image.version`, and `dgem --version` prints it.
+
+1. Add a `## vX.Y.Z` section to `CHANGELOG.md` and commit it on `main`.
+2. `make release VERSION=vX.Y.Z`: checks a clean `main`, runs the tests, tags git, builds `dgem` and
+   `dgem-weights` with the version baked in, and adds the `vX.Y.Z` image tags. It prints the digests.
+3. Validate the release image next to production ([Promote a new serving image](#promote-a-new-serving-image)).
+4. `make publish-latest VERSION=vX.Y.Z` to move `:latest`, `git push origin vX.Y.Z`, and pin the new digests in
+   [Public container images](/dgem/deploy/public-images/).
+5. Deploy to your own endpoints by digest; record the version in your deployment log.
+
+Builds between releases report `git describe` versions such as `v0.1.0-3-gabc1234`.
+
 ## Roll back
 
 | Component | How | Time |

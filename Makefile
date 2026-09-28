@@ -1,12 +1,15 @@
-.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public docs-sync-check
+.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights release publish-latest bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public docs-sync-check
 
 .DEFAULT_GOAL := help
 
 # Version and build metadata
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+# Build version: the release tag (v0.1.0) on a release commit, v0.1.0-N-g<sha> after it (git describe).
+# Releases: see `make release`.
+BUILD_VERSION ?= $(shell git describe --tags --match 'v*' --always --dirty 2>/dev/null || echo "dev")
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)
+LDFLAGS := -X github.com/ghchinoy/dgem/cmd.Version=$(BUILD_VERSION) -X github.com/ghchinoy/dgem/cmd.Commit=$(COMMIT) -X github.com/ghchinoy/dgem/cmd.Date=$(DATE)
+REGISTRY := us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem
 
 help: ## Show this help message
 	@echo "dgem - DiffusionGemma Assistant & Structured Decision Engine"
@@ -109,27 +112,40 @@ studio-dev: ## Launch Vite HMR dev server for Decision Studio (proxies /api to 1
 cloudrun-build: ## Build and push the self-contained Cloud Run container image to Artifact Registry
 	./scripts/build_cloudrun_image.sh
 
-image: ## Build and push public dgem container (weights pulled on startup) to dgem-diffusiongemma Artifact Registry
-	@echo "==> Building static Linux dgem binary for container..."
+image: ## Build and push the public dgem serving image (tag: commit SHA; version baked in) to dgem-diffusiongemma
+	@echo "==> Building static Linux dgem binary ($(BUILD_VERSION)) for the container..."
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o deploy/cloudrun/dgem .
-	@echo "==> Submitting Cloud Build for dgem (lean base) in project dgem-diffusiongemma..."
-	gcloud builds submit deploy/cloudrun \
-		--project=dgem-diffusiongemma \
-		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$$(git rev-parse --short HEAD)" \
-		--timeout=2400 \
-		--machine-type=e2-highcpu-32
+	gcloud builds submit deploy/cloudrun --project=dgem-diffusiongemma \
+		--config=deploy/cloudrun/cloudbuild.yaml \
+		--substitutions=_IMAGE=$(REGISTRY)/dgem,_TAG=$(COMMIT),_VERSION=$(BUILD_VERSION)
 	@rm -f deploy/cloudrun/dgem
-	@# gcloud builds submit only honours one --tag; move :latest separately.
-	gcloud artifacts docker tags add \
-		"us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$$(git rev-parse --short HEAD)" \
-		"us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest"
 
-image-weights: ## Build and push self-contained dgem-weights container (baked NVFP4 weights) to dgem-diffusiongemma
-	@echo "==> Submitting Cloud Build for dgem-weights (baked NVFP4) in project dgem-diffusiongemma..."
-	gcloud builds submit deploy/cloudrun \
-		--project=dgem-diffusiongemma \
+image-weights: ## Build and push dgem-weights (baked NVFP4 weights) on top of dgem:<commit>
+	gcloud builds submit deploy/cloudrun --project=dgem-diffusiongemma \
 		--config=deploy/cloudrun/cloudbuild-weights.yaml \
-		--substitutions=SHORT_SHA=$$(git rev-parse --short HEAD)
+		--substitutions=SHORT_SHA=$(COMMIT)
+
+release: ## Cut a release: make release VERSION=v0.2.0 (clean main, tests, CHANGELOG entry, git tag, both images, v* tags)
+	@echo "$(VERSION)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "usage: make release VERSION=vMAJOR.MINOR.PATCH"; exit 1; }
+	@test -z "$$(git status --porcelain --untracked-files=no)" || { echo "working tree not clean"; exit 1; }
+	@test "$$(git rev-parse --abbrev-ref HEAD)" = main || { echo "releases are cut from main"; exit 1; }
+	@grep -q "^## $(VERSION)" CHANGELOG.md || { echo "add a '## $(VERSION)' section to CHANGELOG.md first"; exit 1; }
+	@! git rev-parse -q --verify "refs/tags/$(VERSION)" >/dev/null || { echo "tag $(VERSION) already exists"; exit 1; }
+	go test ./cmd/ ./pkg/...
+	git tag -a $(VERSION) -m "dgem $(VERSION)"
+	$(MAKE) image BUILD_VERSION=$(VERSION)
+	$(MAKE) image-weights
+	gcloud artifacts docker tags add $(REGISTRY)/dgem:$(COMMIT) $(REGISTRY)/dgem:$(VERSION)
+	gcloud artifacts docker tags add $(REGISTRY)/dgem-weights:$(COMMIT) $(REGISTRY)/dgem-weights:$(VERSION)
+	@echo "==> Released $(VERSION). Digests:"
+	@gcloud artifacts docker images describe $(REGISTRY)/dgem:$(VERSION) --format='value(image_summary.digest)'
+	@gcloud artifacts docker images describe $(REGISTRY)/dgem-weights:$(VERSION) --format='value(image_summary.digest)'
+	@echo "Next: validate (docs/operate/runbook.md), then 'make publish-latest VERSION=$(VERSION)' and 'git push origin $(VERSION)'."
+
+publish-latest: ## After validation: point dgem:latest and dgem-weights:latest at VERSION
+	@test -n "$(VERSION)" || { echo "usage: make publish-latest VERSION=v0.2.0"; exit 1; }
+	gcloud artifacts docker tags add $(REGISTRY)/dgem:$(VERSION) $(REGISTRY)/dgem:latest
+	gcloud artifacts docker tags add $(REGISTRY)/dgem-weights:$(VERSION) $(REGISTRY)/dgem-weights:latest
 
 cloudrun-stage: ## Pre-stage model weights in GCS for Cloud Run GCS FUSE volume mounting
 	./scripts/stage_model_gcs.sh

@@ -468,8 +468,11 @@ def _health_info():
     """Readiness telemetry for /health: always HTTP 200 (the container is up), with
     vllm_ready/phase/bytes_staged_gb/warmed from entrypoint.sh's warmup_state.json so the
     gateway, MCP get_health_and_gpu_status and the Studio can report cold-start progress."""
-    info = {"status": "ok", "server": "dgem-structured-server", "vllm_ready": False,
-            "phase": "loading_vllm_siglip", "bytes_staged_gb": 0.0}
+    info = {"status": "ok", "server": "dgem-structured-server",
+            "version": os.environ.get("DGEM_VERSION", "dev"),
+            "revision": os.environ.get("DGEM_REVISION", "unknown"),
+            "vllm_commit": os.environ.get("DGEM_VLLM_COMMIT", ""),
+            "vllm_ready": False, "phase": "loading_vllm_siglip", "bytes_staged_gb": 0.0}
     try:
         with open("/tmp/dgemma/warmup_state.json") as wf:
             info.update(json.load(wf))

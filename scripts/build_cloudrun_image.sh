@@ -8,7 +8,7 @@ PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true
 REGION="${GCP_REGION:-us-central1}"
 REPOSITORY="${AR_REPOSITORY:-dgem}"
 IMAGE_NAME="${IMAGE_NAME:-dgemma}"
-TAG="${IMAGE_TAG:-latest}"
+TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD)}"
 
 if [[ -z "$PROJECT_ID" ]]; then
   echo "Error: No GCP project detected. Set GCP_PROJECT=<project-id>."
@@ -39,15 +39,15 @@ fi
 
 # 2. The Dockerfile bundles a static dgem binary (systemone adapter for ROLE=decision-index)
 echo "==> Building static Linux dgem binary into deploy/cloudrun/dgem..."
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o deploy/cloudrun/dgem .
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X github.com/ghchinoy/dgem/cmd.Version=$(git describe --tags --match 'v*' --always --dirty 2>/dev/null || echo dev) -X github.com/ghchinoy/dgem/cmd.Commit=$(git rev-parse --short HEAD)" -o deploy/cloudrun/dgem .
 trap 'rm -f deploy/cloudrun/dgem' EXIT
 
-echo "==> Submitting build to Google Cloud Build (machine: e2-highcpu-8, timeout: 30m)..."
+VERSION_STR="$(git describe --tags --match 'v*' --always --dirty 2>/dev/null || echo dev)"
+echo "==> Submitting build to Google Cloud Build (version ${VERSION_STR})..."
 gcloud builds submit deploy/cloudrun \
   --project="$PROJECT_ID" \
-  --tag="$AR_TARGET" \
-  --machine-type=e2-highcpu-8 \
-  --timeout=1800s
+  --config=deploy/cloudrun/cloudbuild.yaml \
+  --substitutions="_IMAGE=${AR_TARGET%:*},_TAG=${TAG},_VERSION=${VERSION_STR}"
 
 echo ""
 echo "================================================================================"

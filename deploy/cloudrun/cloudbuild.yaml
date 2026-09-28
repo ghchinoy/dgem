@@ -1,0 +1,24 @@
+# Serving image build with the release version baked in (labels, env, /health).
+# Used by `make image` (public, dgem-diffusiongemma) and scripts/build_cloudrun_image.sh (your project).
+#   gcloud builds submit deploy/cloudrun --config=deploy/cloudrun/cloudbuild.yaml \
+#     --substitutions=_IMAGE=<registry>/dgem,_TAG=<git sha>,_VERSION=<git describe>
+# Only the commit tag is pushed here; release (v*) and :latest tags are added afterwards with
+# `gcloud artifacts docker tags add` (see `make release` / `make publish-latest`).
+substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem
+  _TAG: dev
+  _VERSION: dev
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=DGEM_VERSION=${_VERSION}
+      - --build-arg=DGEM_REVISION=${_TAG}
+      - -t
+      - ${_IMAGE}:${_TAG}
+      - .
+images:
+  - ${_IMAGE}:${_TAG}
+options:
+  machineType: E2_HIGHCPU_32
+timeout: 2400s

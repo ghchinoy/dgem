@@ -7,6 +7,18 @@ ARG BASE=vllm/vllm-openai:nightly-a9eafde59cbd55182dc2265cc398b7186f0a0eaa@sha25
 
 FROM ${BASE} AS base
 ARG VLLM_COMMIT=a9eafde59cbd55182dc2265cc398b7186f0a0eaa
+# Release version (git describe, e.g. v0.1.0) and commit, passed by deploy/cloudrun/cloudbuild.yaml.
+ARG DGEM_VERSION=dev
+ARG DGEM_REVISION=unknown
+LABEL org.opencontainers.image.title="dgem" \
+      org.opencontainers.image.description="DiffusionGemma decision-model serving (vLLM + dgem structured server)" \
+      org.opencontainers.image.source="https://github.com/ghchinoy/dgem" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${DGEM_VERSION}" \
+      org.opencontainers.image.revision="${DGEM_REVISION}" \
+      dev.dgem.vllm.commit="${VLLM_COMMIT}"
+# Reported by /health so a running service identifies its release.
+ENV DGEM_VERSION=${DGEM_VERSION} DGEM_REVISION=${DGEM_REVISION} DGEM_VLLM_COMMIT=${VLLM_COMMIT}
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
