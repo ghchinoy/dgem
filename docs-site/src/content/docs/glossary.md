@@ -124,7 +124,7 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 ### Dual Encoder (`GTR` / `Sentence-T5`)
 * **In Plain English**: A bi-encoder architecture that compresses the input text into one vector $u$ and the label description into another vector $v_k$ *independently*, then compares the two vectors at the very end.
 * **Under the Hood**: Because $u = E_x(x) \in \mathbb{R}^d$ is computed **before** the model sees the policy rules or hypothesis $c_k$, token-to-token alignment (like checking whether a specific SQL argument matches an allowlist or comparing `50–75%` against `100%`) is lost during vector pooling (**Late Interaction Bottleneck**).
-* **Where You See It in `dgem`**: Contrasted with `dgem`'s early all-to-all cross-attention in [Discrete Diffusion vs. Autoregression (§5)](/dgem/architecture/#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute).
+* **Where You See It in `dgem`**: Contrasted with `dgem`'s early all-to-all cross-attention in [Discrete Diffusion vs. Autoregression (§5)](/dgem/confidence/architecture/#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute).
 
 ### `TabPFN` & Tabular Foundation Models
 * **In Plain English**: A foundation model pre-trained on millions of synthetic spreadsheets that predicts a missing target column by attending across labeled example rows (`in-context learning` for tables).

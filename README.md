@@ -8,33 +8,32 @@
 
 | Piece | What it does | Start here |
 | :--- | :--- | :--- |
-| **Decision engine** (`dgem decide`) | Compiles `.json.tmpl` *Policy-as-Template* files into one-pass multi-question readouts with per-option probabilities and Shannon entropy. | [The Journey to Decision Models](docs/decision-models-primer.md) · [Template Catalog](docs/templates.md) |
-| **Invariant Decision Calibration (IDC)** — *the novel part* | Checks whether a decision depends on **where options were listed**: divides out the model's "pick option A" habit and reads a **reversed ballot on the same canvas, in the same forward pass**. | [Confidence Beyond Shannon (IDC)](docs/confidence-beyond-shannon.md) |
+| **Decision engine** (`dgem decide`) | Compiles `.json.tmpl` *Policy-as-Template* files into one-pass multi-question readouts with per-option probabilities and Shannon entropy. | [The Journey to Decision Models](docs/decision-models-primer.md) · [Template Catalog](docs/policies/templates.md) |
+| **Confidence and calibration** | Per-answer probabilities and hesitation from one pass, calibration checks on labelled data, and research on option-order bias (Invariant Decision Calibration, IDC). | [Confidence and calibration](docs/confidence/index.md) · [IDC](docs/confidence-beyond-shannon.md) |
 | **Entropy-gated cascade** | Answers low-uncertainty decisions directly and escalates the rest to Vertex AI `gemini-3.8-flash` with the Stage-1 probabilities attached. | [EXP-05](docs/experiments/exp-05-roadmap-cascades-and-dags.md) |
-| **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/studio-mcp-api.md) · [CLI reference](docs/cli-reference.md) |
-| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-17`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
-| **Serving** | Vertex AI Dedicated Endpoint on RTX PRO 6000 (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [Path to Production](docs/path-to-production.md) · [Vertex AI vs. Cloud Run](docs/vertex-ai-vs-cloudrun.md) |
+| **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/reference/studio-mcp-api.md) · [CLI reference](docs/reference/cli.md) |
+| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-18`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
+| **Serving** | Vertex AI Dedicated Endpoint on RTX PRO 6000 (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [From laptop to production](docs/deploy/index.md) |
 
-## 5-Minute Quick Start
+## Quick Start
 
-Full walkthrough: **[5-Minute Quickstart Guide](docs/quickstart.md)**.
+Full walkthrough: **[Run on your laptop](docs/deploy/laptop.md)**.
 
 ### 1. Start an Inference Backend
 Choose the option matching your hardware:
 
 * **Local Apple Silicon Mac (Metal)** — No Docker or cloud needed:
   ```bash
-  make setup && make download && make serve   # Starts diffgemma on :8080 ($0/hr)
+  make setup && make download && make local-up   # engine on :8080, Decision Studio on :8090
   ```
 * **Any Linux/Windows Workstation with NVIDIA GPU (Docker)**:
   ```bash
-  # Pre-baked weights container (no weight download at boot):
-  docker run --gpus all -p 8080:8080 \
-    us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
+  # Lean public image (downloads the public weights on first boot); tags and digests: docs/deploy/public-images.md
+  docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:<TAG>@sha256:<DIGEST>
   ```
 * **Remote Google Cloud Endpoint**:
   ```bash
-  export DGEM_VERTEX_URL="<endpoint-id>" DGEM_GCP_AUTH=1
+  export DGEM_VERTEX_URL="<endpoint-id>" GCP_PROJECT_NUMBER="<project-number>" DGEM_GCP_AUTH=1
   ```
 
 ### 2. Build CLI & Execute Your First Decision
@@ -50,7 +49,8 @@ make build                                   # compiles ./bin/dgem
 ```
 Open **[http://localhost:8090](http://localhost:8090)** to inspect all 26+ templates, evaluate Stage 2 Gemini cascades, and visualize OpenTelemetry trace waterfalls.
 
-For deploying your own dedicated Cloud Run GPU or Vertex AI endpoints, see **[Public Container Images](docs/public-image.md)** and **[Deploy on Your Own Cloud GPU](docs/deploy-your-own-gpu.md)**.
+**Next, pick your path:** [build, deploy and operate](docs/deploy/index.md) ·
+[confidence and calibration](docs/confidence/index.md) · [write your first policy](docs/policies/first-policy.md).
 
 ---
 
@@ -62,12 +62,12 @@ For deploying your own dedicated Cloud Run GPU or Vertex AI endpoints, see **[Pu
 
 **What IDC does.**
 1. **Null-Prior De-Biasing** (`--null-prior-debias`, no labeled data): divides out the measured slot habit. On the 50-item calibration suite it improved Brier from 0.175–0.193 (three same-session baselines) to 0.147; on the 231-item JevBench set it did **not** help (186 vs 187 correct, worse calibration). Suite-dependent, so validate before enabling.
-2. **Dual-Mirror Canvas** (`--dual-mirror`): adds a reversed-order copy of each choice question **to the same canvas**, so the forward and reversed readings come from **one forward pass**, and their gap (`Mirror TVD`) flags order-dependent answers. A research diagnostic for now: a slot-naming bug (`__mirror_rev`, fixed to `__rev`) degraded readings, and even after the fix the extra slot lowers forward accuracy on JevBench (189 → 163–169), so it is not recommended in production ([EXP-14](docs/experiments/exp-14-idc-rerun.md)).
+2. **Dual-Mirror Canvas** (`--dual-mirror`): adds a reversed-order copy of each choice question **to the same canvas**, so the forward and reversed readings come from **one forward pass**, and their gap (`Mirror TVD`) flags order-dependent answers. A research diagnostic: with lettered options the reversed slot lowers forward accuracy (letter collision, [EXP-15](docs/experiments/exp-15-letter-collision.md)); digit-labelled mirrors (`--mirror-mode reversed-digits`) stay within noise but add little error detection beyond hesitation ([EXP-15](docs/experiments/exp-15-letter-collision.md)–[EXP-17](docs/experiments/exp-17-separate-pass-mirror.md)). Not recommended in production.
 3. **Slot Temperature Scaling** (`EXP-11`): softens over-sharp scores. Needs labeled data. Fitted on held-out folds it cut ECE by 24–33% on 231 JevBench items ($T^* \approx 1.5$) but gave no reliable gain on the 50-item suite.
 
 **What's new.** Removing a content-free prior (*contextual calibration*, Zhao et al. 2021), permutation debiasing (e.g. PriDe, Zheng et al. 2023), and temperature scaling (Guo et al. 2017) are known techniques. The part specific to a diffusion decision model is **checking a reversed ballot on every request without a second forward pass**, which turns order sensitivity from an offline audit into a per-request signal.
 
-**Status.** A same-session re-run on 50 + 231 items ([EXP-14](docs/experiments/exp-14-idc-rerun.md), versioned receipts in `benchmarks/runs/`) gave mixed results: the order-bias *problem* is real and reproducible, but the corrections are suite-dependent and the same-canvas mirror needs redesign. IDC is CLI-only today. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and [Proposed Experiments](docs/experiments/proposed.md) (`PROP-00`–`PROP-10`) for what comes next.
+**Status.** A same-session re-run on 50 + 231 items ([EXP-14](docs/experiments/exp-14-idc-rerun.md), versioned receipts in `benchmarks/runs/`) and follow-ups (EXP-15–EXP-17) gave mixed results: the order-bias *problem* is real and reproducible, but the corrections are suite-dependent, and hesitation gating remains the recommended production signal. IDC is CLI-only today. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and [Proposed Experiments](docs/experiments/proposed.md) for what comes next.
 
 ---
 
@@ -90,7 +90,7 @@ Run-to-run noise is about ±1 item on 50 and ±2 on 231. Cascade thresholds were
 
 ## Four Ways to Use `dgem`
 
-See **[Decision Studio Web App, MCP Server & HTTP Gateway API (`docs/studio-mcp-api.md`)](docs/studio-mcp-api.md)** and **[Backend Routing & Cascades (`docs/experiment-authoring-guide.md`)](docs/experiment-authoring-guide.md)** for full details:
+See **[Decision Studio, MCP and HTTP API](docs/reference/studio-mcp-api.md)** and **[Gateway and routing](docs/deploy/gateway.md)** for full details:
 
 | Interaction Surface | Command / Endpoint | Description |
 | :--- | :--- | :--- |
@@ -110,7 +110,7 @@ A **zero-shot decision model** sits in between. `dgem` compiles a `.json.tmpl` t
 | Architectural Dimension | Discrete Diffusion Decision Model (`dgem`) | Discriminative Encoder (DeBERTa-v3 / Llama-Guard) | Autoregressive LLM (Gemini / Gemma 4) | Compiled Rulebook (`ecotone` C++ WFST) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Policy Adaptability** | **Zero-shot Policy-as-Template** (edit `.json.tmpl`) | Labeled dataset & retraining per label change | Zero-shot prompt engineering | Manual grammar authoring & compilation |
-| **Inference Latency** | **~125 ms** (1 short question) to **~1.4 s** (12-slot rerank) per pass on Cloud Run / Vertex L4 | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5 s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
+| **Inference Latency** | **~55 ms GPU / ~150 ms end to end** for a 3-question decision on RTX PRO 6000; ~1.4 s for a 12-slot rerank (measured on L4) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5 s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
 | **Passes per Request** | **1 forward pass** for all questions (cost grows with canvas length) | One classifier per attribute | One token per step ($O(T_{\text{output}})$) | $O(N_{\text{chars}})$ graph traversal |
 | **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single pass | Independent heads | Left-to-right only | Local sliding window (1–3 tokens) |
 | **Uncertainty & Calibration** | **Per-option probabilities + entropy**; label-free order-bias correction (null-prior) and same-pass reversed-ballot check (IDC) | Often overconfident out-of-distribution | Sequence-level logprobs over formatting tokens | Static arc weights |
@@ -118,81 +118,20 @@ A **zero-shot decision model** sits in between. `dgem` compiles a `.json.tmpl` t
 
 ---
 
-## Supported Deployment Environments (4 Serving Targets)
+## Serving: From Laptop to Production
 
-See **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU (`docs/vertex-ai-vs-cloudrun.md`)](docs/vertex-ai-vs-cloudrun.md)** for the complete architectural comparison and live 30-case benchmark receipts:
+Measured with the current serving image (3-question decision, `samples: 1`, p50;
+[receipts](benchmarks/runs/20260927-image-parity/README.md)):
 
-Warm p50 latencies for a 3-question decision, from [`benchmarks/runs/20260925-serving-speed`](benchmarks/runs/20260925-serving-speed/README.md) (Vertex/Cloud Run) and older receipts (GCE, Metal).
+| Stage | Where | Cold start | GPU / end to end | Guide |
+| :--- | :--- | :--- | :--- | :--- |
+| Crawl | Apple Silicon (`diffgemma`) or a local NVIDIA GPU | None | ~0.9 s on Metal | [Run on your laptop](docs/deploy/laptop.md) |
+| Walk | Cloud Run GPU, 1× RTX PRO 6000, scale to zero | 2.3–2.7 min | 61 / 153 ms | [Deploy on Cloud Run](docs/deploy/cloud-run.md) |
+| Run | Vertex AI dedicated endpoint, `g4-standard-48` + 1× RTX PRO 6000 | None | **55 / 150 ms** | [Production on Vertex AI](docs/deploy/vertex.md) |
 
-| Serving Target | Hardware & Shape | Cold-Start / Wakeup | Avg GPU Denoise (`N=4`) | Avg End-to-End Wall Time | Cost Profile | Recommended Use Case |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Vertex AI Dedicated Endpoint (`/invoke/*`)** | `g4-standard-48` + `1× NVIDIA RTX PRO 6000` (SigLIP on). Legacy: `g2-standard-16` + `1× L4` | **`0.0 s`** (min 1 replica, autoscale to 2) | **`97.9 ms`** (`57.5 ms` for `N=1`) | **`181 ms`** (`143 ms` for `N=1`) | Billed per replica-hour while deployed | **Primary production target (`vertex_first` default)**: always warm, IAM, autoscaling, multimodal. |
-| **2. Serverless Cloud Run GPU (`dgemma`)** | `1× NVIDIA RTX PRO 6000` (`80Gi` RAM) or `1× L4` | **`~90–120 s`** (`0 → 1` scale-from-zero) | **`107.7 ms`** (`65.0 ms` for `N=1`) | **`187 ms`** (`144 ms` for `N=1`) | **`$0.00/hr` when idle** (`min-instances=0`) | **Scale-to-zero failover and batch (`cloudrun`)**: episodic jobs, research evaluations, sandboxes. |
-| **3. Cloud GPU on GCE VM** | `g2-standard-8` (`1× L4` `NVFP4`) or `a2-highgpu-2g` (`2× A100` `bfloat16`) | **`0.0 s`** (dedicated VM) | — | **`1,968.7 ms`** (`L4`) / **`2,733 ms`** (`2× A100`) | `~$0.70/hr` (`L4`) / `~$7.34/hr` (`2× A100`) | High-throughput raw `vLLM` continuous batching (`Banking77` / `CLINC150`) & `bfloat16` precision baselines. |
-| **4. Local Apple Silicon (`Metal`)** | Apple M-Series (`diffgemma-26b-a4b-it-q4` unified RAM) | **`0.0 s`** (local daemon) | **`892.0 ms`** (`210 ms` for `N=1`) | **`898.5 ms`** | **`$0.00/hr`** (local hardware) | Offline laptop development, policy authoring, and local verification. |
-
-### Option A: Vertex AI Dedicated Endpoint (`/invoke/*`, Recommended Primary)
-Deploys the `dgemma` container with arbitrary custom routes (`invokeRoutePrefix: "/*"`) onto a Vertex AI Dedicated Endpoint (default G4: `g4-standard-48` + RTX PRO 6000) so `/invoke/v1/chat/completions`, `/invoke/v1/systemone`, and `/invoke/health` are served with **`0.0 s` wakeup**:
-```bash
-# 1. Deploy dgemma to a Vertex AI Dedicated Endpoint on G4 (RTX PRO 6000), pinned image tag:
-VERTEX_PROFILE=g4-rtxpro6000 IMAGE_URI=us-central1-docker.pkg.dev/$GCP_PROJECT/dgem/dgemma:<sha> make vertex-deploy
-
-# 2. Run single-pass decision or 30-case benchmark directly against /invoke/v1:
-./bin/dgem decide --vertex-url <endpoint-id> --gcp-auth \
-  -t templates/support_triage.json.tmpl -v 'ticket=Emergency outage' --stats
-./bin/dgem bench --vertex-url <endpoint-id> --gcp-auth \
-  -d benchmarks/eval_dataset.jsonl -o benchmarks/results_vertex_l4_invoke.json
-
-# 3. Teardown replica when zero-idle-cost ($0.00/hr) is desired:
-make vertex-teardown
-```
-
-### Option B: Serverless Cloud GPU on Google Cloud Run (`1× NVIDIA RTX Pro 6000` / `1× L4`)
-Builds and deploys a self-contained container image to Google Artifact Registry and runs on Cloud Run with scale-to-zero (`--min-instances=0`):
-```bash
-export GCP_PROJECT="your-gcp-project"
-export GCP_REGION="us-central1"
-
-# 1. Build self-contained image in Artifact Registry via Cloud Build:
-make cloudrun-build
-
-# 2. Pre-stage 17.57 GB NVFP4 weights to GCS:
-make cloudrun-stage
-
-# 3. Deploy dgemma service on Cloud Run:
-make cloudrun-deploy
-
-# 4. Run discrete decisions or 30-case benchmark:
-SERVICE_URL=$(gcloud run services describe dgemma --region=$GCP_REGION --format="value(status.url)")
-./bin/dgem decide -u "${SERVICE_URL}/v1" --gcp-auth -t templates/support_triage.json.tmpl -v 'ticket=Emergency outage'
-./bin/dgem bench -u "${SERVICE_URL}/v1" --gcp-auth -d benchmarks/eval_dataset.jsonl -M slot -o benchmarks/results_cloudrun.json
-
-# 5. Mandatory immediate teardown to eliminate idle costs:
-make cloudrun-teardown
-```
-
-### Option C: Cloud GPU on Google Compute Engine (`NVIDIA L4` / `2× A100`)
-Provisions automated GCE instances with the nightly vLLM wheel (`wheels.vllm.ai`, matching PR #57250 base commit `133b71e0be`) and Triton attention:
-```bash
-# 4-bit NVFP4 on 1× NVIDIA L4 (g2-standard-8, ~$0.70/hr):
-export GCP_PROJECT="your-gcp-project"
-PRECISION=4 make gce-deploy
-
-# 16-bit unquantized bfloat16 on 2× NVIDIA A100-40GB (a2-highgpu-2g, TP=2, ~$7.34/hr):
-export GCP_ZONE="us-central1-b"
-PRECISION=16 make gce-deploy
-
-# Mandatory immediate teardown to eliminate idle costs:
-make gce-teardown
-```
-
-### Option D: Local Apple Silicon (Metal)
-Runs fully offline on M-series Macs using the native Rust Metal engine ([`diffgemma`](https://github.com/mmastrac/diffgemma)):
-```bash
-make setup && make download && make serve
-# Stop when finished:
-make stop
-```
+A gateway (`dgem serve`) in front routes to Vertex first and fails over to Cloud Run
+([Gateway and routing](docs/deploy/gateway.md)). Capacity, runbook and observability:
+[Latency and capacity](docs/operate/latency-capacity.md) · [Operations runbook](docs/operate/runbook.md).
 
 ---
 
@@ -228,7 +167,7 @@ urgent           | boolean    | yes                  | 99.9%      | 0.001 nats  
   Endpoint:          http://127.0.0.1:8080/v1/chat/completions
   Total Wall Time:   856 ms
   KV Cache Reused:   169 tokens (82.8% hit rate)
-  Denoise Steps:     1 step (policy: samples=1)
+  Denoise Steps:     1 step (policy: samples=4)
 ───────────────────────────────────────────────────────────────────────
 ```
 
@@ -268,7 +207,7 @@ Attach local image paths (automatically base64 encoded) or remote URLs:
 Evaluates 50 items across **11 public datasets** ([`benchmarks/calibration_suite.jsonl`](benchmarks/calibration_suite.jsonl)), testing declarative policy templates (`templates/calibration/*.json.tmpl`) across agent trajectory hijacking (`AgentDrift`), multilingual jailbreaks (`deepset/prompt-injections`), RAG fact grounding (`LLM-AggreFact`), retrieval relevance (`MS MARCO`), toxicity (`Jigsaw Civil Comments`), and human annotator disagreement (`ChaosNLI`):
 
 ```bash
-./bin/dgem bench-calibration -u "${SERVICE_URL}/v1" -m "/mnt/gcs/dgemma" --gcp-auth -w 4 \
+./bin/dgem bench-calibration -u "https://<CLOUD_RUN_URL>/v1" --gcp-auth -w 4 \
   -o benchmarks/results_calibration_cloudrun.json
 ```
 
@@ -306,27 +245,29 @@ Evaluates 30-way to 151-way intent routing and Out-of-Scope (`oos`) rejection on
 
 ---
 
-## Documentation & Research Ledger
+## Documentation
 
-All pages below are also published on the docs site: [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/).
+Published at [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/) ([index](docs/index.md)), organized by audience:
 
-* **[Path to Production](docs/path-to-production.md)**: Crawl → walk → run tiers, measured latency and concurrency scaling, hardware and serving recommendations, and a deploy/verify/rollback checklist.
-* **[Vertex AI Dedicated Endpoints (`/invoke/*`) vs. Cloud Run GPU](docs/vertex-ai-vs-cloudrun.md)**: Architectural comparison, arbitrary custom route forwarding, the G4 (RTX PRO 6000) default, and the crawl-walk-run serving recommendation.
-* **[Backend Routing & Cascades](docs/experiment-authoring-guide.md)**: Choosing between `vertex_first`, `vertex`, and `cloudrun`, and configuring Stage 2 Gemini Cascades (`gemini-3.8-flash` default).
-* **[CLI, HTTP Gateway & MCP Reference](docs/cli-reference.md)**: Complete flag and tool parameter reference (`--vertex-url`, `dgem serve --default-backend vertex_first`, `/v1/systemone`, and MCP tools).
-* **[The Journey to Decision Models](docs/decision-models-primer.md)**: Architectural primer contrasting Classical ML, Symbolic WFSTs, Autoregressive LLMs, and Discrete Diffusion Decision Models.
-* **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](docs/confidence-beyond-shannon.md)**: Why a raw confidence score can be fooled by option order, how IDC checks it in one pass, what it does not fix, and the evidence with sample sizes.
-* **[Glossary & Mental Models](docs/glossary.md)**: Plain-English definitions (entropy, null prior, Mirror TVD, ECE, Brier) and translations across ML specialties.
-* **[Experiments & Research Ledger (`docs/experiments/`)](docs/experiments/README.md)**: Structured log of completed empirical studies (`EXP-01` through `EXP-13`) and active architectural investigations (`EXP-05` Entropy-Gated Cascades, `EXP-06` Encoder Comparisons, `EXP-07` Conditional Policy DAGs).
-* **[Proposed Experiments Register](docs/experiments/proposed.md)**: Pre-registered hypotheses, designs, and decision criteria for upcoming work (`PROP-00`–`PROP-10`).
-* **[Benchmark Evaluation Report](docs/benchmarks-report.md)**: Full empirical receipts comparing Vertex AI `1× L4`, Cloud Run `1× RTX Pro 6000` / `1× L4`, Apple M5 Metal, GCE `1× L4`, GCE `2× A100` `bfloat16`, `ChaosNLI`, Banking77, and CLINC150.
-* **[Template Catalog (`Policy-as-Code`)](docs/templates.md)**: Complete reference of declarative `.json.tmpl` decision schemas across triage, guardrails, NLU, and multimodal vision.
-* **[Ecotone (WFST) vs. DiffusionGemma](docs/ecotone-comparison.md)**: Semiotic polysemy taxonomy, head-to-head findings, and the hybrid Cascaded Normalizer architecture.
-* **[Architecture: Discrete Diffusion vs. Autoregression](docs/architecture.md)**: Mechanical breakdown of 256-token canvas denoising, bidirectional slot readout, and terminology history.
-* **[Cloud Run Lessons Learned & Native CUDA Build Guide](docs/cloudrun-lessons-learned.md)**: Self-contained Artifact Registry build, GCS FUSE prefetching, and envelope unmarshaling architecture.
-* **[Remote Endpoints & Cloud Deployment](docs/remote-endpoints.md)**: Pointing `dgem` to Google Cloud Run, GCE GPU instances, Vertex AI, and hosted vLLM clusters.
-* **[Real-World Applications & Production Patterns](docs/applications.md)**: Production architectures for agentic dispatch, DevSecOps git hooks, and SIEM alert triage.
-* **[User Guide](docs/user-guide.md)** & **[Setup & Metal Engine Guide](docs/setup.md)**: Full CLI reference and local Apple Silicon serving.
+- **Build, deploy and operate:** [From laptop to production](docs/deploy/index.md) ·
+  [Run on your laptop](docs/deploy/laptop.md) · [Use a remote GPU](docs/deploy/remote-gpu.md) ·
+  [Deploy on Cloud Run](docs/deploy/cloud-run.md) · [Production on Vertex AI](docs/deploy/vertex.md) ·
+  [Gateway and routing](docs/deploy/gateway.md) · [Latency and capacity](docs/operate/latency-capacity.md) ·
+  [Operations runbook](docs/operate/runbook.md) · [Observability](docs/operate/observability.md)
+- **Confidence and calibration:** [Overview](docs/confidence/index.md) ·
+  [Calibrate your policy](docs/confidence/calibrate-your-policy.md) ·
+  [Confidence beyond Shannon (IDC)](docs/confidence-beyond-shannon.md) ·
+  [The journey to decision models](docs/decision-models-primer.md) · [Glossary](docs/glossary.md) ·
+  [Benchmark report](docs/benchmarks-report.md) · [Experiment ledger](docs/experiments/README.md) ·
+  [Proposed experiments](docs/experiments/proposed.md)
+- **Policies and decisions:** [Your first decision policy](docs/policies/first-policy.md) ·
+  [Authoring and Stage 2 cascades](docs/policies/authoring.md) · [Run a dataset](docs/policies/datasets.md) ·
+  [Template catalog](docs/policies/templates.md) · [Real-world applications](docs/policies/applications.md) ·
+  [Taxonomy discovery](docs/policies/taxonomy-discovery.md)
+- **Reference:** [CLI, HTTP and MCP](docs/reference/cli.md) · [Studio, MCP and HTTP API](docs/reference/studio-mcp-api.md) ·
+  [Public container images](docs/deploy/public-images.md) · [Vertex AI vs. Cloud Run](docs/reference/vertex-vs-cloud-run.md) ·
+  [Apple Silicon engine](docs/reference/metal-engine.md) · [How the model decides in one pass](docs/confidence/architecture.md) ·
+  [Ecotone comparison](docs/ecotone-comparison.md) · [Engineering history (archive)](docs/history/cloud-run-engineering-notes.md)
 
 ---
 

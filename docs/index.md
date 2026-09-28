@@ -1,51 +1,50 @@
 ---
 title: "Documentation Overview & Index"
-description: "Welcome to the DiffusionGemma (dgem) documentation: quickstarts, architecture, experiments, cloud deployment, and API references."
+description: "DiffusionGemma (dgem) documentation, organized by audience: build and deploy, confidence and calibration, and policies and decisions."
 ---
 
 # DiffusionGemma (`dgem`) Documentation
 
-**`dgem`** turns Google's **DiffusionGemma-26B** into an ultra-fast, zero-shot **Discrete Decision Model**. It evaluates multi-slot decision policies simultaneously in $O(1)$ forward passes (~57.5 ms on Vertex G4, ~210 ms on Apple Silicon Metal), with exact restricted-softmax probabilities, calibrated Shannon entropy ($H$), and Invariant Decision Calibration (IDC).
+**`dgem`** turns DiffusionGemma into a zero-shot **decision model**: you describe the decisions you need in a
+policy file, and the model answers all of its questions in one forward pass (~55 ms of GPU time on an RTX PRO 6000),
+with a probability for every allowed answer.
 
----
+## Choose your path
 
-## 🚀 Getting Started
+### 🛠️ Build, deploy and operate
+For developers taking `dgem` from a laptop to production, and for the SREs who run it.
 
-* **[5-Minute Quickstart](quickstart.md)** — Launch on Apple Silicon Metal, Docker with NVIDIA GPU, or cloud endpoints in minutes.
-* **[Setup & Local Metal Engine](setup.md)** — Run on Apple Silicon Macs using native unified memory ($0/hr).
-* **[dgem User Guide](user-guide.md)** — Comprehensive CLI reference, syntax rules, and automation examples.
-* **[Decision Studio, MCP & HTTP API](studio-mcp-api.md)** — Interactive Lit WebComponents playground, Streamable HTTP MCP server, and REST gateway.
-* **[CLI, HTTP Gateway & MCP Reference](cli-reference.md)** — Exhaustive flags, environment variables, and tool parameters reference.
+1. [From laptop to production](deploy/index.md): the journey, with measured latency and cold start at each stage
+2. [Run on your laptop](deploy/laptop.md) · [Use a remote GPU](deploy/remote-gpu.md)
+3. [Deploy on Cloud Run](deploy/cloud-run.md) (scale to zero) · [Production on Vertex AI](deploy/vertex.md) (always warm)
+4. [Gateway and routing](deploy/gateway.md) · [Latency and capacity](operate/latency-capacity.md) ·
+   [Operations runbook](operate/runbook.md) · [Observability](operate/observability.md)
 
----
+### 📐 Confidence and calibration
+For teams who need to know when a decision can be trusted.
 
-## 🏛️ Core Architecture & Calibration
+1. [Confidence and calibration](confidence/index.md): what we measure, what we recommend, and the caveats
+2. [Calibrate your policy](confidence/calibrate-your-policy.md) on your own labelled data
+3. [Confidence beyond Shannon (IDC)](confidence-beyond-shannon.md) · [The journey to decision models](decision-models-primer.md) ·
+   [Glossary](glossary.md)
+4. [Benchmark report](benchmarks-report.md) · [Experiment ledger](experiments/README.md) ·
+   [Proposed experiments](experiments/proposed.md)
 
-* **[The Journey to Decision Models](decision-models-primer.md)** — Why discrete diffusion models solve classification, triage, and routing better than autoregressive LLMs.
-* **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](confidence-beyond-shannon.md)** — Eliminating ballot-order biases ($p_0$) and measuring true epistemic uncertainty.
-* **[Discrete Diffusion vs. Autoregression](architecture.md)** — Deep technical dive into bidirectional attention canvases, masked single-step denoise, and zero autoregressive overhead.
-* **[Unclassified Grouping & Zero-Retraining Taxonomy Discovery](taxonomy-discovery.md)** — Automatically discovering missing classes via the `"think"` channel without fine-tuning.
-* **[Glossary & Mental Models](glossary.md)** — Plain-English definitions for every technical, mathematical, and serving term.
-* **[Template Catalog (Policy-as-Code)](templates.md)** — Reference guide for all 26+ built-in `.json.tmpl` executable decision policies.
+### 📝 Policies and decisions
+For people who write policies and use the answers.
 
----
+1. [Your first decision policy](policies/first-policy.md): a hands-on tutorial
+2. [Authoring and Stage 2 cascades](policies/authoring.md) · [Run a dataset](policies/datasets.md)
+3. [Template catalog](policies/templates.md) · [Real-world applications](policies/applications.md) ·
+   [Taxonomy discovery](policies/taxonomy-discovery.md)
 
-## ☁️ Deployment & Cloud Serving
+## Reference
 
-* **[Public Container Images & Quickstart](public-image.md)** — Official zero-auth container images on Google Artifact Registry (`dgem` and `dgem-weights`).
-* **[Deploy on Your Own Cloud GPU](deploy-your-own-gpu.md)** — Step-by-step instructions for deploying to Serverless Cloud Run GPU and Vertex AI Dedicated Endpoints.
-* **[Connecting dgem to Remote Endpoints](remote-endpoints.md)** — Authentication, `.dgem.yaml` configuration, and endpoint routing.
-* **[Path to Production](path-to-production.md)** — Hardware tiers, concurrency scaling, and cost analysis.
-* **[Vertex AI Dedicated Endpoints vs. Cloud Run GPU](vertex-ai-vs-cloudrun.md)** — Architectural comparison between persistent G4 Dedicated Endpoints and serverless scale-to-zero.
-* **[Cloud Run Lessons Learned](cloudrun-lessons-learned.md)** — Historical post-mortem on containerization, CUDA ABI, and GCS FUSE weight streaming.
-* **[OpenTelemetry Traces & Observability](observability-traces.md)** — Distributed tracing, Google Cloud Trace integration, and Studio Gantt waterfalls.
-
----
-
-## 🧪 Experiments & Research Ledger
-
-* **[Experiment Ledger (EXP-01 – EXP-17)](experiments/README.md)** — Full registry of formal empirical experiments and receipts.
-* **[Proposed Experiments Register](experiments/proposed.md)** — Backlog of proposed research directions and architectures.
-* **[Listwise Diffusion Reranking (EXP-10)](experiments/exp-10-listwise-diffusion-reranking.md)** — 300-passage listwise ranking and prompt-injection quarantine.
-* **[JevBench Parity & Scoring (EXP-11)](experiments/exp-11-jevbench-parity.md)** — 4-axis benchmark parity across 231 complex reasoning cases.
-* **[Permutation Invariance & Dual-Mirror Canvas (EXP-13)](experiments/exp-13-permutation-invariance.md)** — Canceling first-order positional bias in a single forward pass.
+- [CLI, HTTP gateway and MCP reference](reference/cli.md)
+- [Decision Studio, MCP and HTTP API](reference/studio-mcp-api.md)
+- [Public container images](deploy/public-images.md)
+- [Vertex AI vs. Cloud Run](reference/vertex-vs-cloud-run.md)
+- [Apple Silicon engine (`diffgemma`)](reference/metal-engine.md)
+- [How the model decides in one pass](confidence/architecture.md)
+- [Ecotone (WFST) comparison](ecotone-comparison.md)
+- [Engineering history: Cloud Run prototype](history/cloud-run-engineering-notes.md) (archive)

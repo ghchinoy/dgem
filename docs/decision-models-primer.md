@@ -60,7 +60,7 @@ Microsecond / Cheap CPU               Millisecond / C++ Rulebooks       Multi-Se
 * **The Two Bottlenecks**:
   1. **Late Vector Pooling**: `GTR` compresses a 1,000-token input into a single vector $u \in \mathbb{R}^d$ *before* reading your policy rules, destroying token-to-token alignment (e.g., SQL parameter drift in `AgentDrift` or `50–75% < 100%` in `ANLI-R3`).
   2. **Support-Row Requirement**: `TabPFN` requires **labeled support rows ($N_{\text{support}} > 0$)** in its tabular context grid, whereas `dgem`'s `.json.tmpl` policies compile **zero-shot ($N=0$)** via full token-level cross-attention.
-* **Deep Dive**: Read the full breakdown in [Discrete Diffusion vs. Autoregression (§5)](architecture.md#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute) and the [Glossary & Mental Models](glossary.md).
+* **Deep Dive**: Read the full breakdown in [Discrete Diffusion vs. Autoregression (§5)](confidence/architecture.md#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute) and the [Glossary & Mental Models](glossary.md).
 
 </details>
 

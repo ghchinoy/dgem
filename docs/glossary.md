@@ -31,7 +31,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 ### Policy-as-Template (`.json.tmpl`)
 * **In Plain English**: A declarative JSON file where you define decision questions (`boolean`, `choice`, `score`) and natural-language rubrics that execute immediately with zero model training.
 * **Under the Hood**: Go `text/template` files compiled by `dgem decide -t` into structured slot schemas and single-token option maps (`[A–Z]`).
-* **Where You See It in `dgem`**: [`templates/`](../templates/) (`templates/calibration/*.json.tmpl`, `templates/secops_conditional_dag.json.tmpl`).
+* **Where You See It in `dgem`**: [`templates/`](../templates) (`templates/calibration/*.json.tmpl`, `templates/secops_conditional_dag.json.tmpl`).
 
 ### Conditional Policy DAG (`depends_on` & `ask_if`)
 * **In Plain English**: A multi-stage decision flowchart where follow-up questions are only evaluated if an upstream gate question resolves to `true` (or a specific option).
@@ -121,7 +121,7 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 ### Dual Encoder (`GTR` / `Sentence-T5`)
 * **In Plain English**: A bi-encoder architecture that compresses the input text into one vector $u$ and the label description into another vector $v_k$ *independently*, then compares the two vectors at the very end.
 * **Under the Hood**: Because $u = E_x(x) \in \mathbb{R}^d$ is computed **before** the model sees the policy rules or hypothesis $c_k$, token-to-token alignment (like checking whether a specific SQL argument matches an allowlist or comparing `50–75%` against `100%`) is lost during vector pooling (**Late Interaction Bottleneck**).
-* **Where You See It in `dgem`**: Contrasted with `dgem`'s early all-to-all cross-attention in [Discrete Diffusion vs. Autoregression (§5)](architecture.md#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute).
+* **Where You See It in `dgem`**: Contrasted with `dgem`'s early all-to-all cross-attention in [Discrete Diffusion vs. Autoregression (§5)](confidence/architecture.md#5-architectural-faq-can-dual-encoders-gtr--tabpfn-replace-a-decision-model-or-do-you-need-test-time-compute).
 
 ### `TabPFN` & Tabular Foundation Models
 * **In Plain English**: A foundation model pre-trained on millions of synthetic spreadsheets that predicts a missing target column by attending across labeled example rows (`in-context learning` for tables).

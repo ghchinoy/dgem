@@ -91,7 +91,7 @@ Same ticket, same options, only the order changed, yet confidence ranges from 61
 
 The measured points for both cases are plotted below, next to a reliability diagram recomputed from the 50-item calibration receipts:
 
-![Measured IDC behaviour: perm_08 and perm_06 on probability triangles, and 10-bin reliability curves on the 50-item calibration suite](./assets/idc/idc_3way_simplex_and_reliability.webp)
+![Measured IDC behaviour: perm_08 and perm_06 on probability triangles, and 10-bin reliability curves on the 50-item calibration suite](assets/idc/idc_3way_simplex_and_reliability.webp)
 
 ---
 
@@ -118,7 +118,7 @@ flowchart LR
 
 The illustration below shows what each step does to the decision boundary. It uses synthetic curves, not measured data:
 
-![Illustration of the IDC steps as decision-boundary geometry (synthetic)](./assets/idc/idc_5stage_decision_boundaries_2d.webp)
+![Illustration of the IDC steps as decision-boundary geometry (synthetic)](assets/idc/idc_5stage_decision_boundaries_2d.webp)
 
 <details>
 <summary><strong>The maths in one place</strong> (click to expand)</summary>
@@ -135,7 +135,7 @@ $$z(\ell_k \mid X, \pi) = \underbrace{s(o_{\pi(k)} \mid X)}_{\text{what we want:
 
 The conceptual picture: an honest score should say 50% where the two classes genuinely overlap. A raw, position-biased, over-sharp score doesn't:
 
-![Illustration: how position bias and over-sharp scores distort confidence (synthetic)](./assets/idc/idc_1d_class_intersections.webp)
+![Illustration: how position bias and over-sharp scores distort confidence (synthetic)](assets/idc/idc_1d_class_intersections.webp)
 
 ---
 
