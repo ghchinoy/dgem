@@ -167,7 +167,9 @@ export GCS_BUCKET="${GCS_BUCKET:-dgem-weights-${DETECTED_PROJECT}}"
 printf '{"phase":"mounting_gcs","boot_ts":%s,"bytes_staged_gb":0.0}\n' "$BOOT_TS" > /tmp/dgemma/warmup_state.json
 
 # On large-memory instances (e.g. RTX Pro 6000 with 80GB RAM), stage weights into /tmp/dgemma via 64-stream Direct GCS HTTPS Range API overlapped with vLLM initialization
-if [ "${COPY_TO_SHM:-0}" = "1" ] && [ -d "/mnt/gcs/dgemma" ] && [ -f "/mnt/gcs/dgemma/config.json" ]; then
+# Skip when weights are baked into the image (dgem-weights): staging would copy 17.53 GiB from Cloud Storage
+# anyway and switch MODEL to /tmp/dgemma, ignoring the baked copy.
+if [ "${COPY_TO_SHM:-0}" = "1" ] && [ "$MODEL" != "/opt/dgemma/weights" ] && [ -d "/mnt/gcs/dgemma" ] && [ -f "/mnt/gcs/dgemma/config.json" ]; then
   echo "[init] Overlapping 64-stream GCS HTTPS Range staging (/tmp/dgemma) with vLLM + CUDA initialization..."
   STAGE_START_TS="$(date +%s.%N)"
   export STAGE_START_TS
@@ -339,7 +341,12 @@ if [ "${COPY_TO_SHM:-0}" = "1" ] && [ "$MODEL" = "/tmp/dgemma" ]; then
       sleep 2
     done
     rm -f /tmp/dgemma/*.safetensors
-    printf '{"phase":"ready","bytes_staged_gb":17.53,"vllm_ready":true}\n' > /tmp/dgemma/warmup_state.json
+    # Merge (not overwrite): the self-warmup runs concurrently and records "warmed" in the same file.
+    python3 -c 'import json; p="/tmp/dgemma/warmup_state.json"
+try: st = json.load(open(p))
+except Exception: st = {}
+st.update({"phase": "ready", "bytes_staged_gb": 17.53, "vllm_ready": True}); json.dump(st, open(p + ".tmp", "w"))
+import os; os.replace(p + ".tmp", p)' || true
     echo "[init] Reclaimed 17.53 GiB /tmp/dgemma RAM after vLLM GPU initialization."
   ) &
 else
@@ -386,7 +393,8 @@ p = "/tmp/dgemma/warmup_state.json"
 try: st = json.load(open(p))
 except Exception: st = {}
 st.update({"warmed": True, "warmup_s": round(time.time() - float(sys.argv[1]), 1)})
-json.dump(st, open(p, "w"))
+json.dump(st, open(p + ".tmp", "w"))
+import os; os.replace(p + ".tmp", p)
 PYSTATE
     echo "[init] Self-warmup complete."
   ) &

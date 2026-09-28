@@ -1253,6 +1253,11 @@ class _Server(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
+    # dgem: HTTP/1.1 keep-alive. With the default HTTP/1.0 the server closes every connection after
+    # one response, and Vertex's prediction proxy intermittently sent a request on a connection being
+    # closed (503 "Model server early terminated the request (truncated headers)" at 16-32 concurrent
+    # requests). Every response sets content-length, and every path reads the body or closes.
+    protocol_version = "HTTP/1.1"
     def log_message(self, fmt, *args):
         pass
 
@@ -1261,6 +1266,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("content-type", "application/json")
         self.send_header("content-length", str(len(body)))
+        if self.close_connection:
+            self.send_header("connection", "close")
         self.end_headers()
         self.wfile.write(body)
 
@@ -1304,6 +1311,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
+            self.close_connection = True  # dgem: body left unread; don't reuse this keep-alive connection
             return self._json(
                 401,
                 {

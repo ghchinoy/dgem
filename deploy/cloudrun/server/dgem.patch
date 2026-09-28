@@ -81,7 +81,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -1201,6 +1244,14 @@
+@@ -1201,7 +1244,20 @@
      return c if isinstance(c, str) else ""
  
  
@@ -94,9 +94,21 @@
 +
 +
  class Handler(BaseHTTPRequestHandler):
++    # dgem: HTTP/1.1 keep-alive. With the default HTTP/1.0 the server closes every connection after
++    # one response, and Vertex's prediction proxy intermittently sent a request on a connection being
++    # closed (503 "Model server early terminated the request (truncated headers)" at 16-32 concurrent
++    # requests). Every response sets content-length, and every path reads the body or closes.
++    protocol_version = "HTTP/1.1"
      def log_message(self, fmt, *args):
          pass
-@@ -1214,6 +1265,8 @@
+ 
+@@ -1210,10 +1266,14 @@
+         self.send_response(code)
+         self.send_header("content-type", "application/json")
+         self.send_header("content-length", str(len(body)))
++        if self.close_connection:
++            self.send_header("connection", "close")
+         self.end_headers()
          self.wfile.write(body)
  
      def do_GET(self):
@@ -105,7 +117,15 @@
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1276,7 +1329,8 @@
+@@ -1251,6 +1311,7 @@
+ 
+     def do_POST(self):
+         if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
++            self.close_connection = True  # dgem: body left unread; don't reuse this keep-alive connection
+             return self._json(
+                 401,
+                 {
+@@ -1276,7 +1337,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -115,7 +135,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1357,8 @@
+@@ -1303,6 +1365,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -124,7 +144,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1374,12 @@
+@@ -1318,6 +1382,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -137,7 +157,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1487,7 +1549,7 @@
+@@ -1487,7 +1557,7 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -146,7 +166,7 @@
      srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
      threading.Thread(target=srv.serve_forever, daemon=True).start()
      return srv
-@@ -1537,7 +1599,7 @@
+@@ -1537,7 +1607,7 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
