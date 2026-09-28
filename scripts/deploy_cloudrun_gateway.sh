@@ -86,8 +86,15 @@ if [[ -n "${GCP_PROJECT_NUMBER:-}" ]]; then
   ENV_VARS="${ENV_VARS},DGEM_GCP_PROJECT_NUMBER=${GCP_PROJECT_NUMBER}"
 fi
 
-echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID:-<none>})..."
-gcloud run deploy "${GATEWAY_SERVICE}" \
+# GATEWAY_TAG=<tag>: deploy as a tagged revision with no traffic (blue/green). Verify at
+# https://<tag>---<service-url-host>, then: gcloud run services update-traffic <service> --to-tags=<tag>=100
+TRAFFIC_FLAGS=()
+if [[ -n "${GATEWAY_TAG:-}" ]]; then
+  TRAFFIC_FLAGS=(--no-traffic "--tag=${GATEWAY_TAG}")
+fi
+
+echo "-> Deploying Cloud Run service ${GATEWAY_SERVICE} (GPU_IDLE_TTL=${GPU_IDLE_TTL}, DGEM_VERTEX_URL=${VERTEX_ENDPOINT_ID:-<none>}${GATEWAY_TAG:+, no-traffic tag ${GATEWAY_TAG}})..."
+gcloud run deploy "${GATEWAY_SERVICE}" "${TRAFFIC_FLAGS[@]}" \
   --project="${PROJECT}" \
   --region="${REGION}" \
   --image="${IMAGE}" \
