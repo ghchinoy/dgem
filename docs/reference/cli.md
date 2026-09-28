@@ -65,6 +65,9 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `systemone`, `mcp`, `bench`, `
 | **`-u, --url`** | `DGEM_URL` | `http://127.0.0.1:8080/v1` | Upstream Serverless Cloud Run GPU `/v1` URL used by `cloudrun` routing and `vertex_first` failover. |
 | **`-p, --port`** | `PORT` | `8090` | HTTP listener port (the flag overrides `PORT`). |
 | **`--local`, `--local-url`** | `DGEM_SERVE_LOCAL`, `DGEM_LOCAL_URL` | off | Serve against a local `diffgemma` engine only (backend `local`, no cloud failover). |
+| **`--backends`** | `DGEM_BACKENDS` | derived | Backend allow-list (`vertex_first`, `vertex`, `cloudrun`, `local`); validated at startup. |
+| **`--enable-admin-api`** | `DGEM_ADMIN_API` | off | Allow `POST /api/backend-config` and `/api/vertex/deploy`, `/api/vertex/teardown`. |
+| **`--allowed-vertex-endpoints`** | `DGEM_ALLOWED_VERTEX_ENDPOINTS` | none | Extra Vertex endpoints selectable per request; others are rejected. |
 | **`--wakeup-timeout`** | — | `10m` | How long `cloudrun` requests are held and retried while the service wakes from zero. |
 
 ---
@@ -114,7 +117,7 @@ Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation). Supports both `application/json` (`{"state": ..., "questions": ...}`) and `multipart/form-data` (`image` file + JSON fields), routing to `/invoke/v1/systemone` on Vertex AI or `/v1/systemone` on Cloud Run GPU. |
 | **`/v1/chat/completions`** | `POST` | OpenAI-compatible structured diffusion decision envelope proxy with `vertex_first` auto-failover and automatic GCP token injection. |
 | **`/v1/raw/chat/completions`** | `POST` | Direct pass-through proxy to `vLLM`'s raw `/v1/chat/completions` endpoint. |
-| **`/api/backend-config`** (live `vertex_status`), **`/api/vertex/deploy`**, **`/api/vertex/teardown`** | `GET` / `POST` | Live Vertex AI Dedicated Endpoint replica telemetry and 1-click provisioning/teardown (`g4-standard-48` `1× NVIDIA RTX PRO 6000`). |
+| **`/api/backend-config`** (live `vertex_status`, `available_backends`, `admin_api`), **`/api/vertex/deploy`**, **`/api/vertex/teardown`** | `GET` / `POST` | Live Vertex endpoint status (`GET`, always allowed). `POST` changes gateway-wide settings or deploys/tears down the endpoint and requires `--enable-admin-api` (otherwise `403`). |
 
 ---
 

@@ -226,6 +226,10 @@ export class DgemStudio extends LitElement {
   @state() private availableBackends: ('vertex_first' | 'cloudrun' | 'vertex' | 'local')[] = ['vertex_first', 'cloudrun', 'vertex'];
   @state() private localAvailable = false;
   @state() private localUrl = 'http://127.0.0.1:8080/v1';
+  // Gateway-wide settings and Vertex deploy/teardown need `dgem serve --enable-admin-api`.
+  @state() private adminApi = false;
+  // The gateway's configured Vertex endpoint; overrides are only sent when they differ from it.
+  @state() private serverVertexUrl = '';
   @state() private localStatus: { available: boolean; reachable: boolean; url?: string; tier?: string } | null = null;
   @state() private vertexUrl = '';
   @state() private backendSettingsOpen = false;
@@ -1034,6 +1038,7 @@ export class DgemStudio extends LitElement {
       if (Array.isArray(data.available_backends)) {
         this.availableBackends = data.available_backends;
       }
+      this.adminApi = data.admin_api === true;
       this.localAvailable = !!data.local_available;
       if (data.local_url) {
         this.localUrl = data.local_url;
@@ -1053,7 +1058,10 @@ export class DgemStudio extends LitElement {
       } else if (data.default_backend) {
         this.backendTarget = data.default_backend;
       }
-      if (storedVertexUrl && storedVertexUrl.trim() !== '') {
+      this.serverVertexUrl = (data.vertex_url || '').trim();
+      // Non-admin gateways only accept their configured endpoint, so a URL remembered from an older session
+      // (e.g. a retired endpoint) would fail every request: follow the server instead.
+      if (this.adminApi && storedVertexUrl && storedVertexUrl.trim() !== '') {
         this.vertexUrl = storedVertexUrl.trim();
       } else if (data.vertex_url) {
         this.vertexUrl = data.vertex_url;
@@ -1067,11 +1075,29 @@ export class DgemStudio extends LitElement {
     }
   }
 
+  /** The Vertex endpoint to request explicitly, or '' when it is the gateway's configured endpoint. */
+  private get vertexOverride(): string {
+    const id = (u: string) => {
+      const t = (u || '').trim();
+      const m = t.match(/endpoints\/(\d+)/);
+      return m ? m[1] : t;
+    };
+    const mine = (this.vertexUrl || '').trim();
+    if (!mine || id(mine) === id(this.serverVertexUrl)) return '';
+    return mine;
+  }
+
   private async saveBackendConfig(backend: 'vertex_first' | 'cloudrun' | 'vertex' | 'local', vertexUrl: string) {
     this.backendTarget = backend;
     this.vertexUrl = (vertexUrl || this.vertexStatus?.endpoint_id || '').trim();
     localStorage.setItem('dgem-backend-v2', this.backendTarget);
     localStorage.setItem('dgem-vertex-url', this.vertexUrl);
+    // The backend choice is per browser: every request sends X-DGem-Backend. Only admins may change the
+    // gateway-wide default (it affects all users, API and MCP callers).
+    if (!this.adminApi) {
+      await this.fetchBackendConfig();
+      return;
+    }
     try {
       const resp = await fetch('/api/backend-config', {
         method: 'POST',
@@ -1321,8 +1347,8 @@ export class DgemStudio extends LitElement {
       if (this.customTemplateOverride) {
         payload.custom_template = this.customTemplateOverride;
       }
-      if (this.vertexUrl) {
-        payload.vertex_url = this.vertexUrl;
+      if (this.vertexOverride) {
+        payload.vertex_url = this.vertexOverride;
       }
       if (this.imageDataUrl) {
         payload.image_url = this.imageDataUrl;
@@ -1335,8 +1361,8 @@ export class DgemStudio extends LitElement {
       if (this.suggestExpansions) {
         reqHeaders['X-DGem-Suggest-Expansions'] = 'true';
       }
-      if (this.vertexUrl) {
-        reqHeaders['X-DGem-Vertex-Url'] = this.vertexUrl;
+      if (this.vertexOverride) {
+        reqHeaders['X-DGem-Vertex-Url'] = this.vertexOverride;
       }
       const resp = await fetch(`/api/decide/${encodeURIComponent(this.selectedTemplateName)}`, {
         method: 'POST',
@@ -1852,7 +1878,9 @@ export class DgemStudio extends LitElement {
                                       'Vertex AI Dedicated Endpoint (/invoke/*) registered in us-central1.'}
                                     </div>
                                     <div style="display:flex; gap:0.45rem; margin-top:0.15rem;">
-                                      ${this.vertexStatus?.state === 'deployed' || this.vertexStatus?.state === 'deploying'
+                                      ${!this.adminApi
+                                        ? null
+                                        : this.vertexStatus?.state === 'deployed' || this.vertexStatus?.state === 'deploying'
                                         ? html`
                                             <button
                                               class="btn btn--sm"
@@ -1884,7 +1912,7 @@ export class DgemStudio extends LitElement {
                                     </div>
                                   </div>
 
-                                  <div>
+                                  ${!this.adminApi ? null : html`<div>
                                     <label
                                       style="display:block; font-size:0.71rem; font-weight:600; color:${this.resolvedTheme === 'dark' ? '#cbd5e1' : '#334155'}; margin-bottom:0.25rem;"
                                     >
@@ -1899,7 +1927,7 @@ export class DgemStudio extends LitElement {
                                       placeholder="Endpoint ID or Dedicated /invoke/* URL"
                                       style="width:100%; box-sizing:border-box; font-family:'JetBrains Mono', monospace; font-size:0.72rem; padding:0.45rem 0.6rem; border-radius:6px; border:1px solid ${this.resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}; background:${this.resolvedTheme === 'dark' ? '#090d16' : '#f8fafc'}; color:${this.resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a'};"
                                     />
-                                  </div>
+                                  </div>`}
                                 `
                               : null}
 
@@ -3080,7 +3108,7 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
                     <dgem-batch-runner
                       .resolvedTheme=${this.resolvedTheme}
                       .backendTarget=${this.backendTarget}
-                      .vertexUrl=${this.vertexUrl}
+                      .vertexUrl=${this.vertexOverride}
                       @batch-started=${() => this.fetchGPUStatus()}
                       @batch-completed=${() => this.fetchGPUStatus()}
                       @inspect-batch-item=${(e: CustomEvent<any>) => {

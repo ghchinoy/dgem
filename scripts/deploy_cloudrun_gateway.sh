@@ -86,6 +86,17 @@ fi
 if [[ -n "${DGEM_VERTEX_SA:-}" ]]; then
   ENV_VARS="${ENV_VARS},DGEM_VERTEX_SA=${DGEM_VERTEX_SA}"
 fi
+# Issue #1 controls: backend allow-list, extra selectable Vertex endpoints, and the admin API
+# (gateway-wide settings + Vertex deploy/teardown from the Studio; off unless DGEM_ADMIN_API=1).
+if [[ -n "${DGEM_BACKENDS:-}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_BACKENDS=${DGEM_BACKENDS//,/;}"
+fi
+if [[ -n "${DGEM_ALLOWED_VERTEX_ENDPOINTS:-}" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_ALLOWED_VERTEX_ENDPOINTS=${DGEM_ALLOWED_VERTEX_ENDPOINTS//,/;}"
+fi
+if [[ "${DGEM_ADMIN_API:-0}" == "1" ]]; then
+  ENV_VARS="${ENV_VARS},DGEM_ADMIN_API=1"
+fi
 if [[ -n "${DGEM_GATEWAY_HOSTS:-}" ]]; then
   ENV_VARS="${ENV_VARS},DGEM_GATEWAY_HOSTS=${DGEM_GATEWAY_HOSTS}"
 fi
