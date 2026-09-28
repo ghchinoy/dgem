@@ -1497,6 +1497,7 @@ func buildMCPServer() *mcp.Server {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "get_health_and_gpu_status",
 		Description: "Returns live health status of the dgem gateway and availability/warmup state of the selected inference backend ('vertex_first', 'vertex' 1x NVIDIA L4, or 'cloudrun' 1x NVIDIA RTX Pro 6000), plus readout latency and estimated wakeup time.",
+		InputSchema: geminiSafeInputSchema[StatusToolInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input StatusToolInput) (*mcp.CallToolResult, HealthAndGPUStatusOutput, error) {
 		return nil, CheckHealthAndGPUStatusForBackend(ctx, "", input.Backend), nil
 	})
@@ -1505,6 +1506,7 @@ func buildMCPServer() *mcp.Server {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "warmup_gpu",
 		Description: "Wakes the scale-to-zero Cloud Run DiffusionGemma GPU instance (0 -> 1) and loads the 17.53 GiB model into VRAM. Pass wait_for_ready=true to wait until ready, or wait_for_ready=false to trigger background warmup immediately.",
+		InputSchema: geminiSafeInputSchema[WarmupGPUInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input WarmupGPUInput) (*mcp.CallToolResult, WarmupGPUOutput, error) {
 		out, err := TriggerGPUWarmup(ctx, input.WaitForReady)
 		return nil, out, err
@@ -1514,6 +1516,7 @@ func buildMCPServer() *mcp.Server {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "decide_policy",
 		Description: "Executes a zero-shot multi-slot decision policy (.json.tmpl) on DiffusionGemma in O(1) forward passes, returning joint slot answers, probabilities, calibrated epistemic Shannon entropy H (in nats), and optional Stage-2 Gemini 3.x cascade escalation (gemini-3.8-flash default).",
+		InputSchema: geminiSafeInputSchema[DecidePolicyToolInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input DecidePolicyToolInput) (*mcp.CallToolResult, GatewayDecideResponse, error) {
 		tmplID := strings.TrimSpace(input.Template)
 		if tmplID == "" {
@@ -1626,6 +1629,7 @@ func buildMCPServer() *mcp.Server {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "locate_bounding_boxes",
 		Description: "Localizes an object in an image in a single forward pass (EXP-09) using Gemma 4's SigLIP vision tower and 21-bin discrete diffusion coordinate readout, returning both continuous Softmax Expectation and discrete argmax [ymin, xmin, ymax, xmax] bounding boxes in [0, 1000] coordinates.",
+		InputSchema: geminiSafeInputSchema[LocateBBoxToolInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input LocateBBoxToolInput) (*mcp.CallToolResult, LocateBBoxToolOutput, error) {
 		if strings.TrimSpace(input.Image) == "" {
 			return nil, LocateBBoxToolOutput{}, fmt.Errorf("'image' URL or data URI is required")
@@ -1704,6 +1708,7 @@ func buildMCPServer() *mcp.Server {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "decide_custom_questions",
 		Description: "Evaluates an ad-hoc list of boolean, choice (<=26 options), or score (1..5) questions simultaneously in 1 forward pass against a context document, returning joint answers, calibrated Shannon entropy H, and optional Stage-2 Gemini 3.x cascade escalation (gemini-3.8-flash default).",
+		InputSchema: geminiSafeInputSchema[DecideCustomToolInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input DecideCustomToolInput) (*mcp.CallToolResult, GatewayDecideResponse, error) {
 		if len(input.Questions) == 0 {
 			return nil, GatewayDecideResponse{}, fmt.Errorf("'questions' list cannot be empty")
@@ -1811,6 +1816,7 @@ func buildMCPServer() *mcp.Server {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "list_policy_templates",
 		Description: "Lists all 24 executable .json.tmpl decision policies available on the gateway, including required variables and sample values.",
+		InputSchema: geminiSafeInputSchema[ListTemplatesToolInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input ListTemplatesToolInput) (*mcp.CallToolResult, ListTemplatesToolOutput, error) {
 		catalog, err := discoverTemplates(serveTemplatesDir)
 		if err != nil {
