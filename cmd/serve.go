@@ -627,7 +627,7 @@ func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requeste
 			mode = available[0]
 		}
 	}
-	if err := checkVertexOverride(requestedVertexURL, defVertexURL); err != nil {
+	if err := checkVertexOverride(requestedVertexURL, effectiveVertexURL()); err != nil {
 		return mode, "", err
 	}
 
