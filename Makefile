@@ -129,6 +129,7 @@ release: ## Cut a release: make release VERSION=v0.2.0 (clean main, tests, CHANG
 	@echo "$(VERSION)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "usage: make release VERSION=vMAJOR.MINOR.PATCH"; exit 1; }
 	@test -z "$$(git status --porcelain --untracked-files=no)" || { echo "working tree not clean"; exit 1; }
 	@test "$$(git rev-parse --abbrev-ref HEAD)" = main || { echo "releases are cut from main"; exit 1; }
+	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse @{u} 2>/dev/null)" || { echo "push main first: the release tag must point at a commit already on origin (a later rebase would orphan it)"; exit 1; }
 	@grep -q "^## $(VERSION)" CHANGELOG.md || { echo "add a '## $(VERSION)' section to CHANGELOG.md first"; exit 1; }
 	@! git rev-parse -q --verify "refs/tags/$(VERSION)" >/dev/null || { echo "tag $(VERSION) already exists"; exit 1; }
 	go test ./cmd/ ./pkg/...

@@ -8,7 +8,8 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## v0.1.0 (2026-09-28)
 
-First versioned release. Serving is built on upstream vLLM nightly `a9eafde` (PRs #57250, #58216) plus
+First versioned release (tag on `b8e1af1`; images were built from `f241b77`, which has the same `deploy/` tree
+and differs only in docs and MCP help text). Serving is built on upstream vLLM nightly `a9eafde` (PRs #57250, #58216) plus
 `deploy/cloudrun/server/dgem.patch`.
 
 - Serving: upstream vLLM base (replaces the fork base), `/health` readiness and version fields, HTTP/1.1

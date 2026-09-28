@@ -73,7 +73,8 @@ Serving images, the gateway and the CLI share one version (`vMAJOR.MINOR.PATCH`,
 [CHANGELOG.md](https://github.com/ghchinoy/dgem/blob/main/CHANGELOG.md)). A running service reports it: `/health` returns `version` and `revision`,
 images carry `org.opencontainers.image.version`, and `dgem --version` prints it.
 
-1. Add a `## vX.Y.Z` section to `CHANGELOG.md` and commit it on `main`.
+1. Add a `## vX.Y.Z` section to `CHANGELOG.md`, commit it on `main` and push (the release tag must point at a
+   commit already on origin).
 2. `make release VERSION=vX.Y.Z`: checks a clean `main`, runs the tests, tags git, builds `dgem` and
    `dgem-weights` with the version baked in, and adds the `vX.Y.Z` image tags. It prints the digests.
 3. Validate the release image next to production ([Promote a new serving image](#promote-a-new-serving-image)).
