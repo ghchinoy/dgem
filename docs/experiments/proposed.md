@@ -45,6 +45,7 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 | [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | P1 | Proposed |
 | [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Proposed |
 | [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | P1 | Done → [EXP-16](exp-16-slot-names.md) (single slot: no; second slot: yes) |
+| [`PROP-17`](#prop-17-calibrated-agent-context-pre-compiler-internal-pilot) | Calibrated agent context pre-compiler (internal pilot) | Can one multi-slot pass decide which context blocks an agent turn needs, dropping little that matters? | — | P2 | Running (internal pilot) |
 
 ---
 
@@ -219,6 +220,25 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 * **Decision:** If the effect exceeds 2 items on JevBench, add a template style rule for slot ids.
 * **Cost:** about 1,200 requests.
 * **Pre-registered design (2026-09-26, before data):** JevBench 231, Vertex G4, one session. Single slot: 3 baselines with id `decision` (noise band = min–max), then ids `q1`, `x7k2q` (random), `mirror`, `check`. Two slots (`--dual-mirror --mirror-mode copy`, so no letter collision): suffixes `__rev`, `__mirror_rev`, `_b`. An id "matters" if its correct count is more than 3 items outside the baseline band, or (two-slot) more than 3 items away from `copy`+`__rev`. Secondary: per-item agreement with the baseline majority answer. About 2,300 requests (revised up from 1,200).
+
+### `PROP-17`: Calibrated agent context pre-compiler (internal pilot)
+
+* **Motivation:** Agents re-send large context windows (tool schemas, history, retrieved documents) every turn. A
+  single `dgem` pass could grade every candidate block at once and use hesitation to downgrade uncertain blocks to a
+  one-line stub instead of dropping them. The pilot's design and data are internal for now; this entry holds the
+  number and the decision rule.
+* **Hypothesis (H17):** On labelled agent turns, one pass keeps at least 95% of the blocks the gold labels mark as
+  required (`full` or `summary`), removes at least 50% of candidate tokens, and flags planted prompt-injection
+  blocks with recall ≥ 0.9; hesitation-driven "stub instead of drop" reduces required-block misses compared with
+  taking the most likely action.
+* **Design:** ~40 labelled turns across several domains, 8 candidate blocks each (tool schemas, history turns,
+  retrieved documents, notes), gold action per block from one annotator with a second model labelling independently
+  to measure agreement; production serving image, `samples: 1`, neutral slot ids (EXP-16).
+* **Metrics:** required-block recall (primary), token savings, quarantine precision/recall, rescue rate
+  (required blocks kept as stubs only because of hesitation), agreement with the gold labels.
+* **Decision:** If H17 holds, build a larger labelled set from real agent traces and consider publishing the
+  templates; if recall < 95%, test a two-stage variant (coarse keep/drop, then action) before continuing.
+* **Cost / Dependencies:** ~200 requests plus labelling; none.
 
 ---
 
