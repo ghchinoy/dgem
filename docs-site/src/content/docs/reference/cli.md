@@ -125,8 +125,8 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 
 | MCP Argument | Type | Allowed Values / Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` \| `"local"` | Selects the execution target (`vertex_first` routes to warm Vertex AI Dedicated Endpoint with automatic Cloud Run failover; `local` is a `diffgemma` engine on your machine and is the default under `dgem mcp --local`). `locate_bounding_boxes` does not support `local`. |
-| **`vertex_url`** | `string` | `""` *(optional)* | Custom Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. |
+| **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` \| `"local"` | Selects the execution target (`vertex_first` routes to warm Vertex AI Dedicated Endpoint with automatic Cloud Run failover; `local` is a `diffgemma` engine on your machine and is the default under `dgem mcp --local`). Only configured backends are accepted; any other value returns `backend "…" is not enabled` with the available list. Omit it to use the default. `locate_bounding_boxes` does not support `local`. |
+| **`vertex_url`** | `string` | `""` *(optional)* | Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. Must be the configured endpoint or one listed in `--allowed-vertex-endpoints` on `dgem serve`; any other returns `vertex_url … is not allowed`. |
 | **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`; `"on_miss"` escalates slots that disagree with `expected_answers`). |
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
 | **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
@@ -135,6 +135,13 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 | **`expansion_entropy`** | `number` | `0.35` *(nats)* | Entropy threshold on `choice` slots that triggers an expansion proposal. |
 
 The response fields of the decide tools are described in [Studio, MCP and HTTP API](/dgem/reference/studio-mcp-api/#33-reading-decide-tool-results).
+
+The backend allow-list and endpoint restrictions (`--backends` / `DGEM_BACKENDS`, `--allowed-vertex-endpoints` /
+`DGEM_ALLOWED_VERTEX_ENDPOINTS`, `--enable-admin-api`) are settings of `dgem serve`, so they apply to a gateway's
+`POST /mcp` and to `dgem mcp --remote`. Stdio `dgem mcp` runs with your own credentials and offers every backend it
+has an endpoint for: Vertex from `--vertex-url` or `DGEM_VERTEX_URL` (a bare endpoint ID also needs
+`GCP_PROJECT_NUMBER`; a full `/invoke` URL doesn't), Cloud Run from `-u` or `DGEM_REMOTE_URL`, and `local` with
+`--local`.
 
 ---
 
@@ -152,6 +159,7 @@ The response fields of the decide tools are described in [Studio, MCP and HTTP A
 | **`DGEM_GATEWAY_HOSTS`** | `""` | Comma-separated extra hostnames recognized as remote GCP endpoints for token injection. |
 | **`DGEM_REMOTE_URL`** | `""` | Upstream `/v1` URL used by plain `dgem mcp` (no `--local` / `--remote`); overrides `-u`. |
 | **`DGEM_MCP_LOCAL`** | `""` | Set to `1` or `true` to behave like `dgem mcp --local`. |
+| **`DGEM_BACKENDS`**, **`DGEM_ALLOWED_VERTEX_ENDPOINTS`**, **`DGEM_ADMIN_API`** | `""` | `dgem serve` only: backend allow-list, extra selectable Vertex endpoints, and admin API ([Gateway and routing](/dgem/deploy/gateway/#restrict-backends-and-admin-actions)). Not read by stdio `dgem mcp`. |
 | **`GCP_PROJECT`** | `""` | Google Cloud project ID (falls back to GCP metadata server). |
 | **`GCP_PROJECT_NUMBER`** | `""` | Google Cloud numeric project ID (detected automatically if on GCP). |
 | **`GCP_REGION`** | `us-central1` | Default Google Cloud region for services and endpoints. |

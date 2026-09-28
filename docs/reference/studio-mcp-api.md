@@ -237,6 +237,8 @@ response.
 | `max_entropy` or `gpu_forward_ms` is always `0` | The binary or hosted gateway predates issue #14. Rebuild or redeploy. |
 | Calls fail with `HTTP 429` or take minutes | A Cloud Run or Vertex backend is waking from zero. Call `get_health_and_gpu_status`, and `warmup_gpu` with `wait_for_ready: false` before a batch. |
 | Plain `dgem mcp` calls go to `127.0.0.1:8080` | No endpoints were configured; see Option B, or use `--remote` (Option A). |
+| `backend "vertex" is not enabled on this gateway (available: local)` | The `backend` argument names a backend that isn't configured. It's no longer rerouted silently. Omit `backend` to use the default, pick one from the list, or configure it: `DGEM_VERTEX_URL` / `--vertex-url` for `vertex` and `vertex_first`, `-u` for `cloudrun`. On a hosted gateway the operator may also restrict backends with `DGEM_BACKENDS`. |
+| `vertex_url "..." is not allowed on this gateway` | `vertex_url` may only name the configured endpoint, or one listed in `--allowed-vertex-endpoints` (`DGEM_ALLOWED_VERTEX_ENDPOINTS`) on `dgem serve`. Drop the argument to use the configured endpoint. |
 
 To check what a `dgem` binary advertises without an agent, pipe `initialize` and `tools/list` into it (the
 `sleep` keeps stdin open long enough for the reply; the server exits when stdin closes):

@@ -697,8 +697,8 @@ func startGPUKeepaliveLoop() {
 			// 0. If Vertex First or Vertex is configured, immediately check Vertex /invoke/health on startup
 			backendConfigMu.RLock()
 			defB := serveDefaultBackend
-			vxURL := serveVertexURL
 			backendConfigMu.RUnlock()
+			vxURL := effectiveVertexURL()
 			if defB == "vertex_first" || defB == "vertex" {
 				vSt := inspectVertexEndpointState(context.Background(), vxURL)
 				if vSt.State == "deployed" {
@@ -756,8 +756,8 @@ func startGPUKeepaliveLoop() {
 				// Keep Vertex AI Dedicated Endpoint (/invoke/health) warm when vertex_first or vertex is active
 				backendConfigMu.RLock()
 				curDefB := serveDefaultBackend
-				curVxURL := serveVertexURL
 				backendConfigMu.RUnlock()
+				curVxURL := effectiveVertexURL()
 				if curDefB == "vertex_first" || curDefB == "vertex" {
 					invalidateVertexStatusCache()
 					vSt := inspectVertexEndpointState(context.Background(), curVxURL)
@@ -902,8 +902,13 @@ func CheckHealthAndGPUStatus(ctx context.Context, userEmail string) HealthAndGPU
 func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOverride string) HealthAndGPUStatusOutput {
 	backendConfigMu.RLock()
 	defB := serveDefaultBackend
-	vxURL := serveVertexURL
 	backendConfigMu.RUnlock()
+	// --vertex-url, or the DGEM_VERTEX_URL / DGEM_VERTEX_ENDPOINT_ID fallback that routing uses (issue #21),
+	// expanded to the /invoke URL as routing does so upstream_url matches the flag case.
+	vxURL := effectiveVertexURL()
+	if norm, err := expandAndValidateVertexURL(vxURL); err == nil && norm != "" {
+		vxURL = norm
+	}
 
 	reqMode := strings.ToLower(strings.TrimSpace(backendOverride))
 	if reqMode == "vertex" || reqMode == "cloudrun" || reqMode == "vertex_first" || reqMode == "local" {
