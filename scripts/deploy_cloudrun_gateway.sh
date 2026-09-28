@@ -63,11 +63,21 @@ steps:
     args: [build, --build-arg=DGEM_VERSION=${GW_VERSION}, --build-arg=DGEM_REVISION=$(git rev-parse --short HEAD), -t, "${IMAGE}", .]
 images: ["${IMAGE}"]
 YAML
-gcloud builds submit "${TMP_CTX}" \
+# Submit asynchronously and poll: a synchronous submit exits non-zero when the caller cannot stream from the
+# default logs bucket, even though the build succeeds.
+BUILD_ID="$(gcloud builds submit "${TMP_CTX}" \
   --project="${PROJECT}" \
   --config="${TMP_CTX}/cloudbuild.yaml" \
-  --suppress-logs \
-  --quiet
+  --async --format='value(id)' --quiet)"
+echo "   build ${BUILD_ID}"
+while true; do
+  BUILD_STATUS="$(gcloud builds describe "${BUILD_ID}" --project="${PROJECT}" --format='value(status)')"
+  case "${BUILD_STATUS}" in
+    SUCCESS) break ;;
+    QUEUED|WORKING|PENDING) sleep 10 ;;
+    *) echo "ERROR: build ${BUILD_ID} ended with status ${BUILD_STATUS}" >&2; exit 1 ;;
+  esac
+done
 
 GPU_IDLE_TTL="${GPU_IDLE_TTL:-3h}"
 VERTEX_ENDPOINT_ID="${DGEM_VERTEX_URL:-}"
