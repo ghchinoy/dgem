@@ -942,7 +942,7 @@ func CheckHealthAndGPUStatusForBackend(ctx context.Context, userEmail, backendOv
 				GPUTier:              fmt.Sprintf("Vertex AI Dedicated Endpoint (%s · /invoke/*)", vSt.MachineType),
 				TemplatesAvailable:   len(catalog),
 				AuthenticatedUser:    userEmail,
-				Detail:               fmt.Sprintf("Vertex AI Dedicated Endpoint %s is Warm & Ready (%d× L4 · 0.0s cold start · ~%dms GPU denoise · /invoke/*).", vSt.EndpointID, vSt.ReplicaCount, lastReadMs),
+				Detail:               fmt.Sprintf("Vertex AI Dedicated Endpoint %s is Warm & Ready (%d replica(s) · %s · 0.0s cold start · ~%dms GPU denoise · /invoke/*).", vSt.EndpointID, vSt.ReplicaCount, vSt.MachineType, lastReadMs),
 			}
 		}
 		if defB == "vertex" {
