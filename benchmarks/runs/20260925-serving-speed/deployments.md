@@ -33,6 +33,8 @@
 | 09-28 23:10 | Cloud Run `dgemma`, `dgemma-gateway`; Vertex model registry | Pruned to n and n-1: 81 revisions deleted (kept gateway `00057`, `00055`; serving `00034`, `00032`); 3 older model resources deleted (kept v0.1.0 and `504638d`) | — | — |
 | 09-28 22:50–23:01 | Monitoring | Health check `dgem-probe-hourly` / `-daily` (Cloud Run jobs + Scheduler, SA `dgem-probe-sa`), 4 log-based metrics, 7 `dgem:` alert policies (email) | First runs: Vertex ok 78 ms, gateway ok 192 ms, Cloud Run ok 82 ms | — |
 
+| 09-28 23:39 | Cloud Run `dgemma-gateway` → revision `00061` | **v0.1.2** (gateway/monitoring): decision logs carry `dgem_backend_requested`, failed requests log backend `none` | All checks pass; new log fields confirmed; failover and p95 alerts now have data | Revision `00057` (v0.1.1); older revisions pruned |
+
 Follow-ups:
 - ~~Rotate the Hugging Face token~~ done (version 2).
 - ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show
