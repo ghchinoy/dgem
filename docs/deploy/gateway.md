@@ -35,8 +35,8 @@ configured for (`available_backends`); the Studio hides the backend switcher whe
 | CLI through a gateway | `-u https://<your-dgem-gateway>/v1 --gcp-auth` (gateway default applies) |
 | Gateway default | `--default-backend` / `DGEM_DEFAULT_BACKEND` |
 
-Every response reports where it ran: header `X-DGem-Backend-Used: vertex|cloudrun|local` (and `"backend_used"` in
-JSON bodies).
+Every response reports where it ran: header `X-DGem-Backend-Used: vertex|cloudrun|local` (and `"backend_target"` in
+JSON bodies, including MCP tool results).
 
 ```bash
 curl -sS https://<your-dgem-gateway>/api/decide/support_triage \
