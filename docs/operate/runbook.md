@@ -84,6 +84,11 @@ images carry `org.opencontainers.image.version`, and `dgem --version` prints it.
    [Public container images](../deploy/public-images.md).
 5. Deploy to your own endpoints by digest; record the version in your deployment log.
 
+If only gateway, MCP or CLI code changed (nothing under `deploy/cloudrun/`), use
+`make release-gateway VERSION=vX.Y.Z` instead of step 2: it tags the release without rebuilding the serving images,
+then redeploy the gateway from the tag. Serving endpoints keep the previous image, and the CHANGELOG says which
+serving image a release uses.
+
 Builds between releases report `git describe` versions such as `v0.1.0-3-gabc1234`.
 
 ## Roll back

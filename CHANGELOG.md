@@ -4,7 +4,22 @@ Releases of the `dgem` serving images (`dgem`, `dgem-weights`), gateway and CLI.
 Versioning: `vMAJOR.MINOR.PATCH`. **Major:** breaking API or response changes. **Minor:** vLLM runtime or model
 changes, new features. **Patch:** fixes. Images are published to
 `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/` as `:<version>` and `:<commit>`; `:latest` moves only after
-a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version).
+a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version). Gateway/CLI-only releases
+(`make release-gateway`) reuse the previous serving images.
+
+## v0.1.1 (unreleased)
+
+Gateway, MCP and CLI only. **Serving images are unchanged**: the latest serving image is still `v0.1.0`
+(`dgem@sha256:5fa4a866…`), and production Vertex and Cloud Run keep running it.
+
+- Security (#18): `POST /api/backend-config` and `/api/vertex/deploy|teardown` require `--enable-admin-api`
+  (off by default); request-supplied `vertex_url` limited to the configured endpoint or
+  `--allowed-vertex-endpoints`. Previously any signed-in user could change routing for everyone or deploy/tear down
+  the Vertex endpoint.
+- Backend allow-list (#18): `--backends` / `DGEM_BACKENDS`, validated at startup; unknown or disabled backends
+  return 400 on every surface. Studio backend choice is per browser.
+- MCP: `dgem mcp` over stdio honours `DGEM_VERTEX_URL` for the allow-list (#19), health and routing (#22); tool
+  schemas list only the configured backends (#23).
 
 ## v0.1.0 (2026-09-28)
 
