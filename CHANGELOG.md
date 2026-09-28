@@ -7,7 +7,7 @@ changes, new features. **Patch:** fixes. Images are published to
 a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version). Gateway/CLI-only releases
 (`make release-gateway`) reuse the previous serving images.
 
-## v0.1.2 (unreleased)
+## v0.1.2 (2026-09-28)
 
 Gateway and monitoring; serving images unchanged (v0.1.0).
 
