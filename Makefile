@@ -1,4 +1,4 @@
-.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights release publish-latest bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public docs-sync-check
+.PHONY: help build run test fmt clean setup download serve stop gateway-up gateway-down local-up local-down local-status image image-weights release release-gateway publish-latest bench bench-ecotone install docs-build docs-dev cloudrun-deploy gce-deploy gce-teardown check-public docs-sync-check
 
 .DEFAULT_GOAL := help
 
@@ -142,6 +142,18 @@ release: ## Cut a release: make release VERSION=v0.2.0 (clean main, tests, CHANG
 	@gcloud artifacts docker images describe $(REGISTRY)/dgem:$(VERSION) --format='value(image_summary.digest)'
 	@gcloud artifacts docker images describe $(REGISTRY)/dgem-weights:$(VERSION) --format='value(image_summary.digest)'
 	@echo "Next: validate (docs/operate/runbook.md), then 'make publish-latest VERSION=$(VERSION)' and 'git push origin $(VERSION)'."
+
+release-gateway: ## Tag a gateway/CLI-only release: make release-gateway VERSION=v0.1.1 (no serving image rebuild)
+	@echo "$(VERSION)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "usage: make release-gateway VERSION=vMAJOR.MINOR.PATCH"; exit 1; }
+	@test -z "$$(git status --porcelain --untracked-files=no)" || { echo "working tree not clean"; exit 1; }
+	@test "$$(git rev-parse --abbrev-ref HEAD)" = main || { echo "releases are cut from main"; exit 1; }
+	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse @{u} 2>/dev/null)" || { echo "push main first"; exit 1; }
+	@grep -q "^## $(VERSION)" CHANGELOG.md || { echo "add a '## $(VERSION)' section to CHANGELOG.md first"; exit 1; }
+	@! git rev-parse -q --verify "refs/tags/$(VERSION)" >/dev/null || { echo "tag $(VERSION) already exists"; exit 1; }
+	@git diff --quiet "$$(git describe --tags --match 'v*' --abbrev=0)" HEAD -- deploy/cloudrun || { echo "deploy/cloudrun changed since the last release: use 'make release' (serving images must be rebuilt)"; exit 1; }
+	go test ./cmd/ ./pkg/...
+	git tag -a $(VERSION) -m "dgem $(VERSION) (gateway/CLI; serving images unchanged)"
+	@echo "==> Tagged $(VERSION). Push it (git push origin $(VERSION)) and redeploy the gateway from the tag."
 
 publish-latest: ## After validation: point dgem:latest and dgem-weights:latest at VERSION
 	@test -n "$(VERSION)" || { echo "usage: make publish-latest VERSION=v0.2.0"; exit 1; }
