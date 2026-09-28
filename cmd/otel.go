@@ -155,10 +155,15 @@ func (p *gatewaySpanProcessor) OnEnd(s sdktrace.ReadOnlySpan) {
 		} else {
 			logEntry["dgem_surface"] = "rest_api"
 		}
+		// "none" when the request failed before a backend was chosen (e.g. 400 unknown backend); defaulting
+		// to "cloudrun" made failed requests look like Cloud Run decisions in metrics.
 		if v, ok := attrs["dgem.backend"]; ok {
 			logEntry["dgem_backend"] = v
 		} else {
-			logEntry["dgem_backend"] = "cloudrun"
+			logEntry["dgem_backend"] = "none"
+		}
+		if v, ok := attrs["dgem.backend_requested"]; ok {
+			logEntry["dgem_backend_requested"] = v
 		}
 		if v, ok := attrs["dgem.template"]; ok {
 			logEntry["dgem_template"] = v

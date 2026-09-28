@@ -1,0 +1,224 @@
+{
+ "gateway_backend": "vertex",
+ "results": [
+  {
+   "template": "agent_router",
+   "status": 200,
+   "wall_ms": 270,
+   "backend_used": null,
+   "questions": 1,
+   "problems": []
+  },
+  {
+   "template": "calibration/agent_step_drift",
+   "status": 200,
+   "wall_ms": 308,
+   "backend_used": null,
+   "questions": 1,
+   "problems": []
+  },
+  {
+   "template": "calibration/chaos_nli",
+   "status": 200,
+   "wall_ms": 312,
+   "backend_used": null,
+   "questions": 1,
+   "problems": []
+  },
+  {
+   "template": "calibration/civil_comments_toxicity",
+   "status": 200,
+   "wall_ms": 308,
+   "backend_used": null,
+   "questions": 2,
+   "problems": []
+  },
+  {
+   "template": "calibration/grounding_claim_check",
+   "status": 200,
+   "wall_ms": 276,
+   "backend_used": null,
+   "questions": 1,
+   "problems": []
+  },
+  {
+   "template": "calibration/ms_marco_relevance",
+   "status": 200,
+   "wall_ms": 288,
+   "backend_used": null,
+   "questions": 1,
+   "problems": []
+  },
+  {
+   "template": "calibration/prompt_injection",
+   "status": 200,
+   "wall_ms": 289,
+   "backend_used": null,
+   "questions": 1,
+   "problems": []
+  },
+  {
+   "template": "code_review",
+   "status": 200,
+   "wall_ms": 285,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "contract_audit",
+   "status": 200,
+   "wall_ms": 308,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "intent_banking77",
+   "status": 502,
+   "wall_ms": 229,
+   "backend_used": null,
+   "error": "{\"error\":\"upstream (vertex) decision failed after 1 attempt(s): server returned error HTTP 400: {\\\"error\\\": {\\\"message\\\": \\\"question 'intent': needs at least two alternatives\\\", \\\"type\\\": \\\"invalid_re"
+  },
+  {
+   "template": "intent_clinc150",
+   "status": 502,
+   "wall_ms": 228,
+   "backend_used": null,
+   "error": "{\"error\":\"upstream (vertex) decision failed after 1 attempt(s): server returned error HTTP 400: {\\\"error\\\": {\\\"message\\\": \\\"question 'domain': needs at least two alternatives\\\", \\\"type\\\": \\\"invalid_re"
+  },
+  {
+   "template": "intent_tiebreak",
+   "status": 400,
+   "wall_ms": 218,
+   "backend_used": null,
+   "error": "{\"error\":\"template render failed: failed to execute template: template: intent_tiebreak.json.tmpl:10:31: executing \\\"intent_tiebreak.json.tmpl\\\" at \\u003c.options\\u003e: range can't iterate over \"}\n"
+  },
+  {
+   "template": "jevbench_generic",
+   "status": 502,
+   "wall_ms": 251,
+   "backend_used": null,
+   "error": "{\"error\":\"upstream (vertex) decision failed after 1 attempt(s): server returned error HTTP 400: {\\\"error\\\": {\\\"message\\\": \\\"system must be a JSON question schema and user must be JSON state or image p"
+  },
+  {
+   "template": "multimodal/bbox_localization",
+   "status": 200,
+   "wall_ms": 487,
+   "backend_used": null,
+   "questions": 5,
+   "problems": []
+  },
+  {
+   "template": "multimodal/bbox_multi_object_detr",
+   "status": 200,
+   "wall_ms": 487,
+   "backend_used": null,
+   "questions": 10,
+   "problems": []
+  },
+  {
+   "template": "multimodal/bbox_multi_object_set",
+   "status": 200,
+   "wall_ms": 489,
+   "backend_used": null,
+   "questions": 11,
+   "problems": []
+  },
+  {
+   "template": "multimodal/call_quality_audio",
+   "status": 200,
+   "wall_ms": 386,
+   "backend_used": null,
+   "questions": 4,
+   "problems": []
+  },
+  {
+   "template": "multimodal/kyc_document_audit",
+   "status": 200,
+   "wall_ms": 386,
+   "backend_used": null,
+   "questions": 4,
+   "problems": []
+  },
+  {
+   "template": "multimodal/pcb_defect_triage",
+   "status": 200,
+   "wall_ms": 385,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "multimodal/ui_design_review",
+   "status": 200,
+   "wall_ms": 356,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "multimodal/workplace_hazard_video",
+   "status": 200,
+   "wall_ms": 320,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "rerank/listwise_decision_rerank",
+   "status": 200,
+   "wall_ms": 351,
+   "backend_used": null,
+   "questions": 12,
+   "problems": []
+  },
+  {
+   "template": "rerank/pointwise_rerank",
+   "status": 200,
+   "wall_ms": 286,
+   "backend_used": null,
+   "questions": 2,
+   "problems": []
+  },
+  {
+   "template": "secops_conditional_dag",
+   "status": 200,
+   "wall_ms": 339,
+   "backend_used": null,
+   "questions": 5,
+   "problems": []
+  },
+  {
+   "template": "security_incident",
+   "status": 200,
+   "wall_ms": 278,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "support_triage",
+   "status": 200,
+   "wall_ms": 298,
+   "backend_used": null,
+   "questions": 3,
+   "problems": []
+  },
+  {
+   "template": "taxonomy_discovery",
+   "status": 200,
+   "wall_ms": 584,
+   "backend_used": null,
+   "questions": 4,
+   "problems": []
+  },
+  {
+   "template": "tn_disambiguation",
+   "status": 502,
+   "wall_ms": 200,
+   "backend_used": null,
+   "error": "{\"error\":\"upstream (vertex) decision failed after 1 attempt(s): server returned error HTTP 400: {\\\"error\\\": {\\\"message\\\": \\\"question 'expansion': needs at least two alternatives\\\", \\\"type\\\": \\\"invalid"
+  }
+ ]
+}

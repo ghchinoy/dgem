@@ -105,12 +105,8 @@ Builds between releases report `git describe` versions such as `v0.1.0-3-gabc123
 
 ## Alerting
 
-`scripts/setup_cloud_monitoring.sh` creates log-based metrics and a dashboard for the gateway. Useful alerts:
-
-- Vertex deployed model with 0 available replicas for > 5 minutes.
-- Gateway `X-DGem-Backend-Used: cloudrun` share rising while the default is `vertex_first` (Vertex unhealthy).
-- `503 server busy` rate > 1% (raise capacity or `MAX_INFLIGHT`).
-- p95 decision latency above your SLO on `dgem.gateway.decide` traces ([Observability](/dgem/operate/observability/)).
+Alert policies, the scheduled health check, what each alert means and how to change thresholds:
+[Monitoring and alerts](/dgem/operate/monitoring/). `scripts/setup_cloud_monitoring.sh` also creates an operational dashboard.
 
 ## Incident playbooks
 

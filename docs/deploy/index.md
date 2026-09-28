@@ -20,6 +20,7 @@ pages is measured (sample sizes and receipts are linked); identifiers such as `<
 | 5 | [Gateway and routing](gateway.md) | One URL for users, automatic failover from Vertex to Cloud Run, IAP |
 | 6 | [Latency and capacity](../operate/latency-capacity.md) | Request design, engine settings and how to measure your own |
 | 7 | [Operations runbook](../operate/runbook.md) | Health, promotion, rollback, teardown and troubleshooting |
+| 8 | [Monitoring and alerts](../operate/monitoring.md) | Scheduled health check, alert policies, what to do when they fire |
 
 ## Crawl → walk → run
 
