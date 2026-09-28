@@ -7,7 +7,7 @@ changes, new features. **Patch:** fixes. Images are published to
 a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version). Gateway/CLI-only releases
 (`make release-gateway`) reuse the previous serving images.
 
-## v0.1.1 (unreleased)
+## v0.1.1 (2026-09-28)
 
 Gateway, MCP and CLI only. **Serving images are unchanged**: the latest serving image is still `v0.1.0`
 (`dgem@sha256:5fa4a866…`), and production Vertex and Cloud Run keep running it.
