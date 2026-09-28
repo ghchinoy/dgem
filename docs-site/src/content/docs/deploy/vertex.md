@@ -39,13 +39,13 @@ Cold start: none while minimum replicas â‰¥ 1. Deploying a new model takes ~10â€
 - A service account for the endpoint (default `dgemma-gpu-sa@<PROJECT>.iam.gserviceaccount.com`) with read access
   to the bucket.
 - Vertex AI requires an Artifact Registry or Container Registry image. Pin by digest; the public image works:
-  `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:<DIGEST>` ([current digests](/dgem/deploy/public-images/)).
+  `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc` ([current digests](/dgem/deploy/public-images/)).
 
 ## 2. Deploy
 
 ```bash
 GCP_PROJECT=<PROJECT> GCP_PROJECT_NUMBER=<PROJECT_NUMBER> GCP_REGION=<REGION> \
-IMAGE_URI=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:<DIGEST> \
+IMAGE_URI=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc \
 ./scripts/deploy_vertex_endpoint.sh
 ```
 

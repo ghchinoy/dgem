@@ -124,7 +124,7 @@ def main():
         warmed = next((t for t, x in text if "Self-warmup complete" in x), None)
         if warmed and first_ok:
             first = text[0][0] if text else None  # first container log line ≈ image pulled + started
-            staged = next((float(m.group(1)) for _, x in text for m in [re.search(r"completed in ([\d.]+)s", x)] if m), None)
+            staged = next((float(m.group(1)) for _, x in text for m in [re.search(r"range copy.*completed in ([\d.]+)s", x)] if m), None)
             ready = next((t for t, x in text if "Reclaimed" in x or "Application startup complete" in x), None)
             rec = {"label": a.label, "revision": rev, "image": a.image, "vpc": "on" if a.vpc else ("off" if a.no_vpc else "unchanged"),
                    "deploy_s": round(deploy_s, 1), "first_log_s": round(first - t0, 1) if first else None,

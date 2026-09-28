@@ -13,18 +13,23 @@ description: "How to pull and run official dgem DiffusionGemma container images 
 
 | Image Tag | Digest | Compressed Size | Weights Delivery | Recommended Use Case |
 | :--- | :--- | :---: | :--- | :--- |
-| **`dgem:latest`** (or `dgem:56baadf`) | `sha256:a7ace753973b...` | `~10 GB` | Public HF download at container boot (`0.0s` if mounted or pre-cached) | **Ephemeral Cloud Run GPU, GCE VMs, Local Docker** |
-| **`dgem-weights:latest`** (or `dgem-weights:56baadf`) | `sha256:893f45a29e77...` | `~26 GB` | **Pre-baked NVFP4 weights** in `/opt/dgemma/weights` (no weight download at boot, but a ~12-minute first image pull on Cloud Run; see Path to Production §5) | **Dedicated Vertex AI Endpoints, Offline Pods** |
+| **`dgem:4b1b809`** (also `:latest`) | `sha256:edc06728d2e8...` | `~10 GB` | Downloads the public weights from Hugging Face at boot, or mounts them (Cloud Storage / local path) | **Cloud Run GPU (recommended), Vertex AI, GCE VMs, local Docker** |
+| **`dgem-weights:4b1b809`** (also `:latest`) | `sha256:7cfbbb9207f5...` | `~26 GB` | **NVFP4 weights baked in** at `/opt/dgemma/weights`; no download at boot, but a large pull (~8–12 minutes on a fresh Cloud Run instance) | **Offline or air-gapped hosts** |
+
+Both images were validated side by side with the production serving image (API contract, latency, 0 errors at 32
+concurrent clients) before publishing; see the [image parity run](../../benchmarks/runs/20260927-image-parity/README.md)
+and [Deploy on Cloud Run §7](cloud-run.md#7-cold-start-what-to-expect-and-your-options) for cold-start numbers.
+Pin by digest in production; `:latest` moves.
 
 For deploying to Google Cloud Run GPU or Vertex AI Dedicated Endpoints, see [Deploy on Cloud Run](cloud-run.md) or [Production on Vertex AI](vertex.md).
 
 ### Pulling the Image
 ```bash
 # Pull lean image (pinned digest):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:56baadf@sha256:a7ace753973b6c3521dbc4c62ea4dfbea5384c582884e98a5ccae9f81b1f6dd9
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:4b1b809@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc
 
 # Or pull self-contained image with pre-baked NVFP4 weights (pinned digest):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:4b1b809@sha256:7cfbbb9207f50cb4ef5d4432c88cde97a893770dc1a04329e8d4d0f6aa0d3c56
 ```
 
 ---
@@ -39,7 +44,7 @@ docker run --gpus all \
   -p 8080:8080 \
   -e ROLE=decision-index \
   -e TEMPERATURE=1.0 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:4b1b809@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc
 ```
 
 Once running and healthy (`curl http://localhost:8080/health`), run the official upstream Decision Index pipeline:
@@ -57,7 +62,7 @@ Serves `/v1/chat/completions` (OpenAI format), `/v1/systemone` pass-through, and
 ```bash
 docker run --gpus all \
   -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:4b1b809@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc
 ```
 
 Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
@@ -82,8 +87,10 @@ Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
 | **`TEMPERATURE`** | `1.0` | Post-hoc slot logit temperature scaling $T^*$ ($1.0$ unscaled for official submissions). |
 | **`API_KEY`** | `""` (open) | Optional secret key. When set, all incoming requests must supply `Authorization: Bearer <key>`. |
 | **`CANVAS`** | `128` | Served diffusion canvas length in tokens. |
-| **`WEIGHTS_SOURCE`** | `hf` (or `baked`) | `baked` (uses `/opt/dgemma/weights`), `hf` (downloads from Hugging Face), `gcs`, or `local`. |
-| **`MODEL_HF`** | `nvidia/...NVFP4` | Public Hugging Face repo ID to download when `WEIGHTS_SOURCE=hf`. |
+| **`MODEL`** | `/mnt/gcs/dgemma` | Weights path. Baked weights at `/opt/dgemma/weights` are used automatically; a mounted path is used if it has `config.json`; otherwise weights are staged from `DGEM_WEIGHTS_URI` (a `gs://` URI) or downloaded from `MODEL_HF`. |
+| **`MODEL_HF`** | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | Hugging Face repo downloaded when no weights are baked, mounted or staged. |
+| **`DEFAULT_SAMPLES`**, **`MAX_INFLIGHT`** | `1`, `8` | Samples for schemas without `samples`; decisions processed at once (the rest queue). |
+| **`DISABLE_MM`** | `0` | `1` disables the vision tower (smaller GPUs). |
 
 ---
 

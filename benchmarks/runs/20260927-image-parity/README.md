@@ -100,11 +100,12 @@ Seconds from revision creation. Same service, RTX PRO 6000, image `56baadf` vari
 | Lean image, public egress | 1 | 3 | 386 | 461 |
 | Baked-weights image (first pull of the image) | 1 | **742** | 64 (bug #4) | 878 |
 | Baked-weights image (image already cached) | 1 | 24 | 74 (bug #4) | 179 |
+| Baked-weights image `4b1b809` (fix #4, fresh instance) | 1 | 474 | none (baked weights used) | 626 |
 
 The baked-weights image does not help on Cloud Run: its first pull of ~26 GB took over 12 minutes, and
 even with the image cached it was slower than the lean image. Bug #4 meant these runs also copied weights
 from Cloud Storage, so the cached-image number is an upper bound; the first-pull penalty applies to every
-new image regardless. Recommendation: lean image + Direct VPC egress.
+new image regardless. With fix #4 the baked image skips the copy, but its ~8-minute image pull still makes it slower than the lean image. Recommendation: lean image + Direct VPC egress.
 
 ## Promotion (2026-09-28)
 
@@ -115,3 +116,11 @@ new image regardless. Recommendation: lean image + Direct VPC egress.
 - Gateway: rebuilt from `main` (PRs #5–#11), deployed with no traffic, checked (backend config, all three
   backends, MCP `tools/list` and health tool), traffic migrated, then re-checked through the IAP-fronted
   custom domain.
+
+## Public images published (2026-09-28)
+
+Built in `dgem-diffusiongemma` from `4b1b809` (includes the four fixes above plus digit-string `samples`):
+`dgem:4b1b809@sha256:edc06728…abcfc` and `dgem-weights:4b1b809@sha256:7cfbbb92…3c56`. The lean image passed the
+contract probe against production (identical except `samples: "4"`, which it now accepts), latency matched
+(61.5 ms / 101 ms / 75 ms GPU for 1 sample / 4 samples / image), and 256 requests at 16 and 32 workers had 0
+errors. The baked image loaded its own weights (no Cloud Storage copy).

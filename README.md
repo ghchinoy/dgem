@@ -29,7 +29,7 @@ Choose the option matching your hardware:
 * **Any Linux/Windows Workstation with NVIDIA GPU (Docker)**:
   ```bash
   # Lean public image (downloads the public weights on first boot); tags and digests: docs/deploy/public-images.md
-  docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:<TAG>@sha256:<DIGEST>
+  docker run --gpus all -p 8080:8080 us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:4b1b809@sha256:edc06728d2e86c2e9408cc7ac046f2d261cfb2106c3523aa8d4f939f862abcfc
   ```
 * **Remote Google Cloud Endpoint**:
   ```bash
