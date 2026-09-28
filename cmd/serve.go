@@ -682,6 +682,20 @@ func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requeste
 
 // resolveBackendTarget determines whether an HTTP request should route to "vertex" or "cloudrun"
 // based on headers (X-DGem-Backend, X-DGem-Vertex-Url), payload overrides, query params, or server default.
+// requestedBackendMode is the backend a request asked for (header, JSON body or query), or the gateway default.
+// Logged next to the backend that answered so monitoring can tell a vertex_first failover to Cloud Run from an
+// explicit Cloud Run request.
+func requestedBackendMode(r *http.Request, payloadBackend string) string {
+	for _, v := range []string{r.Header.Get("X-DGem-Backend"), payloadBackend, r.URL.Query().Get("backend")} {
+		if v = strings.ToLower(strings.TrimSpace(v)); v != "" {
+			return v
+		}
+	}
+	backendConfigMu.RLock()
+	defer backendConfigMu.RUnlock()
+	return serveDefaultBackend
+}
+
 func resolveBackendTarget(r *http.Request, payloadBackend, payloadVertexURL string) (string, string, error) {
 	targetBackend := strings.TrimSpace(r.Header.Get("X-DGem-Backend"))
 	if targetBackend == "" {
@@ -1504,6 +1518,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		rootSpan.SetAttributes(
 			attribute.String("dgem.surface", surface),
 			attribute.String("dgem.backend", backendTarget),
+			attribute.String("dgem.backend_requested", requestedBackendMode(r, payload.Backend)),
 			attribute.String("dgem.template", tmplLabel),
 			attribute.String("dgem.user", userEmail),
 			attribute.Bool("dgem.multimodal", len(images) > 0),

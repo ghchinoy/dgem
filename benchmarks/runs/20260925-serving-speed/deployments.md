@@ -29,6 +29,10 @@
 
 | 09-28 ~21:00 | Cloud Run `dgemma-gateway` → revision `00057` | **v0.1.1** (gateway/CLI-only release; serving stays v0.1.0): PRs #19, #22, #23 on top of #18; admin API off | `/health` version v0.1.1; all backends route; admin POSTs 403; unknown backend / foreign `vertex_url` 400; MCP tool schemas list `[vertex_first, vertex, cloudrun]` and reject unknown backends at validation; IAP custom domain; `dgem mcp --remote` | Revision `00055` |
 
+| 09-28 22:39–23:05 | Verification + rollback drill ([`20260928-v010-verification`](../20260928-v010-verification/README.md)) | All sample suites on v0.1.0; rollback model `504638d` redeployed on the endpoint and given 100% traffic for ~30 s, then traffic restored and the drill copy undeployed | All pass (two pre-existing harness issues noted) | — |
+| 09-28 23:10 | Cloud Run `dgemma`, `dgemma-gateway`; Vertex model registry | Pruned to n and n-1: 81 revisions deleted (kept gateway `00057`, `00055`; serving `00034`, `00032`); 3 older model resources deleted (kept v0.1.0 and `504638d`) | — | — |
+| 09-28 22:50–23:01 | Monitoring | Health check `dgem-probe-hourly` / `-daily` (Cloud Run jobs + Scheduler, SA `dgem-probe-sa`), 4 log-based metrics, 7 `dgem:` alert policies (email) | First runs: Vertex ok 78 ms, gateway ok 192 ms, Cloud Run ok 82 ms | — |
+
 Follow-ups:
 - ~~Rotate the Hugging Face token~~ done (version 2).
 - ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show

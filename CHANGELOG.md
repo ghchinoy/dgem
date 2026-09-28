@@ -7,6 +7,16 @@ changes, new features. **Patch:** fixes. Images are published to
 a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version). Gateway/CLI-only releases
 (`make release-gateway`) reuse the previous serving images.
 
+## v0.1.2 (unreleased)
+
+Gateway and monitoring; serving images unchanged (v0.1.0).
+
+- Monitoring: scheduled health check (`scripts/probe.py`, `scripts/deploy_probe.sh`: Cloud Run jobs + Scheduler),
+  alert policies and log-based metrics (`scripts/setup_alerts.py`), guide `docs/operate/monitoring.md`.
+- Gateway decision logs record the requested backend (`dgem_backend_requested`) next to the one that answered, and
+  failed requests are logged with backend `none` instead of `cloudrun`, so failover can be measured.
+- `scripts/template_sweep.py`: run every policy template through a gateway with its sample variables.
+
 ## v0.1.1 (2026-09-28)
 
 Gateway, MCP and CLI only. **Serving images are unchanged**: the latest serving image is still `v0.1.0`

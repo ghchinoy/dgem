@@ -18,6 +18,7 @@ pages is measured (sample sizes and receipts are linked); identifiers such as `<
 | 5 | [Gateway and routing](/dgem/deploy/gateway/) | One URL for users, automatic failover from Vertex to Cloud Run, IAP |
 | 6 | [Latency and capacity](/dgem/operate/latency-capacity/) | Request design, engine settings and how to measure your own |
 | 7 | [Operations runbook](/dgem/operate/runbook/) | Health, promotion, rollback, teardown and troubleshooting |
+| 8 | [Monitoring and alerts](/dgem/operate/monitoring/) | Scheduled health check, alert policies, what to do when they fire |
 
 ## Crawl → walk → run
 
