@@ -152,3 +152,27 @@ func TestRequireAdminAPI(t *testing.T) {
 		t.Fatalf("enabled admin API should pass, code %d", rec.Code)
 	}
 }
+
+// Regression (PR #18): `dgem mcp` over stdio with the endpoint only in DGEM_VERTEX_URL must still offer
+// vertex_first / vertex, as request routing always did.
+func TestAllowListUsesVertexEnvFallback(t *testing.T) {
+	withBackendConfig(t, "", "http://127.0.0.1:8080/v1", "", false, "vertex_first", nil, nil)
+	t.Setenv("DGEM_VERTEX_ENDPOINT_ID", "")
+	t.Setenv("DGEM_VERTEX_URL", testVX)
+	got := configuredBackends()
+	if !containsString(got, "vertex_first") || !containsString(got, "vertex") {
+		t.Fatalf("DGEM_VERTEX_URL ignored by the allow-list: %v", got)
+	}
+	if err := checkRequestedBackend("vertex_first", got); err != nil {
+		t.Fatalf("vertex_first rejected: %v", err)
+	}
+	// The env endpoint counts as the configured endpoint for vertex_url checks.
+	if err := checkVertexOverride(testVX, effectiveVertexURL()); err != nil {
+		t.Fatalf("env endpoint rejected as override: %v", err)
+	}
+
+	t.Setenv("DGEM_VERTEX_URL", "")
+	if got := configuredBackends(); containsString(got, "vertex") {
+		t.Fatalf("no Vertex configured but allow-list has it: %v", got)
+	}
+}

@@ -70,12 +70,26 @@ func parseBackendList(s string) ([]string, error) {
 func configuredBackends() []string {
 	backendConfigMu.RLock()
 	explicit := serveExplicitBackends
-	vx, loc, locMode := serveVertexURL, serveLocalURL, serveLocalMode
+	loc, locMode := serveLocalURL, serveLocalMode
 	backendConfigMu.RUnlock()
 	if explicit != nil {
 		return append([]string(nil), explicit...)
 	}
-	return deriveAvailableBackends(vx, viper.GetString("url"), loc, locMode)
+	return deriveAvailableBackends(effectiveVertexURL(), viper.GetString("url"), loc, locMode)
+}
+
+// effectiveVertexURL is the Vertex endpoint the gateway routes to: --vertex-url, or the DGEM_VERTEX_URL /
+// DGEM_VERTEX_ENDPOINT_ID environment fallback that request routing has always used. `dgem mcp` (stdio)
+// never copies the environment into serveVertexURL, so reading only the flag hid Vertex from the
+// allow-list there.
+func effectiveVertexURL() string {
+	backendConfigMu.RLock()
+	vx := serveVertexURL
+	backendConfigMu.RUnlock()
+	if strings.TrimSpace(vx) != "" {
+		return vx
+	}
+	return defaultVertexEndpointID()
 }
 
 func containsString(list []string, s string) bool {
