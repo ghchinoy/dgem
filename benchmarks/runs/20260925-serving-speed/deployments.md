@@ -23,6 +23,10 @@
 | 09-28 17:20 | Cloud Run `dgemma` → revision `00034` (tag `v010`) | v0.1.0 via `deploy_cloudrun_vllm.sh CLOUDRUN_TAG=v010` (refreshes the embedded entrypoint), verified, 100% | `/health` version v0.1.0; contract identical | Revision `00032` |
 | 09-28 17:45 | Cloud Run `dgemma-gateway` → revision `00053` | Rebuilt from `main` (`v0.1.0-2-gbbcbc45`): PRs #13, #15, #17, MCP health text, client samples fix | Backend config, all three backends, MCP tools/list, decide summary fields, health tool, IAP custom domain, `dgem mcp --remote` | Revision `00050` |
 
+| 09-28 ~19:00 | Cloud Run `dgemma-gateway` → revision `00055` | Rebuilt from `main` `3216438` (`v0.1.0-5-g3216438`, PR #18: backend allow-list, admin API **off**, `vertex_url` restricted); `DGEM_VERTEX_MODEL_ID` = v0.1.0 model | All backends route correctly; admin POSTs 403; unknown backend and foreign `vertex_url` 400 (HTTP and MCP); default unchanged; MCP via `--remote`; IAP custom domain | Revision `00053` |
+| 09-28 | Vertex `<endpoint-id>` | `504638d` deployed model undeployed (model resource kept) | Endpoint serves only v0.1.0 | Redeploy the kept model (~15 min) |
+| 09-28 | Public registry | Deleted `dgem` / `dgem-weights` tags `56baadf` (pre-fix, buggy) and `4b1b809` (superseded) | Registry holds `v0.1.0` = `latest` | — |
+
 Follow-ups:
 - ~~Rotate the Hugging Face token~~ done (version 2).
 - ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show
