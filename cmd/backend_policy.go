@@ -78,10 +78,12 @@ func configuredBackends() []string {
 	return deriveAvailableBackends(effectiveVertexURL(), viper.GetString("url"), loc, locMode)
 }
 
-// effectiveVertexURL is the Vertex endpoint the gateway routes to: --vertex-url, or the DGEM_VERTEX_URL /
-// DGEM_VERTEX_ENDPOINT_ID environment fallback that request routing has always used. `dgem mcp` (stdio)
-// never copies the environment into serveVertexURL, so reading only the flag hid Vertex from the
-// allow-list there.
+// effectiveVertexURL is the Vertex endpoint the gateway routes to: --vertex-url, or the DGEM_VERTEX_ENDPOINT_ID /
+// DGEM_VERTEX_URL environment fallback. `dgem mcp` (stdio) never copies the environment into serveVertexURL, so
+// reading only the flag hid Vertex from the allow-list there.
+//
+// DGEM_VERTEX_URL is returned as given, not reduced to its endpoint ID: a full /invoke URL must not need
+// GCP_PROJECT_NUMBER to be rebuilt (issue #21), matching --vertex-url and `dgem serve`.
 func effectiveVertexURL() string {
 	backendConfigMu.RLock()
 	vx := serveVertexURL
@@ -89,7 +91,10 @@ func effectiveVertexURL() string {
 	if strings.TrimSpace(vx) != "" {
 		return vx
 	}
-	return defaultVertexEndpointID()
+	if ep := strings.TrimSpace(os.Getenv("DGEM_VERTEX_ENDPOINT_ID")); ep != "" {
+		return ep
+	}
+	return strings.TrimSpace(os.Getenv("DGEM_VERTEX_URL"))
 }
 
 func containsString(list []string, s string) bool {

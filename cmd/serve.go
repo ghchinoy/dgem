@@ -609,9 +609,9 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requestedVertexURL string) (string, string, error) {
 	backendConfigMu.RLock()
 	defBackend := serveDefaultBackend
-	defVertexURL := serveVertexURL
 	locURL := serveLocalURL
 	backendConfigMu.RUnlock()
+	defVertexURL := effectiveVertexURL()
 
 	available := configuredBackends()
 	mode := strings.ToLower(strings.TrimSpace(requestedMode))
@@ -627,7 +627,7 @@ func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requeste
 			mode = available[0]
 		}
 	}
-	if err := checkVertexOverride(requestedVertexURL, effectiveVertexURL()); err != nil {
+	if err := checkVertexOverride(requestedVertexURL, defVertexURL); err != nil {
 		return mode, "", err
 	}
 
@@ -644,9 +644,6 @@ func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requeste
 	rawVx := strings.TrimSpace(requestedVertexURL)
 	if rawVx == "" {
 		rawVx = strings.TrimSpace(defVertexURL)
-	}
-	if rawVx == "" {
-		rawVx = defaultVertexEndpointID()
 	}
 
 	if mode == "vertex_first" {
