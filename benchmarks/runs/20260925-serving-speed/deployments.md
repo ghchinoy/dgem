@@ -27,6 +27,8 @@
 | 09-28 | Vertex `<endpoint-id>` | `504638d` deployed model undeployed (model resource kept) | Endpoint serves only v0.1.0 | Redeploy the kept model (~15 min) |
 | 09-28 | Public registry | Deleted `dgem` / `dgem-weights` tags `56baadf` (pre-fix, buggy) and `4b1b809` (superseded) | Registry holds `v0.1.0` = `latest` | — |
 
+| 09-28 ~21:00 | Cloud Run `dgemma-gateway` → revision `00057` | **v0.1.1** (gateway/CLI-only release; serving stays v0.1.0): PRs #19, #22, #23 on top of #18; admin API off | `/health` version v0.1.1; all backends route; admin POSTs 403; unknown backend / foreign `vertex_url` 400; MCP tool schemas list `[vertex_first, vertex, cloudrun]` and reject unknown backends at validation; IAP custom domain; `dgem mcp --remote` | Revision `00055` |
+
 Follow-ups:
 - ~~Rotate the Hugging Face token~~ done (version 2).
 - ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show
