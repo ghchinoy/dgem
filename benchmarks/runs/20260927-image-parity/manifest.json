@@ -1,0 +1,752 @@
+{
+  "run_id": "20260927-image-parity",
+  "created": "2026-09-27T20:18:51+00:00",
+  "git_commit": "c23b49104bd8a0d41170d20a5d182521bb58fd56",
+  "git_dirty_paths": [],
+  "notes": "",
+  "receipts": [
+    {
+      "suite": "jevbench",
+      "config": "cr_ab208dd_r1",
+      "path": "jevbench__cr_ab208dd_r1.json",
+      "sha256": "01537c44a93fdb356db0d6a47b9c5785394ff33cbbc3f369bb0d5b6adc5f8f99",
+      "recorded": "2026-09-27T20:18:52+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_ab208dd_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:18:51Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 187,
+        "accuracy": 0.8095238095238095,
+        "brier_t1": 0.2775243103840379,
+        "ece10_t1": 0.08608053473915356,
+        "hi_conf": "152/163",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_56baadf_r1",
+      "path": "jevbench__cr_56baadf_r1.json",
+      "sha256": "ad17840732349cc7c0bad76d82d4e65a705eaad5ad1b47150b50c37c16ea7a18",
+      "recorded": "2026-09-27T20:18:52+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_56baadf_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:18:52Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 186,
+        "accuracy": 0.8051948051948052,
+        "brier_t1": 0.26908180341638277,
+        "ece10_t1": 0.0753967341178685,
+        "hi_conf": "148/157",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_ab208dd_r1",
+      "path": "calibration__cr_ab208dd_r1.json",
+      "sha256": "7cd00bbaeaed1c7f3746b3671e506c59ccfc189a65a00c5608c19a308d5e1630",
+      "recorded": "2026-09-27T20:18:55+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_ab208dd_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:18:55Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.188232654700256,
+        "ece10_t1": 0.08468967340879548,
+        "hi_conf": "33/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_56baadf_r1",
+      "path": "calibration__cr_56baadf_r1.json",
+      "sha256": "ce34b490e00a29f03eb9f6a5f504d46634ce4da6038e90c63deb86307e1fa55c",
+      "recorded": "2026-09-27T20:18:56+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_56baadf_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:18:56Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.16627663352576344,
+        "ece10_t1": 0.036222862367575215,
+        "hi_conf": "36/37",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_56baadf_r2",
+      "path": "jevbench__cr_56baadf_r2.json",
+      "sha256": "f50712baa1f8fc053353a15640591e507ed48cce5946cab6f08e29eb4a66064e",
+      "recorded": "2026-09-27T20:19:06+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_56baadf_r2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:06Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 187,
+        "accuracy": 0.8095238095238095,
+        "brier_t1": 0.26456424961939784,
+        "ece10_t1": 0.0732140675803226,
+        "hi_conf": "146/156",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_ab208dd_r2",
+      "path": "jevbench__cr_ab208dd_r2.json",
+      "sha256": "1cfa2cb29a3cd902df476c9ec113e3c396b54745f66a8653a3b3d9ec2e4cd267",
+      "recorded": "2026-09-27T20:19:06+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_ab208dd_r2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:06Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 187,
+        "accuracy": 0.8095238095238095,
+        "brier_t1": 0.2622551782661685,
+        "ece10_t1": 0.08742899642649786,
+        "hi_conf": "152/163",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_56baadf_r2",
+      "path": "calibration__cr_56baadf_r2.json",
+      "sha256": "7056d4cfd22af64138c51b4799c8149a0a26455727d603ceaa79654138fe7d5b",
+      "recorded": "2026-09-27T20:19:09+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_56baadf_r2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:09Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.18313721470598057,
+        "ece10_t1": 0.06487676406039201,
+        "hi_conf": "36/37",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_ab208dd_r2",
+      "path": "calibration__cr_ab208dd_r2.json",
+      "sha256": "ea8c42a7aed1b1c40ac7da0d5df434273b8ddd39c1af8acf11d53dad8886160b",
+      "recorded": "2026-09-27T20:19:10+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_ab208dd_r2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:10Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.1878294367593834,
+        "ece10_t1": 0.08521732071703335,
+        "hi_conf": "33/36",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_56baadf_r3",
+      "path": "jevbench__cr_56baadf_r3.json",
+      "sha256": "1741cce8b802194312c7773c02365371e95b8958e32cf29cc31711c055c3011c",
+      "recorded": "2026-09-27T20:19:20+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_56baadf_r3.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:20Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 185,
+        "accuracy": 0.8008658008658008,
+        "brier_t1": 0.27121654754902375,
+        "ece10_t1": 0.08348634464637464,
+        "hi_conf": "151/160",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_ab208dd_r3",
+      "path": "jevbench__cr_ab208dd_r3.json",
+      "sha256": "8ce2ca98eed9c86ffd32a4ffa5a6acf8f7fa108988a1b1823d842861c4575f46",
+      "recorded": "2026-09-27T20:19:20+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_ab208dd_r3.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:20Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 185,
+        "accuracy": 0.8008658008658008,
+        "brier_t1": 0.26909390015176077,
+        "ece10_t1": 0.09582816037194636,
+        "hi_conf": "157/167",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_56baadf_r3",
+      "path": "calibration__cr_56baadf_r3.json",
+      "sha256": "4b9f84bc274ae24ee5f5819ae4b8f845766c174d0a2fbf21edb1b9fb930f0336",
+      "recorded": "2026-09-27T20:19:23+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_56baadf_r3.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:23Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.16817501178416905,
+        "ece10_t1": 0.06990326469710881,
+        "hi_conf": "35/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_ab208dd_r3",
+      "path": "calibration__cr_ab208dd_r3.json",
+      "sha256": "bd1d15736af01cfac246d52c6b10322331ba85579d2e9f602e5b6013da3d7e8c",
+      "recorded": "2026-09-27T20:19:24+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_ab208dd_r3.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:19:24Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.1660081224953791,
+        "ece10_t1": 0.06336419211370803,
+        "hi_conf": "33/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_ab208dd_r1",
+      "path": "jevbench__g4_ab208dd_r1.json",
+      "sha256": "ca50245803a1fa7d548b9199cc12b82b7650626f8cc85465cf157365e7707cbd",
+      "recorded": "2026-09-27T20:28:51+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__g4_ab208dd_r1.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:28:51Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 187,
+        "accuracy": 0.8095238095238095,
+        "brier_t1": 0.2680469876643049,
+        "ece10_t1": 0.08783551673070525,
+        "hi_conf": "154/163",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_ab208dd_r1",
+      "path": "calibration__g4_ab208dd_r1.json",
+      "sha256": "82bc9a2b9f985e3beb44d4e5a6acc5a82a9be5b9f88aafdc4468f170799de8c3",
+      "recorded": "2026-09-27T20:28:55+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url <endpoint-id> --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_ab208dd_r1.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:28:55Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.19114482287253062,
+        "ece10_t1": 0.07811909980029856,
+        "hi_conf": "35/38",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_56baadf_r2",
+      "path": "jevbench__g4_56baadf_r2.json",
+      "sha256": "d09f94c4b5b6576baaf42cd51b3e38f30d31c535986b3535944b49b4ec2de348",
+      "recorded": "2026-09-27T20:29:02+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 2490618687040520192 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__g4_56baadf_r2.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:02Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 186,
+        "accuracy": 0.8051948051948052,
+        "brier_t1": 0.2571755604753502,
+        "ece10_t1": 0.07838006072964175,
+        "hi_conf": "153/163",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_ab208dd_r2",
+      "path": "jevbench__g4_ab208dd_r2.json",
+      "sha256": "14be48ece247c7129ea28f25a3f9aa6deb6e331e32b01eeb05ab54080bf63281",
+      "recorded": "2026-09-27T20:29:03+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__g4_ab208dd_r2.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:03Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 187,
+        "accuracy": 0.8095238095238095,
+        "brier_t1": 0.2669683422694875,
+        "ece10_t1": 0.08825443852250883,
+        "hi_conf": "155/167",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_56baadf_r2",
+      "path": "calibration__g4_56baadf_r2.json",
+      "sha256": "9bbffc893971d7c74549ab7ac25d3af1bdd3f7696e0938fd149a65d428f298e4",
+      "recorded": "2026-09-27T20:29:05+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 2490618687040520192 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_56baadf_r2.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:05Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.16896248004696124,
+        "ece10_t1": 0.051075592443431135,
+        "hi_conf": "34/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_ab208dd_r2",
+      "path": "calibration__g4_ab208dd_r2.json",
+      "sha256": "46a626dbc7d7a16c7b54a42ec3f1094fdbe5f8bd0739264018a7f34710ade1bc",
+      "recorded": "2026-09-27T20:29:06+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url <endpoint-id> --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_ab208dd_r2.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:06Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.17508839449237576,
+        "ece10_t1": 0.07421828362461563,
+        "hi_conf": "36/38",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_ab208dd_r3",
+      "path": "jevbench__g4_ab208dd_r3.json",
+      "sha256": "b809f13cf82978ddf1f14d80a2ed2e3d5c31cf57e5be7d62cdedd663351ba60a",
+      "recorded": "2026-09-27T20:29:14+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__g4_ab208dd_r3.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:14Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 188,
+        "accuracy": 0.8138528138528138,
+        "brier_t1": 0.27089044333929607,
+        "ece10_t1": 0.10024592904186733,
+        "hi_conf": "154/166",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_56baadf_r3",
+      "path": "calibration__g4_56baadf_r3.json",
+      "sha256": "68f41b89e6733ab65a288518c29db6bfb12c823f6adb865e43eb73b19e52a013",
+      "recorded": "2026-09-27T20:29:17+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 2490618687040520192 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_56baadf_r3.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:17Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.169524850507212,
+        "ece10_t1": 0.05010460463322965,
+        "hi_conf": "34/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_ab208dd_r3",
+      "path": "calibration__g4_ab208dd_r3.json",
+      "sha256": "cca049aeeac971787a3cbf426c269bcaddef740f84b8ab3fd3da66bd8b157e23",
+      "recorded": "2026-09-27T20:29:18+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url <endpoint-id> --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_ab208dd_r3.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-27T20:29:18Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.1916178808739912,
+        "ece10_t1": 0.07823656178618295,
+        "hi_conf": "35/38",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_56baadf_r1",
+      "path": "calibration__g4_56baadf_r1.json",
+      "sha256": "11a8d6b4c4a8a8e91e8212930efc7d0ab70ba2df10a6cff2d71bbc4b2646550d",
+      "recorded": "2026-09-27T20:33:54+00:00",
+      "command": "",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:28:55Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.16712032394074497,
+        "ece10_t1": 0.07713762566417098,
+        "hi_conf": "34/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_56baadf_r1",
+      "path": "jevbench__g4_56baadf_r1.json",
+      "sha256": "808cad244a1ab35f039412f214f837f6baf5299cd2405737e81a8f0f1d0d5959",
+      "recorded": "2026-09-27T20:33:54+00:00",
+      "command": "",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:28:51Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 186,
+        "accuracy": 0.8051948051948052,
+        "brier_t1": 0.2568202365228468,
+        "ece10_t1": 0.07568673539789801,
+        "hi_conf": "150/160",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_56baadf_r3",
+      "path": "jevbench__g4_56baadf_r3.json",
+      "sha256": "a013acc521644c6304f06fd60c0986aeed53641147a1eb2f71ac42c8ccc98b83",
+      "recorded": "2026-09-27T20:33:54+00:00",
+      "command": "",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-27T20:29:14Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 183,
+        "accuracy": 0.7922077922077922,
+        "brier_t1": 0.26091631970520807,
+        "ece10_t1": 0.08719313594209516,
+        "hi_conf": "152/161",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_504638d_r1",
+      "path": "jevbench__g4_504638d_r1.json",
+      "sha256": "299527850064ce219817a972bda586fc4bb4a788d33576e45b9800c8fad5a3e3",
+      "recorded": "2026-09-28T13:26:41+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 2443330890953129984 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__g4_504638d_r1.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-28T13:26:41Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 186,
+        "accuracy": 0.8051948051948052,
+        "brier_t1": 0.26268571044172384,
+        "ece10_t1": 0.0872662162763663,
+        "hi_conf": "147/158",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_504638d_r1",
+      "path": "jevbench__cr_504638d_r1.json",
+      "sha256": "f9b83c01284ef4b92ad39c40dcf839d9e8e775308115b921ef2492533cd24bab",
+      "recorded": "2026-09-28T13:26:42+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_504638d_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-28T13:26:42Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 192,
+        "accuracy": 0.8311688311688312,
+        "brier_t1": 0.26450280744928245,
+        "ece10_t1": 0.09100635031842538,
+        "hi_conf": "151/163",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_504638d_r1",
+      "path": "calibration__g4_504638d_r1.json",
+      "sha256": "087e0a240762117089d598cb6507b6c2987b0bb87263b5e0ffaf5f670837d26d",
+      "recorded": "2026-09-28T13:26:46+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 2443330890953129984 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_504638d_r1.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-28T13:26:45Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.1842978519446004,
+        "ece10_t1": 0.07928041236687637,
+        "hi_conf": "37/38",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_504638d_r1",
+      "path": "calibration__cr_504638d_r1.json",
+      "sha256": "c93a0c298d90b2b994baa82711446a0b7e3bad4c33bf68e3f0bda0949a7ff7c5",
+      "recorded": "2026-09-28T13:26:46+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_504638d_r1.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-28T13:26:46Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 45,
+        "accuracy": 0.9,
+        "brier_t1": 0.16416633952207996,
+        "ece10_t1": 0.04903634680276352,
+        "hi_conf": "35/36",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "g4_504638d_r2",
+      "path": "jevbench__g4_504638d_r2.json",
+      "sha256": "579d6ac0ace0ada3875c178753da14f2253067ccdf29b06249b05a48200b7493",
+      "recorded": "2026-09-28T13:26:55+00:00",
+      "command": "./bin/dgem bench-jev --vertex-url 2443330890953129984 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__g4_504638d_r2.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-28T13:26:54Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 186,
+        "accuracy": 0.8051948051948052,
+        "brier_t1": 0.26535662558812984,
+        "ece10_t1": 0.09138730884209544,
+        "hi_conf": "152/161",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "jevbench",
+      "config": "cr_504638d_r2",
+      "path": "jevbench__cr_504638d_r2.json",
+      "sha256": "44dd5049b9fc2c2c847f8e46c01b9b9cd9808792849e5169872a735ae26250b6",
+      "recorded": "2026-09-28T13:26:57+00:00",
+      "command": "./bin/dgem bench-jev -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/jevbench__cr_504638d_r2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-28T13:26:57Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 231,
+        "errors": 0,
+        "correct": 191,
+        "accuracy": 0.8268398268398268,
+        "brier_t1": 0.25610616207877224,
+        "ece10_t1": 0.06895877437715905,
+        "hi_conf": "148/159",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "cr_504638d_r2",
+      "path": "calibration__cr_504638d_r2.json",
+      "sha256": "ea62d829d6edbb6049ac1360e973483b370b1455a65268b6ee2315c05fe60b1d",
+      "recorded": "2026-09-28T13:27:00+00:00",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-canary-<CLOUD_RUN_HASH>.a.run.app/v1 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__cr_504638d_r2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-09-28T13:27:00Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 44,
+        "accuracy": 0.88,
+        "brier_t1": 0.1587327492258494,
+        "ece10_t1": 0.03435532615630418,
+        "hi_conf": "34/35",
+        "mean_mirror_tvd": null
+      }
+    },
+    {
+      "suite": "calibration",
+      "config": "g4_504638d_r2",
+      "path": "calibration__g4_504638d_r2.json",
+      "sha256": "d6b534617ce8b3cceaa17d1396aef3d1d9d56d530ad513b186ccab146828d295",
+      "recorded": "2026-09-28T13:27:01+00:00",
+      "command": "./bin/dgem bench-calibration --vertex-url 2443330890953129984 --gcp-auth --http-retries 3 -w 4 -o /workspace/dgem/benchmarks/runs/20260927-image-parity/calibration__g4_504638d_r2.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-09-28T13:27:00Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": "none",
+        "n": 50,
+        "errors": 0,
+        "correct": 43,
+        "accuracy": 0.86,
+        "brier_t1": 0.1961935894068062,
+        "ece10_t1": 0.07237472587097339,
+        "hi_conf": "36/37",
+        "mean_mirror_tvd": null
+      }
+    }
+  ]
+}

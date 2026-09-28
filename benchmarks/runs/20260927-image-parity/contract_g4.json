@@ -1,0 +1,1612 @@
+{
+ "health": {
+  "g4_old": {
+   "status": 200,
+   "body": {
+    "status": "ok",
+    "vllm_ready": true,
+    "phase": "ready",
+    "bytes_staged_gb": 0.0,
+    "warmed": true,
+    "warmup_s": 18.6
+   }
+  },
+  "g4_new": {
+   "status": 200,
+   "body": {
+    "status": "ok",
+    "server": "dgem-structured-server"
+   }
+  }
+ },
+ "cases": {
+  "triage_s1": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9535990149799226,
+      "probabilities": {
+       "yes": 0.9535990149799226,
+       "no": 0.04640098502007745
+      },
+      "noul": 0.9535990149799226
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.7972105320186771,
+      "probabilities": {
+       "billing": 0.1927561168837659,
+       "support": 0.01003335109755698,
+       "engineering": 0.7972105320186771
+      },
+      "choice": "engineering"
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9561987061536521,
+      "probabilities": {
+       "calm": 0.004112932288491981,
+       "frustrated": 0.9561987061536521,
+       "furious": 0.03968836155785582
+      },
+      "score": 2.0355754292693637,
+      "level": "frustrated"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 177.73151397705078,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.9535990149799226,
+      "no": 0.04640098502007745
+     },
+     "team": {
+      "billing": 0.1927561168837659,
+      "support": 0.01003335109755698,
+      "engineering": 0.7972105320186771
+     },
+     "sentiment": {
+      "calm": 0.004112932288491981,
+      "frustrated": 0.9561987061536521,
+      "furious": 0.03968836155785582
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9190784722899464,
+      "probabilities": {
+       "yes": 0.9190784722899464,
+       "no": 0.08092152771005351
+      },
+      "noul": 0.9190784722899464
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.9388912867066528,
+      "probabilities": {
+       "billing": 0.05875283305459106,
+       "support": 0.0023558802387560252,
+       "engineering": 0.9388912867066528
+      },
+      "choice": "engineering"
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9912080369923283,
+      "probabilities": {
+       "calm": 0.0016704495763507933,
+       "frustrated": 0.9912080369923283,
+       "furious": 0.007121513431320819
+      },
+      "score": 2.0054510638549696,
+      "level": "frustrated"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 107.78236389160156,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.9190784722899464,
+      "no": 0.08092152771005351
+     },
+     "team": {
+      "billing": 0.05875283305459106,
+      "support": 0.0023558802387560252,
+      "engineering": 0.9388912867066528
+     },
+     "sentiment": {
+      "calm": 0.0016704495763507933,
+      "frustrated": 0.9912080369923283,
+      "furious": 0.007121513431320819
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2"
+    }
+   }
+  },
+  "triage_s4": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.8892245814358649,
+      "probabilities": {
+       "yes": 0.8892245814358649,
+       "no": 0.11077541856413506
+      },
+      "noul": 0.8892245814358649,
+      "stderr": 0.037288191120734754,
+      "agreement": 1.0
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.8155721925137434,
+      "probabilities": {
+       "billing": 0.1737619593156281,
+       "support": 0.010665848170628486,
+       "engineering": 0.8155721925137434
+      },
+      "choice": "engineering",
+      "stderr": 0.03976389325968284,
+      "agreement": 1.0
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9647653391951221,
+      "probabilities": {
+       "calm": 0.003912435133883553,
+       "frustrated": 0.9647653391951221,
+       "furious": 0.03132222567099428
+      },
+      "score": 2.0274097905371105,
+      "level": "frustrated",
+      "stderr": 0.00491409260756802,
+      "agreement": 1.0
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 4,
+    "denoise_ms": 184.5114231109619,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.8892245814358649,
+      "no": 0.11077541856413506
+     },
+     "team": {
+      "billing": 0.1737619593156281,
+      "support": 0.010665848170628486,
+      "engineering": 0.8155721925137434
+     },
+     "sentiment": {
+      "calm": 0.003912435133883553,
+      "frustrated": 0.9647653391951221,
+      "furious": 0.03132222567099428
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.8736247303816618,
+      "probabilities": {
+       "yes": 0.8736247303816618,
+       "no": 0.12637526961833828
+      },
+      "noul": 0.8736247303816618,
+      "stderr": 0.041310635238696373,
+      "agreement": 1.0
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.9286861857763635,
+      "probabilities": {
+       "billing": 0.06833418034038097,
+       "support": 0.002979633883255458,
+       "engineering": 0.9286861857763635
+      },
+      "choice": "engineering",
+      "stderr": 0.02535519440364212,
+      "agreement": 1.0
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9858760544903094,
+      "probabilities": {
+       "calm": 0.009112944921200244,
+       "frustrated": 0.9858760544903094,
+       "furious": 0.0050110005884903795
+      },
+      "score": 1.99589805566729,
+      "level": "frustrated",
+      "stderr": 0.006455779624401755,
+      "agreement": 1.0
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 4,
+    "denoise_ms": 129.33754920959473,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.8736247303816618,
+      "no": 0.12637526961833828
+     },
+     "team": {
+      "billing": 0.06833418034038097,
+      "support": 0.002979633883255458,
+      "engineering": 0.9286861857763635
+     },
+     "sentiment": {
+      "calm": 0.009112944921200244,
+      "frustrated": 0.9858760544903094,
+      "furious": 0.0050110005884903795
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2"
+    }
+   }
+  },
+  "default_samples": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9535990149799226,
+      "probabilities": {
+       "yes": 0.9535990149799226,
+       "no": 0.04640098502007745
+      },
+      "noul": 0.9535990149799226
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.7972105320186771,
+      "probabilities": {
+       "billing": 0.1927561168837659,
+       "support": 0.01003335109755698,
+       "engineering": 0.7972105320186771
+      },
+      "choice": "engineering"
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9561987061536521,
+      "probabilities": {
+       "calm": 0.004112932288491981,
+       "frustrated": 0.9561987061536521,
+       "furious": 0.03968836155785582
+      },
+      "score": 2.0355754292693637,
+      "level": "frustrated"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 174.88741874694824,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.9535990149799226,
+      "no": 0.04640098502007745
+     },
+     "team": {
+      "billing": 0.1927561168837659,
+      "support": 0.01003335109755698,
+      "engineering": 0.7972105320186771
+     },
+     "sentiment": {
+      "calm": 0.004112932288491981,
+      "frustrated": 0.9561987061536521,
+      "furious": 0.03968836155785582
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9521805161779242,
+      "probabilities": {
+       "yes": 0.9521805161779242,
+       "no": 0.04781948382207587
+      },
+      "noul": 0.9521805161779242
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.9234216406774075,
+      "probabilities": {
+       "billing": 0.0747529683288898,
+       "support": 0.001825390993702597,
+       "engineering": 0.9234216406774075
+      },
+      "choice": "engineering"
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9796633988096836,
+      "probabilities": {
+       "calm": 0.014155815100492021,
+       "frustrated": 0.9796633988096836,
+       "furious": 0.006180786089824377
+      },
+      "score": 1.9920249709893323,
+      "level": "frustrated"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 86.03167533874512,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.9521805161779242,
+      "no": 0.04781948382207587
+     },
+     "team": {
+      "billing": 0.0747529683288898,
+      "support": 0.001825390993702597,
+      "engineering": 0.9234216406774075
+     },
+     "sentiment": {
+      "calm": 0.014155815100492021,
+      "frustrated": 0.9796633988096836,
+      "furious": 0.006180786089824377
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2"
+    }
+   }
+  },
+  "mirror_s1": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.777739669039744,
+      "probabilities": {
+       "yes": 0.777739669039744,
+       "no": 0.22226033096025588
+      },
+      "noul": 0.777739669039744
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.8436393892348549,
+      "probabilities": {
+       "billing": 0.15321966351653948,
+       "support": 0.003140947248605579,
+       "engineering": 0.8436393892348549
+      },
+      "choice": "engineering"
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9811625373334234,
+      "probabilities": {
+       "calm": 0.00503555299185264,
+       "frustrated": 0.9811625373334234,
+       "furious": 0.013801909674723856
+      },
+      "score": 2.008766356682871,
+      "level": "frustrated"
+     },
+     "urgent__rev": {
+      "type": "choice",
+      "label": "B",
+      "confidence": 0.7806592087269876,
+      "probabilities": {
+       "no": 0.2193407912730124,
+       "yes": 0.7806592087269876
+      },
+      "choice": "yes"
+     },
+     "team__rev": {
+      "type": "choice",
+      "label": "A",
+      "confidence": 0.9413393038530902,
+      "probabilities": {
+       "engineering": 0.9413393038530902,
+       "support": 0.023060007568394554,
+       "billing": 0.03560068857851534
+      },
+      "choice": "engineering"
+     },
+     "sentiment__rev": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.6829266928356919,
+      "probabilities": {
+       "furious": 0.17958255802782666,
+       "frustrated": 0.6829266928356919,
+       "calm": 0.13749074913648146
+      },
+      "score": 1.9579081911086547,
+      "level": "frustrated"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 174.3302345275879,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.777739669039744,
+      "no": 0.22226033096025588
+     },
+     "team": {
+      "billing": 0.15321966351653948,
+      "support": 0.003140947248605579,
+      "engineering": 0.8436393892348549
+     },
+     "sentiment": {
+      "calm": 0.00503555299185264,
+      "frustrated": 0.9811625373334234,
+      "furious": 0.013801909674723856
+     },
+     "urgent__rev": {
+      "no": 0.2193407912730124,
+      "yes": 0.7806592087269876
+     },
+     "team__rev": {
+      "engineering": 0.9413393038530902,
+      "support": 0.023060007568394554,
+      "billing": 0.03560068857851534
+     },
+     "sentiment__rev": {
+      "furious": 0.17958255802782666,
+      "frustrated": 0.6829266928356919,
+      "calm": 0.13749074913648146
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2",
+     "urgent__rev": "B",
+     "team__rev": "A",
+     "sentiment__rev": "2"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.631273817372854,
+      "probabilities": {
+       "yes": 0.631273817372854,
+       "no": 0.36872618262714596
+      },
+      "noul": 0.631273817372854
+     },
+     "team": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.8316566325923206,
+      "probabilities": {
+       "billing": 0.16559628673350052,
+       "support": 0.0027470806741789157,
+       "engineering": 0.8316566325923206
+      },
+      "choice": "engineering"
+     },
+     "sentiment": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.9458863198743723,
+      "probabilities": {
+       "calm": 0.033349190680145316,
+       "frustrated": 0.9458863198743723,
+       "furious": 0.020764489445482308
+      },
+      "score": 1.9874152987653368,
+      "level": "frustrated"
+     },
+     "urgent__rev": {
+      "type": "choice",
+      "label": "B",
+      "confidence": 0.6892153473334186,
+      "probabilities": {
+       "no": 0.31078465266658134,
+       "yes": 0.6892153473334186
+      },
+      "choice": "yes"
+     },
+     "team__rev": {
+      "type": "choice",
+      "label": "A",
+      "confidence": 0.9333551220833601,
+      "probabilities": {
+       "engineering": 0.9333551220833601,
+       "support": 0.01977351029807481,
+       "billing": 0.046871367618565064
+      },
+      "choice": "engineering"
+     },
+     "sentiment__rev": {
+      "type": "score",
+      "label": "2",
+      "confidence": 0.4188226936254656,
+      "probabilities": {
+       "furious": 0.21453272653078406,
+       "frustrated": 0.4188226936254656,
+       "calm": 0.3666445798437503
+      },
+      "score": 2.152111853312966,
+      "level": "frustrated"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 1432.762861251831,
+    "probabilities": {
+     "urgent": {
+      "yes": 0.631273817372854,
+      "no": 0.36872618262714596
+     },
+     "team": {
+      "billing": 0.16559628673350052,
+      "support": 0.0027470806741789157,
+      "engineering": 0.8316566325923206
+     },
+     "sentiment": {
+      "calm": 0.033349190680145316,
+      "frustrated": 0.9458863198743723,
+      "furious": 0.020764489445482308
+     },
+     "urgent__rev": {
+      "no": 0.31078465266658134,
+      "yes": 0.6892153473334186
+     },
+     "team__rev": {
+      "engineering": 0.9333551220833601,
+      "support": 0.01977351029807481,
+      "billing": 0.046871367618565064
+     },
+     "sentiment__rev": {
+      "furious": 0.21453272653078406,
+      "frustrated": 0.4188226936254656,
+      "calm": 0.3666445798437503
+     }
+    },
+    "labels": {
+     "urgent": "yes",
+     "team": "C",
+     "sentiment": "2",
+     "urgent__rev": "B",
+     "team__rev": "A",
+     "sentiment__rev": "2"
+    }
+   }
+  },
+  "think120": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "department": {
+      "type": "choice",
+      "label": "D",
+      "confidence": 0.996748877414878,
+      "probabilities": {
+       "it_helpdesk": 8.023134127798744e-05,
+       "hr_people_ops": 0.003075496700920777,
+       "facilities": 9.539454292303027e-05,
+       "other_unclassified": 0.996748877414878
+      },
+      "choice": "other_unclassified"
+     },
+     "requires_new_category": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9964850505325534,
+      "probabilities": {
+       "yes": 0.9964850505325534,
+       "no": 0.003514949467446587
+      },
+      "noul": 0.9964850505325534
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 398.7584114074707,
+    "probabilities": {
+     "department": {
+      "it_helpdesk": 8.023134127798744e-05,
+      "hr_people_ops": 0.003075496700920777,
+      "facilities": 9.539454292303027e-05,
+      "other_unclassified": 0.996748877414878
+     },
+     "requires_new_category": {
+      "yes": 0.9964850505325534,
+      "no": 0.003514949467446587
+     }
+    },
+    "labels": {
+     "department": "D",
+     "requires_new_category": "yes"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "department": {
+      "type": "choice",
+      "label": "D",
+      "confidence": 0.9955811753572825,
+      "probabilities": {
+       "it_helpdesk": 0.00010366296333390051,
+       "hr_people_ops": 0.004277064301846204,
+       "facilities": 3.8097377537320537e-05,
+       "other_unclassified": 0.9955811753572825
+      },
+      "choice": "other_unclassified"
+     },
+     "requires_new_category": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.993939902654817,
+      "probabilities": {
+       "yes": 0.993939902654817,
+       "no": 0.006060097345182934
+      },
+      "noul": 0.993939902654817
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 1935.9605312347412,
+    "probabilities": {
+     "department": {
+      "it_helpdesk": 0.00010366296333390051,
+      "hr_people_ops": 0.004277064301846204,
+      "facilities": 3.8097377537320537e-05,
+      "other_unclassified": 0.9955811753572825
+     },
+     "requires_new_category": {
+      "yes": 0.993939902654817,
+      "no": 0.006060097345182934
+     }
+    },
+    "labels": {
+     "department": "D",
+     "requires_new_category": "yes"
+    }
+   }
+  },
+  "image_s1": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "has_button": {
+      "type": "noul",
+      "label": "no",
+      "confidence": 0.9841731603036655,
+      "probabilities": {
+       "yes": 0.01582683969633453,
+       "no": 0.9841731603036655
+      },
+      "noul": 0.01582683969633453
+     },
+     "dominant_color": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.9991143827843473,
+      "probabilities": {
+       "red": 0.0004028626802717828,
+       "green": 0.00046437272260121384,
+       "blue": 0.9991143827843473,
+       "white": 1.8381812779709844e-05
+      },
+      "choice": "blue"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 159.67082977294922,
+    "probabilities": {
+     "has_button": {
+      "yes": 0.01582683969633453,
+      "no": 0.9841731603036655
+     },
+     "dominant_color": {
+      "red": 0.0004028626802717828,
+      "green": 0.00046437272260121384,
+      "blue": 0.9991143827843473,
+      "white": 1.8381812779709844e-05
+     }
+    },
+    "labels": {
+     "has_button": "no",
+     "dominant_color": "C"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "has_button": {
+      "type": "noul",
+      "label": "no",
+      "confidence": 0.99924081860096,
+      "probabilities": {
+       "yes": 0.0007591813990398934,
+       "no": 0.99924081860096
+      },
+      "noul": 0.0007591813990398934
+     },
+     "dominant_color": {
+      "type": "choice",
+      "label": "C",
+      "confidence": 0.999232633061141,
+      "probabilities": {
+       "red": 0.00040981846622675994,
+       "green": 0.00030844121402944733,
+       "blue": 0.999232633061141,
+       "white": 4.910725860282451e-05
+      },
+      "choice": "blue"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 1501.7261505126953,
+    "probabilities": {
+     "has_button": {
+      "yes": 0.0007591813990398934,
+      "no": 0.99924081860096
+     },
+     "dominant_color": {
+      "red": 0.00040981846622675994,
+      "green": 0.00030844121402944733,
+      "blue": 0.999232633061141,
+      "white": 4.910725860282451e-05
+     }
+    },
+    "labels": {
+     "has_button": "no",
+     "dominant_color": "C"
+    }
+   }
+  },
+  "choice_26": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "pick": {
+      "type": "choice",
+      "label": "A",
+      "confidence": 0.3378637548553554,
+      "probabilities": {
+       "opt_00": 0.3378637548553554,
+       "opt_01": 0.2741840211168175,
+       "opt_02": 0.026871197878696216,
+       "opt_03": 0.08377081272538342,
+       "opt_04": 0.03456561334642563,
+       "opt_05": 0.006724741368372507,
+       "opt_06": 0.026871197878696216,
+       "opt_07": 0.002021314466635645,
+       "opt_08": 0.0007105652099171797,
+       "opt_09": 0.02827746319886156,
+       "opt_10": 0.0034082255769707563,
+       "opt_11": 0.02424107817171958,
+       "opt_12": 0.12783931041164273,
+       "opt_13": 0.0041203679539673875,
+       "opt_14": 4.3887990170070606e-05,
+       "opt_15": 0.0024657208939259366,
+       "opt_16": 0.012703397025553039,
+       "opt_17": 0.0006140404559820237,
+       "opt_18": 0.0002287361618159451,
+       "opt_19": 0.00024737701579339704,
+       "opt_20": 0.0002674298675302999,
+       "opt_21": 4.3887990170070606e-05,
+       "opt_22": 0.00010222087714095927,
+       "opt_23": 0.0002287361618159451,
+       "opt_24": 0.0008209751093518716,
+       "opt_25": 0.000763926291288678
+      },
+      "choice": "opt_00"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 170.30906677246094,
+    "probabilities": {
+     "pick": {
+      "opt_00": 0.3378637548553554,
+      "opt_01": 0.2741840211168175,
+      "opt_02": 0.026871197878696216,
+      "opt_03": 0.08377081272538342,
+      "opt_04": 0.03456561334642563,
+      "opt_05": 0.006724741368372507,
+      "opt_06": 0.026871197878696216,
+      "opt_07": 0.002021314466635645,
+      "opt_08": 0.0007105652099171797,
+      "opt_09": 0.02827746319886156,
+      "opt_10": 0.0034082255769707563,
+      "opt_11": 0.02424107817171958,
+      "opt_12": 0.12783931041164273,
+      "opt_13": 0.0041203679539673875,
+      "opt_14": 4.3887990170070606e-05,
+      "opt_15": 0.0024657208939259366,
+      "opt_16": 0.012703397025553039,
+      "opt_17": 0.0006140404559820237,
+      "opt_18": 0.0002287361618159451,
+      "opt_19": 0.00024737701579339704,
+      "opt_20": 0.0002674298675302999,
+      "opt_21": 4.3887990170070606e-05,
+      "opt_22": 0.00010222087714095927,
+      "opt_23": 0.0002287361618159451,
+      "opt_24": 0.0008209751093518716,
+      "opt_25": 0.000763926291288678
+     }
+    },
+    "labels": {
+     "pick": "A"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "pick": {
+      "type": "choice",
+      "label": "B",
+      "confidence": 0.5447083350562077,
+      "probabilities": {
+       "opt_00": 0.29912640346537445,
+       "opt_01": 0.5447083350562077,
+       "opt_02": 0.03930920584639822,
+       "opt_03": 0.02744612193875516,
+       "opt_04": 0.017041095513011743,
+       "opt_05": 0.004235889236933795,
+       "opt_06": 0.019725197769669196,
+       "opt_07": 0.0007748885240518882,
+       "opt_08": 0.0009484956027095967,
+       "opt_09": 0.009220516289203525,
+       "opt_10": 0.0013184616892983482,
+       "opt_11": 0.006661485659577058,
+       "opt_12": 0.012609227039226966,
+       "opt_13": 0.0026332054107408107,
+       "opt_14": 1.1126886444375948e-05,
+       "opt_15": 0.003155564224441078,
+       "opt_16": 0.008284836092280179,
+       "opt_17": 0.0007238380684989597,
+       "opt_18": 0.0004138465324634924,
+       "opt_19": 0.00014648581842518913,
+       "opt_20": 0.00035847006492145797,
+       "opt_21": 2.2451734251506136e-05,
+       "opt_22": 9.9205967399831e-05,
+       "opt_23": 6.133448377397543e-05,
+       "opt_24": 0.0006308805444944698,
+       "opt_25": 0.00033343054144694534
+      },
+      "choice": "opt_01"
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 1524.4836807250977,
+    "probabilities": {
+     "pick": {
+      "opt_00": 0.29912640346537445,
+      "opt_01": 0.5447083350562077,
+      "opt_02": 0.03930920584639822,
+      "opt_03": 0.02744612193875516,
+      "opt_04": 0.017041095513011743,
+      "opt_05": 0.004235889236933795,
+      "opt_06": 0.019725197769669196,
+      "opt_07": 0.0007748885240518882,
+      "opt_08": 0.0009484956027095967,
+      "opt_09": 0.009220516289203525,
+      "opt_10": 0.0013184616892983482,
+      "opt_11": 0.006661485659577058,
+      "opt_12": 0.012609227039226966,
+      "opt_13": 0.0026332054107408107,
+      "opt_14": 1.1126886444375948e-05,
+      "opt_15": 0.003155564224441078,
+      "opt_16": 0.008284836092280179,
+      "opt_17": 0.0007238380684989597,
+      "opt_18": 0.0004138465324634924,
+      "opt_19": 0.00014648581842518913,
+      "opt_20": 0.00035847006492145797,
+      "opt_21": 2.2451734251506136e-05,
+      "opt_22": 9.9205967399831e-05,
+      "opt_23": 6.133448377397543e-05,
+      "opt_24": 0.0006308805444944698,
+      "opt_25": 0.00033343054144694534
+     }
+    },
+    "labels": {
+     "pick": "B"
+    }
+   }
+  },
+  "choice_27_error": {
+   "g4_old": {
+    "status": 400,
+    "error": "question 'pick': at most 26 alternatives"
+   },
+   "g4_new": {
+    "status": 400,
+    "error": "question 'pick': at most 26 alternatives"
+   }
+  },
+  "depends_on_2reads": {
+   "g4_old": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "billing_issue": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9687004535503093,
+      "probabilities": {
+       "yes": 0.9687004535503093,
+       "no": 0.03129954644969059
+      },
+      "noul": 0.9687004535503093
+     },
+     "refund": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9996668663745469,
+      "probabilities": {
+       "yes": 0.9996668663745469,
+       "no": 0.00033313362545297906
+      },
+      "noul": 0.9996668663745469
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 2,
+    "denoise_ms": 252.03680992126465,
+    "probabilities": {
+     "billing_issue": {
+      "yes": 0.9687004535503093,
+      "no": 0.03129954644969059
+     },
+     "refund": {
+      "yes": 0.9996668663745469,
+      "no": 0.00033313362545297906
+     }
+    },
+    "labels": {
+     "billing_issue": "yes",
+     "refund": "yes"
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "top_keys": [
+     "choices",
+     "created",
+     "id",
+     "model",
+     "object",
+     "usage"
+    ],
+    "envelope_keys": [
+     "answers",
+     "diagnostics"
+    ],
+    "answers": {
+     "billing_issue": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.9788756749612032,
+      "probabilities": {
+       "yes": 0.9788756749612032,
+       "no": 0.021124325038796684
+      },
+      "noul": 0.9788756749612032
+     },
+     "refund": {
+      "type": "noul",
+      "label": "yes",
+      "confidence": 0.997386585878658,
+      "probabilities": {
+       "yes": 0.997386585878658,
+       "no": 0.0026134141213419925
+      },
+      "noul": 0.997386585878658
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 2,
+    "denoise_ms": 1719.9246883392334,
+    "probabilities": {
+     "billing_issue": {
+      "yes": 0.9788756749612032,
+      "no": 0.021124325038796684
+     },
+     "refund": {
+      "yes": 0.997386585878658,
+      "no": 0.0026134141213419925
+     }
+    },
+    "labels": {
+     "billing_issue": "yes",
+     "refund": "yes"
+    }
+   }
+  },
+  "unknown_type_error": {
+   "g4_old": {
+    "status": 400,
+    "error": "question 'a': unknown type 'banana'"
+   },
+   "g4_new": {
+    "status": 400,
+    "error": "question 'a': unknown type 'banana'"
+   }
+  },
+  "empty_questions_error": {
+   "g4_old": {
+    "status": 400,
+    "error": "schema: needs a non-empty questions array"
+   },
+   "g4_new": {
+    "status": 400,
+    "error": "schema: needs a non-empty questions array"
+   }
+  },
+  "systemone": {
+   "g4_old": {
+    "status": 200,
+    "envelope_keys": [
+     "answers",
+     "diagnostics",
+     "model",
+     "usage"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "noul": 0.07033589215794406
+     },
+     "billing": {
+      "type": "noul",
+      "noul": 0.9978504908265853
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 115.50664901733398,
+    "probabilities": {
+     "urgent": null,
+     "billing": null
+    },
+    "labels": {
+     "urgent": null,
+     "billing": null
+    }
+   },
+   "g4_new": {
+    "status": 200,
+    "envelope_keys": [
+     "answers",
+     "diagnostics",
+     "model",
+     "usage"
+    ],
+    "answers": {
+     "urgent": {
+      "type": "noul",
+      "noul": 0.05915524399046484
+     },
+     "billing": {
+      "type": "noul",
+      "noul": 0.9990171869993069
+     }
+    },
+    "diagnostic_keys": [
+     "chunk_prompt",
+     "chunks",
+     "conditioning",
+     "engine",
+     "prompt_tokens",
+     "questions",
+     "samples",
+     "sequential",
+     "skipped",
+     "stages",
+     "steps",
+     "thought",
+     "timing"
+    ],
+    "reads": 1,
+    "denoise_ms": 1393.4662342071533,
+    "probabilities": {
+     "urgent": null,
+     "billing": null
+    },
+    "labels": {
+     "urgent": null,
+     "billing": null
+    }
+   }
+  },
+  "invalid_json_error": {
+   "g4_old": {
+    "status": 400,
+    "error": "invalid body: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+   },
+   "g4_new": {
+    "status": 400,
+    "error": "invalid body: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+   }
+  }
+ }
+}

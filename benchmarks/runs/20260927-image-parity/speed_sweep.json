@@ -1,0 +1,6424 @@
+{
+ "kind": "sweep",
+ "timestamp": "2026-09-27T20:40:39Z",
+ "targets": {
+  "g4_ab208dd": {
+   "url": "https://<endpoint-id>.<region>-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/us-central1/endpoints/<endpoint-id>/invoke/v1/chat/completions",
+   "cells": {
+    "s1_w1": {
+     "samples": 1,
+     "workers": 1,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 147.4,
+       "p50": 145.6,
+       "p95": 158.8,
+       "p99": 174.2
+      },
+      "denoise_ms": {
+       "mean": 59.7,
+       "p50": 59.4,
+       "p95": 62.3,
+       "p99": 64.6
+      },
+      "elapsed_s": 7.56,
+      "throughput_per_s": 6.61
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.26441699982388,
+       "denoise_ms": 63.727617263793945,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 155.4543750025914,
+       "denoise_ms": 60.152530670166016,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 148.10079200105974,
+       "denoise_ms": 59.252262115478516,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 141.52891599951545,
+       "denoise_ms": 58.722496032714844,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 152.59591700305464,
+       "denoise_ms": 59.32450294494629,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 144.56891699956032,
+       "denoise_ms": 59.435367584228516,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 147.15754200005904,
+       "denoise_ms": 58.232784271240234,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 138.45779199618846,
+       "denoise_ms": 58.49456787109375,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 147.32020899828058,
+       "denoise_ms": 59.556007385253906,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 140.0606660026824,
+       "denoise_ms": 58.652400970458984,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 145.3110000002198,
+       "denoise_ms": 58.61830711364746,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 146.136833995115,
+       "denoise_ms": 59.85593795776367,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 154.21704199980013,
+       "denoise_ms": 59.580326080322266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 140.8201249942067,
+       "denoise_ms": 59.247493743896484,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 145.82466700085206,
+       "denoise_ms": 59.30376052856445,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 154.9993340013316,
+       "denoise_ms": 60.53495407104492,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 141.705665999325,
+       "denoise_ms": 59.67998504638672,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 145.13541699852794,
+       "denoise_ms": 62.90483474731445,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 142.72016700124368,
+       "denoise_ms": 59.357643127441406,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.99641700583743,
+       "denoise_ms": 58.843135833740234,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 149.62508300232003,
+       "denoise_ms": 59.35478210449219,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.1332919964916,
+       "denoise_ms": 59.45396423339844,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 142.62145799875725,
+       "denoise_ms": 59.44252014160156,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 157.72054199624108,
+       "denoise_ms": 60.1353645324707,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 144.24816699465737,
+       "denoise_ms": 60.25385856628418,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 160.5730000010226,
+       "denoise_ms": 59.27395820617676,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 146.76829199743224,
+       "denoise_ms": 59.433698654174805,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 148.94504100084305,
+       "denoise_ms": 60.990095138549805,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.790624999383,
+       "denoise_ms": 59.15403366088867,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 138.9278330025263,
+       "denoise_ms": 59.62872505187988,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.58154199726414,
+       "denoise_ms": 58.92014503479004,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 146.2941249992582,
+       "denoise_ms": 59.6158504486084,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 149.36583400412928,
+       "denoise_ms": 58.79712104797363,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 140.61908300209325,
+       "denoise_ms": 59.32784080505371,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 155.79204200184904,
+       "denoise_ms": 61.57946586608887,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 147.79516700218664,
+       "denoise_ms": 59.94582176208496,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.59937600238482,
+       "denoise_ms": 58.608293533325195,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 141.52829199883854,
+       "denoise_ms": 59.21816825866699,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 159.63683299924014,
+       "denoise_ms": 65.44089317321777,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 148.26183400145965,
+       "denoise_ms": 60.67347526550293,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 144.63750000140863,
+       "denoise_ms": 59.42821502685547,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 140.09904099657433,
+       "denoise_ms": 59.447526931762695,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 152.06812499673106,
+       "denoise_ms": 59.203147888183594,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 145.0433330028318,
+       "denoise_ms": 59.508562088012695,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 146.34266599750845,
+       "denoise_ms": 59.372663497924805,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 145.46191699628253,
+       "denoise_ms": 59.236764907836914,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.15712499956135,
+       "denoise_ms": 58.58898162841797,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 149.43725000193808,
+       "denoise_ms": 58.1357479095459,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 141.99958400422474,
+       "denoise_ms": 59.664011001586914,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 147.9696669994155,
+       "denoise_ms": 59.746742248535156,
+       "reads": 1
+      }
+     ]
+    },
+    "s1_w4": {
+     "samples": 1,
+     "workers": 4,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 190.1,
+       "p50": 190.9,
+       "p95": 205.4,
+       "p99": 215.6
+      },
+      "denoise_ms": {
+       "mean": 96.2,
+       "p50": 97.9,
+       "p95": 104.1,
+       "p99": 105.4
+      },
+      "elapsed_s": 2.45,
+      "throughput_per_s": 20.37
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.39350100199226,
+       "denoise_ms": 99.69973564147949,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.832459000987,
+       "denoise_ms": 97.40686416625977,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.1628339953022,
+       "denoise_ms": 97.93949127197266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 192.02437499916414,
+       "denoise_ms": 100.04377365112305,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.42937500064727,
+       "denoise_ms": 99.28631782531738,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.09620800270932,
+       "denoise_ms": 100.57759284973145,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.17062500218162,
+       "denoise_ms": 96.35615348815918,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.77058300434146,
+       "denoise_ms": 90.24381637573242,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.0114999995567,
+       "denoise_ms": 98.38247299194336,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.44437499926426,
+       "denoise_ms": 97.30100631713867,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.8822919978993,
+       "denoise_ms": 96.33183479309082,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.9389590000501,
+       "denoise_ms": 97.75519371032715,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.54049999592826,
+       "denoise_ms": 100.74973106384277,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.49100000079488,
+       "denoise_ms": 96.72403335571289,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.1458750028978,
+       "denoise_ms": 97.5046157836914,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.42179099353962,
+       "denoise_ms": 98.29378128051758,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.1186669996241,
+       "denoise_ms": 96.24934196472168,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.71612500498304,
+       "denoise_ms": 99.72810745239258,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 215.1704999996582,
+       "denoise_ms": 98.96516799926758,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 216.0657090062159,
+       "denoise_ms": 97.64885902404785,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.72554199659498,
+       "denoise_ms": 105.4227352142334,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.01162500295322,
+       "denoise_ms": 103.66344451904297,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.26074999500997,
+       "denoise_ms": 105.3769588470459,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.8270829996327,
+       "denoise_ms": 104.43592071533203,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 200.03924999764422,
+       "denoise_ms": 102.12373733520508,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.81404099537758,
+       "denoise_ms": 100.36945343017578,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.17279100546148,
+       "denoise_ms": 102.45776176452637,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.1187079937663,
+       "denoise_ms": 100.6002426147461,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.4057090008282,
+       "denoise_ms": 102.56791114807129,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.77225000364706,
+       "denoise_ms": 100.33559799194336,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.1259170010453,
+       "denoise_ms": 98.87552261352539,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.9172919986304,
+       "denoise_ms": 100.62980651855469,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.5232500002021,
+       "denoise_ms": 97.96619415283203,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.08212499466026,
+       "denoise_ms": 97.84102439880371,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.98966700141318,
+       "denoise_ms": 84.30743217468262,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.2739999962505,
+       "denoise_ms": 85.13545989990234,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.19704099971568,
+       "denoise_ms": 97.61571884155273,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.20200000482146,
+       "denoise_ms": 91.17317199707031,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.6803750017425,
+       "denoise_ms": 94.89941596984863,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 180.36195800232235,
+       "denoise_ms": 92.55599975585938,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.53383300482528,
+       "denoise_ms": 96.95219993591309,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.04666700592497,
+       "denoise_ms": 94.1166877746582,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.80620900157373,
+       "denoise_ms": 91.43447875976562,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 176.96954200073378,
+       "denoise_ms": 90.82555770874023,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 192.2781249959371,
+       "denoise_ms": 99.03335571289062,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.75000100181205,
+       "denoise_ms": 98.52290153503418,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.34600099903764,
+       "denoise_ms": 90.05403518676758,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.49899999966146,
+       "denoise_ms": 93.80412101745605,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 147.35641699371627,
+       "denoise_ms": 64.54849243164062,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 146.34520799882011,
+       "denoise_ms": 64.72325325012207,
+       "reads": 1
+      }
+     ]
+    },
+    "s1_w8": {
+     "samples": 1,
+     "workers": 8,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 199.3,
+       "p50": 198.7,
+       "p95": 221.1,
+       "p99": 222.4
+      },
+      "denoise_ms": {
+       "mean": 105.7,
+       "p50": 108.2,
+       "p95": 115.0,
+       "p99": 118.2
+      },
+      "elapsed_s": 1.36,
+      "throughput_per_s": 36.71
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 209.06945900060236,
+       "denoise_ms": 111.54842376708984,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.9908330051694,
+       "denoise_ms": 111.61041259765625,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.09870900120586,
+       "denoise_ms": 109.66706275939941,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.85262499784585,
+       "denoise_ms": 112.00213432312012,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.01066599960905,
+       "denoise_ms": 109.80749130249023,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.90145800088067,
+       "denoise_ms": 108.20579528808594,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 210.3392499993788,
+       "denoise_ms": 109.91191864013672,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 199.58833300188417,
+       "denoise_ms": 105.24320602416992,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.26224999612896,
+       "denoise_ms": 111.80996894836426,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.6579589972971,
+       "denoise_ms": 111.44781112670898,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.1016249988461,
+       "denoise_ms": 105.95440864562988,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.42912500037346,
+       "denoise_ms": 111.01722717285156,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.90666700241854,
+       "denoise_ms": 106.73856735229492,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.5919169987319,
+       "denoise_ms": 100.9061336517334,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.3276250048075,
+       "denoise_ms": 100.69465637207031,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 192.96304100134876,
+       "denoise_ms": 102.37288475036621,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.52695899660466,
+       "denoise_ms": 111.76037788391113,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.76591700065183,
+       "denoise_ms": 106.64010047912598,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.04275000165217,
+       "denoise_ms": 106.86683654785156,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.73883300472517,
+       "denoise_ms": 98.99258613586426,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.4196249973611,
+       "denoise_ms": 101.89247131347656,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.45262500084937,
+       "denoise_ms": 99.01547431945801,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.55037600366632,
+       "denoise_ms": 107.56683349609375,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.46095899911597,
+       "denoise_ms": 100.55828094482422,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.45412500359816,
+       "denoise_ms": 114.52460289001465,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.5039159968146,
+       "denoise_ms": 115.3421401977539,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 200.20129100157646,
+       "denoise_ms": 113.48414421081543,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.6292079980485,
+       "denoise_ms": 110.54658889770508,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.6150829992257,
+       "denoise_ms": 107.11288452148438,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.04487499804236,
+       "denoise_ms": 111.95206642150879,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 202.93250000395346,
+       "denoise_ms": 108.88290405273438,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.6455829986371,
+       "denoise_ms": 108.11662673950195,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.25095800374402,
+       "denoise_ms": 92.56553649902344,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 220.5689580005128,
+       "denoise_ms": 113.60931396484375,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 220.57487499841955,
+       "denoise_ms": 116.32633209228516,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 220.69550000014715,
+       "denoise_ms": 114.33053016662598,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 219.11808299773838,
+       "denoise_ms": 111.82999610900879,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 222.34887500235345,
+       "denoise_ms": 114.57037925720215,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 222.38345900404966,
+       "denoise_ms": 108.28590393066406,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 221.49670799990417,
+       "denoise_ms": 119.97818946838379,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 169.553542000358,
+       "denoise_ms": 85.61062812805176,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 201.04145900404546,
+       "denoise_ms": 108.47806930541992,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.92937499732943,
+       "denoise_ms": 105.14974594116211,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.4484170055366,
+       "denoise_ms": 107.22756385803223,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 199.48254200426163,
+       "denoise_ms": 109.78102684020996,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.86899999558227,
+       "denoise_ms": 105.70263862609863,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.10420899960445,
+       "denoise_ms": 96.51970863342285,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 192.72791699768277,
+       "denoise_ms": 106.2309741973877,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 139.9248749949038,
+       "denoise_ms": 57.89971351623535,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 140.87379099510144,
+       "denoise_ms": 58.81094932556152,
+       "reads": 1
+      }
+     ]
+    },
+    "s1_w16": {
+     "samples": 1,
+     "workers": 16,
+     "summary": {
+      "n": 64,
+      "ok": 64,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 248.4,
+       "p50": 239.6,
+       "p95": 336.2,
+       "p99": 336.9
+      },
+      "denoise_ms": {
+       "mean": 117.2,
+       "p50": 117.9,
+       "p95": 123.8,
+       "p99": 124.2
+      },
+      "elapsed_s": 1.06,
+      "throughput_per_s": 60.36
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 213.4462500034715,
+       "denoise_ms": 113.70015144348145,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 218.09379199839896,
+       "denoise_ms": 109.16495323181152,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 327.49533300375333,
+       "denoise_ms": 113.59643936157227,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 218.37999999843305,
+       "denoise_ms": 105.02839088439941,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 217.75174999493174,
+       "denoise_ms": 105.61609268188477,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 216.9099160018959,
+       "denoise_ms": 95.92580795288086,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 212.3928330038325,
+       "denoise_ms": 99.16996955871582,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.39349999430124,
+       "denoise_ms": 117.57946014404297,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 337.3406669998076,
+       "denoise_ms": 111.17982864379883,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.68354200199246,
+       "denoise_ms": 116.29629135131836,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.08174999890616,
+       "denoise_ms": 114.42875862121582,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 216.38945800077636,
+       "denoise_ms": 110.34846305847168,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.67583300120896,
+       "denoise_ms": 95.92509269714355,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 334.7730829991633,
+       "denoise_ms": 114.65764045715332,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.52183399681235,
+       "denoise_ms": 117.13123321533203,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 329.38724999985425,
+       "denoise_ms": 114.23134803771973,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 250.9401249990333,
+       "denoise_ms": 123.02112579345703,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.06141699769069,
+       "denoise_ms": 121.80542945861816,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.31404199963436,
+       "denoise_ms": 119.73452568054199,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 243.89154199889163,
+       "denoise_ms": 121.40345573425293,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.2877089989488,
+       "denoise_ms": 116.41693115234375,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 237.31545900227502,
+       "denoise_ms": 117.27786064147949,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 233.33316599746468,
+       "denoise_ms": 115.5858039855957,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 231.33083299762802,
+       "denoise_ms": 115.6766414642334,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 251.78833300014958,
+       "denoise_ms": 119.73834037780762,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.42879200109746,
+       "denoise_ms": 121.20270729064941,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 236.92858399590477,
+       "denoise_ms": 119.48776245117188,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 237.6126250019297,
+       "denoise_ms": 122.14183807373047,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 238.3356670034118,
+       "denoise_ms": 123.26884269714355,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 244.70587499672547,
+       "denoise_ms": 117.87533760070801,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 241.00704200100154,
+       "denoise_ms": 122.1768856048584,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.91495900211157,
+       "denoise_ms": 123.16441535949707,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.88029199972516,
+       "denoise_ms": 119.33350563049316,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 243.33616699732374,
+       "denoise_ms": 117.9194450378418,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 237.8374999971129,
+       "denoise_ms": 115.84329605102539,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 233.22420899785357,
+       "denoise_ms": 116.84679985046387,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 238.32441699778428,
+       "denoise_ms": 118.94083023071289,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 233.11187500075903,
+       "denoise_ms": 117.68603324890137,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 235.30441600451013,
+       "denoise_ms": 115.3249740600586,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 229.36904200469144,
+       "denoise_ms": 111.7560863494873,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.08420799509622,
+       "denoise_ms": 120.83816528320312,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.4995409960975,
+       "denoise_ms": 123.79288673400879,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.07862499618204,
+       "denoise_ms": 121.97303771972656,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 237.35658299847273,
+       "denoise_ms": 124.5567798614502,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 236.55945799691835,
+       "denoise_ms": 123.61407279968262,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 231.87391700048465,
+       "denoise_ms": 117.17772483825684,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 232.43520799587714,
+       "denoise_ms": 119.10867691040039,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 231.60137500235578,
+       "denoise_ms": 119.33732032775879,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.918208002171,
+       "denoise_ms": 123.94857406616211,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.19087500468595,
+       "denoise_ms": 121.2470531463623,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.21891599881928,
+       "denoise_ms": 121.15001678466797,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 241.24087499512825,
+       "denoise_ms": 117.02418327331543,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 241.7115409989492,
+       "denoise_ms": 117.6302433013916,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 237.24383400258375,
+       "denoise_ms": 115.60225486755371,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.079999999376,
+       "denoise_ms": 117.26808547973633,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.00575000152458,
+       "denoise_ms": 120.60809135437012,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 243.64895799953956,
+       "denoise_ms": 120.55087089538574,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.18675000238,
+       "denoise_ms": 117.27118492126465,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.1675410035532,
+       "denoise_ms": 119.73690986633301,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 236.14570899371756,
+       "denoise_ms": 120.40972709655762,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.6716249974561,
+       "denoise_ms": 123.89039993286133,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.12875000335043,
+       "denoise_ms": 123.12841415405273,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.3450000017765,
+       "denoise_ms": 120.27931213378906,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 241.07770800037542,
+       "denoise_ms": 120.11933326721191,
+       "reads": 1
+      }
+     ]
+    },
+    "s4_w1": {
+     "samples": 4,
+     "workers": 1,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 184.9,
+       "p50": 185.0,
+       "p95": 190.5,
+       "p99": 190.9
+      },
+      "denoise_ms": {
+       "mean": 101.6,
+       "p50": 101.3,
+       "p95": 104.6,
+       "p99": 107.1
+      },
+      "elapsed_s": 9.26,
+      "throughput_per_s": 5.4
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.9712510041427,
+       "denoise_ms": 103.02281379699707,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.69516699871747,
+       "denoise_ms": 107.4674129486084,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.87337500118883,
+       "denoise_ms": 100.16679763793945,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.51058400509646,
+       "denoise_ms": 100.74424743652344,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.74750000052154,
+       "denoise_ms": 100.39043426513672,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.70700000418583,
+       "denoise_ms": 99.97797012329102,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.53924999712035,
+       "denoise_ms": 101.70745849609375,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.06699999427656,
+       "denoise_ms": 100.86941719055176,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.9749999999185,
+       "denoise_ms": 100.8310317993164,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.6096249971888,
+       "denoise_ms": 101.9129753112793,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.79812500381377,
+       "denoise_ms": 103.80005836486816,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.13945800077636,
+       "denoise_ms": 101.08113288879395,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 180.4352499966626,
+       "denoise_ms": 100.98099708557129,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.5260000033304,
+       "denoise_ms": 100.05879402160645,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.87895900034346,
+       "denoise_ms": 104.36415672302246,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.33245800528675,
+       "denoise_ms": 102.94914245605469,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.2189169987687,
+       "denoise_ms": 101.52101516723633,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.0697910010931,
+       "denoise_ms": 101.97973251342773,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.5098750066827,
+       "denoise_ms": 103.31845283508301,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.62324999686098,
+       "denoise_ms": 100.43478012084961,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.18645899550756,
+       "denoise_ms": 101.41658782958984,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.24574999901233,
+       "denoise_ms": 100.31461715698242,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.977458993264,
+       "denoise_ms": 99.43056106567383,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.14291700255126,
+       "denoise_ms": 99.49350357055664,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.2418340058648,
+       "denoise_ms": 100.4338264465332,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.107042002026,
+       "denoise_ms": 99.87950325012207,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.2179170010495,
+       "denoise_ms": 101.10235214233398,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.01808299333788,
+       "denoise_ms": 100.54993629455566,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.8717080039205,
+       "denoise_ms": 106.7967414855957,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.38108300202293,
+       "denoise_ms": 101.79972648620605,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.1797080008546,
+       "denoise_ms": 101.41253471374512,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.21641599404393,
+       "denoise_ms": 104.04348373413086,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.26333300664555,
+       "denoise_ms": 101.65238380432129,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.93983399821445,
+       "denoise_ms": 103.22403907775879,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.1056250007823,
+       "denoise_ms": 100.71921348571777,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.4735830022255,
+       "denoise_ms": 99.07746315002441,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.1863330011838,
+       "denoise_ms": 101.89676284790039,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.86791599995922,
+       "denoise_ms": 100.82125663757324,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.7577920006006,
+       "denoise_ms": 101.26709938049316,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.98320899764076,
+       "denoise_ms": 100.91018676757812,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.4467500046012,
+       "denoise_ms": 101.42946243286133,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.12850100139622,
+       "denoise_ms": 104.74133491516113,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.5592920029303,
+       "denoise_ms": 101.8681526184082,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.33379199996125,
+       "denoise_ms": 101.07779502868652,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.20349999621976,
+       "denoise_ms": 99.79844093322754,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.140417004528,
+       "denoise_ms": 102.5686264038086,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 180.96670899831224,
+       "denoise_ms": 101.31335258483887,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.34008300269488,
+       "denoise_ms": 100.98862648010254,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.55125000461703,
+       "denoise_ms": 102.75506973266602,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.48070900538005,
+       "denoise_ms": 101.26256942749023,
+       "reads": 4
+      }
+     ]
+    },
+    "s4_w4": {
+     "samples": 4,
+     "workers": 4,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 264.5,
+       "p50": 239.7,
+       "p95": 460.0,
+       "p99": 460.6
+      },
+      "denoise_ms": {
+       "mean": 148.2,
+       "p50": 149.6,
+       "p95": 155.0,
+       "p99": 156.9
+      },
+      "elapsed_s": 3.52,
+      "throughput_per_s": 14.21
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 230.29770799621474,
+       "denoise_ms": 148.32353591918945,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 229.43804199894657,
+       "denoise_ms": 136.83247566223145,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 230.09316599927843,
+       "denoise_ms": 141.1266326904297,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 229.29149999981746,
+       "denoise_ms": 137.6347541809082,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.61370800214354,
+       "denoise_ms": 147.96876907348633,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 235.57749999599764,
+       "denoise_ms": 145.73431015014648,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.43499999848427,
+       "denoise_ms": 145.70283889770508,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.54495899932226,
+       "denoise_ms": 147.21155166625977,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.5952500036219,
+       "denoise_ms": 150.12884140014648,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 233.7926249965676,
+       "denoise_ms": 150.4495143890381,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.19279199879384,
+       "denoise_ms": 153.16462516784668,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.06341699592303,
+       "denoise_ms": 150.24447441101074,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.86258299980545,
+       "denoise_ms": 156.7075252532959,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 241.98920799972257,
+       "denoise_ms": 154.11996841430664,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 244.3302500032587,
+       "denoise_ms": 152.71544456481934,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 244.594292002148,
+       "denoise_ms": 148.20098876953125,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 237.4140419997275,
+       "denoise_ms": 157.0580005645752,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 236.58241600060137,
+       "denoise_ms": 152.27580070495605,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 233.95974999584723,
+       "denoise_ms": 154.04057502746582,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.52766700211214,
+       "denoise_ms": 150.41255950927734,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.21491700113984,
+       "denoise_ms": 154.1726589202881,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 240.38504200143507,
+       "denoise_ms": 145.85137367248535,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 239.13729199557565,
+       "denoise_ms": 152.14085578918457,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 238.08483400352998,
+       "denoise_ms": 154.42490577697754,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.10737500106916,
+       "denoise_ms": 154.7703742980957,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.3743750041467,
+       "denoise_ms": 155.20691871643066,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 242.46512499667006,
+       "denoise_ms": 148.79322052001953,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 241.0283330027596,
+       "denoise_ms": 151.02386474609375,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 236.65074900054606,
+       "denoise_ms": 149.28007125854492,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 227.29750000144122,
+       "denoise_ms": 144.53649520874023,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 235.44891599885887,
+       "denoise_ms": 142.6832675933838,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 235.65012499602744,
+       "denoise_ms": 148.67162704467773,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 243.185250001261,
+       "denoise_ms": 153.0773639678955,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 232.98541700205533,
+       "denoise_ms": 152.72831916809082,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.75329199573025,
+       "denoise_ms": 147.13525772094727,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 234.2088339937618,
+       "denoise_ms": 142.8213119506836,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 263.3486249978887,
+       "denoise_ms": 149.3213176727295,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 261.33212500280933,
+       "denoise_ms": 151.4148712158203,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 261.33270799618913,
+       "denoise_ms": 154.07228469848633,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 261.5494999990915,
+       "denoise_ms": 149.60217475891113,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 244.93120900297072,
+       "denoise_ms": 151.86619758605957,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 244.31545900006313,
+       "denoise_ms": 149.62530136108398,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 245.03499999991618,
+       "denoise_ms": 146.91925048828125,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 245.12958300329046,
+       "denoise_ms": 145.82395553588867,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 460.8866670023417,
+       "denoise_ms": 148.5426425933838,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 459.60425000521354,
+       "denoise_ms": 147.1881866455078,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 460.32212499994785,
+       "denoise_ms": 150.06113052368164,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 460.2346249957918,
+       "denoise_ms": 149.5211124420166,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 419.8057079993305,
+       "denoise_ms": 121.08969688415527,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 419.3641260062577,
+       "denoise_ms": 118.91746520996094,
+       "reads": 4
+      }
+     ]
+    },
+    "s4_w8": {
+     "samples": 4,
+     "workers": 8,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 471.2,
+       "p50": 512.8,
+       "p95": 532.4,
+       "p99": 534.0
+      },
+      "denoise_ms": {
+       "mean": 210.8,
+       "p50": 213.1,
+       "p95": 231.1,
+       "p99": 238.9
+      },
+      "elapsed_s": 3.14,
+      "throughput_per_s": 15.92
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 529.6658759980346,
+       "denoise_ms": 221.32635116577148,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 529.7760009998456,
+       "denoise_ms": 218.28866004943848,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 527.7526249992661,
+       "denoise_ms": 218.4312343597412,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 528.5887510035536,
+       "denoise_ms": 212.68582344055176,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 529.8514169990085,
+       "denoise_ms": 214.87092971801758,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 529.3286250016536,
+       "denoise_ms": 212.7232551574707,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 527.4529169982998,
+       "denoise_ms": 212.907075881958,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 528.6380420002388,
+       "denoise_ms": 221.7104434967041,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 530.7581259985454,
+       "denoise_ms": 223.60873222351074,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 531.0770420037443,
+       "denoise_ms": 225.05474090576172,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 532.2746259989799,
+       "denoise_ms": 222.80073165893555,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 529.9571249997825,
+       "denoise_ms": 223.923921585083,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 528.4032080016914,
+       "denoise_ms": 208.82797241210938,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 530.6035009998595,
+       "denoise_ms": 207.40914344787598,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 530.0191250062198,
+       "denoise_ms": 225.30436515808105,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 530.5388339984347,
+       "denoise_ms": 206.18677139282227,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 535.2362079938757,
+       "denoise_ms": 239.1972541809082,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 531.8750420046854,
+       "denoise_ms": 212.15033531188965,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 531.8638750031823,
+       "denoise_ms": 213.53936195373535,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 532.758916997409,
+       "denoise_ms": 217.15259552001953,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 531.9636249987525,
+       "denoise_ms": 217.9725170135498,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 532.5384590032627,
+       "denoise_ms": 238.6150360107422,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 530.6479580031009,
+       "denoise_ms": 221.39430046081543,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 531.555583998852,
+       "denoise_ms": 216.7377471923828,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 513.1071670039091,
+       "denoise_ms": 203.83596420288086,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 511.97133399546146,
+       "denoise_ms": 212.02850341796875,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 512.4423330053105,
+       "denoise_ms": 211.04860305786133,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 510.5145419947803,
+       "denoise_ms": 209.08236503601074,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 512.3230839963071,
+       "denoise_ms": 204.65373992919922,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 510.43299999582814,
+       "denoise_ms": 206.71558380126953,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 509.2764590008301,
+       "denoise_ms": 206.24732971191406,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 511.01670900243334,
+       "denoise_ms": 207.505464553833,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 382.90229200356407,
+       "denoise_ms": 212.47601509094238,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 380.8150420009042,
+       "denoise_ms": 209.2306613922119,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 381.217292000656,
+       "denoise_ms": 209.5355987548828,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 381.8697499955306,
+       "denoise_ms": 213.25063705444336,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 379.34550100180786,
+       "denoise_ms": 209.52844619750977,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 378.35062500380445,
+       "denoise_ms": 205.64985275268555,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 380.34362500184216,
+       "denoise_ms": 199.54752922058105,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 379.7423340001842,
+       "denoise_ms": 189.12363052368164,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 397.4436249991413,
+       "denoise_ms": 231.11891746520996,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 395.50745799351716,
+       "denoise_ms": 230.99946975708008,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 397.5783749992843,
+       "denoise_ms": 218.28460693359375,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 395.0669590049074,
+       "denoise_ms": 208.96196365356445,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 395.28645900281845,
+       "denoise_ms": 213.3166790008545,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 393.0765410041204,
+       "denoise_ms": 214.13588523864746,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 396.2392909961636,
+       "denoise_ms": 217.46516227722168,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 396.18545900157187,
+       "denoise_ms": 213.87910842895508,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 261.5386670004227,
+       "denoise_ms": 115.72647094726562,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 260.96191700344207,
+       "denoise_ms": 113.17253112792969,
+       "reads": 4
+      }
+     ]
+    },
+    "s4_w16": {
+     "samples": 4,
+     "workers": 16,
+     "summary": {
+      "n": 64,
+      "ok": 64,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 439.3,
+       "p50": 441.2,
+       "p95": 542.1,
+       "p99": 544.0
+      },
+      "denoise_ms": {
+       "mean": 215.2,
+       "p50": 215.5,
+       "p95": 223.5,
+       "p99": 226.3
+      },
+      "elapsed_s": 1.85,
+      "throughput_per_s": 34.53
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 325.0796250067651,
+       "denoise_ms": 206.02893829345703,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 331.92425000015646,
+       "denoise_ms": 206.96616172790527,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 544.1408330007107,
+       "denoise_ms": 214.29729461669922,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 324.84458300314145,
+       "denoise_ms": 212.32271194458008,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 331.5704580018064,
+       "denoise_ms": 209.7764015197754,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 543.9108750069863,
+       "denoise_ms": 217.94462203979492,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 541.9735420000507,
+       "denoise_ms": 217.91696548461914,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 543.789667004603,
+       "denoise_ms": 219.7403907775879,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 321.16320799832465,
+       "denoise_ms": 206.75921440124512,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 324.7635830048239,
+       "denoise_ms": 206.51006698608398,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 542.0932910055853,
+       "denoise_ms": 213.73486518859863,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 321.2439579947386,
+       "denoise_ms": 198.6684799194336,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 541.4201669991598,
+       "denoise_ms": 216.31908416748047,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 540.9168330006651,
+       "denoise_ms": 218.80197525024414,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 321.48420799785526,
+       "denoise_ms": 207.12804794311523,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 539.1582079973887,
+       "denoise_ms": 216.24755859375,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 445.50120899657486,
+       "denoise_ms": 218.63842010498047,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 443.77758300106507,
+       "denoise_ms": 215.3608798980713,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 444.44016700435895,
+       "denoise_ms": 216.90034866333008,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 441.26416699873516,
+       "denoise_ms": 215.56901931762695,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 443.86150000354974,
+       "denoise_ms": 218.5215950012207,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 441.14654199802317,
+       "denoise_ms": 216.39752388000488,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 437.43849999736995,
+       "denoise_ms": 218.00684928894043,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 436.39149999944493,
+       "denoise_ms": 220.57509422302246,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 444.6826669955044,
+       "denoise_ms": 227.19311714172363,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 442.8012919961475,
+       "denoise_ms": 223.11735153198242,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 436.1195840028813,
+       "denoise_ms": 220.9482192993164,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 441.49170799937565,
+       "denoise_ms": 223.31905364990234,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 442.2139999951469,
+       "denoise_ms": 220.43967247009277,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 440.6995840035961,
+       "denoise_ms": 220.98708152770996,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 442.6222499969299,
+       "denoise_ms": 220.13211250305176,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 442.1443339961115,
+       "denoise_ms": 223.5279083251953,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 441.6820420010481,
+       "denoise_ms": 220.81351280212402,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 443.43541699345224,
+       "denoise_ms": 225.81815719604492,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 439.2426249978598,
+       "denoise_ms": 218.66178512573242,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 442.98979199811583,
+       "denoise_ms": 224.31683540344238,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 440.6765409949003,
+       "denoise_ms": 221.47846221923828,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 442.2127500001807,
+       "denoise_ms": 222.4102020263672,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 438.4316249997937,
+       "denoise_ms": 219.52366828918457,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 437.0213340007467,
+       "denoise_ms": 221.31657600402832,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 446.094708997407,
+       "denoise_ms": 218.06812286376953,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 438.803959004872,
+       "denoise_ms": 212.72993087768555,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 439.90508299611975,
+       "denoise_ms": 213.5903835296631,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 438.9668329968117,
+       "denoise_ms": 214.94626998901367,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 439.23908400029177,
+       "denoise_ms": 212.54777908325195,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 439.0565419962513,
+       "denoise_ms": 210.56580543518066,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 433.7775000021793,
+       "denoise_ms": 210.63518524169922,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 437.02650000341237,
+       "denoise_ms": 206.98785781860352,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 463.7867500059656,
+       "denoise_ms": 212.5837802886963,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 462.7584170011687,
+       "denoise_ms": 211.49468421936035,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 462.40812500036554,
+       "denoise_ms": 213.8814926147461,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 460.0049590007984,
+       "denoise_ms": 205.3990364074707,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 460.8799999987241,
+       "denoise_ms": 212.86511421203613,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 458.6040830035927,
+       "denoise_ms": 219.03204917907715,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 458.7880420003785,
+       "denoise_ms": 211.74860000610352,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 456.95695899485145,
+       "denoise_ms": 215.4378890991211,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 430.1031669965596,
+       "denoise_ms": 216.22490882873535,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 420.13833400415024,
+       "denoise_ms": 209.33198928833008,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 422.9856669990113,
+       "denoise_ms": 211.0147476196289,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 422.96329199598404,
+       "denoise_ms": 210.5569839477539,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 421.3822500023525,
+       "denoise_ms": 208.92024040222168,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 422.22408299858216,
+       "denoise_ms": 211.3015651702881,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 425.4753749992233,
+       "denoise_ms": 210.29019355773926,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 421.07162500178674,
+       "denoise_ms": 206.376314163208,
+       "reads": 4
+      }
+     ]
+    }
+   }
+  },
+  "g4_56baadf": {
+   "url": "https://2490618687040520192.us-central1-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/us-central1/endpoints/2490618687040520192/invoke/v1/chat/completions",
+   "cells": {
+    "s1_w1": {
+     "samples": 1,
+     "workers": 1,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 186.5,
+       "p50": 140.1,
+       "p95": 359.2,
+       "p99": 406.2
+      },
+      "denoise_ms": {
+       "mean": 56.4,
+       "p50": 56.0,
+       "p95": 60.6,
+       "p99": 61.5
+      },
+      "elapsed_s": 9.33,
+      "throughput_per_s": 5.36
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.83629100228427,
+       "denoise_ms": 61.44285202026367,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 141.8259170022793,
+       "denoise_ms": 56.99491500854492,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 135.41587500367314,
+       "denoise_ms": 54.97932434082031,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 135.53183299518423,
+       "denoise_ms": 56.03337287902832,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 139.73879200057127,
+       "denoise_ms": 55.18984794616699,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 139.41270900249947,
+       "denoise_ms": 54.41784858703613,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 137.7303339977516,
+       "denoise_ms": 55.93705177307129,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 141.3468750033644,
+       "denoise_ms": 54.822444915771484,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 136.05558299605036,
+       "denoise_ms": 55.174827575683594,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 142.7485419990262,
+       "denoise_ms": 56.01978302001953,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 138.33141599752707,
+       "denoise_ms": 56.51402473449707,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 171.69837599794846,
+       "denoise_ms": 54.891109466552734,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 133.27104200288886,
+       "denoise_ms": 54.27122116088867,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 131.5448750028736,
+       "denoise_ms": 54.8553466796875,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 134.37749999866355,
+       "denoise_ms": 55.97257614135742,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 145.41250000183936,
+       "denoise_ms": 60.29176712036133,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 129.91916600003606,
+       "denoise_ms": 54.808855056762695,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 133.85579199530184,
+       "denoise_ms": 57.910919189453125,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 135.53162500465987,
+       "denoise_ms": 54.691314697265625,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 136.42162500036648,
+       "denoise_ms": 56.040287017822266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 131.5127499983646,
+       "denoise_ms": 55.21273612976074,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 138.22420799988322,
+       "denoise_ms": 55.07540702819824,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 144.09245799470227,
+       "denoise_ms": 59.82804298400879,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 136.7305829990073,
+       "denoise_ms": 55.912017822265625,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 140.20404199982295,
+       "denoise_ms": 58.23993682861328,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 136.48599999578437,
+       "denoise_ms": 55.002689361572266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 132.75154199800454,
+       "denoise_ms": 54.37445640563965,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 137.22433400107548,
+       "denoise_ms": 55.135250091552734,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 135.66416699904948,
+       "denoise_ms": 54.2905330657959,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 155.5496669971035,
+       "denoise_ms": 58.005571365356445,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 144.08258400362683,
+       "denoise_ms": 56.23269081115723,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 133.18195899773855,
+       "denoise_ms": 55.30858039855957,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 139.65804100007517,
+       "denoise_ms": 56.86020851135254,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.06033400120214,
+       "denoise_ms": 55.9694766998291,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.36891600023955,
+       "denoise_ms": 56.87260627746582,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 383.96858400665224,
+       "denoise_ms": 56.5953254699707,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 427.59087499871384,
+       "denoise_ms": 56.470394134521484,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 360.3527919985936,
+       "denoise_ms": 56.17022514343262,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 352.01579199929256,
+       "denoise_ms": 55.94754219055176,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 350.96758299914654,
+       "denoise_ms": 56.94293975830078,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 353.67970800143667,
+       "denoise_ms": 59.04555320739746,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 357.77600000437815,
+       "denoise_ms": 61.52510643005371,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 347.16750000370666,
+       "denoise_ms": 60.84299087524414,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 251.5515420018346,
+       "denoise_ms": 57.2206974029541,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 249.9515000017709,
+       "denoise_ms": 57.25383758544922,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 258.5788340002182,
+       "denoise_ms": 55.86814880371094,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.0023749973625,
+       "denoise_ms": 55.2370548248291,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 139.924292001524,
+       "denoise_ms": 54.56042289733887,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 139.8832080012653,
+       "denoise_ms": 54.929256439208984,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 143.39004200155614,
+       "denoise_ms": 55.54938316345215,
+       "reads": 1
+      }
+     ]
+    },
+    "s1_w4": {
+     "samples": 1,
+     "workers": 4,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 184.2,
+       "p50": 176.4,
+       "p95": 255.5,
+       "p99": 259.1
+      },
+      "denoise_ms": {
+       "mean": 87.0,
+       "p50": 87.8,
+       "p95": 92.6,
+       "p99": 93.3
+      },
+      "elapsed_s": 2.39,
+      "throughput_per_s": 20.91
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.76187499798834,
+       "denoise_ms": 89.58315849304199,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 176.30370900587877,
+       "denoise_ms": 79.36906814575195,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.96491700148908,
+       "denoise_ms": 80.39522171020508,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.50233400106663,
+       "denoise_ms": 76.92575454711914,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 168.25304099620553,
+       "denoise_ms": 89.2341136932373,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 167.4622909995378,
+       "denoise_ms": 87.78500556945801,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 167.80529099924024,
+       "denoise_ms": 83.39166641235352,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 167.82141700241482,
+       "denoise_ms": 85.64400672912598,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.42883299919777,
+       "denoise_ms": 92.56267547607422,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.42495900287759,
+       "denoise_ms": 93.00804138183594,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.42654099978972,
+       "denoise_ms": 93.60551834106445,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.6448329957202,
+       "denoise_ms": 91.09830856323242,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 170.32108399871504,
+       "denoise_ms": 89.11705017089844,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.68687599810073,
+       "denoise_ms": 86.96508407592773,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 169.57929199998034,
+       "denoise_ms": 86.8370532989502,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.00520800199592,
+       "denoise_ms": 86.84039115905762,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 259.69375000568107,
+       "denoise_ms": 88.02986145019531,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 258.4457079938147,
+       "denoise_ms": 87.24522590637207,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 255.58529200498015,
+       "denoise_ms": 80.08646965026855,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 255.45274999603862,
+       "denoise_ms": 84.52248573303223,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.4762499994249,
+       "denoise_ms": 88.11283111572266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.81733300257474,
+       "denoise_ms": 86.55786514282227,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.77308300032746,
+       "denoise_ms": 89.48183059692383,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.08762500155717,
+       "denoise_ms": 85.51740646362305,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 169.96558300161269,
+       "denoise_ms": 87.78047561645508,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 168.79033300210722,
+       "denoise_ms": 80.0940990447998,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 169.02200000185985,
+       "denoise_ms": 80.04164695739746,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 169.38516600203002,
+       "denoise_ms": 81.8181037902832,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.28437599970493,
+       "denoise_ms": 87.2344970703125,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.45058299484663,
+       "denoise_ms": 79.88691329956055,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.44091699813725,
+       "denoise_ms": 86.45272254943848,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.47629199828953,
+       "denoise_ms": 85.64043045043945,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.32708300475497,
+       "denoise_ms": 89.15996551513672,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 176.53437500121072,
+       "denoise_ms": 87.51916885375977,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.32449999958044,
+       "denoise_ms": 90.61527252197266,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.72912499599624,
+       "denoise_ms": 90.2860164642334,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.43258400412742,
+       "denoise_ms": 89.48278427124023,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.73129100067308,
+       "denoise_ms": 83.97912979125977,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 167.14700000011362,
+       "denoise_ms": 88.07992935180664,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 168.86829200666398,
+       "denoise_ms": 88.31214904785156,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.1830830021063,
+       "denoise_ms": 91.2179946899414,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.4129999988363,
+       "denoise_ms": 91.02082252502441,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.2606659962912,
+       "denoise_ms": 92.6365852355957,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.20699999498902,
+       "denoise_ms": 89.79177474975586,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.41362599516287,
+       "denoise_ms": 91.19462966918945,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.739334000682,
+       "denoise_ms": 89.44010734558105,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.51908400433604,
+       "denoise_ms": 90.5001163482666,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.62395900214324,
+       "denoise_ms": 90.39640426635742,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.015500000678,
+       "denoise_ms": 82.72480964660645,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.54316599812591,
+       "denoise_ms": 83.77218246459961,
+       "reads": 1
+      }
+     ]
+    },
+    "s1_w8": {
+     "samples": 1,
+     "workers": 8,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 188.7,
+       "p50": 188.7,
+       "p95": 196.1,
+       "p99": 198.2
+      },
+      "denoise_ms": {
+       "mean": 91.3,
+       "p50": 93.3,
+       "p95": 99.7,
+       "p99": 101.0
+      },
+      "elapsed_s": 1.31,
+      "throughput_per_s": 38.23
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.68300000496674,
+       "denoise_ms": 96.11868858337402,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.55520900071133,
+       "denoise_ms": 97.50604629516602,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.07208400499076,
+       "denoise_ms": 96.03118896484375,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.5571670041536,
+       "denoise_ms": 95.4744815826416,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.7110829971498,
+       "denoise_ms": 93.24049949645996,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.71662499947706,
+       "denoise_ms": 93.75596046447754,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.7218750026659,
+       "denoise_ms": 94.09737586975098,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 198.7920829997165,
+       "denoise_ms": 75.44183731079102,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.91437500173924,
+       "denoise_ms": 101.58205032348633,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.0060419969377,
+       "denoise_ms": 93.51921081542969,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.54629199591,
+       "denoise_ms": 91.9501781463623,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.02445899846498,
+       "denoise_ms": 89.98370170593262,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.51308400148991,
+       "denoise_ms": 88.79947662353516,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.22466699505458,
+       "denoise_ms": 88.28425407409668,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.30004200147232,
+       "denoise_ms": 84.01155471801758,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 180.60770900046919,
+       "denoise_ms": 87.20946311950684,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.34137499815552,
+       "denoise_ms": 99.17712211608887,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.71570799942128,
+       "denoise_ms": 100.46124458312988,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.29779199586483,
+       "denoise_ms": 99.85613822937012,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.50712500110967,
+       "denoise_ms": 99.44534301757812,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.35783300286857,
+       "denoise_ms": 97.72276878356934,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.06520799605642,
+       "denoise_ms": 93.16349029541016,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.07229200017173,
+       "denoise_ms": 97.50485420227051,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.9752500030445,
+       "denoise_ms": 99.09534454345703,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 192.76329100102885,
+       "denoise_ms": 97.57351875305176,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 184.55304199596867,
+       "denoise_ms": 95.69883346557617,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.03312499646563,
+       "denoise_ms": 94.21133995056152,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.32795799849555,
+       "denoise_ms": 90.95239639282227,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.39487499685492,
+       "denoise_ms": 87.0821475982666,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.37087500287453,
+       "denoise_ms": 90.35563468933105,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.02195799455512,
+       "denoise_ms": 82.08966255187988,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.9667919955682,
+       "denoise_ms": 88.48118782043457,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 191.97437499678927,
+       "denoise_ms": 94.80834007263184,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.66650000342634,
+       "denoise_ms": 94.74754333496094,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.12620799610158,
+       "denoise_ms": 93.31369400024414,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.60466600058135,
+       "denoise_ms": 84.28144454956055,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.48391699814238,
+       "denoise_ms": 84.79642868041992,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.8922920000623,
+       "denoise_ms": 93.29366683959961,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.90962500113528,
+       "denoise_ms": 85.59203147888184,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.3641670018551,
+       "denoise_ms": 82.23104476928711,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.93974999850616,
+       "denoise_ms": 96.15087509155273,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 190.8934590028366,
+       "denoise_ms": 93.95647048950195,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.85929199657403,
+       "denoise_ms": 95.13020515441895,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 188.36216699855868,
+       "denoise_ms": 84.88655090332031,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.40412500483217,
+       "denoise_ms": 85.87479591369629,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 186.14379200153053,
+       "denoise_ms": 85.5715274810791,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 185.6225000010454,
+       "denoise_ms": 84.5954418182373,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 183.93362500501098,
+       "denoise_ms": 83.85729789733887,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 167.02454200276406,
+       "denoise_ms": 81.95710182189941,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 167.02100000111386,
+       "denoise_ms": 81.6037654876709,
+       "reads": 1
+      }
+     ]
+    },
+    "s1_w16": {
+     "samples": 1,
+     "workers": 16,
+     "summary": {
+      "n": 64,
+      "ok": 63,
+      "errors": 1,
+      "error_samples": [
+       "503: {\"error\":\"Prediction for model 4664810571990827008 failed with error: Model server early terminated the request (truncat"
+      ],
+      "wall_ms": {
+       "mean": 216.7,
+       "p50": 210.4,
+       "p95": 286.8,
+       "p99": 289.3
+      },
+      "denoise_ms": {
+       "mean": 101.1,
+       "p50": 101.8,
+       "p95": 107.4,
+       "p99": 108.6
+      },
+      "elapsed_s": 0.93,
+      "throughput_per_s": 67.73
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.14949999575038,
+       "denoise_ms": 98.99497032165527,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 196.03449999704026,
+       "denoise_ms": 90.55304527282715,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.65562499681255,
+       "denoise_ms": 94.10881996154785,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.40891700267093,
+       "denoise_ms": 101.2423038482666,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 189.51512499916134,
+       "denoise_ms": 91.94397926330566,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.85295800626045,
+       "denoise_ms": 87.9518985748291,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.81441600003745,
+       "denoise_ms": 90.2719497680664,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 285.90904199518263,
+       "denoise_ms": 104.61282730102539,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 288.553165999474,
+       "denoise_ms": 109.48610305786133,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 286.790165999264,
+       "denoise_ms": 102.44894027709961,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 285.0075839960482,
+       "denoise_ms": 101.76467895507812,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.65608300396707,
+       "denoise_ms": 86.03382110595703,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 286.447832993872,
+       "denoise_ms": 105.45921325683594,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 286.5381250012433,
+       "denoise_ms": 101.62758827209473,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 289.6675409938325,
+       "denoise_ms": 102.79250144958496,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 289.0881669954979,
+       "denoise_ms": 104.9809455871582,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.7807079963968,
+       "denoise_ms": 104.20727729797363,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.6912499978789,
+       "denoise_ms": 101.10831260681152,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 212.36362499621464,
+       "denoise_ms": 100.1439094543457,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 210.38154200505232,
+       "denoise_ms": 102.39839553833008,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.20058300159872,
+       "denoise_ms": 102.45347023010254,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.04716699785786,
+       "denoise_ms": 105.35907745361328,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.70945800520713,
+       "denoise_ms": 101.78041458129883,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.43179100059206,
+       "denoise_ms": 102.73957252502441,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 212.21083399723284,
+       "denoise_ms": 93.93954277038574,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.90370800165692,
+       "denoise_ms": 102.8904914855957,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 212.7634170028614,
+       "denoise_ms": 102.10537910461426,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 210.86454200121807,
+       "denoise_ms": 99.92098808288574,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 210.89704200130654,
+       "denoise_ms": 99.29823875427246,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 213.2789169991156,
+       "denoise_ms": 104.77185249328613,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.88070799951674,
+       "denoise_ms": 98.02031517028809,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.86600000428734,
+       "denoise_ms": 103.5776138305664,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 220.08870900026523,
+       "denoise_ms": 107.48910903930664,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 219.34220899856882,
+       "denoise_ms": 107.00631141662598,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.18079200095963,
+       "denoise_ms": 98.79302978515625,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.08541699504713,
+       "denoise_ms": 103.61886024475098,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 218.57366699987324,
+       "denoise_ms": 103.80029678344727,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 218.33008300018264,
+       "denoise_ms": 107.61117935180664,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 209.76066699950024,
+       "denoise_ms": 102.86450386047363,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.33504200103926,
+       "denoise_ms": 101.97854042053223,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.64137500454672,
+       "denoise_ms": 101.04775428771973,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 217.0107919955626,
+       "denoise_ms": 106.23931884765625,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.97462499974063,
+       "denoise_ms": 106.8572998046875,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 213.4913339978084,
+       "denoise_ms": 103.23500633239746,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 217.86245799739845,
+       "denoise_ms": 108.04343223571777,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 216.27420800359687,
+       "denoise_ms": 102.71263122558594,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.33904100354994,
+       "denoise_ms": 101.72247886657715,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 215.01458299462683,
+       "denoise_ms": 101.52339935302734,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.4432499947725,
+       "denoise_ms": 99.18713569641113,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 209.47187500132713,
+       "denoise_ms": 103.18922996520996,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 209.96800000284566,
+       "denoise_ms": 100.39830207824707,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 205.02566600043792,
+       "denoise_ms": 101.7615795135498,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.52224999805912,
+       "denoise_ms": 97.54300117492676,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.8662499981001,
+       "denoise_ms": 100.41213035583496,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.6658750002971,
+       "denoise_ms": 105.57365417480469,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.26591699995333,
+       "denoise_ms": 102.88405418395996,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.16745900345268,
+       "denoise_ms": 101.27568244934082,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 201.80574999540113,
+       "denoise_ms": 100.52180290222168,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 197.8914170031203,
+       "denoise_ms": 95.4902172088623,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 198.42741599859437,
+       "denoise_ms": 102.34880447387695,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.90587499988033,
+       "denoise_ms": 99.51424598693848,
+       "reads": 1
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.96508300310234,
+       "denoise_ms": 99.3955135345459,
+       "reads": 1
+      },
+      {
+       "status": 503,
+       "error": "{\"error\":\"Prediction for model 4664810571990827008 failed with error: Model server early terminated the request (truncated headers).\"}",
+       "wall_ms": 119.99791599373566
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.52470800367882,
+       "denoise_ms": 93.90425682067871,
+       "reads": 1
+      }
+     ]
+    },
+    "s4_w1": {
+     "samples": 4,
+     "workers": 1,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 176.5,
+       "p50": 176.1,
+       "p95": 182.4,
+       "p99": 191.4
+      },
+      "denoise_ms": {
+       "mean": 89.3,
+       "p50": 88.9,
+       "p95": 92.3,
+       "p99": 94.0
+      },
+      "elapsed_s": 8.84,
+      "throughput_per_s": 5.65
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.3960830058786,
+       "denoise_ms": 91.66622161865234,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.242208999407,
+       "denoise_ms": 88.93108367919922,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 171.67004099610494,
+       "denoise_ms": 89.74981307983398,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.41958300495753,
+       "denoise_ms": 92.48638153076172,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.8532089982764,
+       "denoise_ms": 91.4609432220459,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 182.32829200132983,
+       "denoise_ms": 89.85352516174316,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.89291699853493,
+       "denoise_ms": 88.94014358520508,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 168.88387499784585,
+       "denoise_ms": 88.77277374267578,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.4977500034729,
+       "denoise_ms": 89.36619758605957,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.0288340052939,
+       "denoise_ms": 88.96732330322266,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.1856249983539,
+       "denoise_ms": 90.01493453979492,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.58854199928464,
+       "denoise_ms": 88.6847972869873,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.66933399555273,
+       "denoise_ms": 88.72056007385254,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.8976249988773,
+       "denoise_ms": 88.8361930847168,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 166.0793749979348,
+       "denoise_ms": 88.64188194274902,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.80675000115298,
+       "denoise_ms": 87.66484260559082,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 187.48199999390636,
+       "denoise_ms": 88.31620216369629,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.4844999993802,
+       "denoise_ms": 87.75019645690918,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.14720900042448,
+       "denoise_ms": 91.73727035522461,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.5984579983051,
+       "denoise_ms": 90.71898460388184,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.7708340040408,
+       "denoise_ms": 89.00260925292969,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.90612500195857,
+       "denoise_ms": 93.99199485778809,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 176.29420799494255,
+       "denoise_ms": 92.02146530151367,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.45016699639382,
+       "denoise_ms": 90.36087989807129,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.58429199521197,
+       "denoise_ms": 89.25700187683105,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.03670899855206,
+       "denoise_ms": 88.72365951538086,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 180.62179099797504,
+       "denoise_ms": 88.45639228820801,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 176.68116600543726,
+       "denoise_ms": 89.30659294128418,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 171.70004199579125,
+       "denoise_ms": 87.66770362854004,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.25250000087544,
+       "denoise_ms": 88.48905563354492,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.67149999417597,
+       "denoise_ms": 88.00601959228516,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.5214579970925,
+       "denoise_ms": 87.67104148864746,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.86420900322264,
+       "denoise_ms": 88.26017379760742,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 171.1297090005246,
+       "denoise_ms": 91.27402305603027,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.62704200140433,
+       "denoise_ms": 89.55955505371094,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.65937499905704,
+       "denoise_ms": 86.87853813171387,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.84354199870722,
+       "denoise_ms": 88.80424499511719,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 181.5493329995661,
+       "denoise_ms": 87.95547485351562,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.00212500494672,
+       "denoise_ms": 88.20104598999023,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.2925000032992,
+       "denoise_ms": 88.47188949584961,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 171.10891700576758,
+       "denoise_ms": 90.65365791320801,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 172.38354100118158,
+       "denoise_ms": 88.30142021179199,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 177.79862500174204,
+       "denoise_ms": 89.10560607910156,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 174.67924999800744,
+       "denoise_ms": 87.4178409576416,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 175.89841700100806,
+       "denoise_ms": 87.18752861022949,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 173.30699999729404,
+       "denoise_ms": 88.57440948486328,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.490292004426,
+       "denoise_ms": 94.05183792114258,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.35575000208337,
+       "denoise_ms": 89.23912048339844,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 179.70462499943096,
+       "denoise_ms": 89.23101425170898,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 178.79591599921696,
+       "denoise_ms": 89.27059173583984,
+       "reads": 4
+      }
+     ]
+    },
+    "s4_w4": {
+     "samples": 4,
+     "workers": 4,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 279.5,
+       "p50": 207.8,
+       "p95": 1106.2,
+       "p99": 1107.7
+      },
+      "denoise_ms": {
+       "mean": 189.1,
+       "p50": 119.4,
+       "p95": 1013.5,
+       "p99": 1015.3
+      },
+      "elapsed_s": 3.6,
+      "throughput_per_s": 13.91
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 1108.0068750015926,
+       "denoise_ms": 1016.6187286376953,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 1107.2997090013814,
+       "denoise_ms": 1013.2629871368408,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 1106.6626259998884,
+       "denoise_ms": 1013.9436721801758,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 1105.6123759990442,
+       "denoise_ms": 1013.7612819671631,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.3308330034488,
+       "denoise_ms": 119.84944343566895,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 201.90166700194823,
+       "denoise_ms": 112.96820640563965,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.53900000272552,
+       "denoise_ms": 114.3944263458252,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.52866699977312,
+       "denoise_ms": 114.02559280395508,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.32104200235335,
+       "denoise_ms": 121.41966819763184,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.231624997803,
+       "denoise_ms": 118.32904815673828,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.2186249968363,
+       "denoise_ms": 112.47038841247559,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.40220800426323,
+       "denoise_ms": 114.3949031829834,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 215.12624999741092,
+       "denoise_ms": 125.51736831665039,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 217.93095800239826,
+       "denoise_ms": 125.5190372467041,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 217.2926670027664,
+       "denoise_ms": 121.64139747619629,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.26554099889472,
+       "denoise_ms": 121.86121940612793,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.74995900521753,
+       "denoise_ms": 119.52066421508789,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 210.76533399900654,
+       "denoise_ms": 109.4515323638916,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 213.48933399713133,
+       "denoise_ms": 112.80655860900879,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.9288339985651,
+       "denoise_ms": 115.83542823791504,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 212.05162499973085,
+       "denoise_ms": 117.24591255187988,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.10416699957568,
+       "denoise_ms": 119.59481239318848,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.70229199843016,
+       "denoise_ms": 116.85609817504883,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 202.90716599993175,
+       "denoise_ms": 116.31584167480469,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.9440830022795,
+       "denoise_ms": 119.21191215515137,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 209.54783300112467,
+       "denoise_ms": 118.42632293701172,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.67595700069796,
+       "denoise_ms": 123.83508682250977,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.78158300445648,
+       "denoise_ms": 119.24886703491211,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 208.79070900264196,
+       "denoise_ms": 123.4898567199707,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.95391700428445,
+       "denoise_ms": 123.7950325012207,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 202.6179590029642,
+       "denoise_ms": 117.85769462585449,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.1055840018089,
+       "denoise_ms": 121.42443656921387,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 202.77270799851976,
+       "denoise_ms": 121.5817928314209,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 199.6667499988689,
+       "denoise_ms": 97.29313850402832,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 200.45808300346835,
+       "denoise_ms": 110.99505424499512,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 202.7168329950655,
+       "denoise_ms": 114.01629447937012,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 212.1149169979617,
+       "denoise_ms": 121.78182601928711,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 211.12245899712434,
+       "denoise_ms": 123.5654354095459,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 209.89483399898745,
+       "denoise_ms": 120.14293670654297,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 207.9756669991184,
+       "denoise_ms": 119.51589584350586,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 206.33095799712464,
+       "denoise_ms": 118.93439292907715,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.00766700186068,
+       "denoise_ms": 109.77530479431152,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 204.14100000198232,
+       "denoise_ms": 108.78348350524902,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 203.96691700443625,
+       "denoise_ms": 109.1928482055664,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.38874999876134,
+       "denoise_ms": 126.36137008666992,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.47812500264263,
+       "denoise_ms": 125.63490867614746,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 214.6206249963143,
+       "denoise_ms": 121.42539024353027,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 213.57287499995437,
+       "denoise_ms": 122.39360809326172,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 195.71145800000522,
+       "denoise_ms": 104.46906089782715,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 194.92529200215358,
+       "denoise_ms": 102.17976570129395,
+       "reads": 4
+      }
+     ]
+    },
+    "s4_w8": {
+     "samples": 4,
+     "workers": 8,
+     "summary": {
+      "n": 50,
+      "ok": 50,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 253.4,
+       "p50": 256.0,
+       "p95": 266.2,
+       "p99": 270.1
+      },
+      "denoise_ms": {
+       "mean": 156.9,
+       "p50": 159.5,
+       "p95": 170.3,
+       "p99": 171.8
+      },
+      "elapsed_s": 1.73,
+      "throughput_per_s": 28.87
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 258.21533399721375,
+       "denoise_ms": 162.15229034423828,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 260.842584000784,
+       "denoise_ms": 162.75334358215332,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 257.82287499896483,
+       "denoise_ms": 160.13431549072266,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 259.2979170003673,
+       "denoise_ms": 152.77481079101562,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 257.35441700089723,
+       "denoise_ms": 160.05921363830566,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 255.65429199923528,
+       "denoise_ms": 154.77442741394043,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 253.79420799436048,
+       "denoise_ms": 153.3827781677246,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 253.00095799320843,
+       "denoise_ms": 154.526948928833,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 252.47612499515526,
+       "denoise_ms": 164.16192054748535,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 250.94308300322155,
+       "denoise_ms": 162.70065307617188,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 250.87354199786205,
+       "denoise_ms": 147.2790241241455,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 252.60283300303854,
+       "denoise_ms": 142.40789413452148,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 243.6610830045538,
+       "denoise_ms": 151.37910842895508,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 247.9907919987454,
+       "denoise_ms": 149.92237091064453,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 250.34737499663606,
+       "denoise_ms": 145.50447463989258,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 249.13195800036192,
+       "denoise_ms": 149.50251579284668,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 252.19604099402204,
+       "denoise_ms": 163.73825073242188,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.0849170020083,
+       "denoise_ms": 154.3560028076172,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 247.2682090010494,
+       "denoise_ms": 149.9638557434082,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 245.37470799987204,
+       "denoise_ms": 152.65297889709473,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 246.24495900206966,
+       "denoise_ms": 146.7568874359131,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 245.0315829992178,
+       "denoise_ms": 144.97137069702148,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 244.96945799910463,
+       "denoise_ms": 152.81176567077637,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 245.22924999473616,
+       "denoise_ms": 148.69356155395508,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 264.91383299435256,
+       "denoise_ms": 169.39711570739746,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 260.6404170001042,
+       "denoise_ms": 171.07820510864258,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 260.7602090065484,
+       "denoise_ms": 169.20089721679688,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 260.1686249981867,
+       "denoise_ms": 166.48030281066895,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 260.53000100364443,
+       "denoise_ms": 162.54091262817383,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 258.07883399829734,
+       "denoise_ms": 162.19639778137207,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 263.0809589973069,
+       "denoise_ms": 158.94412994384766,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 256.6980000046897,
+       "denoise_ms": 158.90049934387207,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 259.47233400074765,
+       "denoise_ms": 167.65499114990234,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 258.4945830021752,
+       "denoise_ms": 165.97390174865723,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 256.58816699433373,
+       "denoise_ms": 163.53750228881836,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 255.92575000337092,
+       "denoise_ms": 168.25366020202637,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 253.8617919999524,
+       "denoise_ms": 154.01625633239746,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 256.04770799691323,
+       "denoise_ms": 152.85611152648926,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 250.33937500120373,
+       "denoise_ms": 155.06315231323242,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 251.29429200023878,
+       "denoise_ms": 154.94871139526367,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 268.7230000010459,
+       "denoise_ms": 169.01373863220215,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 267.1344999980647,
+       "denoise_ms": 163.39755058288574,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 264.75720899907174,
+       "denoise_ms": 169.6770191192627,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 264.55312599864556,
+       "denoise_ms": 162.08863258361816,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 271.3523760030512,
+       "denoise_ms": 170.76969146728516,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 265.08720900164917,
+       "denoise_ms": 169.0502166748047,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 262.2151670002495,
+       "denoise_ms": 172.5785732269287,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 264.9732919962844,
+       "denoise_ms": 169.66629028320312,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 193.64745899656555,
+       "denoise_ms": 105.60727119445801,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 192.89512500108685,
+       "denoise_ms": 106.63127899169922,
+       "reads": 4
+      }
+     ]
+    },
+    "s4_w16": {
+     "samples": 4,
+     "workers": 16,
+     "summary": {
+      "n": 64,
+      "ok": 64,
+      "errors": 0,
+      "error_samples": [],
+      "wall_ms": {
+       "mean": 342.5,
+       "p50": 333.9,
+       "p95": 451.5,
+       "p99": 453.5
+      },
+      "denoise_ms": {
+       "mean": 165.8,
+       "p50": 165.7,
+       "p95": 172.6,
+       "p99": 173.3
+      },
+      "elapsed_s": 1.46,
+      "throughput_per_s": 43.75
+     },
+     "requests": [
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 290.66012499970384,
+       "denoise_ms": 167.20318794250488,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 287.080917005369,
+       "denoise_ms": 169.54350471496582,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 451.29729200561997,
+       "denoise_ms": 163.69152069091797,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 455.6061669936753,
+       "denoise_ms": 165.85707664489746,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 285.8627909954521,
+       "denoise_ms": 159.21258926391602,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 289.84958300134167,
+       "denoise_ms": 173.48694801330566,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 449.827374999586,
+       "denoise_ms": 165.33589363098145,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 288.4530410010484,
+       "denoise_ms": 171.126127243042,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 286.24924999894574,
+       "denoise_ms": 161.29231452941895,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 286.52100000181235,
+       "denoise_ms": 159.41476821899414,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 448.60091699956683,
+       "denoise_ms": 160.22372245788574,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 452.335582995147,
+       "denoise_ms": 161.8967056274414,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 451.5480839982047,
+       "denoise_ms": 168.58816146850586,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 452.15125100367004,
+       "denoise_ms": 167.8140163421631,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 449.0950420004083,
+       "denoise_ms": 163.5897159576416,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 286.0019159998046,
+       "denoise_ms": 169.11888122558594,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 328.5915419983212,
+       "denoise_ms": 165.05980491638184,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 330.36020799772814,
+       "denoise_ms": 165.77768325805664,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 329.21375000296393,
+       "denoise_ms": 164.11328315734863,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 327.54154199938057,
+       "denoise_ms": 157.87434577941895,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 326.2792090026778,
+       "denoise_ms": 164.53218460083008,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 324.24524999805726,
+       "denoise_ms": 162.2636318206787,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 328.93416700244416,
+       "denoise_ms": 162.01233863830566,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 325.83175099716755,
+       "denoise_ms": 163.34104537963867,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 334.7626660033711,
+       "denoise_ms": 167.33098030090332,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 334.96308400208363,
+       "denoise_ms": 170.38774490356445,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.10849999886705,
+       "denoise_ms": 163.6331081390381,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.14104199578287,
+       "denoise_ms": 164.66689109802246,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 330.66279200284043,
+       "denoise_ms": 171.7228889465332,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 325.7345419988269,
+       "denoise_ms": 159.9411964416504,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 330.1990420004586,
+       "denoise_ms": 166.88871383666992,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 334.0045419972739,
+       "denoise_ms": 169.42667961120605,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.8261249989737,
+       "denoise_ms": 162.8270149230957,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 335.23808299651137,
+       "denoise_ms": 170.0735092163086,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 334.6371250008815,
+       "denoise_ms": 162.0171070098877,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 333.96316599828424,
+       "denoise_ms": 165.6029224395752,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.78224999958184,
+       "denoise_ms": 159.49392318725586,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 333.7725829987903,
+       "denoise_ms": 163.23089599609375,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 345.8040420009638,
+       "denoise_ms": 159.3611240386963,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 327.092374995118,
+       "denoise_ms": 162.08577156066895,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.86970899725566,
+       "denoise_ms": 168.93768310546875,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 340.7750420010416,
+       "denoise_ms": 173.25162887573242,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.7271669994807,
+       "denoise_ms": 173.19273948669434,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.0185000055935,
+       "denoise_ms": 169.29340362548828,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 340.7191669975873,
+       "denoise_ms": 169.42334175109863,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 338.48675000626827,
+       "denoise_ms": 168.8406467437744,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 340.10316700005205,
+       "denoise_ms": 171.82159423828125,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 335.13945800223155,
+       "denoise_ms": 172.76453971862793,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 342.9048340040026,
+       "denoise_ms": 169.6603298187256,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 342.05504200508585,
+       "denoise_ms": 166.78881645202637,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 339.56037600000855,
+       "denoise_ms": 165.44389724731445,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.2661669962108,
+       "denoise_ms": 162.16564178466797,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 339.0057509968756,
+       "denoise_ms": 167.55032539367676,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 337.905000000319,
+       "denoise_ms": 166.05210304260254,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.6913749988307,
+       "denoise_ms": 159.5480442047119,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 322.7096670016181,
+       "denoise_ms": 160.16602516174316,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 338.69616700394545,
+       "denoise_ms": 167.51861572265625,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 331.0275420008111,
+       "denoise_ms": 162.95552253723145,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 332.6023749978049,
+       "denoise_ms": 168.58839988708496,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 336.7047919964534,
+       "denoise_ms": 169.26288604736328,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 331.3371670010383,
+       "denoise_ms": 168.60318183898926,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 335.25637499406,
+       "denoise_ms": 167.40846633911133,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 328.06095800333424,
+       "denoise_ms": 165.24338722229004,
+       "reads": 4
+      },
+      {
+       "status": 200,
+       "error": null,
+       "wall_ms": 328.27083399752155,
+       "denoise_ms": 165.47060012817383,
+       "reads": 4
+      }
+     ]
+    }
+   }
+  }
+ }
+}

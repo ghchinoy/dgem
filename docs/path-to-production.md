@@ -140,12 +140,15 @@ image as a second model on the endpoint, move the traffic split to it, then unde
 ## 5. Cold start: options for scale-to-zero deployments
 
 A scale-to-zero Cloud Run GPU service pays a cold start on the first request after idle. Measured on 1× RTX PRO 6000
-([deployment log](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260925-serving-speed/deployments.md)):
+([deployment log](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260925-serving-speed/deployments.md),
+[cold-start runs](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260927-image-parity/README.md#cloud-run-cold-start-coldstartjsonl-scriptscoldstart_probepy)):
 
 | Configuration | Weight staging (17.53 GiB) | Container start → ready and warmed | Extra cost |
 | :--- | ---: | ---: | :--- |
-| Public egress to Cloud Storage (previous default) | 403 s (~46 MiB/s) | ~7.5 min | — |
-| **Direct VPC egress + Private Google Access (current default)** | **83 s (~410 MiB/s)** | **~2.5 min** | None |
+| Public egress to Cloud Storage (previous default) | 386–403 s (~46 MiB/s) | 7.5–7.7 min | — |
+| **Direct VPC egress + Private Google Access (current default)** | **64–83 s (~410 MiB/s)** | **2.3–2.7 min** (4 runs) | None |
+| Weights baked into the image (`dgem-weights`), first pull of the image | none (image pull instead: ~12.4 min for ~26 GB) | 14.6 min | None |
+| Weights baked into the image, image already cached on Cloud Run | none | ~3 min | None |
 | Minimum 1 instance (`CLOUDRUN_MIN_INSTANCES=1`) | — | **0** (always warm) | One GPU billed continuously |
 | Vertex AI Dedicated Endpoint (min replicas ≥ 1) | — | **0** | Per replica-hour |
 
@@ -165,8 +168,9 @@ Notes and trade-offs:
   weights from Hugging Face).
 - What remains of the ~2.5 minutes is vLLM start-up (~75 s, overlapped with the copy), moving weights to the GPU and
   building caches (~45 s), and the self-warmup (~20 s).
-- **Baking weights into the image** is another option we have not measured: it avoids the copy but produces a ~35 GB
-  image, slowing builds and image pulls.
+- **Baking weights into the image does not help on Cloud Run.** The ~26 GB image took over 12 minutes to pull the first
+  time (every new image or revision can pay this), and even with the image cached it was not faster than the lean image
+  over VPC egress. It remains useful for offline or air-gapped hosts that cannot reach Cloud Storage or Hugging Face.
 - **Use Vertex for latency-critical paths.** A gateway with `vertex_first` routing sends traffic to the always-warm
   endpoint and uses the scale-to-zero service only for failover and batch work, so users never wait for a cold start.
 

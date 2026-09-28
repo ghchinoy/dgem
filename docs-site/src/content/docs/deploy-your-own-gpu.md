@@ -20,7 +20,7 @@ Images are hosted in `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/`:
 
 ### B. Self-Contained Variant (`dgem-weights:56baadf` or `dgem-weights:latest`)
 * **Size**: `~26 GB` compressed.
-* **Weights**: NVFP4 weights pre-baked into `/opt/dgemma/weights`, so no weight download at boot. The larger image pull replaces it; cold start for this variant has not been measured yet (see [Path to Production §5](path-to-production.md#5-cold-start-options-for-scale-to-zero-deployments)).
+* **Weights**: NVFP4 weights pre-baked into `/opt/dgemma/weights`, so no weight download at boot. On Cloud Run the first pull of this ~26 GB image took over 12 minutes, so prefer the lean image with Direct VPC egress there (see [Path to Production §5](path-to-production.md#5-cold-start-options-for-scale-to-zero-deployments)); use this variant for offline hosts.
 * **Pinned URI**: `us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:56baadf@sha256:893f45a29e774bcda67ec66574f6b084c878795f95ecd9301a9d424cd726d36a`
 
 ---

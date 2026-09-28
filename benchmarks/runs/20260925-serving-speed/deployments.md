@@ -12,6 +12,11 @@
 | 00:16–00:19 (09-26) | Cloud Run `dgemma` → revision `dgemma-00031-47c` | Direct VPC egress (`--network default --subnet default --vpc-egress all-traffic`) | Weight copy 403 s → **83 s**; container start → warmed **~2.5 min** (was ~7.5); text/4-sample/image decisions and gateway→cloudrun verified | Revision `00030-qkl` |
 | 00:10 (09-26) | Secret Manager `dgemma-hf-token` | Version 2 added (rotated token), version 1 disabled | Read via `:latest` on next revision/cold start (00031 uses v2) | — |
 
+| 09-27 20:00 – 09-28 14:55 | Canaries (Vertex G4 endpoints + Cloud Run `dgemma-canary`, all deleted) | Side-by-side validation of the upstream-based image; four serving regressions fixed | See [`20260927-image-parity`](../20260927-image-parity/README.md) | — |
+| 09-28 14:40–14:51 | Vertex `<endpoint-id>` | Image `504638d` deployed next to `ab208dd` at 0%, switched to 100%, old model undeployed | Contract re-checked on the prod endpoint | Redeploy the previous model resource (~15 min) |
+| 09-28 14:20 | Cloud Run `dgemma` → revision `00032` | Image `504638d` (no-traffic tag, verified, then 100%) | Contract identical | Revision `00031` |
+| 09-28 14:41–14:52 | Cloud Run `dgemma-gateway` → revision `00050` | Rebuilt from `main` (PRs #5–#11), `DGEM_GATEWAY_HOSTS` set, no-traffic tag then 100% | Backend config, all backends, MCP, IAP custom domain | Revision `00047` |
+
 Follow-ups:
 - ~~Rotate the Hugging Face token~~ done (version 2).
 - ~~Cloud Run health lacks `warmed`~~ not a bug: the earlier check ran before warmup finished; later checks show
