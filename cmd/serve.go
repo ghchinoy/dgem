@@ -79,6 +79,9 @@ func init() {
 	serveCmd.Flags().DurationVar(&serveGPUIdleTTL, "gpu-idle-ttl", 3*time.Hour, "Duration to keep the upstream Cloud Run GPU warm after the last decision or warmup (also configurable via DGEM_GPU_IDLE_TTL / GPU_IDLE_TTL)")
 	serveCmd.Flags().StringVar(&serveDefaultBackend, "default-backend", "vertex_first", "Default upstream inference backend: 'vertex_first' (Vertex primary + Cloud Run failover), 'vertex', 'cloudrun', or 'local' (env: DGEM_DEFAULT_BACKEND)")
 	serveCmd.Flags().StringVar(&serveLocalURL, "local-url", "", "Local diffgemma endpoint URL (e.g. http://127.0.0.1:8080/v1; env: DGEM_LOCAL_URL)")
+	serveCmd.Flags().StringVar(&serveBackendsFlag, "backends", "", "Comma-separated backend allow-list (vertex_first, vertex, cloudrun, local); default: derived from the configured URLs (env: DGEM_BACKENDS)")
+	serveCmd.Flags().BoolVar(&serveAdminAPI, "enable-admin-api", false, "Allow POST /api/backend-config and /api/vertex/deploy|teardown (changes gateway-wide settings and Vertex deployments; env: DGEM_ADMIN_API=1)")
+	serveCmd.Flags().StringVar(&serveAllowedVertexFlag, "allowed-vertex-endpoints", "", "Extra Vertex endpoint IDs/URLs a request may select via vertex_url; the configured endpoint is always allowed (env: DGEM_ALLOWED_VERTEX_ENDPOINTS)")
 	serveCmd.Flags().BoolVar(&serveLocalMode, "local", false, "Run gateway targeting local diffgemma (Apple Silicon Metal) without cloud failover (env: DGEM_SERVE_LOCAL)")
 	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'; env: DGEM_CASCADE_MODEL)")
 	serveCmd.Flags().StringVar(&serveCascadeModels, "cascade-models", DefaultCascadeGeminiModels, "Comma-separated list of selectable Stage-2 Vertex AI Gemini 3.x models exposed in the API & Web Studio (env: DGEM_CASCADE_MODELS)")
@@ -610,12 +613,22 @@ func resolveBackendTargetFromParams(ctx context.Context, requestedMode, requeste
 	locURL := serveLocalURL
 	backendConfigMu.RUnlock()
 
+	available := configuredBackends()
 	mode := strings.ToLower(strings.TrimSpace(requestedMode))
-	if mode == "" {
+	if mode != "" {
+		// Explicit request (header, query, JSON body or MCP argument): reject unknown or disabled backends
+		// instead of silently routing somewhere else.
+		if err := checkRequestedBackend(mode, available); err != nil {
+			return mode, "", err
+		}
+	} else {
 		mode = strings.ToLower(strings.TrimSpace(defBackend))
+		if !containsString(available, mode) && len(available) > 0 {
+			mode = available[0]
+		}
 	}
-	if mode != "vertex" && mode != "cloudrun" && mode != "vertex_first" && mode != "local" {
-		mode = "vertex_first"
+	if err := checkVertexOverride(requestedVertexURL, defVertexURL); err != nil {
+		return mode, "", err
 	}
 
 	if mode == "local" {
@@ -907,6 +920,31 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	if env := os.Getenv("DGEM_BACKENDS"); env != "" && !cmd.Flags().Changed("backends") {
+		serveBackendsFlag = env
+	}
+	if !cmd.Flags().Changed("enable-admin-api") && envBool("DGEM_ADMIN_API") {
+		serveAdminAPI = true
+	}
+	if env := os.Getenv("DGEM_ALLOWED_VERTEX_ENDPOINTS"); env != "" && !cmd.Flags().Changed("allowed-vertex-endpoints") {
+		serveAllowedVertexFlag = env
+	}
+	defaultExplicit := cmd.Flags().Changed("default-backend") || os.Getenv("DGEM_DEFAULT_BACKEND") != ""
+	explicitBackends, err := validateBackendSetup(serveVertexURL, viper.GetString("url"), serveLocalURL, serveLocalMode, serveDefaultBackend, defaultExplicit)
+	if err != nil {
+		return err
+	}
+	serveExplicitBackends = explicitBackends
+	if serveAllowedVertexExtras, err = parseAllowedVertexEndpoints(serveAllowedVertexFlag); err != nil {
+		return err
+	}
+	if avail := configuredBackends(); !containsString(avail, serveDefaultBackend) && len(avail) > 0 {
+		if defaultExplicit && serveExplicitBackends == nil {
+			fmt.Fprintf(os.Stderr, "warning: --default-backend %q is not available (configured: %s); using %q\n", serveDefaultBackend, strings.Join(avail, ","), avail[0])
+		}
+		serveDefaultBackend = avail[0]
+	}
+
 	shutdownTracer := initGatewayTracer(context.Background())
 	defer func() {
 		_ = shutdownTracer(context.Background())
@@ -936,6 +974,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	mux.HandleFunc("/api/backend-config", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodPost {
+			// POST changes gateway-wide settings for every user; per-request routing uses X-DGem-Backend.
+			if !requireAdminAPI(w) {
+				return
+			}
 			var body struct {
 				DefaultBackend      string   `json:"default_backend"`
 				VertexURL           string   `json:"vertex_url"`
@@ -955,7 +997,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 				return
 			}
 			backendConfigMu.Lock()
-			if body.DefaultBackend == "vertex_first" || body.DefaultBackend == "vertex" || body.DefaultBackend == "cloudrun" || body.DefaultBackend == "local" {
+			if body.DefaultBackend != "" {
+				backendConfigMu.Unlock()
+				if err := checkRequestedBackend(body.DefaultBackend, configuredBackends()); err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+				backendConfigMu.Lock()
 				serveDefaultBackend = body.DefaultBackend
 			}
 			if body.VertexURL != "" || body.DefaultBackend == "cloudrun" || body.DefaultBackend == "vertex_first" {
@@ -976,7 +1025,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 		defB := serveDefaultBackend
 		vxURL := serveVertexURL
 		locURL := serveLocalURL
-		locMode := serveLocalMode
 		defCascade := SanitizeCascadeModel("")
 		cascadeList := GetConfiguredCascadeModels()
 		backendConfigMu.RUnlock()
@@ -986,7 +1034,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		proj := detectGCPProjectID()
 		vSt := inspectVertexEndpointState(r.Context(), vxURL)
 
-		availableBackends := deriveAvailableBackends(vxURL, viper.GetString("url"), locURL, locMode)
+		availableBackends := configuredBackends()
 		defBValid := false
 		for _, b := range availableBackends {
 			if b == defB {
@@ -1038,6 +1086,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"available_backends":    availableBackends,
+			"admin_api":             serveAdminAPI,
 			"default_backend":       defB,
 			"cloudrun_url":          viper.GetString("url"),
 			"vertex_url":            vxURL,
@@ -1059,6 +1108,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "use POST"})
+			return
+		}
+		if !requireAdminAPI(w) {
 			return
 		}
 		tok := FetchGCPAccessToken()
@@ -1131,6 +1183,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "use POST"})
+			return
+		}
+		if !requireAdminAPI(w) {
 			return
 		}
 		tok := FetchGCPAccessToken()

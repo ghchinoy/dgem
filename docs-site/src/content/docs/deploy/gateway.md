@@ -23,6 +23,23 @@ Warm latencies are in [Production on Vertex AI](/dgem/deploy/vertex/#what-you-ge
 [Deploy on Cloud Run](/dgem/deploy/cloud-run/#what-you-get). `GET /api/backend-config` lists the backends the gateway is
 configured for (`available_backends`); the Studio hides the backend switcher when only one is configured.
 
+## Restrict backends and admin actions
+
+| Setting | Default | Effect |
+| :--- | :--- | :--- |
+| `--backends vertex_first,cloudrun,local` (`DGEM_BACKENDS`) | derived from the configured URLs | Explicit allow-list. Startup fails if a listed backend lacks its URL or `--default-backend` is not in the list. |
+| `--enable-admin-api` (`DGEM_ADMIN_API=1`) | **off** | Allows `POST /api/backend-config` (gateway-wide default backend, Vertex URL, local URL) and `POST /api/vertex/deploy` / `teardown`. Off: these return `403`, and the Studio hides endpoint management. |
+| `--allowed-vertex-endpoints <id,...>` (`DGEM_ALLOWED_VERTEX_ENDPOINTS`) | none | Extra Vertex endpoints a request may select with `vertex_url` / `X-DGem-Vertex-Url`. The configured endpoint is always allowed; any other returns `400`. |
+
+Requests naming an unknown backend, or one that is not enabled, get `400` with the list of available backends
+(HTTP header, query, JSON body and MCP alike); a request without a backend uses the gateway default. The Studio's
+backend menu is per browser and sends `X-DGem-Backend` with each request; only an admin-enabled gateway lets it
+change the default for everyone.
+
+Keep the admin API off on shared gateways: with it on, any user who passes IAP can change routing for all users
+or deploy and tear down the Vertex endpoint with the gateway's service account. Manage endpoints with
+[`deploy_vertex_endpoint.sh`](/dgem/deploy/vertex/) instead, or run a separate admin-only gateway.
+
 ## Choose a backend per request
 
 | Surface | How |
@@ -70,6 +87,8 @@ GATEWAY_TAG=candidate \
   `ALLOW_NO_VERTEX=1` (Cloud Run only).
 - `DGEM_GATEWAY_HOSTS`: extra hostnames (for example a custom domain) the gateway treats as its own for IAM token
   handling. `*.run.app` and Vertex endpoints are recognised automatically.
+- `DGEM_BACKENDS`, `DGEM_ALLOWED_VERTEX_ENDPOINTS` and `DGEM_ADMIN_API=1` are passed through when set
+  ([restrictions](#restrict-backends-and-admin-actions)).
 - `GATEWAY_TAG`: deploy as a tagged revision with **no traffic**, verify it at `https://<tag>---<gateway-host>`,
   then `gcloud run services update-traffic dgemma-gateway --to-tags=<tag>=100`. Roll back by moving traffic to
   the previous revision.
