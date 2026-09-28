@@ -115,11 +115,14 @@ image: ## Build and push public dgem container (weights pulled on startup) to dg
 	@echo "==> Submitting Cloud Build for dgem (lean base) in project dgem-diffusiongemma..."
 	gcloud builds submit deploy/cloudrun \
 		--project=dgem-diffusiongemma \
-		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest" \
 		--tag="us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$$(git rev-parse --short HEAD)" \
 		--timeout=2400 \
 		--machine-type=e2-highcpu-32
 	@rm -f deploy/cloudrun/dgem
+	@# gcloud builds submit only honours one --tag; move :latest separately.
+	gcloud artifacts docker tags add \
+		"us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:$$(git rev-parse --short HEAD)" \
+		"us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:latest"
 
 image-weights: ## Build and push self-contained dgem-weights container (baked NVFP4 weights) to dgem-diffusiongemma
 	@echo "==> Submitting Cloud Build for dgem-weights (baked NVFP4) in project dgem-diffusiongemma..."
