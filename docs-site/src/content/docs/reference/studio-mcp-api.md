@@ -77,7 +77,7 @@ For every question evaluated in the single forward pass (`steps=1, think=0`), De
 Low hesitation is a strong signal but not a guarantee; option order can hide doubt. See [Confidence Beyond Shannon (IDC)](/dgem/confidence-beyond-shannon/). The helper that computes hesitation lives in `studio/src/hesitation.ts`.
 
 ### 2.2b Concepts Walkthrough (Plain-Language)
-The **Concepts** tab is a self-serve, jargon-light introduction with five tabs: *What's a decision model?*, *One pass vs. word-by-word*, *When to trust an answer* (hesitation + an interactive IDC order-check demo), *Built-in guardrails*, and a *Glossary* (basics first, technical names collapsed). Simulations are labelled as illustrative. A **Presenter mode** toggle shows an optional talk track for live demos. A standalone copy (without the IDC demo and glossary) is published at [`visualizer.html`](https://github.com/ghchinoy/dgem/blob/main/docs-site/public/visualizer.html).
+The **Concepts** tab is a self-serve, jargon-light introduction with five tabs: *What's a decision model?*, *One pass vs. word-by-word*, *When to trust an answer* (hesitation + an interactive IDC order-check demo), *Built-in guardrails*, and a *Glossary* (basics first, technical names collapsed). Simulations are labelled as illustrative. A **Presenter mode** toggle shows an optional talk track for live demos. A standalone copy (without the IDC demo and glossary) is published at [`visualizer.html`](/dgem/visualizer.html).
 
 ### 2.3 Interactive Multimodal `SigLIP` Bounding Box Canvas (`EXP-09`)
 When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is selected:
@@ -126,11 +126,21 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
       "command": "/path/to/dgem/bin/dgem",
       "args": [
         "mcp"
-      ]
+      ],
+      "env": {
+        "DGEM_VERTEX_URL": "<ENDPOINT_ID>",
+        "GCP_PROJECT_NUMBER": "<PROJECT_NUMBER>",
+        "DGEM_REMOTE_URL": "https://<CLOUD_RUN_URL>/v1"
+      }
     }
   }
 }
 ```
+
+The MCP server runs inside your agent and calls the endpoints directly with ADC tokens. It needs to know where they
+are: `DGEM_VERTEX_URL` (with `GCP_PROJECT_NUMBER` for a bare endpoint ID) for Vertex AI, and `DGEM_REMOTE_URL` (or
+`-u`) for the Cloud Run `/v1` URL used by `cloudrun` and `vertex_first` failover. Without them, requests go to
+`http://127.0.0.1:8080/v1`. If a gateway is already deployed, Option A is simpler.
 
 #### Option C: Direct Streamable HTTP (`dgem serve` on localhost)
 ```json
@@ -158,16 +168,87 @@ When a `multimodal/*` policy (`bbox_localization`, `bbox_multi_object_detr`) is 
 }
 ```
 
+`--local` sends every call to the `diffgemma` engine at `http://127.0.0.1:8080/v1` (change it with `-u`), with no
+cloud credentials or fallback. Start the engine first (`make serve`); see [Run on a laptop](/dgem/deploy/laptop/).
+
+#### opencode
+
+opencode uses its own config format (`~/.config/opencode/opencode.json` or a project `opencode.json`). Any of the
+options above works; for example, Option D:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "dgem-local": {
+      "type": "local",
+      "command": ["/path/to/dgem/bin/dgem", "mcp", "--local"],
+      "enabled": true
+    }
+  }
+}
+```
+
+For Option A use `"command": ["/path/to/dgem/bin/dgem", "mcp", "--remote", "https://<your-dgem-gateway>/mcp"]`.
+Tools appear in opencode as `dgem-local_decide_custom_questions` and so on. Restart opencode after rebuilding
+`bin/dgem`: each session keeps its own `dgem mcp` process.
+
 ### 3.2 Complete Catalog of MCP Tools Exposed by `dgem`
 
 | MCP Tool Name | Input Arguments | Output Payload & Purpose |
 | :--- | :--- | :--- |
-| **`get_health_and_gpu_status`** | `{}` | Returns `gateway_healthy`, `gpu_available`, `gpu_state` (`warm_and_ready`, `warming_up`, `scaled_to_zero`), `seconds_since_last_read`, `estimated_wake_seconds`, `gpu_tier`, and `templates_available`. Agents call this first to check if the Cloud Run GPU is warm. |
+| **`get_health_and_gpu_status`** | `{"backend": "vertex_first\|vertex\|cloudrun\|local"}` (optional) | Returns `gateway_healthy`, `gpu_available`, `gpu_state` (`warm_and_ready`, `warming_up`, `scaled_to_zero`), `active_backend`, `seconds_since_last_read`, `estimated_wake_seconds`, `gpu_tier`, and `templates_available` for the selected backend (the server default if omitted). Agents call this first to check if the GPU is warm. |
 | **`warmup_gpu`** | `{"wait_for_ready": true \| false}` | Triggers a scale-from-zero wakeup (`0 -> 1` instance) on the Cloud Run GPU backend. Set `wait_for_ready: false` to start streaming the 17.53 GiB safetensors over GCS FUSE asynchronously while the agent performs other work. |
-| **`list_policy_templates`** | `{"category": "core" \| "calibration" \| "multimodal" \| "rerank"}` | Lists all 26+ executable `.json.tmpl` decision policies, their required `variables`, and `sample_vars`. |
-| **`decide_policy`** | `{"template": "support_triage", "variables": {...}, "image": "...", "backend": "vertex_first\|vertex\|cloudrun\|local", "vertex_url": "...", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}` | Executes any named `.json.tmpl` policy in $O(1)$ forward passes on `vertex_first` (default), `vertex`, `cloudrun`, or `local` (Apple Silicon Metal), with optional Stage 2 Gemini Cascade (`gemini-3.8-flash`), returning `answers`, restricted-softmax `probabilities`, per-slot `entropy`, `backend_used`, and `wall_time_ms`. |
-| **`decide_custom_questions`** | `{"context": "...", "questions": [{"id": "...", "type": "boolean\|choice\|score", "question": "...", "options": [...]}], "backend": "vertex_first\|vertex\|cloudrun\|local", "vertex_url": "...", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}` | Evaluates an ad-hoc multi-slot decision schema dynamically constructed by the calling agent in 1 forward pass—the MCP equivalent of `POST /v1/systemone`—without needing a `.json.tmpl` file on disk. |
+| **`list_policy_templates`** | `{"category": "core" \| "calibration" \| "multimodal" \| "rerank"}` (optional) | Lists the executable `.json.tmpl` decision policies found in the templates directory, with their required `variables` and `sample_vars`. |
+| **`decide_policy`** | `{"template": "support_triage", "variables": {...}, "image": "...", "backend": "vertex_first\|vertex\|cloudrun\|local", "vertex_url": "...", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash", "expected_answers": {...}, "suggest_expansions": false, "expansion_entropy": 0.35}` | Executes any named `.json.tmpl` policy in $O(1)$ forward passes on `vertex_first` (default), `vertex`, `cloudrun`, or `local` (Apple Silicon Metal), with optional Stage 2 Gemini Cascade (`gemini-3.8-flash`) and taxonomy expansion. Returns `answers` (restricted-softmax `probabilities` per slot), `diagnostics` (per-slot `entropy`), and the summary fields in [3.3](#33-reading-decide-tool-results). |
+| **`decide_custom_questions`** | `{"context": "...", "questions": [{"id": "...", "type": "boolean\|choice\|score", "question": "...", "options": [...]}], "backend": "vertex_first\|vertex\|cloudrun\|local", "vertex_url": "...", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash", "expected_answers": {...}, "suggest_expansions": false, "expansion_entropy": 0.35}` | Evaluates an ad-hoc multi-slot decision schema dynamically constructed by the calling agent in 1 forward pass—the MCP equivalent of `POST /v1/systemone`—without needing a `.json.tmpl` file on disk. `options` is required for `choice` slots (at most 26). Returns the same fields as `decide_policy`. |
 | **`locate_bounding_boxes`** | `{"image": "<url-or-data-uri>", "target": "checkout button", "backend": "vertex_first\|vertex\|cloudrun", "vertex_url": "..."}` | Executes single-pass `SigLIP` 2D spatial localization (`EXP-09`), returning both `softmax_expectation_box_1000` ($\hat{c}_m = \sum_k v_k p_{m,k}$) and `discrete_argmax_box_1000` `[ymin, xmin, ymax, xmax]` in `[0, 1000]` coordinates plus per-edge occlusion entropy (`coordinate_entropy_nats`). (Note: `local` Metal is text-only and does not support SigLIP vision). |
+
+### 3.3 Reading decide tool results
+
+`decide_policy` and `decide_custom_questions` return the same top-level fields as `POST /api/decide`, apart from
+`trace_id` and `trace_spans` (MCP calls aren't traced through the gateway root span; see
+[Observability](/dgem/operate/observability/)).
+
+| Field | Meaning |
+| :--- | :--- |
+| `answers.<slot>` | The chosen value (`label`, plus `choice` or `score`), its `confidence`, the `probabilities` of every allowed answer, and `agreement` / `stderr` across samples. |
+| `diagnostics.questions.<slot>.entropy` | Shannon entropy of that slot in nats. Convert it to **Hesitation %** by dividing by $\ln K$ ($K$ = number of allowed answers); see [2.2](#22-answer-cards-probabilities--hesitation). |
+| `max_entropy` | The highest slot entropy in the request (nats). Use it as a single "is anything uncertain?" signal, for example to decide whether to ask a person or escalate with `cascade_mode: "entropy"`. |
+| `wall_time_ms` | Total time spent in the tool call. |
+| `gpu_forward_ms` | Time of the successful model call (the round trip to the engine). |
+| `cold_start_wait_ms` | Time spent waiting for a scaled-to-zero backend to wake (retries and backoff), `0` when warm. |
+| `warmup_attempts` | Number of attempts, including retries while waking. |
+| `backend_target`, `upstream_url`, `model` | Where the decision ran: `vertex`, `cloudrun` or `local`, and the upstream URL and model. |
+| `cascade`, `suggested_expansions` | Present only when `cascade_mode` or `suggest_expansions` is used. |
+
+`decision` repeats `answers` and `diagnostics` in the raw engine format, for clients that want the unmodified
+response.
+
+### 3.4 Troubleshooting MCP
+
+| Symptom | Cause and fix |
+| :--- | :--- |
+| Gemini-backed clients (opencode, Gemini CLI) fail on **every** request with `functionDeclaration parameters.questions schema specified other fields alongside any_of` | The `dgem` binary predates the Gemini-safe tool schemas (issue #12). Rebuild (`go build -o bin/dgem .`) and restart every client session: each session keeps its own `dgem mcp` process, so old ones keep running the old binary. For a hosted gateway, redeploy it. |
+| `connection refused` on `127.0.0.1:8080` with `dgem mcp --local` | The local `diffgemma` engine isn't running. Start it with `make serve` and check `curl -s http://127.0.0.1:8080/v1/models`. |
+| The first local call takes 15–40 seconds | Expected on Apple Silicon: the first request after the engine starts pays for prefill (12–33 s in our runs). Later calls reuse the cached prompt prefix. |
+| `max_entropy` or `gpu_forward_ms` is always `0` | The binary or hosted gateway predates issue #14. Rebuild or redeploy. |
+| Calls fail with `HTTP 429` or take minutes | A Cloud Run or Vertex backend is waking from zero. Call `get_health_and_gpu_status`, and `warmup_gpu` with `wait_for_ready: false` before a batch. |
+| Plain `dgem mcp` calls go to `127.0.0.1:8080` | No endpoints were configured; see Option B, or use `--remote` (Option A). |
+
+To check what a `dgem` binary advertises without an agent, pipe `initialize` and `tools/list` into it (the
+`sleep` keeps stdin open long enough for the reply; the server exits when stdin closes):
+
+```bash
+{ printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; sleep 2; } \
+  | ./bin/dgem mcp --local | jq -c 'select(.id == 2) | .result.tools[].name'
+```
+
+It should list the six tools: `decide_custom_questions`, `decide_policy`, `get_health_and_gpu_status`,
+`list_policy_templates`, `locate_bounding_boxes` and `warmup_gpu`.
 
 ---
 
@@ -177,7 +258,7 @@ Any service or script can query `dgem serve` (`https://<your-dgem-gateway>` or l
 
 | Endpoint | Method | Description |
 | :--- | :---: | :--- |
-| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders `{template}.json.tmpl` (or inline `custom_template`) with `{"variables": {...}, "backend": "vertex_first", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}`, runs 1-pass `DiffusionGemma` readout, and returns `answers`, `diagnostics`, `backend_used`, `max_entropy`, `gpu_forward_ms`, and `trace_spans`. |
+| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders `{template}.json.tmpl` (or inline `custom_template`) with `{"variables": {...}, "backend": "vertex_first", "cascade_mode": "off\|entropy\|on_miss", "cascade_threshold": 0.35, "cascade_model": "gemini-3.8-flash"}`, runs 1-pass `DiffusionGemma` readout, and returns `answers`, `diagnostics`, `backend_target`, `max_entropy`, `gpu_forward_ms`, `cold_start_wait_ms`, and `trace_spans`. |
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` multipart image + JSON `state`/`questions` schema evaluation) across Vertex AI (`/invoke/v1/systemone`) or Cloud Run GPU (`/v1/systemone`). Returns HTTP 501 on `local` backend. |
 | **`/api/templates`** | `GET` | Returns the full JSON catalog of discovered `.json.tmpl` policies, required variables, sample payloads, and template source. |
 | **`/api/status` & `/api/backend-config`** | `GET` | Returns real-time health, `available_backends` (`["vertex_first", "vertex", "cloudrun", "local"]`), and replica state for Cloud Run GPU (`dgemma`), Vertex AI Dedicated Endpoint (`<endpoint-id>`), and local diffgemma (Apple Silicon Metal). |

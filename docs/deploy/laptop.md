@@ -87,8 +87,9 @@ per-question probabilities and the trace waterfall.
 }
 ```
 
-`--local` targets the engine on your machine only (no cloud credentials or fallback). Other MCP setups:
-[Studio, MCP and HTTP API](../reference/studio-mcp-api.md).
+`--local` targets the engine on your machine only (no cloud credentials or fallback), so start the engine first.
+opencode setup, other MCP clients, and troubleshooting:
+[Studio, MCP and HTTP API](../reference/studio-mcp-api.md#3-model-context-protocol-mcp-server-dgem-mcp--post-mcp).
 
 ## Next
 

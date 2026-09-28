@@ -104,7 +104,7 @@ and the container serves the adapter on its port, in front of its own structured
 
 ## 4. HTTP Gateway Endpoints (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)
 
-Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts backend selection via HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun`, query parameter `?backend=vertex_first`, or JSON body field `"backend": "vertex_first"`, and returns the **`X-DGem-Backend-Used: vertex | cloudrun`** response header.
+Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts backend selection via HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun | local`, query parameter `?backend=vertex_first`, or JSON body field `"backend": "vertex_first"`, and returns the **`X-DGem-Backend-Used: vertex | cloudrun | local`** response header (`"backend_target"` in JSON bodies).
 
 | Route | Method | Description |
 | :--- | :---: | :--- |
@@ -118,15 +118,20 @@ Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts
 
 ## 5. Model Context Protocol (`MCP`) Tool Parameters (`POST /mcp` & `dgem mcp`)
 
-The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate_bounding_boxes`) accept the following backend routing and Stage 2 Gemini Cascade parameters:
+The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate_bounding_boxes`) accept the following backend routing parameters. The two decide tools also accept the Stage 2 Gemini Cascade and taxonomy expansion parameters:
 
 | MCP Argument | Type | Allowed Values / Default | Description |
 | :--- | :--- | :--- | :--- |
-| **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` | Selects the GPU execution target (`vertex_first` routes to warm Vertex AI Dedicated Endpoint with automatic Cloud Run failover). |
+| **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` \| `"local"` | Selects the execution target (`vertex_first` routes to warm Vertex AI Dedicated Endpoint with automatic Cloud Run failover; `local` is a `diffgemma` engine on your machine and is the default under `dgem mcp --local`). `locate_bounding_boxes` does not support `local`. |
 | **`vertex_url`** | `string` | `""` *(optional)* | Custom Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. |
-| **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`). |
+| **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`; `"on_miss"` escalates slots that disagree with `expected_answers`). |
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
 | **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
+| **`expected_answers`** | `object` | `{}` *(optional)* | Map of slot id to expected value, used by `cascade_mode: "on_miss"`. |
+| **`suggest_expansions`** | `boolean` | `false` | Adds an `other_unclassified` option to `choice` slots and proposes new options when a slot is unclassified or hesitant ([taxonomy discovery](/dgem/policies/taxonomy-discovery/)). |
+| **`expansion_entropy`** | `number` | `0.35` *(nats)* | Entropy threshold on `choice` slots that triggers an expansion proposal. |
+
+The response fields of the decide tools are described in [Studio, MCP and HTTP API](/dgem/reference/studio-mcp-api/#33-reading-decide-tool-results).
 
 ---
 
@@ -142,7 +147,8 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 | **`DGEM_CASCADE_MODEL`** | `gemini-3.8-flash` | Default Gemini model for Stage 2 escalation. |
 | **`DGEM_CASCADE_MODELS`** | `gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite` | List of enabled Gemini cascade models. |
 | **`DGEM_GATEWAY_HOSTS`** | `""` | Comma-separated extra hostnames recognized as remote GCP endpoints for token injection. |
-| **`DGEM_REMOTE_URL`** | `""` | Remote gateway endpoint used by `dgem mcp --remote`. |
+| **`DGEM_REMOTE_URL`** | `""` | Upstream `/v1` URL used by plain `dgem mcp` (no `--local` / `--remote`); overrides `-u`. |
+| **`DGEM_MCP_LOCAL`** | `""` | Set to `1` or `true` to behave like `dgem mcp --local`. |
 | **`GCP_PROJECT`** | `""` | Google Cloud project ID (falls back to GCP metadata server). |
 | **`GCP_PROJECT_NUMBER`** | `""` | Google Cloud numeric project ID (detected automatically if on GCP). |
 | **`GCP_REGION`** | `us-central1` | Default Google Cloud region for services and endpoints. |

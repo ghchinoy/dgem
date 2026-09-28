@@ -5,7 +5,9 @@ description: "How to analyze and interpret dgem.gateway.decide, dgem.gpu.orchest
 
 # OpenTelemetry Trace Waterfall & Cloud Observability Guide
 
-Every decision request handled by **`dgemma-gateway`** (`POST /api/decide`, `POST /api/decide/{template}`, MCP `decide_with_template`, and the Decision Studio Web UI) is instrumented with **OpenTelemetry** (`cmd/otel.go` and `cmd/serve.go`) and exported to **Google Cloud Trace**, **Cloud Run Structured Logging**, and the gateway's built-in **Trace Ring Buffer (`GET /api/traces`)**.
+Every decision request handled by **`dgemma-gateway`** (`POST /api/decide`, `POST /api/decide/{template}`, and the Decision Studio Web UI) is instrumented with **OpenTelemetry** (`cmd/otel.go` and `cmd/serve.go`) and exported to **Google Cloud Trace**, **Cloud Run Structured Logging**, and the gateway's built-in **Trace Ring Buffer (`GET /api/traces`)**.
+
+MCP decide tools (`decide_policy`, `decide_custom_questions`) are traced differently. They record the `dgem.gpu.orchestrate` / `dgem.gpu.forward_pass` spans (and `dgem.taxonomy.expand` when used), but not the `dgem.gateway.decide` root span, so their traces have no gateway root and they don't return `trace_id` or `trace_spans`. Their responses do include the same `max_entropy`, `gpu_forward_ms`, and `cold_start_wait_ms` summary fields as `/api/decide`.
 
 This guide explains what `dgem.gateway.decide` and `dgem.gpu.orchestrate` measure, why they exhibit two very different latency regimes (cold start vs. warm forward pass), how child spans segment each GPU pass into `network_and_auth` $\to$ `prefill` $\to$ `denoise`, and where to inspect them in Google Cloud Observability.
 

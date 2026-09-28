@@ -107,14 +107,17 @@ If you use **Gemini CLI**, **Claude Code**, or **Cursor**, you can connect the `
       "command": "/path/to/dgem/bin/dgem",
       "args": [
         "mcp",
-        "-u",
-        "https://<your-dgem-gateway>/v1",
-        "--gcp-auth"
+        "--remote",
+        "https://<your-dgem-gateway>/mcp"
       ]
     }
   }
 }
 ```
+
+`--remote` bridges your agent to the gateway's MCP endpoint with automatic ADC auth. To use a model on your own
+machine instead, use `"args": ["mcp", "--local"]`. Other clients (including opencode) and troubleshooting:
+[Studio, MCP and HTTP API](../reference/studio-mcp-api.md#3-model-context-protocol-mcp-server-dgem-mcp--post-mcp).
 
 ### 2. Give Your Agent This Prompt
 
@@ -166,7 +169,7 @@ curl -sS "https://<your-dgem-gateway>/api/decide/calibration/chaos_nli" \
       "premise": "All four quarterly regional budgets reached between 50% and 75% of the cap.",
       "hypothesis": "Every regional budget met the full annual cap."
     }
-  }' | jq '{answers, backend_used, cascade}'
+  }' | jq '{answers, backend_target, max_entropy, cascade}'
 ```
 
 ---
