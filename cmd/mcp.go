@@ -1554,14 +1554,8 @@ func buildMCPServer() *mcp.Server {
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
-		readoutMs := time.Since(start).Milliseconds()
-		if backendTarget == "cloudrun" {
-			MarkGPUWarm(readoutMs)
-		} else if backendTarget == "vertex" {
-			RecordVertexReadoutLatency(readoutMs)
-		} else if backendTarget == "local" {
-			RecordLocalReadoutLatency(readoutMs)
-		}
+		summary := summarizeDecision(resp, stats, time.Since(start))
+		recordBackendReadoutLatency(backendTarget, summary.GpuForwardMs)
 
 		var cascadeSummary *CascadeExecutionSummary
 		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
@@ -1598,17 +1592,6 @@ func buildMCPServer() *mcp.Server {
 			expandSpan.End()
 		}
 
-		maxEntropy := 0.0
-		for _, q := range resp.Diagnostics.Questions {
-			if q.Entropy > maxEntropy {
-				maxEntropy = q.Entropy
-			}
-		}
-		for _, a := range resp.Answers {
-			if a.Entropy > maxEntropy {
-				maxEntropy = a.Entropy
-			}
-		}
 		return nil, GatewayDecideResponse{
 			Template:            cleanID,
 			Answers:             resp.Answers,
@@ -1616,8 +1599,10 @@ func buildMCPServer() *mcp.Server {
 			Decision:            resp,
 			Cascade:             cascadeSummary,
 			SuggestedExpansions: resp.SuggestedExpansions,
-			MaxEntropy:          maxEntropy,
+			MaxEntropy:          summary.MaxEntropy,
 			WallTimeMs:          time.Since(start).Milliseconds(),
+			GpuForwardMs:        summary.GpuForwardMs,
+			ColdStartWaitMs:     summary.ColdStartWaitMs,
 			WarmupAttempts:      attempts,
 			Model:               stats.Model,
 			BackendTarget:       backendTarget,
@@ -1746,14 +1731,8 @@ func buildMCPServer() *mcp.Server {
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
-		readoutMs := time.Since(start).Milliseconds()
-		if backendTarget == "cloudrun" {
-			MarkGPUWarm(readoutMs)
-		} else if backendTarget == "vertex" {
-			RecordVertexReadoutLatency(readoutMs)
-		} else if backendTarget == "local" {
-			RecordLocalReadoutLatency(readoutMs)
-		}
+		summary := summarizeDecision(resp, stats, time.Since(start))
+		recordBackendReadoutLatency(backendTarget, summary.GpuForwardMs)
 
 		var cascadeSummary *CascadeExecutionSummary
 		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
@@ -1790,12 +1769,6 @@ func buildMCPServer() *mcp.Server {
 			expandSpan.End()
 		}
 
-		maxEntropy := 0.0
-		for _, a := range resp.Answers {
-			if a.Entropy > maxEntropy {
-				maxEntropy = a.Entropy
-			}
-		}
 		return nil, GatewayDecideResponse{
 			Template:            "custom_questions",
 			Answers:             resp.Answers,
@@ -1803,8 +1776,10 @@ func buildMCPServer() *mcp.Server {
 			Decision:            resp,
 			Cascade:             cascadeSummary,
 			SuggestedExpansions: resp.SuggestedExpansions,
-			MaxEntropy:          maxEntropy,
+			MaxEntropy:          summary.MaxEntropy,
 			WallTimeMs:          time.Since(start).Milliseconds(),
+			GpuForwardMs:        summary.GpuForwardMs,
+			ColdStartWaitMs:     summary.ColdStartWaitMs,
 			WarmupAttempts:      attempts,
 			Model:               stats.Model,
 			BackendTarget:       backendTarget,
