@@ -7,6 +7,11 @@ changes, new features. **Patch:** fixes. Images are published to
 a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version). Gateway/CLI-only releases
 (`make release-gateway`) reuse the previous serving images.
 
+## Unreleased
+
+- `bench-intents`: more than 26 candidate intents run as a 2-stage bracket (groups of ≤ 20, top 5 to a final round)
+  instead of being rejected by the server (`--dataset banking77` sends 30).
+
 ## v0.1.2 (2026-09-28)
 
 Gateway and monitoring; serving images unchanged (v0.1.0).

@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ghchinoy/dgem/pkg/client"
 	"github.com/ghchinoy/dgem/pkg/template"
 	"github.com/spf13/cobra"
 )
@@ -96,6 +97,111 @@ type IntentResult struct {
 
 // buildFinalists selects the 2..5 most plausible competing options for Pass-2 tie-breaking
 // using Pass-1's top_logprobs subwords and semantic token overlap.
+// maxChoiceOptions is the server's limit for one choice question (single-letter labels A-Z).
+const maxChoiceOptions = 26
+
+// intentBracketSize and intentBracketKeep: with more than 26 candidate intents, round 1 asks one question per
+// group of at most intentBracketSize options and keeps each group's top intentBracketKeep, and a final round
+// picks among the kept ones (the same 2-stage bracket as `dgem systemone serve`).
+const (
+	intentBracketSize = 20
+	intentBracketKeep = 5
+)
+
+type intentDecideFunc func(vars map[string]interface{}) (*client.StructuredDecisionResponse, *client.RequestStats, error)
+
+// splitBalanced splits opts into ceil(len/size) groups of near-equal size, preserving order.
+func splitBalanced(opts []string, size int) [][]string {
+	n := (len(opts) + size - 1) / size
+	var out [][]string
+	for i := 0; i < n; i++ {
+		lo, hi := i*len(opts)/n, (i+1)*len(opts)/n
+		out = append(out, opts[lo:hi])
+	}
+	return out
+}
+
+// topOptions returns up to k option names from an answer's probabilities, highest first (the chosen option first).
+func topOptions(ans client.QuestionAnswer, group []string, k int) []string {
+	type kv struct {
+		name string
+		p    float64
+	}
+	var ranked []kv
+	for _, o := range group {
+		ranked = append(ranked, kv{o, ans.Probabilities[o]})
+	}
+	chosen := strings.TrimSpace(ans.DisplayValue())
+	for i := range ranked {
+		for j := i + 1; j < len(ranked); j++ {
+			if ranked[j].p > ranked[i].p || (ranked[j].name == chosen && ranked[i].name != chosen) {
+				ranked[i], ranked[j] = ranked[j], ranked[i]
+			}
+		}
+	}
+	var out []string
+	for _, r := range ranked {
+		if len(out) == k {
+			break
+		}
+		out = append(out, r.name)
+	}
+	return out
+}
+
+// decideIntentBracketed runs one decision when the options fit in one question, otherwise a 2-stage bracket.
+// The returned response is the final round's; stats.WallTime sums all rounds.
+func decideIntentBracketed(ctx context.Context, tmplPath string, vars map[string]interface{}, options []string, decide intentDecideFunc) (*client.StructuredDecisionResponse, *client.RequestStats, error) {
+	withOptions := func(opts []string) map[string]interface{} {
+		v := make(map[string]interface{}, len(vars))
+		for k, x := range vars {
+			v[k] = x
+		}
+		v["options"] = opts
+		return v
+	}
+	if len(options) <= maxChoiceOptions {
+		return decide(withOptions(options))
+	}
+	var total time.Duration
+	var finalists []string
+	for _, group := range splitBalanced(options, intentBracketSize) {
+		resp, stats, err := decide(withOptions(group))
+		if err != nil {
+			return nil, nil, fmt.Errorf("bracket round 1: %w", err)
+		}
+		if stats != nil {
+			total += stats.WallTime
+		}
+		finalists = append(finalists, topOptions(intentAnswer(resp), group, intentBracketKeep)...)
+	}
+	resp, stats, err := decide(withOptions(finalists))
+	if err != nil {
+		return nil, nil, fmt.Errorf("bracket final: %w", err)
+	}
+	if stats != nil {
+		stats.WallTime += total
+	}
+	return resp, stats, nil
+}
+
+// intentAnswer returns the intent answer from a response (key "intent", else "answer", else the only answer).
+func intentAnswer(resp *client.StructuredDecisionResponse) client.QuestionAnswer {
+	if resp == nil {
+		return client.QuestionAnswer{}
+	}
+	if a, ok := resp.Answers["intent"]; ok {
+		return a
+	}
+	if a, ok := resp.Answers["answer"]; ok {
+		return a
+	}
+	for _, v := range resp.Answers {
+		return v
+	}
+	return client.QuestionAnswer{}
+}
+
 func buildFinalists(pass1Guess string, topProbs map[string]float64, allOptions []string) []string {
 	seen := make(map[string]bool)
 	var finalists []string
@@ -418,16 +524,17 @@ func runBenchIntents(cmd *cobra.Command, args []string) error {
 					"samples": samplesParam,
 				}
 
-				rendered, err := engine.RenderFile(tmplPath, vars)
-				if err != nil {
-					continue
-				}
-				schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, vars)
-				if err != nil {
-					continue
-				}
-
-				resp, stats, err := c.Decide(ctx, schemaContent, stateContent)
+				resp, stats, err := decideIntentBracketed(ctx, tmplPath, vars, tc.Options, func(v map[string]interface{}) (*client.StructuredDecisionResponse, *client.RequestStats, error) {
+					rendered, err := engine.RenderFile(tmplPath, v)
+					if err != nil {
+						return nil, nil, err
+					}
+					schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, v)
+					if err != nil {
+						return nil, nil, err
+					}
+					return c.Decide(ctx, schemaContent, stateContent)
+				})
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error on case %s: %v\n", tc.ID, err)
 					continue
