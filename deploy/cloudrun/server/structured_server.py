@@ -218,6 +218,8 @@ def parse_schema(value):
     schedule(qs)  # refuses a cycle
     def_samples = int(DEFAULT_SAMPLES) if DEFAULT_SAMPLES.isdigit() else DEFAULT_SAMPLES
     samples = value.get("samples", def_samples)
+    if isinstance(samples, str) and samples.strip().isdigit():  # dgem: template variables arrive as strings
+        samples = int(samples.strip())
     if samples == "auto":
         policy = {
             "mode": "auto",

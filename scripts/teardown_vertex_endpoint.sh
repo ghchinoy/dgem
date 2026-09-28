@@ -11,7 +11,7 @@ if [[ -z "$PROJECT_ID" ]]; then
   exit 1
 fi
 REGION="${GCP_REGION:-us-central1}"
-ENDPOINT_DISPLAY_NAME="${VERTEX_ENDPOINT_NAME:-dgemma-dedicated}"
+ENDPOINT_DISPLAY_NAME="${VERTEX_ENDPOINT_NAME:-dgemma-dedicated-g4}"  # the L4 profile used dgemma-dedicated
 API_BASE="https://${REGION}-aiplatform.googleapis.com/v1beta1"
 TOKEN="$(gcloud auth print-access-token)"
 

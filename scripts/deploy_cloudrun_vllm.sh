@@ -16,7 +16,7 @@ fi
 PROJECT_ID="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
 REGION="${GCP_REGION:-us-central1}"
 SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-dgemma}"
-GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}" # nvidia-l4 or nvidia-rtx-pro-6000
+GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-rtx-pro-6000}" # nvidia-rtx-pro-6000 (tested, vision on) or nvidia-l4 (set DISABLE_MM=1)
 BUCKET="${GCS_BUCKET:-dgem-weights-${PROJECT_ID}}"
 
 # Image resolution: Prefer Artifact Registry image in user's project, fallback to public dgem-diffusiongemma image
@@ -34,6 +34,13 @@ fi
 if [[ -z "$PROJECT_ID" ]]; then
   echo "Error: No Google Cloud Project ID detected."
   echo "Set GCP_PROJECT=<project-id> or run 'gcloud config set project <project-id>'."
+  exit 1
+fi
+
+# The IAM step at the end (setup_cloudrun_iam.sh) grants invoker access to this group; check it up front
+# instead of failing after the deploy.
+if [[ -z "${ALLOW_GROUP:-}" ]]; then
+  echo "Error: ALLOW_GROUP is required (the Google group or user allowed to call the service, e.g. my-team@example.com)." >&2
   exit 1
 fi
 

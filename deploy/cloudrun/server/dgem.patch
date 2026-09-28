@@ -16,17 +16,19 @@
  CANVAS_LEN = 64  # the served canvas length. A request may be narrower.
  CANVAS_STEP = 16  # request widths are multiples of this
  VOCAB = 262144
-@@ -213,7 +216,8 @@
+@@ -213,7 +216,10 @@
                      f"must be among {names}"
                  )
      schedule(qs)  # refuses a cycle
 -    samples = value.get("samples", "auto")
 +    def_samples = int(DEFAULT_SAMPLES) if DEFAULT_SAMPLES.isdigit() else DEFAULT_SAMPLES
 +    samples = value.get("samples", def_samples)
++    if isinstance(samples, str) and samples.strip().isdigit():  # dgem: template variables arrive as strings
++        samples = int(samples.strip())
      if samples == "auto":
          policy = {
              "mode": "auto",
-@@ -432,7 +436,24 @@
+@@ -432,7 +438,24 @@
      return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
  
  
@@ -51,7 +53,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/chat/completions",
          data=json.dumps(body).encode(),
-@@ -441,7 +462,29 @@
+@@ -441,7 +464,29 @@
      return json.load(urllib.request.urlopen(req, timeout=timeout))
  
  
@@ -81,7 +83,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -1201,7 +1244,20 @@
+@@ -1201,7 +1246,20 @@
      return c if isinstance(c, str) else ""
  
  
@@ -102,7 +104,7 @@
      def log_message(self, fmt, *args):
          pass
  
-@@ -1210,10 +1266,14 @@
+@@ -1210,10 +1268,14 @@
          self.send_response(code)
          self.send_header("content-type", "application/json")
          self.send_header("content-length", str(len(body)))
@@ -117,7 +119,7 @@
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1251,6 +1311,7 @@
+@@ -1251,6 +1313,7 @@
  
      def do_POST(self):
          if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
@@ -125,7 +127,7 @@
              return self._json(
                  401,
                  {
-@@ -1276,7 +1337,8 @@
+@@ -1276,7 +1339,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -135,7 +137,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1365,8 @@
+@@ -1303,6 +1367,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -144,7 +146,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1382,12 @@
+@@ -1318,6 +1384,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -157,7 +159,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1487,7 +1557,7 @@
+@@ -1487,7 +1559,7 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -166,7 +168,7 @@
      srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
      threading.Thread(target=srv.serve_forever, daemon=True).start()
      return srv
-@@ -1537,7 +1607,7 @@
+@@ -1537,7 +1609,7 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )

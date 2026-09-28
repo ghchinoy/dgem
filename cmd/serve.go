@@ -328,9 +328,13 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 	// Bare numeric Endpoint ID or projects/.../endpoints/... relative resource name:
 	// Expand to Dedicated Endpoint /invoke/v1/chat/completions URL (requires invokeRoutePrefix="/*" + dedicatedEndpointEnabled=true)
 	if !strings.HasPrefix(v, "http://") && !strings.HasPrefix(v, "https://") {
-		if proj == "" || projNum == "" {
-			return "", fmt.Errorf("expanding bare Vertex Endpoint ID %q requires GCP_PROJECT and GCP_PROJECT_NUMBER (or running on GCP with metadata server)", raw)
+		// The dedicated DNS name needs the project number; the resource path accepts the number too, so a
+		// bare ID never depends on the project ID (a stale GOOGLE_CLOUD_PROJECT used to produce a URL with a
+		// mismatched project and an opaque Vertex 400).
+		if projNum == "" {
+			return "", fmt.Errorf("expanding bare Vertex Endpoint ID %q requires GCP_PROJECT_NUMBER (or running on GCP with the metadata server); alternatively pass the full /invoke URL", raw)
 		}
+		proj = projNum
 		epID := v
 		if strings.HasPrefix(v, "projects/") {
 			parts := strings.Split(strings.TrimSuffix(v, "/"), "/")

@@ -33,6 +33,7 @@ CASES = {
     # name: (path, schema-or-body, kind)
     "triage_s1": ("chat", {"instructions": "Triage the ticket.", "samples": 1, "think": 0, "questions": ss.Q}, None),
     "triage_s4": ("chat", {"instructions": "Triage the ticket.", "samples": 4, "think": 0, "questions": ss.Q}, None),
+    "samples_string": ("chat", {"instructions": "Triage the ticket.", "samples": "4", "think": 0, "questions": ss.Q}, None),
     "default_samples": ("chat", {"instructions": "Triage the ticket.", "think": 0, "questions": ss.Q}, None),
     "mirror_s1": ("chat", {"instructions": "Triage the ticket.", "samples": 1, "think": 0, "questions": ss.Q + ss.MIRROR}, None),
     "think120": ("chat", {"instructions": "Route the request.", "samples": 1, "think": 120, "questions": ss.TAXONOMY}, None),

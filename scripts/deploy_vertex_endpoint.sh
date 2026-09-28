@@ -155,6 +155,19 @@ if [ "${MAX_REPLICAS}" -gt "${MIN_REPLICAS}" ]; then
       \"autoscalingMetricSpecs\": [{\"metricName\": \"aiplatform.googleapis.com/prediction/online/accelerator/duty_cycle\", \"target\": ${AUTOSCALE_DUTY_CYCLE}}]"
 fi
 
+# VERTEX_NEW_TRAFFIC=0 deploys next to the models already on the endpoint without moving traffic (blue/green);
+# shift traffic later with an endpoint trafficSplit update. Default: the new model takes 100%.
+VERTEX_NEW_TRAFFIC="${VERTEX_NEW_TRAFFIC:-100}"
+if [ "${VERTEX_NEW_TRAFFIC}" = "0" ]; then
+  TRAFFIC_JSON=$(curl -sS -H "Authorization: Bearer ${TOKEN}" "${API_BASE}/${ENDPOINT_RESOURCE}" | python3 -c '
+import json, sys
+split = json.load(sys.stdin).get("trafficSplit") or {}
+split["0"] = 0
+print(json.dumps(split))')
+else
+  TRAFFIC_JSON='{"0": 100}'
+fi
+
 echo "==> [3/4] Deploying ${MODEL_RESOURCE} to ${ENDPOINT_RESOURCE} (${MACHINE_TYPE}, ${ACCELERATOR_COUNT}x ${ACCELERATOR_TYPE})..."
 DEPLOY_PAYLOAD=$(cat <<EOF
 {
@@ -172,9 +185,7 @@ DEPLOY_PAYLOAD=$(cat <<EOF
       "maxReplicaCount": ${MAX_REPLICAS}${AUTOSCALE_JSON}
     }
   },
-  "trafficSplit": {
-    "0": 100
-  }
+  "trafficSplit": ${TRAFFIC_JSON}
 }
 EOF
 )

@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -210,7 +211,7 @@ func (c *Client) Decide(ctx context.Context, schemaContent, userStateContent str
 
 	req := ChatCompletionRequest{
 		Messages: []ChatMessage{
-			{Role: "system", Content: schemaContent},
+			{Role: "system", Content: NormalizeSchemaSamples(schemaContent)},
 			{Role: "user", Content: userPayload},
 		},
 		Logprobs:    true,
@@ -244,4 +245,33 @@ type HTTPError struct {
 
 func (e *HTTPError) Error() string {
 	return fmt.Sprintf("server returned error HTTP %d: %s", e.StatusCode, e.Body)
+}
+
+// NormalizeSchemaSamples turns a digit-string "samples" value (template variables such as `-v samples=4`
+// render as strings) into a JSON number. Servers built on the upstream structured server reject "4" with
+// `samples must be a positive count or "auto"`. Any other content is returned unchanged.
+func NormalizeSchemaSamples(schemaContent string) string {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(schemaContent), &m); err != nil {
+		return schemaContent
+	}
+	raw, ok := m["samples"]
+	if !ok {
+		return schemaContent
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return schemaContent // already a number (or "auto" handled below)
+	}
+	s = strings.TrimSpace(s)
+	n, err := strconv.Atoi(s)
+	if err != nil || n < 1 {
+		return schemaContent
+	}
+	m["samples"] = json.RawMessage(strconv.Itoa(n))
+	out, err := json.Marshal(m)
+	if err != nil {
+		return schemaContent
+	}
+	return string(out)
 }
