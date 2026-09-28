@@ -28,7 +28,7 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 
 | ID | Title | Question it answers | Depends on | Priority | Status |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| [`PROP-00`](#prop-00-expose-mirror-tvd-on-all-four-surfaces-enabler) | Expose Mirror TVD on all four surfaces (*enabler*) | Can production use the mirror signal at all? | — | **P0** | Proposed |
+| [`PROP-00`](#prop-00-expose-mirror-tvd-on-all-four-surfaces-enabler) | Expose Mirror TVD on all four surfaces (*enabler*) | Can production use the mirror signal at all? | — | **P0** | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
 | [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (noise floor: ±1–2 items, Brier ±0.02) |
 | [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (met on 231 JevBench items, not on 50) |
 | [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Partly → EXP-14 (entropy gates); mirror gate moves to `PROP-13` |
@@ -41,7 +41,7 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 | [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate (label-shift) adaptation | Can unlabeled target traffic correct for different class frequencies? | — | P2 | Proposed |
 | [`PROP-11`](#prop-11-letter-collision-in-the-mirror) | Letter collision in the mirror | Is the mirror's damage caused by shared letters rather than by a second slot? | — | **P0** | Done → [EXP-15](exp-15-letter-collision.md) (supported) |
 | [`PROP-12`](#prop-12-separate-pass-mirror) | Separate-pass mirror (replaces `PROP-03`) | Does a mirror read in its own pass give a clean order signal? | `PROP-11` | P1 | Done → [EXP-17](exp-17-separate-pass-mirror.md) (supported, small effect) |
-| [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | P1 | **Next** |
+| [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | P1 | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
 | [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | P1 | Proposed |
 | [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Proposed |
 | [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | P1 | Done → [EXP-16](exp-16-slot-names.md) (single slot: no; second slot: yes) |
@@ -53,6 +53,11 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 
 ### `PROP-00`: Expose Mirror TVD on all four surfaces (*enabler*)
 
+* **Closed (2026-09-28), not run.** EXP-15–EXP-17 showed the mirror signal adds little over hesitation: a
+  separate-pass mirror improves cross-validated error detection by at most 0.016 AUROC at twice the cost, and the
+  same-canvas mirror costs accuracy unless labels are digits. Exposing it on every surface (PROP-00) or gating the
+  cascade on it (PROP-13) is not worth the complexity; hesitation remains the production signal. Reopen only if a
+  cheaper, uncoupled order signal appears.
 * **Motivation:** `--dual-mirror` computes Mirror TVD/JSD in `pkg/permutation.PostProcessDecisionResponse`, but `cmd/decide.go` discards the return values. `dgem serve`, MCP, and the Studio don't offer `dual_mirror` / `null_prior_debias` at all, which violates the four-surface parity rule in `AGENTS.md`. A mirror-aware gate (`PROP-02`) can't run in production until this is fixed.
 * **Deliverable (not a hypothesis):**
   * Add `diagnostics.mirror_tvd` / `mirror_jsd` per slot to the `dgem decide` output.
@@ -190,6 +195,11 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 
 ### `PROP-13`: Mirror-aware cascade
 
+* **Closed (2026-09-28), not run.** EXP-15–EXP-17 showed the mirror signal adds little over hesitation: a
+  separate-pass mirror improves cross-validated error detection by at most 0.016 AUROC at twice the cost, and the
+  same-canvas mirror costs accuracy unless labels are digits. Exposing it on every surface (PROP-00) or gating the
+  cascade on it (PROP-13) is not worth the complexity; hesitation remains the production signal. Reopen only if a
+  cheaper, uncoupled order signal appears.
 * **Motivation:** Unblocks `PROP-02` once an uncoupled mirror exists.
 * **Hypothesis (H13):** A gate of hesitation ≥ τ **or** disagreement ≥ τ′ beats entropy alone at the same hand-off rate.
 * **Design:** Offline, using `PROP-12` readings and the existing Gemini-on-every-item receipt; choose τ, τ′ on half the items and report on the other half.
