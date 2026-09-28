@@ -147,6 +147,14 @@ if gcloud secrets describe "$HF_SECRET" --project "$PROJECT_ID" >/dev/null 2>&1;
   DEPLOY_FLAGS+=("--set-secrets=HF_TOKEN=${HF_SECRET}:latest")
 fi
 
+# CLOUDRUN_TAG=<tag>: deploy as a tagged revision with no traffic (blue/green); verify at
+# https://<tag>---<service-host>, then: gcloud run services update-traffic <service> --to-tags=<tag>=100
+# Always update the service through this script: it embeds the repository's entrypoint.sh in the revision's
+# args, and `gcloud run services update --image` would keep the previous revision's (older) entrypoint.
+if [[ -n "${CLOUDRUN_TAG:-}" ]]; then
+  DEPLOY_FLAGS+=("--no-traffic" "--tag=${CLOUDRUN_TAG}")
+fi
+
 echo "==> Deploying to Cloud Run..."
 gcloud beta run deploy "$SERVICE_NAME" "${DEPLOY_FLAGS[@]}"
 
