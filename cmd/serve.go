@@ -1563,35 +1563,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		maxEntropy := 0.0
-		for _, q := range resp.Diagnostics.Questions {
-			if q.Entropy > maxEntropy {
-				maxEntropy = q.Entropy
-			}
-		}
-		for _, a := range resp.Answers {
-			if a.Entropy > maxEntropy {
-				maxEntropy = a.Entropy
-			}
-		}
-
 		wallTimeMs := time.Since(decideStart).Milliseconds()
-		orchElapsedMs := time.Since(orchWallStart).Milliseconds()
-		gpuForwardMs := stats.WallTime.Milliseconds()
-		if gpuForwardMs <= 0 && resp.Diagnostics.Timing.TotalMs > 0 {
-			gpuForwardMs = int64(resp.Diagnostics.Timing.TotalMs)
-		}
-		if backendTarget == "cloudrun" {
-			MarkGPUWarm(gpuForwardMs)
-		} else if backendTarget == "vertex" {
-			RecordVertexReadoutLatency(gpuForwardMs)
-		} else if backendTarget == "local" {
-			RecordLocalReadoutLatency(gpuForwardMs)
-		}
-		coldWaitMs := orchElapsedMs - gpuForwardMs
-		if coldWaitMs < 0 {
-			coldWaitMs = 0
-		}
+		summary := summarizeDecision(resp, stats, time.Since(orchWallStart))
+		maxEntropy := summary.MaxEntropy
+		gpuForwardMs := summary.GpuForwardMs
+		coldWaitMs := summary.ColdStartWaitMs
+		recordBackendReadoutLatency(backendTarget, gpuForwardMs)
 		reads := resp.Diagnostics.Timing.Reads
 		if reads <= 0 {
 			reads = 1
