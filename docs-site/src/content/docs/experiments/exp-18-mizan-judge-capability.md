@@ -66,6 +66,24 @@ v0.1.0, 2026-09-29. n = 100 per suite; accuracy in %. The 09-26 value is in pare
   - gemini-3.5-flash-lite: 1,429 ms
   - gemini-3.8-flash: 3,125 ms
   - Vertex predefined metrics: 3.9–12.6 s
+- **Throughput** (2026-09-29, production G4 as-is, one engine per run):
+  - One G4 replica saturates at **~83 items/s** on short inputs and **~68 items/s** on 1–3k-token passages, reached by 16 concurrent requests (`MAX_INFLIGHT=8`). Past that point, extra concurrency only adds queueing (p50 about 0.4 s at 32 concurrent).
+  - A 3.5-minute sustained run at 32 concurrent held 85 items/s with 0 errors. The GPU-duty-cycle autoscaler did not add the second replica in that window.
+  - Cloud Run reached 78 items/s on short inputs but only 39 on long ones. It runs with `KV_CACHE_GB=2` and a 4,096-token context, which limits batching of long prompts.
+  - At 32 concurrent, gemini-3.5-flash-lite reached 29 items/s and gemini-3.8-flash 7.
+- **Live cascade** (served, not simulated): accuracy and escalation rate match the offline estimate within 1–2 items. p50 stays at dgem's 94–133 ms; p95/p99 is Gemini's latency (3.5–15 s) on the escalated items.
+- **Gemini thinking budget 0:** saves 0.4–1.4 s at p50 on gemini-3.8-flash, with no significant accuracy change on 8 paired suites. The model still emitted 27–116 thinking tokens per item. It remains about 20× slower than dgem on G4.
+- **Cost per 1,000 judgements** at list prices:
+
+  | Judge | USD per 1k |
+  | :--- | :---: |
+  | dgem, fully utilized (G4 at $5.85/h, Cloud Run at $3.19/h) | ~0.01–0.02 |
+  | gemini-3.5-flash-lite | 0.27–0.51 |
+  | gemini-3.8-flash (introductory price; double from 2027) | 1.06–2.25 |
+  | Cascade | 0.10–0.75 |
+  | Vertex predefined metrics | ≥ 10–31 |
+
+  An always-on G4 replica costs $140/day, so it beats 3.8-flash on cost only above roughly 60k–130k judgements per day. Cloud Run has no idle cost but pays a cold start.
 - **Position bias.** dgem picks a different pairwise winner after the two responses are swapped on 12–27% of items, on both dates. The mirror read changes accuracy by −4 to +5 points, which is not significant.
 - **Predefined-safety mapping.** Mapping the Vertex predefined safety metric onto dgem, which sees only the response, scores 68. A purpose-written template scores 80. Use the template.
 
@@ -80,6 +98,7 @@ v0.1.0, 2026-09-29. n = 100 per suite; accuracy in %. The 09-26 value is in pare
 | General pairwise preference (RewardBench) | DiffusionGemma plus mirror, or the cascade |
 | Expert and multi-turn pairwise (MT-Bench) | Prefer an autoregressive judge (Gemini ahead by 5–10 points on both dates; significant on one) |
 | Instruction-following pairwise (LLMBar) | Autoregressive judge required (−15 points, significant on both dates) |
+| High-volume or latency-sensitive judging | DiffusionGemma (about 80 items/s per G4 replica, about $0.02 per 1k at full use) |
 | Rubric generation, explanations, audio/video | Autoregressive only |
 
 ## Notes
