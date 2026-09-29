@@ -43,6 +43,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check docs/ and docs-site/ parity and relative links
+        run: |
+          python3 scripts/docs_sync_check.py
+          python3 scripts/docs_link_check.py
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
