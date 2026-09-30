@@ -249,6 +249,7 @@ export default defineConfig({
             { label: '3. Deploy on Cloud Run', slug: 'deploy/cloud-run' },
             { label: '4. Production on Vertex AI', slug: 'deploy/vertex' },
             { label: '5. Gateway and Routing', slug: 'deploy/gateway' },
+            { label: 'Evaluate on Your Own GPU', slug: 'deploy/evaluate' },
             { label: 'Latency and Capacity', slug: 'operate/latency-capacity' },
             { label: 'Operations Runbook', slug: 'operate/runbook' },
             { label: 'Monitoring and Alerts', slug: 'operate/monitoring' },

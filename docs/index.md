@@ -19,6 +19,7 @@ For developers taking `dgem` from a laptop to production, and for the SREs who r
 3. [Deploy on Cloud Run](deploy/cloud-run.md) (scale to zero) · [Production on Vertex AI](deploy/vertex.md) (always warm)
 4. [Gateway and routing](deploy/gateway.md) · [Latency and capacity](operate/latency-capacity.md) ·
    [Operations runbook](operate/runbook.md) · [Observability](operate/observability.md)
+5. [Evaluate dgem on your own GPU](deploy/evaluate.md): GPU requirements, install check, custom evaluation
 
 ### 📐 Confidence and calibration
 For teams who need to know when a decision can be trusted.
