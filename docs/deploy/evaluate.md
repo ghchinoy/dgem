@@ -16,7 +16,7 @@ criterion, so a problem found in step 3 is not mistaken for a model limitation i
 | 2 | A first decision | 1 min | Valid answers with probabilities; GPU time in the expected range |
 | 3 | Baseline on public benchmarks | ~10 min | JevBench and calibration scores inside our measured range, 0 errors |
 | 4 | Concurrency (optional) | 5 min | 0 errors at your expected concurrency |
-| 5 | Your own policy on your own labelled data | hours to days | Accuracy, calibration and escalation rate meet your bar |
+| 5 | Write a policy and evaluate it on your own labelled data | hours to days | Accuracy, calibration and escalation rate meet your bar |
 
 Identifiers such as `<GPU_HOST>` are placeholders.
 
@@ -119,13 +119,29 @@ latency under load, and how to tune them: [Latency and capacity](../operate/late
 
 With the install verified, measure the model on your task.
 
-### 5.1 Write a policy
+### 5.1 Design your policy
 
-A policy is a template listing the questions to answer about each input and the allowed answers. Start with
-[Your first decision policy](../policies/first-policy.md), then the [authoring guide](../policies/authoring.md).
-Keep the instructions and options fixed across all rows and put per-row data in `state`
-([why](../policies/datasets.md#step-1-map-your-dataset-columns-to-a-jsontmpl-policy-schema)). Use
-`"samples": 1` unless you need an error bar per decision.
+A policy (a `.json.tmpl` file) lists the questions to answer about each input and the allowed answers; it is
+what you are really evaluating. The [Policies & Decisions](../policies/first-policy.md) docs cover it in depth:
+
+| If you want to… | Read |
+| :--- | :--- |
+| Check that your use case fits a decision model | [Real-world applications](../policies/applications.md), especially the [decision matrix](../policies/applications.md#7-architecture-decision-matrix): bounded answers fit; free-form text, conversation and code generation do not |
+| Start from an existing policy instead of a blank file | [Template catalog](../policies/templates.md): a [creator's guide](../policies/templates.md#0-gentle-template-intro--template-creators-guide), then ready-made policies for triage, routing and intent, vision, guardrails and reranking |
+| Write your first policy step by step | [Your first decision policy](../policies/first-policy.md): write it, run it, read hesitation, add samples and conditional questions |
+| Make it fast and reliable | [Authoring guide](../policies/authoring.md#2-designing-jsontmpl-policy-schemas--prefix-cache-optimization): prefix caching, single-pass policies, option design |
+| Co-design it with an AI assistant on sample rows | [Run a dataset, step 2](../policies/datasets.md#step-2-co-design-your-template-using-mcp-decide_custom_questions) (MCP `decide_custom_questions`) |
+
+Rules that matter most for an evaluation:
+
+- Keep the instructions and options fixed across all rows and put per-row data in `state`
+  ([why](../policies/datasets.md#step-1-map-your-dataset-columns-to-a-jsontmpl-policy-schema)).
+- Use `"samples": 1` unless you need an error bar per decision.
+- A `choice` question has at most 26 options; for larger label sets, split into two questions (for example
+  domain, then intent).
+- `depends_on` / `ask_if` (ask a question only if another answer applies) costs a second forward pass; leave them
+  out unless a question makes no sense otherwise.
+- Evaluate the policy you will ship: changing wording, options or `samples` later means re-running 5.3–5.4.
 
 ### 5.2 Label a sample and hold part of it out
 
@@ -161,8 +177,17 @@ This reports, per question, accuracy, how closely confidence matches accuracy (B
 table), and what happens if every answer above a hesitation threshold goes to a person or a larger model. How to
 read it and what to do about hesitant answers: [Calibrate your policy](../confidence/calibrate-your-policy.md).
 
-On the development set, most errors are policy wording (vague options, a missing category) rather than the model;
-fix those, then run the test set once.
+On the development set, most errors are policy wording rather than the model. Match what you see to a fix:
+
+| What you see | What to do |
+| :--- | :--- |
+| Errors or hesitation cluster on one question | Rewrite that question and its option descriptions so they don't overlap ([authoring guide](../policies/authoring.md#2-designing-jsontmpl-policy-schemas--prefix-cache-optimization), [first policy §3](../policies/first-policy.md#3-read-the-uncertainty)) |
+| Inputs that fit none of the options | Add a catch-all and let the model propose the missing options ([taxonomy discovery](../policies/taxonomy-discovery.md)) |
+| Too many hesitant answers overall | Escalate only those to a larger model with a Stage 2 cascade ([authoring guide §1](../policies/authoring.md)); this calls Gemini on Vertex AI, so it needs a Google Cloud project |
+| You need an error bar per decision | `"samples": 4` ([first policy §4](../policies/first-policy.md#4-take-more-samples-when-you-need-agreement)) |
+
+Fix those on the development set, then run the test set once, with the final policy and any cascade enabled, so
+the reported accuracy and escalation rate are what you would ship.
 
 ### 5.5 Record the result
 
@@ -178,6 +203,10 @@ percent of individual answers even when overall accuracy is unchanged.
 
 ## Next
 
+- Go deeper on policies: [your first decision policy](../policies/first-policy.md),
+  [authoring and Stage 2 cascades](../policies/authoring.md), [run a dataset](../policies/datasets.md),
+  [template catalog](../policies/templates.md), [real-world applications](../policies/applications.md) and
+  [taxonomy discovery](../policies/taxonomy-discovery.md).
 - Run it in production: [Cloud Run](cloud-run.md) (scale to zero) or [Vertex AI](vertex.md) (always warm), with
   a [gateway](gateway.md) in front.
 - Operate it: [runbook](../operate/runbook.md), including how to validate a new serving image before switching

@@ -14,7 +14,7 @@ criterion, so a problem found in step 3 is not mistaken for a model limitation i
 | 2 | A first decision | 1 min | Valid answers with probabilities; GPU time in the expected range |
 | 3 | Baseline on public benchmarks | ~10 min | JevBench and calibration scores inside our measured range, 0 errors |
 | 4 | Concurrency (optional) | 5 min | 0 errors at your expected concurrency |
-| 5 | Your own policy on your own labelled data | hours to days | Accuracy, calibration and escalation rate meet your bar |
+| 5 | Write a policy and evaluate it on your own labelled data | hours to days | Accuracy, calibration and escalation rate meet your bar |
 
 Identifiers such as `<GPU_HOST>` are placeholders.
 
@@ -117,13 +117,29 @@ latency under load, and how to tune them: [Latency and capacity](/dgem/operate/l
 
 With the install verified, measure the model on your task.
 
-### 5.1 Write a policy
+### 5.1 Design your policy
 
-A policy is a template listing the questions to answer about each input and the allowed answers. Start with
-[Your first decision policy](/dgem/policies/first-policy/), then the [authoring guide](/dgem/policies/authoring/).
-Keep the instructions and options fixed across all rows and put per-row data in `state`
-([why](/dgem/policies/datasets/#step-1-map-your-dataset-columns-to-a-jsontmpl-policy-schema)). Use
-`"samples": 1` unless you need an error bar per decision.
+A policy (a `.json.tmpl` file) lists the questions to answer about each input and the allowed answers; it is
+what you are really evaluating. The [Policies & Decisions](/dgem/policies/first-policy/) docs cover it in depth:
+
+| If you want to… | Read |
+| :--- | :--- |
+| Check that your use case fits a decision model | [Real-world applications](/dgem/policies/applications/), especially the [decision matrix](/dgem/policies/applications/#7-architecture-decision-matrix): bounded answers fit; free-form text, conversation and code generation do not |
+| Start from an existing policy instead of a blank file | [Template catalog](/dgem/policies/templates/): a [creator's guide](/dgem/policies/templates/#0-gentle-template-intro--template-creators-guide), then ready-made policies for triage, routing and intent, vision, guardrails and reranking |
+| Write your first policy step by step | [Your first decision policy](/dgem/policies/first-policy/): write it, run it, read hesitation, add samples and conditional questions |
+| Make it fast and reliable | [Authoring guide](/dgem/policies/authoring/#2-designing-jsontmpl-policy-schemas--prefix-cache-optimization): prefix caching, single-pass policies, option design |
+| Co-design it with an AI assistant on sample rows | [Run a dataset, step 2](/dgem/policies/datasets/#step-2-co-design-your-template-using-mcp-decide_custom_questions) (MCP `decide_custom_questions`) |
+
+Rules that matter most for an evaluation:
+
+- Keep the instructions and options fixed across all rows and put per-row data in `state`
+  ([why](/dgem/policies/datasets/#step-1-map-your-dataset-columns-to-a-jsontmpl-policy-schema)).
+- Use `"samples": 1` unless you need an error bar per decision.
+- A `choice` question has at most 26 options; for larger label sets, split into two questions (for example
+  domain, then intent).
+- `depends_on` / `ask_if` (ask a question only if another answer applies) costs a second forward pass; leave them
+  out unless a question makes no sense otherwise.
+- Evaluate the policy you will ship: changing wording, options or `samples` later means re-running 5.3–5.4.
 
 ### 5.2 Label a sample and hold part of it out
 
@@ -159,8 +175,17 @@ This reports, per question, accuracy, how closely confidence matches accuracy (B
 table), and what happens if every answer above a hesitation threshold goes to a person or a larger model. How to
 read it and what to do about hesitant answers: [Calibrate your policy](/dgem/confidence/calibrate-your-policy/).
 
-On the development set, most errors are policy wording (vague options, a missing category) rather than the model;
-fix those, then run the test set once.
+On the development set, most errors are policy wording rather than the model. Match what you see to a fix:
+
+| What you see | What to do |
+| :--- | :--- |
+| Errors or hesitation cluster on one question | Rewrite that question and its option descriptions so they don't overlap ([authoring guide](/dgem/policies/authoring/#2-designing-jsontmpl-policy-schemas--prefix-cache-optimization), [first policy §3](/dgem/policies/first-policy/#3-read-the-uncertainty)) |
+| Inputs that fit none of the options | Add a catch-all and let the model propose the missing options ([taxonomy discovery](/dgem/policies/taxonomy-discovery/)) |
+| Too many hesitant answers overall | Escalate only those to a larger model with a Stage 2 cascade ([authoring guide §1](/dgem/policies/authoring/)); this calls Gemini on Vertex AI, so it needs a Google Cloud project |
+| You need an error bar per decision | `"samples": 4` ([first policy §4](/dgem/policies/first-policy/#4-take-more-samples-when-you-need-agreement)) |
+
+Fix those on the development set, then run the test set once, with the final policy and any cascade enabled, so
+the reported accuracy and escalation rate are what you would ship.
 
 ### 5.5 Record the result
 
@@ -176,6 +201,10 @@ percent of individual answers even when overall accuracy is unchanged.
 
 ## Next
 
+- Go deeper on policies: [your first decision policy](/dgem/policies/first-policy/),
+  [authoring and Stage 2 cascades](/dgem/policies/authoring/), [run a dataset](/dgem/policies/datasets/),
+  [template catalog](/dgem/policies/templates/), [real-world applications](/dgem/policies/applications/) and
+  [taxonomy discovery](/dgem/policies/taxonomy-discovery/).
 - Run it in production: [Cloud Run](/dgem/deploy/cloud-run/) (scale to zero) or [Vertex AI](/dgem/deploy/vertex/) (always warm), with
   a [gateway](/dgem/deploy/gateway/) in front.
 - Operate it: [runbook](/dgem/operate/runbook/), including how to validate a new serving image before switching

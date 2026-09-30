@@ -189,4 +189,6 @@ Decision Studio: see [Studio, MCP and HTTP API](../reference/studio-mcp-api.md).
 - [Taxonomy discovery](taxonomy-discovery.md): let the model propose missing options.
 - [Calibrate your policy](../confidence/calibrate-your-policy.md): check that confidence matches accuracy on
   your data.
+- [Evaluate dgem on your own GPU](../deploy/evaluate.md): hosting it yourself? Verify the install, then evaluate
+  this policy on held-out labelled data, end to end.
 - [CLI reference](../reference/cli.md): every command and flag, including the benchmark harnesses.

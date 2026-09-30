@@ -187,4 +187,6 @@ Decision Studio: see [Studio, MCP and HTTP API](/dgem/reference/studio-mcp-api/)
 - [Taxonomy discovery](/dgem/policies/taxonomy-discovery/): let the model propose missing options.
 - [Calibrate your policy](/dgem/confidence/calibrate-your-policy/): check that confidence matches accuracy on
   your data.
+- [Evaluate dgem on your own GPU](/dgem/deploy/evaluate/): hosting it yourself? Verify the install, then evaluate
+  this policy on held-out labelled data, end to end.
 - [CLI reference](/dgem/reference/cli/): every command and flag, including the benchmark harnesses.
