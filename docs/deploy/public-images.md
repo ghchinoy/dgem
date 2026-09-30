@@ -35,7 +35,18 @@ docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:v0.
 
 ---
 
-## 2. Running on Any GPU Host (NVIDIA Blackwell, Ada, Hopper, Ampere)
+## 2. Running on Your Own GPU Host
+
+**GPU requirements.** The images serve the 4-bit NVFP4 checkpoint (~18 GiB of weights):
+
+| GPU | Status | Host RAM |
+| :--- | :--- | :--- |
+| **NVIDIA RTX PRO 6000 (Blackwell, 48 GB)** | **Recommended; tested and used in production** (native FP4, vision tower on) | 80 GiB |
+| NVIDIA L4 (Ada, 24 GB) | Works, about 3× slower per request | 32 GiB with `DISABLE_MM=1`; 64 GB with the vision tower on |
+| Other NVIDIA GPUs (Hopper, Ampere, other Blackwell cards) | Not tested with these images | — |
+
+On an untested GPU, verify the install against the known benchmark ranges before relying on it:
+[Evaluate dgem on your own GPU](evaluate.md).
 
 ### A. Decision Index Certified Mode (`ROLE=decision-index`)
 Starts `dgem systemone serve` on port `8080` (with multi-slot canvas batching and 2-stage bracket tournament routing) in front of internal `structured_server.py` on port `8081` and vLLM on port `8000`:
@@ -91,7 +102,7 @@ Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
 | **`MODEL`** | `/mnt/gcs/dgemma` | Weights path. Baked weights at `/opt/dgemma/weights` are used automatically; a mounted path is used if it has `config.json`; otherwise weights are staged from `DGEM_WEIGHTS_URI` (a `gs://` URI) or downloaded from `MODEL_HF`. |
 | **`MODEL_HF`** | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | Hugging Face repo downloaded when no weights are baked, mounted or staged. |
 | **`DEFAULT_SAMPLES`**, **`MAX_INFLIGHT`** | `1`, `8` | Samples for schemas without `samples`; decisions processed at once (the rest queue). |
-| **`DISABLE_MM`** | `0` | `1` disables the vision tower (smaller GPUs). |
+| **`DISABLE_MM`** | `0` | `1` disables the vision tower (required on an L4 with 32 GiB host RAM). |
 
 ---
 

@@ -25,7 +25,8 @@ are in the [Apple Silicon engine reference](/dgem/reference/metal-engine/). Stop
 
 ### Option B: Linux or Windows workstation with an NVIDIA GPU (Docker)
 
-The public images need a GPU that can run the NVFP4 checkpoint (Blackwell, e.g. RTX PRO 6000, is what we test).
+The public images need a GPU that can run the NVFP4 checkpoint (Blackwell, e.g. RTX PRO 6000, is what we test;
+an L4 works but is slower; see [GPU requirements](/dgem/deploy/evaluate/#0-hardware)).
 
 ```bash
 # Lean image: downloads the public weights from Hugging Face on first boot (needs internet)

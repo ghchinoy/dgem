@@ -20,6 +20,9 @@ pages is measured (sample sizes and receipts are linked); identifiers such as `<
 | 7 | [Operations runbook](/dgem/operate/runbook/) | Health, promotion, rollback, teardown and troubleshooting |
 | 8 | [Monitoring and alerts](/dgem/operate/monitoring/) | Scheduled health check, alert policies, what to do when they fire |
 
+Hosting it yourself? [Evaluate dgem on your own GPU](/dgem/deploy/evaluate/) covers GPU requirements, checking the install
+against known benchmark ranges, and a custom evaluation on your own labelled data.
+
 ## Crawl → walk → run
 
 | Stage | Platform | Use it for | Cost model | Cold start | Warm latency, 1 sample (p50) |
@@ -35,7 +38,8 @@ API and MCP server work on every stage.
 ## TL;DR recommendations
 
 - **GPU:** use a Blackwell GPU (RTX PRO 6000). The checkpoint is NVFP4 (4-bit); Blackwell runs FP4 natively, and
-  the L4 was about 3× slower on every request type we measured.
+  the L4 was about 3× slower on every request type we measured. Other GPUs are untested
+  ([requirements](/dgem/deploy/evaluate/#0-hardware)).
 - **Production:** a Vertex AI dedicated endpoint with minimum replicas ≥ 1, autoscaling on GPU duty cycle.
 - **Failover and batch:** a scale-to-zero Cloud Run GPU service using the lean image and Direct VPC egress.
 - **One gateway** (`dgem serve`) in front of both, routing `vertex_first` with automatic failover.
