@@ -49,7 +49,7 @@ v0.1.0, 2026-09-29. n = 100 per suite; accuracy in %. The 09-26 value is in pare
   - No single dgem suite changed significantly.
   - The Gemini judges were just as stable across the two dates.
 - **No-model metrics.** mizan's local `computation` kind agrees item for item with Vertex `EvaluateInstances` on exact match, tool-call and trajectory metrics (350/350). It also reproduces sacrebleu and rouge_score exactly. Vertex's own BLEU and ROUGE-Lsum differ from those libraries by up to 0.12 and 0.23, although they rank items almost identically (Spearman 0.99).
-- **Entropy cascade** (dgem G4 escalating to gemini-3.8-flash at a fixed 35% hesitation threshold). Each figure is cascade accuracy, followed by the share of items escalated:
+- **Entropy cascade** (dgem G4 escalating to gemini-3.8-flash at a fixed 35% hesitation threshold). 35% reuses the value of dgem's earlier raw-entropy default (0.35 nats, EXP-04/05) on the normalized scale; it is not a Studio hesitation band (16% / 50%). It was fixed before the data was seen. On these runs it sits at the knee of the curve: pooled accuracy over 799 paired items is flat (77.0–77.6%) for gates from 5% to 35% while escalation falls from 68% to 36%. Each figure is cascade accuracy, followed by the share of items escalated:
 
   | Suite | Cascade accuracy | Items escalated |
   | :--- | :---: | :---: |
