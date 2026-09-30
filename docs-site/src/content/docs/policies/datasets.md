@@ -8,6 +8,10 @@ description: Step-by-step colleague guide for turning any .jsonl or .csv dataset
 
 When you have a new `.jsonl` or `.csv` dataset (e.g., customer support tickets, legal contract clauses, RAG passages, agent trajectories, or safety guardrails) and want to evaluate **DiffusionGemma (`dgemma`)** as a **Zero-Shot Decision Model**, you do **not** need to modify the `dgem` Go codebase or redeploy Cloud Run.
 
+> **Hosting DiffusionGemma on your own GPU?** Verify the install against known benchmark ranges first, so a
+> serving problem isn't mistaken for a policy problem: [Evaluate dgem on your own GPU](/dgem/deploy/evaluate/).
+> It also covers using a local gateway (`./bin/dgem serve -u http://<GPU_HOST>:8080/v1`) with the runners below.
+
 You can go from raw dataset to calibrated predictions, Shannon entropy ($H$), and latency percentiles in **10 minutes** using any of three self-service workflows:
 
 ```mermaid
