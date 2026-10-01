@@ -9,7 +9,7 @@ is "noul", "choice" or "score" and the criteria shape follows the type:
   choice: option name -> description or null
   score:  ordered list of levels
 Answers take Jev's shapes, with this server's diagnostics alongside:
-  noul:   {"noul": p}
+  noul:   {"noul": p, "probabilities": {"true", "false"}, "confidence"}
   choice: {"choice", "probabilities", "confidence"}
   score:  {"score", "legend", "probabilities", "confidence"}
 The request body may also carry the schema keys "instructions", "samples",
@@ -1208,7 +1208,8 @@ def jev_state(body, image_parts=()):
     state = body.get("state")
     if state is None:
         raise SchemaError("state: required")
-    text = state if isinstance(state, str) else json.dumps(state)
+    # dgem: ensure_ascii=False keeps non-Latin text readable; the default escaped it to \uXXXX.
+    text = state if isinstance(state, str) else json.dumps(state, ensure_ascii=False)
     if not image_parts:
         return text
     return list(image_parts) + [{"type": "text", "text": text}]
@@ -1218,7 +1219,13 @@ def jev_answer(q, a):
     if a is None:
         return None
     if q["type"] == "noul":
-        return {"type": "noul", "noul": a["noul"]}
+        # dgem: probabilities and confidence too, so clients can gate and calibrate every type alike.
+        return {
+            "type": "noul",
+            "noul": a["noul"],
+            "probabilities": {"true": a["noul"], "false": 1.0 - a["noul"]},
+            "confidence": a["confidence"],
+        }
     if q["type"] == "choice":
         return {
             "type": "choice",
@@ -1266,11 +1273,13 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
-    def _json(self, code, obj):
+    def _json(self, code, obj, headers=None):
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("content-type", "application/json")
         self.send_header("content-length", str(len(body)))
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         if self.close_connection:
             self.send_header("connection", "close")
         self.end_headers()
@@ -1437,6 +1446,7 @@ class Handler(BaseHTTPRequestHandler):
                 },
                 "diagnostics": body["diagnostics"],
             },
+            _timing_headers(body),
         )
 
     def _chat(self, req):
@@ -1526,7 +1536,16 @@ class Handler(BaseHTTPRequestHandler):
                     "total_tokens": completion_tokens,
                 },
             },
+            _timing_headers(body),
         )
+
+
+def _timing_headers(body):
+    """dgem: server-side decision time as headers, so proxies and load tests can read it."""
+    ms = ((body.get("diagnostics") or {}).get("timing") or {}).get("total_ms")
+    if ms is None:
+        return {}
+    return {"Server-Timing": f"decide;dur={ms:.2f}", "X-Inference-Time-Ms": f"{ms:.2f}"}
 
 
 def self_signed(cert_dir):
