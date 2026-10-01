@@ -25,11 +25,31 @@ SCRIPTS = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.dirname(SCRIPTS)
 
 
+def _round(x):
+    if isinstance(x, float):
+        return round(x, 5)
+    if isinstance(x, dict):
+        if "probabilities" in x and isinstance(x["probabilities"], dict):  # drop negligible options (< 1e-5)
+            x = {**x, "probabilities": {k: v for k, v in x["probabilities"].items() if v >= 1e-5}}
+        return {k: _round(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [_round(v) for v in x]
+    return x
+
+
 def _dump(path, obj):
+    """Compact JSON, floats to 5 decimals, one row per line for per-item receipts (receipts get committed)."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    obj = _round(obj)
     tmp = path + ".tmp"
     with open(tmp, "w") as f:
-        json.dump(obj, f, indent=1, ensure_ascii=False)
+        if isinstance(obj.get("cases"), list):
+            head = {k: v for k, v in obj.items() if k != "cases"}
+            f.write(json.dumps(head, ensure_ascii=False)[:-1] + ', "cases": [\n')
+            f.write(",\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in obj["cases"]))
+            f.write("\n]}\n")
+        else:
+            json.dump(obj, f, indent=1, ensure_ascii=False)
     os.replace(tmp, path)
     return path
 

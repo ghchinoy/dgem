@@ -252,6 +252,7 @@ export default defineConfig({
             { label: 'Evaluate on Your Own GPU', slug: 'deploy/evaluate' },
             { label: 'Latency and Capacity', slug: 'operate/latency-capacity' },
             { label: 'Operations Runbook', slug: 'operate/runbook' },
+            { label: 'Regression Matrix', slug: 'operate/regression-matrix' },
             { label: 'Monitoring and Alerts', slug: 'operate/monitoring' },
             { label: 'Observability and Traces', slug: 'operate/observability' },
           ],

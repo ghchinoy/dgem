@@ -89,7 +89,10 @@ def cmd_run(a):
         raise SystemExit(f"{tier} sends ~25k requests per target to shared GPUs; re-run with --confirm")
     suites = [s for s in mx["tiers"][tier] if not a.only or s in a.only]
     suites = [s for s in suites if s not in (a.skip or [])]
-    targets = [Target(*t.split("=", 1)) for t in a.target]
+    specs = a.target or [t for t in os.environ.get("MATRIX_TARGETS", "").split(",") if t]
+    if not specs:
+        raise SystemExit("give --target name=url (or MATRIX_TARGETS=name=url,name=url)")
+    targets = [Target(*t.split("=", 1)) for t in specs]
     if a.baseline and a.baseline not in [t.name for t in targets]:
         raise SystemExit(f"--baseline {a.baseline} is not one of the targets")
     run_id = f"{dt.datetime.now(dt.timezone.utc):%Y%m%d}-{a.label or tier.lower()}"
@@ -185,8 +188,34 @@ def cmd_run(a):
         log_event(a.log_json, event="dgem.matrix.gate", run_id=run_id, tier=tier, **g)
     log_event(a.log_json, event="dgem.matrix.done", run_id=run_id, tier=tier,
               overall=json.dumps(summary["overall"]), report=os.path.join(run_dir, "report.md"))
+    if a.upload:
+        dest = upload(run_dir, a.upload.rstrip("/") + "/" + os.path.basename(run_dir))
+        log_event(a.log_json, event="dgem.matrix.uploaded", run_id=run_id, destination=dest)
     print(f"\n{run_dir}/report.md\n" + "\n".join(f"  {n}: {v}" for n, v in summary["overall"].items()), file=sys.stderr)
     return 1 if any(v == "FAIL" for v in summary["overall"].values()) else 0
+
+
+def upload(run_dir, dest):
+    """Copy a run directory to gs://bucket/prefix with the Cloud Storage JSON API (standard library only)."""
+    import urllib.parse
+    from matrix import net
+    if not dest.startswith("gs://"):
+        raise SystemExit("--upload needs gs://bucket/prefix")
+    bucket, _, prefix = dest[5:].partition("/")
+    tok = net._mint("access", None) if not os.environ.get("DGEM_MATRIX_TOKEN") else os.environ["DGEM_MATRIX_TOKEN"]
+    import urllib.request
+    for root, _, files in os.walk(run_dir):
+        for fn in files:
+            p = os.path.join(root, fn)
+            name = f"{prefix}/{os.path.relpath(p, run_dir)}".lstrip("/")
+            ctype = "text/markdown" if fn.endswith(".md") else "application/json" if fn.endswith(".json") else "text/plain"
+            url = (f"https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name="
+                   + urllib.parse.quote(name, safe=""))
+            with open(p, "rb") as f:
+                req = urllib.request.Request(url, data=f.read(), method="POST",
+                                             headers={"Authorization": f"Bearer {tok}", "Content-Type": ctype})
+            urllib.request.urlopen(req, timeout=120).read()
+    return f"gs://{bucket}/{prefix}"
 
 
 def write_report(run_dir, mx):
@@ -230,7 +259,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("--tier", required=True, choices=["T0", "T1", "T2"])
-    r.add_argument("--target", action="append", required=True, help="name=url (repeat)")
+    r.add_argument("--target", action="append", help="name=url (repeat; or MATRIX_TARGETS=name=url,...)")
     r.add_argument("--baseline", help="target name to compare the others against (same session)")
     r.add_argument("--label", help="run id suffix (default: tier)")
     r.add_argument("--out-dir", help="run directory (default benchmarks/runs/<date>-<label>)")
@@ -244,6 +273,7 @@ def main():
     r.add_argument("--fail-fast", action="store_true")
     r.add_argument("--log-json", action="store_true", help="structured JSON event lines on stdout (scheduled jobs)")
     r.add_argument("--note", help="free text stored in the manifest")
+    r.add_argument("--upload", help="gs://bucket/prefix: copy the run directory there when done (scheduled jobs)")
     p = sub.add_parser("report")
     p.add_argument("run_dir")
     f = sub.add_parser("fetch")

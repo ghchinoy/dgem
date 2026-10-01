@@ -1,0 +1,104 @@
+{
+ "run_id": "20261001-v013-reference-t2",
+ "matrix_version": "v1",
+ "tier": "T2",
+ "baseline": null,
+ "overall": {
+  "prod": "PASS"
+ },
+ "noise_floor": {
+  "prod": 0.9538431938431938
+ },
+ "gates": [
+  {
+   "gate": "health",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "ready"
+  },
+  {
+   "gate": "contract",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "all cases as expected"
+  },
+  {
+   "gate": "calibration",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.867; reference 0.860\u20130.880 (v0.1.3)"
+  },
+  {
+   "gate": "jev_native",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.804; reference 0.792\u20130.823 (v0.1.3)"
+  },
+  {
+   "gate": "jev_systemone",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.853; reference 0.823\u20130.862 (v0.1.3)"
+  },
+  {
+   "gate": "intents_banking77",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.833; reference 0.733\u20130.833 (v0.1.3)"
+  },
+  {
+   "gate": "intents_clinc150",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.967; reference 0.967\u20131.000 (v0.1.3)"
+  },
+  {
+   "gate": "massive_spot",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "es 16/20, hi 18/20, ja 18/20, ru 17/20, th 16/20"
+  },
+  {
+   "gate": "massive",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.822; reference 0.811\u20130.832 (v0.1.3)"
+  },
+  {
+   "gate": "xnli",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.678; reference 0.664\u20130.692 (v0.1.3)"
+  },
+  {
+   "gate": "typed",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.667; reference 0.646\u20130.688 (v0.1.3)"
+  },
+  {
+   "gate": "order",
+   "target": "prod",
+   "verdict": "INFO",
+   "detail": "order_emotion net +0.050, order_jev_choice net +0.029, order_massive_en net +0.065, order_xnli_en net +0.025"
+  },
+  {
+   "gate": "bbox",
+   "target": "prod",
+   "verdict": "INFO",
+   "detail": "acc_at_50_expectation_pct=36.364, mean_expectation_iou=0.412"
+  },
+  {
+   "gate": "decision_index",
+   "target": "prod",
+   "verdict": "INFO",
+   "detail": "headline_decision_index=98.889, ece_10bin=0.052"
+  },
+  {
+   "gate": "latency",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "within tolerance"
+  }
+ ]
+}

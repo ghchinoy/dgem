@@ -1,0 +1,283 @@
+{
+  "run_id": "20261001-v013-reference-t2",
+  "created": "2026-10-01T22:20:51+00:00",
+  "git_commit": "8608361d9b8f67bf9591dbab1f2d7051e5716c67",
+  "notes": "v0.1.3 on Vertex G4, full matrix incl. frozen sets (post-ship scoring)",
+  "receipts": [
+    {
+      "path": "health__prod__r1.json",
+      "suite": "health",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "health",
+      "sha256": "727f404cb31a0acbfcac5f44b82713dcbd309bce19ae2473e6989661a2c493d5",
+      "seconds": 0.4
+    },
+    {
+      "path": "contract__prod__r1.json",
+      "suite": "contract",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "contract",
+      "sha256": "b258acd074d9a63f2fcb48a4d8bae86a04cb79ca8ba82593e2080a6dc936fae4",
+      "seconds": 0.8
+    },
+    {
+      "path": "calibration__prod__r1.json",
+      "suite": "calibration",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "3846ae885cfe4d523899d7c90b726100045804f5254c19039be0ca86e6977552",
+      "seconds": 2.6
+    },
+    {
+      "path": "massive_spot__prod__r1.json",
+      "suite": "massive_spot",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "bdd5df54bbe92bbba06b294cc107e583539c854c8b14fcb5b7099179fbbebbaa",
+      "seconds": 3.0
+    },
+    {
+      "path": "jev_native__prod__r1.json",
+      "suite": "jev_native",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "913d49edc57d0c66792f8511c535877be4110b4e582345a41d9f3ace49680abe",
+      "seconds": 10.3
+    },
+    {
+      "path": "jev_systemone__prod__r1.json",
+      "suite": "jev_systemone",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "d55970c5d9b05839a315e5826701960e982433b463c70f85fa8d945b1a00019b",
+      "seconds": 9.0
+    },
+    {
+      "path": "intents_banking77__prod__r1.json",
+      "suite": "intents_banking77",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "e4176ae88647e535929672b1c7d780d29b8b7cf327459af6558ca933e0366784",
+      "seconds": 3.6
+    },
+    {
+      "path": "intents_clinc150__prod__r1.json",
+      "suite": "intents_clinc150",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "bf90e5e12776ab33ec075bcc631a75d1845791434949eaf366ea651fa82c3195",
+      "seconds": 1.4
+    },
+    {
+      "path": "massive__prod__r1.json",
+      "suite": "massive",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "74f83cb8cf2ecf7bb1253d4a8da9bcdbce89377e086b4aa194dfdd777878c63a",
+      "seconds": 185.8
+    },
+    {
+      "path": "xnli__prod__r1.json",
+      "suite": "xnli",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "5c8749c54a2afbdb12eceebcf22ae84c2434f034e722233a3aae643706423863",
+      "seconds": 250.7
+    },
+    {
+      "path": "typed__prod__r1.json",
+      "suite": "typed",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "c41e825791e2e120e79c4146c0104656bf609dbcdf01e1cf1eabb32a5982897c",
+      "seconds": 13.5
+    },
+    {
+      "path": "order__none__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "none",
+      "kind": "systemone",
+      "sha256": "aecda0612106e69371b8c1226997d510769f2e17647b14e077cd19572c5cd75d",
+      "seconds": 22.6
+    },
+    {
+      "path": "order__none2__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "none2",
+      "kind": "systemone",
+      "sha256": "865bcbdfa4794b90711b210e2edca3510cb65c6b78c9a3538545413ddfe7b866",
+      "seconds": 22.3
+    },
+    {
+      "path": "order__random__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "random",
+      "kind": "systemone",
+      "sha256": "3b074765fb5dcc4b5affc3f2901e0c9cf1e3c7a375cfefef591a32cd0389d4ac",
+      "seconds": 52.4
+    },
+    {
+      "path": "order__reverse__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "reverse",
+      "kind": "systemone",
+      "sha256": "99cd9b3a96c94cf8963b565cebfcc00a404c6ba2fca17158f2db84a9e87016f0",
+      "seconds": 148.9
+    },
+    {
+      "path": "bbox__prod__r1.json",
+      "suite": "bbox",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "dabd4b48d1dd02c67433780aac916e47c48aab7598bd0c9bb92c28c4f2265746",
+      "seconds": 2.4
+    },
+    {
+      "path": "decision_index__prod__r1.json",
+      "suite": "decision_index",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "7bd2e7f6e30ddf070af25f6e0bdbc5f2418de7fb764cfcfeec2450919a7ddaeb",
+      "seconds": 1.2
+    },
+    {
+      "path": "calibration__prod__r2.json",
+      "suite": "calibration",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "e6ea59be8aa639d71c578793999e70c32613eaba1dd1d50567dc4ba63d548f2f",
+      "seconds": 2.6
+    },
+    {
+      "path": "jev_native__prod__r2.json",
+      "suite": "jev_native",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "78fe5e567f4eb6b8a2c5b3177b6db75f26ac00e30f424a7c8a5aab794cd090e7",
+      "seconds": 11.2
+    },
+    {
+      "path": "jev_systemone__prod__r2.json",
+      "suite": "jev_systemone",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "2f94314520bf24f8696e0c28db99c0a64ab1f316be460a4f95b6357f1e0cf741",
+      "seconds": 9.1
+    },
+    {
+      "path": "calibration__prod__r3.json",
+      "suite": "calibration",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "19270deb8d7ef426773473fbf484153922aef4fa5b9e338d5d0d633fda2ef96d",
+      "seconds": 2.5
+    },
+    {
+      "path": "jev_native__prod__r3.json",
+      "suite": "jev_native",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "57fc506ff60317a80a50ac10bdf3ea785aa77a0c335feb73b5f7c7fce23900ab",
+      "seconds": 10.3
+    },
+    {
+      "path": "jev_systemone__prod__r3.json",
+      "suite": "jev_systemone",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "ee3f11784d459302fe40fd0722bf8b744d7d141bd1344d6985ee5a59b89c3fac",
+      "seconds": 8.9
+    },
+    {
+      "path": "latency__prod__r1.json",
+      "suite": "latency",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "5e8a66b23cbeef3430260016a696b148493fb795cf1fdcb73d3323d4ec71ca99",
+      "seconds": 75.8
+    }
+  ],
+  "matrix": {
+    "matrix_version": "v1",
+    "tier": "T2",
+    "suites": [
+      "health",
+      "contract",
+      "calibration",
+      "massive_spot",
+      "jev_native",
+      "jev_systemone",
+      "intents_banking77",
+      "intents_clinc150",
+      "latency",
+      "massive",
+      "xnli",
+      "typed",
+      "order",
+      "bbox",
+      "decision_index"
+    ],
+    "baseline": null,
+    "targets": [
+      {
+        "name": "prod",
+        "kind": "vertex",
+        "health": {
+          "version": "v0.1.3",
+          "revision": "e685ef9",
+          "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+        }
+      }
+    ],
+    "started": "2026-10-01T22:20:51+00:00",
+    "finished": "2026-10-01T22:35:02+00:00"
+  }
+}

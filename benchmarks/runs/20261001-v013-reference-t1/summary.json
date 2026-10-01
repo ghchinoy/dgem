@@ -1,0 +1,75 @@
+{
+ "run_id": "20261001-v013-reference-t1",
+ "matrix_version": "v1",
+ "tier": "T1",
+ "baseline": "a",
+ "overall": {
+  "b": "PASS"
+ },
+ "noise_floor": {
+  "a": 0.9452409812409812,
+  "b": 0.9348917748917749
+ },
+ "gates": [
+  {
+   "gate": "health",
+   "target": "a",
+   "verdict": "PASS",
+   "detail": "ready"
+  },
+  {
+   "gate": "health",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "ready"
+  },
+  {
+   "gate": "contract",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "all cases as expected"
+  },
+  {
+   "gate": "calibration",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "acc 0.880 vs 0.867; agreement 0.987 (floor 0.993, allowance 0.043); McNemar p=0.5"
+  },
+  {
+   "gate": "jev_native",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "acc 0.805 vs 0.811; agreement 0.948 (floor 0.939, allowance 0.052); McNemar p=0.54"
+  },
+  {
+   "gate": "jev_systemone",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "acc 0.830 vs 0.833; agreement 0.961 (floor 0.952, allowance 0.048); McNemar p=0.8"
+  },
+  {
+   "gate": "intents_banking77",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "acc 0.789 vs 0.778; agreement 0.852 (floor 0.839, allowance 0.154); McNemar p=1"
+  },
+  {
+   "gate": "intents_clinc150",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "acc 0.978 vs 0.989; agreement 0.981 (floor 0.978, allowance 0.074); McNemar p=1"
+  },
+  {
+   "gate": "massive_spot",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "es 15/20, hi 18/20, ja 15/20, ru 19/20, th 16/20"
+  },
+  {
+   "gate": "latency",
+   "target": "b",
+   "verdict": "PASS",
+   "detail": "within tolerance"
+  }
+ ]
+}

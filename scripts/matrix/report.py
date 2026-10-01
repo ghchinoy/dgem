@@ -141,18 +141,21 @@ def build(run_dir, matrix):
                 cross = _cross(cand, bl)
                 mc = M.mcnemar(list(zip(cand, bl)))
                 fails = []
-                if cross is not None and cross < floor - th["agreement_margin_pp"] / 100:
-                    fails.append(f"agreement {cross:.3f} < noise floor {floor:.3f} - {th['agreement_margin_pp']}pp")
+                # allowance = fixed margin + sampling error of an agreement rate on n items (matters for small suites)
+                n_items = len(cand[0]) or 1
+                allow = th["agreement_margin_pp"] / 100 + 2 * (max(floor * (1 - floor), 0.0) / n_items) ** 0.5
+                if cross is not None and cross < floor - allow:
+                    fails.append(f"agreement {cross:.3f} < noise floor {floor:.3f} - {allow:.3f}")
                 if mc["p"] < th["mcnemar_p"]:
                     fails.append(f"McNemar p={mc['p']:.2g} ({mc['a_only']} vs {mc['b_only']})")
                 v = "PASS" if not fails else ("REVIEW" if len(fails) == 1 else "FAIL")
                 frozen = " [frozen set]" if s in ("massive", "xnli", "typed") else ""
-                gates.append((s, n, v, f"acc {mean_c:.3f} vs {mean_b:.3f}; agreement {_f(cross)} (floor {_f(floor)}); "
+                gates.append((s, n, v, f"acc {mean_c:.3f} vs {mean_b:.3f}; agreement {_f(cross)} (floor {_f(floor)}, allowance {allow:.3f}); "
                                        f"McNemar p={mc['p']:.2g}{frozen}" + (" — " + "; ".join(fails) if fails else "")))
             elif s in ref and "accuracy" in ref[s]:
                 lo, hi = ref[s]["accuracy"]
                 slack = th["reference_slack_items_frac"]
-                v = "PASS" if mean_c >= lo else ("REVIEW" if mean_c >= lo - slack else "FAIL")
+                v = "PASS" if mean_c >= lo - 1e-4 else ("REVIEW" if mean_c >= lo - slack else "FAIL")  # 1e-4: ranges are rounded
                 gates.append((s, n, v, f"acc {mean_c:.3f}; reference {lo:.3f}–{hi:.3f} ({matrix['reference'].get('image')})"))
             else:
                 gates.append((s, n, "INFO", f"acc {mean_c:.3f}; no baseline or reference"))
