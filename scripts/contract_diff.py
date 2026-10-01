@@ -54,6 +54,27 @@ CASES = {
     "invalid_json_error": ("rawbody", b"{not json", None),
 }
 
+# Multilingual /v1/systemone cases with a JSON-object state (the path that once escaped non-ASCII text to
+# \uXXXX, so the model read hex codes instead of Russian or Thai). Each has a known answer: a wrong label
+# on any target is reported as WRONG, not just as a difference between targets.
+INTENT = {"type": "choice", "instructions": "What is the user asking for in `utterance`?",
+          "criteria": {"set_alarm": "set an alarm", "weather": "ask about the weather",
+                       "play_music": "play music", "send_email": "send an email"}}
+MULTILINGUAL = {
+    "ml_ru": "Разбуди меня завтра в семь утра",
+    "ml_th": "ตั้งนาฬิกาปลุกตอนเจ็ดโมงเช้า",
+    "ml_hi": "कल सुबह सात बजे का अलार्म लगाओ",
+    "ml_ja": "明日の朝7時にアラームをセットして",
+    "ml_es": "Pon una alarma a las siete de la mañana",
+}
+EXPECT = {}
+for _name, _text in MULTILINGUAL.items():
+    CASES[_name] = ("systemone", {"model": "dgemma", "state": {"utterance": _text}, "questions": {"intent": INTENT}}, None)
+    EXPECT[_name] = {"intent": "set_alarm"}
+CASES["ml_el_noul"] = ("systemone", {"model": "dgemma", "state": {"message": "Χρεώθηκα δύο φορές για την ίδια παραγγελία."},
+                                     "questions": {"billing": {"type": "noul", "instructions": "Is this a billing problem?"}}}, None)
+EXPECT["ml_el_noul"] = {"billing": "yes"}
+
 
 class Target:
     def __init__(self, name, base):
@@ -70,15 +91,27 @@ class Target:
                                      headers={"Content-Type": "application/json", "Authorization": f"Bearer {self.token()}"})
         try:
             with urllib.request.urlopen(req, timeout=300) as r:
-                return r.status, r.read()
+                return r.status, r.read(), dict(r.headers)
         except urllib.error.HTTPError as e:
-            return e.code, e.read()
+            return e.code, e.read(), dict(e.headers)
         except Exception as e:  # network errors are recorded, not raised
-            return None, repr(e).encode()
+            return None, repr(e).encode(), {}
 
 
-def summarize(status, raw):
-    out = {"status": status}
+def _label(v):
+    if not isinstance(v, dict):
+        return v
+    if v.get("label") is not None:
+        return v["label"]
+    if v.get("choice") is not None:
+        return v["choice"]
+    if v.get("noul") is not None:  # /v1/systemone noul answers carry only a probability
+        return "yes" if v["noul"] >= 0.5 else "no"
+    return v.get("level")
+
+
+def summarize(status, raw, headers=None):
+    out = {"status": status, "server_timing": {k.lower(): v for k, v in (headers or {}).items()}.get("server-timing")}
     try:
         body = json.loads(raw)
     except Exception:
@@ -105,7 +138,7 @@ def summarize(status, raw):
     out["reads"] = t.get("reads")
     out["denoise_ms"] = t.get("total_ms")
     out["probabilities"] = {k: v.get("probabilities") for k, v in answers.items() if isinstance(v, dict)}
-    out["labels"] = {k: (v.get("label") if isinstance(v, dict) else v) for k, v in answers.items()}
+    out["labels"] = {k: _label(v) for k, v in answers.items()}
     return out
 
 
@@ -150,7 +183,7 @@ def main():
     targets = [Target(*s.split("=", 1)) for s in a.target]
     res = {"health": {}, "cases": {}}
     for t in targets:
-        st, raw = t.request("/health", None, method="GET")
+        st, raw, _ = t.request("/health", None, method="GET")
         try:
             h = json.loads(raw)
         except Exception:
@@ -190,6 +223,9 @@ def main():
                 notes.append("diag-keys")
         if row[names[0]]["status"] == 200 and len(names) > 1:
             notes.append(f"maxΔp={max_delta(row[names[0]].get('probabilities'), row[names[1]].get('probabilities'))}")
+        wrong = [n for n in names if c in EXPECT and row[n].get("labels") != EXPECT[c]]
+        if wrong:
+            notes.append("WRONG(" + ",".join(wrong) + ")")
         verdict = "same" if not [n for n in notes if not n.startswith("maxΔp")] else "DIFF " + ",".join(notes)
         if verdict == "same" and notes:
             verdict += " " + notes[-1]
