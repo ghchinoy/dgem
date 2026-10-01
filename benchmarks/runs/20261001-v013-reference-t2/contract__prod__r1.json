@@ -21,34 +21,34 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9577277191937957,
+     "confidence": 0.95773,
      "probabilities": {
-      "yes": 0.9577277191937957,
-      "no": 0.04227228080620413
+      "yes": 0.95773,
+      "no": 0.04227
      },
-     "noul": 0.9577277191937957
+     "noul": 0.95773
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9664819286175035,
+     "confidence": 0.96648,
      "probabilities": {
-      "billing": 0.0314527971061411,
-      "support": 0.002065274276355389,
-      "engineering": 0.9664819286175035
+      "billing": 0.03145,
+      "support": 0.00207,
+      "engineering": 0.96648
      },
      "choice": "engineering"
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9904531138865754,
+     "confidence": 0.99045,
      "probabilities": {
-      "calm": 0.001438190471761791,
-      "frustrated": 0.9904531138865754,
-      "furious": 0.00810869564166282
+      "calm": 0.00144,
+      "frustrated": 0.99045,
+      "furious": 0.00811
      },
-     "score": 2.006670505169901,
+     "score": 2.00667,
      "level": "frustrated"
     }
    },
@@ -68,21 +68,21 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 156.08739852905273,
+   "denoise_ms": 156.0874,
    "probabilities": {
     "urgent": {
-     "yes": 0.9577277191937957,
-     "no": 0.04227228080620413
+     "yes": 0.95773,
+     "no": 0.04227
     },
     "team": {
-     "billing": 0.0314527971061411,
-     "support": 0.002065274276355389,
-     "engineering": 0.9664819286175035
+     "billing": 0.03145,
+     "support": 0.00207,
+     "engineering": 0.96648
     },
     "sentiment": {
-     "calm": 0.001438190471761791,
-     "frustrated": 0.9904531138865754,
-     "furious": 0.00810869564166282
+     "calm": 0.00144,
+     "frustrated": 0.99045,
+     "furious": 0.00811
     }
    },
    "labels": {
@@ -110,40 +110,40 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.8932429078901346,
+     "confidence": 0.89324,
      "probabilities": {
-      "yes": 0.8932429078901346,
-      "no": 0.10675709210986542
+      "yes": 0.89324,
+      "no": 0.10676
      },
-     "noul": 0.8932429078901346,
-     "stderr": 0.026305474943872382,
+     "noul": 0.89324,
+     "stderr": 0.02631,
      "agreement": 1.0
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9281998637410334,
+     "confidence": 0.9282,
      "probabilities": {
-      "billing": 0.0682556322239508,
-      "support": 0.0035445040350158973,
-      "engineering": 0.9281998637410334
+      "billing": 0.06826,
+      "support": 0.00354,
+      "engineering": 0.9282
      },
      "choice": "engineering",
-     "stderr": 0.006724729589745522,
+     "stderr": 0.00672,
      "agreement": 1.0
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9872260350605587,
+     "confidence": 0.98723,
      "probabilities": {
-      "calm": 0.004947556408737809,
-      "frustrated": 0.9872260350605587,
-      "furious": 0.007826408530703521
+      "calm": 0.00495,
+      "frustrated": 0.98723,
+      "furious": 0.00783
      },
-     "score": 2.002878852121966,
+     "score": 2.00288,
      "level": "frustrated",
-     "stderr": 0.003793136116960356,
+     "stderr": 0.00379,
      "agreement": 1.0
     }
    },
@@ -163,21 +163,21 @@
     "timing"
    ],
    "reads": 4,
-   "denoise_ms": 159.93380546569824,
+   "denoise_ms": 159.93381,
    "probabilities": {
     "urgent": {
-     "yes": 0.8932429078901346,
-     "no": 0.10675709210986542
+     "yes": 0.89324,
+     "no": 0.10676
     },
     "team": {
-     "billing": 0.0682556322239508,
-     "support": 0.0035445040350158973,
-     "engineering": 0.9281998637410334
+     "billing": 0.06826,
+     "support": 0.00354,
+     "engineering": 0.9282
     },
     "sentiment": {
-     "calm": 0.004947556408737809,
-     "frustrated": 0.9872260350605587,
-     "furious": 0.007826408530703521
+     "calm": 0.00495,
+     "frustrated": 0.98723,
+     "furious": 0.00783
     }
    },
    "labels": {
@@ -205,40 +205,40 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.8943581810727396,
+     "confidence": 0.89436,
      "probabilities": {
-      "yes": 0.8943581810727396,
-      "no": 0.10564181892726035
+      "yes": 0.89436,
+      "no": 0.10564
      },
-     "noul": 0.8943581810727396,
-     "stderr": 0.027163402009404366,
+     "noul": 0.89436,
+     "stderr": 0.02716,
      "agreement": 1.0
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9367869304128333,
+     "confidence": 0.93679,
      "probabilities": {
-      "billing": 0.06003155187745127,
-      "support": 0.003181517709715442,
-      "engineering": 0.9367869304128333
+      "billing": 0.06003,
+      "support": 0.00318,
+      "engineering": 0.93679
      },
      "choice": "engineering",
-     "stderr": 0.01189451807756763,
+     "stderr": 0.01189,
      "agreement": 1.0
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.990043768816067,
+     "confidence": 0.99004,
      "probabilities": {
-      "calm": 0.005090751405433817,
-      "frustrated": 0.990043768816067,
-      "furious": 0.004865479778499133
+      "calm": 0.00509,
+      "frustrated": 0.99004,
+      "furious": 0.00487
      },
-     "score": 1.9997747283730654,
+     "score": 1.99977,
      "level": "frustrated",
-     "stderr": 0.0026864862491253077,
+     "stderr": 0.00269,
      "agreement": 1.0
     }
    },
@@ -258,21 +258,21 @@
     "timing"
    ],
    "reads": 4,
-   "denoise_ms": 159.8200798034668,
+   "denoise_ms": 159.82008,
    "probabilities": {
     "urgent": {
-     "yes": 0.8943581810727396,
-     "no": 0.10564181892726035
+     "yes": 0.89436,
+     "no": 0.10564
     },
     "team": {
-     "billing": 0.06003155187745127,
-     "support": 0.003181517709715442,
-     "engineering": 0.9367869304128333
+     "billing": 0.06003,
+     "support": 0.00318,
+     "engineering": 0.93679
     },
     "sentiment": {
-     "calm": 0.005090751405433817,
-     "frustrated": 0.990043768816067,
-     "furious": 0.004865479778499133
+     "calm": 0.00509,
+     "frustrated": 0.99004,
+     "furious": 0.00487
     }
    },
    "labels": {
@@ -300,34 +300,34 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9577277191937957,
+     "confidence": 0.95773,
      "probabilities": {
-      "yes": 0.9577277191937957,
-      "no": 0.04227228080620413
+      "yes": 0.95773,
+      "no": 0.04227
      },
-     "noul": 0.9577277191937957
+     "noul": 0.95773
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9664819286175035,
+     "confidence": 0.96648,
      "probabilities": {
-      "billing": 0.0314527971061411,
-      "support": 0.002065274276355389,
-      "engineering": 0.9664819286175035
+      "billing": 0.03145,
+      "support": 0.00207,
+      "engineering": 0.96648
      },
      "choice": "engineering"
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9904531138865754,
+     "confidence": 0.99045,
      "probabilities": {
-      "calm": 0.001438190471761791,
-      "frustrated": 0.9904531138865754,
-      "furious": 0.00810869564166282
+      "calm": 0.00144,
+      "frustrated": 0.99045,
+      "furious": 0.00811
      },
-     "score": 2.006670505169901,
+     "score": 2.00667,
      "level": "frustrated"
     }
    },
@@ -347,21 +347,21 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 152.13489532470703,
+   "denoise_ms": 152.1349,
    "probabilities": {
     "urgent": {
-     "yes": 0.9577277191937957,
-     "no": 0.04227228080620413
+     "yes": 0.95773,
+     "no": 0.04227
     },
     "team": {
-     "billing": 0.0314527971061411,
-     "support": 0.002065274276355389,
-     "engineering": 0.9664819286175035
+     "billing": 0.03145,
+     "support": 0.00207,
+     "engineering": 0.96648
     },
     "sentiment": {
-     "calm": 0.001438190471761791,
-     "frustrated": 0.9904531138865754,
-     "furious": 0.00810869564166282
+     "calm": 0.00144,
+     "frustrated": 0.99045,
+     "furious": 0.00811
     }
    },
    "labels": {
@@ -389,67 +389,67 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.5396594588675961,
+     "confidence": 0.53966,
      "probabilities": {
-      "yes": 0.5396594588675961,
-      "no": 0.4603405411324039
+      "yes": 0.53966,
+      "no": 0.46034
      },
-     "noul": 0.5396594588675961
+     "noul": 0.53966
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.8536613174128115,
+     "confidence": 0.85366,
      "probabilities": {
-      "billing": 0.14344803221406757,
-      "support": 0.0028906503731208795,
-      "engineering": 0.8536613174128115
+      "billing": 0.14345,
+      "support": 0.00289,
+      "engineering": 0.85366
      },
      "choice": "engineering"
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9706874932617111,
+     "confidence": 0.97069,
      "probabilities": {
-      "calm": 0.012975474977968379,
-      "frustrated": 0.9706874932617111,
-      "furious": 0.01633703176032055
+      "calm": 0.01298,
+      "frustrated": 0.97069,
+      "furious": 0.01634
      },
-     "score": 2.003361556782352,
+     "score": 2.00336,
      "level": "frustrated"
     },
     "urgent__rev": {
      "type": "choice",
      "label": "B",
-     "confidence": 0.6244501003347276,
+     "confidence": 0.62445,
      "probabilities": {
-      "no": 0.3755498996652723,
-      "yes": 0.6244501003347276
+      "no": 0.37555,
+      "yes": 0.62445
      },
      "choice": "yes"
     },
     "team__rev": {
      "type": "choice",
      "label": "A",
-     "confidence": 0.9589700365068089,
+     "confidence": 0.95897,
      "probabilities": {
-      "engineering": 0.9589700365068089,
-      "support": 0.008725103403233216,
-      "billing": 0.03230486008995784
+      "engineering": 0.95897,
+      "support": 0.00873,
+      "billing": 0.0323
      },
      "choice": "engineering"
     },
     "sentiment__rev": {
      "type": "score",
      "label": "2",
-     "confidence": 0.6478889621548383,
+     "confidence": 0.64789,
      "probabilities": {
-      "furious": 0.17210919563142876,
-      "frustrated": 0.6478889621548383,
-      "calm": 0.18000184221373294
+      "furious": 0.17211,
+      "frustrated": 0.64789,
+      "calm": 0.18
      },
-     "score": 2.007892646582304,
+     "score": 2.00789,
      "level": "frustrated"
     }
    },
@@ -469,35 +469,35 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 153.99789810180664,
+   "denoise_ms": 153.9979,
    "probabilities": {
     "urgent": {
-     "yes": 0.5396594588675961,
-     "no": 0.4603405411324039
+     "yes": 0.53966,
+     "no": 0.46034
     },
     "team": {
-     "billing": 0.14344803221406757,
-     "support": 0.0028906503731208795,
-     "engineering": 0.8536613174128115
+     "billing": 0.14345,
+     "support": 0.00289,
+     "engineering": 0.85366
     },
     "sentiment": {
-     "calm": 0.012975474977968379,
-     "frustrated": 0.9706874932617111,
-     "furious": 0.01633703176032055
+     "calm": 0.01298,
+     "frustrated": 0.97069,
+     "furious": 0.01634
     },
     "urgent__rev": {
-     "no": 0.3755498996652723,
-     "yes": 0.6244501003347276
+     "no": 0.37555,
+     "yes": 0.62445
     },
     "team__rev": {
-     "engineering": 0.9589700365068089,
-     "support": 0.008725103403233216,
-     "billing": 0.03230486008995784
+     "engineering": 0.95897,
+     "support": 0.00873,
+     "billing": 0.0323
     },
     "sentiment__rev": {
-     "furious": 0.17210919563142876,
-     "frustrated": 0.6478889621548383,
-     "calm": 0.18000184221373294
+     "furious": 0.17211,
+     "frustrated": 0.64789,
+     "calm": 0.18
     }
    },
    "labels": {
@@ -528,24 +528,24 @@
     "department": {
      "type": "choice",
      "label": "D",
-     "confidence": 0.9961101888108949,
+     "confidence": 0.99611,
      "probabilities": {
-      "it_helpdesk": 0.00012847907980040774,
-      "hr_people_ops": 0.0037354172922232794,
-      "facilities": 2.5914817081351488e-05,
-      "other_unclassified": 0.9961101888108949
+      "it_helpdesk": 0.00013,
+      "hr_people_ops": 0.00374,
+      "facilities": 3e-05,
+      "other_unclassified": 0.99611
      },
      "choice": "other_unclassified"
     },
     "requires_new_category": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9944367886431364,
+     "confidence": 0.99444,
      "probabilities": {
-      "yes": 0.9944367886431364,
-      "no": 0.005563211356863435
+      "yes": 0.99444,
+      "no": 0.00556
      },
-     "noul": 0.9944367886431364
+     "noul": 0.99444
     }
    },
    "diagnostic_keys": [
@@ -564,17 +564,17 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 485.63170433044434,
+   "denoise_ms": 485.6317,
    "probabilities": {
     "department": {
-     "it_helpdesk": 0.00012847907980040774,
-     "hr_people_ops": 0.0037354172922232794,
-     "facilities": 2.5914817081351488e-05,
-     "other_unclassified": 0.9961101888108949
+     "it_helpdesk": 0.00013,
+     "hr_people_ops": 0.00374,
+     "facilities": 3e-05,
+     "other_unclassified": 0.99611
     },
     "requires_new_category": {
-     "yes": 0.9944367886431364,
-     "no": 0.005563211356863435
+     "yes": 0.99444,
+     "no": 0.00556
     }
    },
    "labels": {
@@ -601,22 +601,22 @@
     "has_button": {
      "type": "noul",
      "label": "no",
-     "confidence": 0.994849776984809,
+     "confidence": 0.99485,
      "probabilities": {
-      "yes": 0.005150223015191023,
-      "no": 0.994849776984809
+      "yes": 0.00515,
+      "no": 0.99485
      },
-     "noul": 0.005150223015191023
+     "noul": 0.00515
     },
     "dominant_color": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9995905595488161,
+     "confidence": 0.99959,
      "probabilities": {
-      "red": 0.0001396188679275006,
-      "green": 0.0002575847566869854,
-      "blue": 0.9995905595488161,
-      "white": 1.2236826569484524e-05
+      "red": 0.00014,
+      "green": 0.00026,
+      "blue": 0.99959,
+      "white": 1e-05
      },
      "choice": "blue"
     }
@@ -637,17 +637,17 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 113.87181282043457,
+   "denoise_ms": 113.87181,
    "probabilities": {
     "has_button": {
-     "yes": 0.005150223015191023,
-     "no": 0.994849776984809
+     "yes": 0.00515,
+     "no": 0.99485
     },
     "dominant_color": {
-     "red": 0.0001396188679275006,
-     "green": 0.0002575847566869854,
-     "blue": 0.9995905595488161,
-     "white": 1.2236826569484524e-05
+     "red": 0.00014,
+     "green": 0.00026,
+     "blue": 0.99959,
+     "white": 1e-05
     }
    },
    "labels": {
@@ -674,34 +674,34 @@
     "pick": {
      "type": "choice",
      "label": "B",
-     "confidence": 0.6938671609775504,
+     "confidence": 0.69387,
      "probabilities": {
-      "opt_00": 0.24366413620880806,
-      "opt_01": 0.6938671609775504,
-      "opt_02": 0.021269260140083332,
-      "opt_03": 0.004502631410731358,
-      "opt_04": 0.0022179463320050625,
-      "opt_05": 0.0006303472094473074,
-      "opt_06": 0.006903326832153505,
-      "opt_07": 0.0003734826087800317,
-      "opt_08": 4.911694025630384e-05,
-      "opt_09": 0.0018140578093990673,
-      "opt_10": 0.0005856282973307922,
-      "opt_11": 0.0014786294513607578,
-      "opt_12": 0.01812447068985316,
-      "opt_13": 0.0002966687847673255,
-      "opt_14": 5.034694685814151e-06,
-      "opt_15": 0.0005856282973307922,
-      "opt_16": 0.002884356428686491,
-      "opt_17": 0.00018518411026962757,
-      "opt_18": 8.176953699277336e-05,
-      "opt_19": 4.911694025630384e-05,
-      "opt_20": 3.7861935603028634e-05,
-      "opt_21": 4.798470576091763e-06,
-      "opt_22": 2.4341933260252633e-05,
-      "opt_23": 2.4341933260252633e-05,
-      "opt_24": 0.0001236723076332491,
-      "opt_25": 0.00021702971891890486
+      "opt_00": 0.24366,
+      "opt_01": 0.69387,
+      "opt_02": 0.02127,
+      "opt_03": 0.0045,
+      "opt_04": 0.00222,
+      "opt_05": 0.00063,
+      "opt_06": 0.0069,
+      "opt_07": 0.00037,
+      "opt_08": 5e-05,
+      "opt_09": 0.00181,
+      "opt_10": 0.00059,
+      "opt_11": 0.00148,
+      "opt_12": 0.01812,
+      "opt_13": 0.0003,
+      "opt_14": 1e-05,
+      "opt_15": 0.00059,
+      "opt_16": 0.00288,
+      "opt_17": 0.00019,
+      "opt_18": 8e-05,
+      "opt_19": 5e-05,
+      "opt_20": 4e-05,
+      "opt_21": 0.0,
+      "opt_22": 2e-05,
+      "opt_23": 2e-05,
+      "opt_24": 0.00012,
+      "opt_25": 0.00022
      },
      "choice": "opt_01"
     }
@@ -722,35 +722,35 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 142.08173751831055,
+   "denoise_ms": 142.08174,
    "probabilities": {
     "pick": {
-     "opt_00": 0.24366413620880806,
-     "opt_01": 0.6938671609775504,
-     "opt_02": 0.021269260140083332,
-     "opt_03": 0.004502631410731358,
-     "opt_04": 0.0022179463320050625,
-     "opt_05": 0.0006303472094473074,
-     "opt_06": 0.006903326832153505,
-     "opt_07": 0.0003734826087800317,
-     "opt_08": 4.911694025630384e-05,
-     "opt_09": 0.0018140578093990673,
-     "opt_10": 0.0005856282973307922,
-     "opt_11": 0.0014786294513607578,
-     "opt_12": 0.01812447068985316,
-     "opt_13": 0.0002966687847673255,
-     "opt_14": 5.034694685814151e-06,
-     "opt_15": 0.0005856282973307922,
-     "opt_16": 0.002884356428686491,
-     "opt_17": 0.00018518411026962757,
-     "opt_18": 8.176953699277336e-05,
-     "opt_19": 4.911694025630384e-05,
-     "opt_20": 3.7861935603028634e-05,
-     "opt_21": 4.798470576091763e-06,
-     "opt_22": 2.4341933260252633e-05,
-     "opt_23": 2.4341933260252633e-05,
-     "opt_24": 0.0001236723076332491,
-     "opt_25": 0.00021702971891890486
+     "opt_00": 0.24366,
+     "opt_01": 0.69387,
+     "opt_02": 0.02127,
+     "opt_03": 0.0045,
+     "opt_04": 0.00222,
+     "opt_05": 0.00063,
+     "opt_06": 0.0069,
+     "opt_07": 0.00037,
+     "opt_08": 5e-05,
+     "opt_09": 0.00181,
+     "opt_10": 0.00059,
+     "opt_11": 0.00148,
+     "opt_12": 0.01812,
+     "opt_13": 0.0003,
+     "opt_14": 1e-05,
+     "opt_15": 0.00059,
+     "opt_16": 0.00288,
+     "opt_17": 0.00019,
+     "opt_18": 8e-05,
+     "opt_19": 5e-05,
+     "opt_20": 4e-05,
+     "opt_21": 0.0,
+     "opt_22": 2e-05,
+     "opt_23": 2e-05,
+     "opt_24": 0.00012,
+     "opt_25": 0.00022
     }
    },
    "labels": {
@@ -781,22 +781,22 @@
     "billing_issue": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9936458503711598,
+     "confidence": 0.99365,
      "probabilities": {
-      "yes": 0.9936458503711598,
-      "no": 0.006354149628840044
+      "yes": 0.99365,
+      "no": 0.00635
      },
-     "noul": 0.9936458503711598
+     "noul": 0.99365
     },
     "refund": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9992479645710033,
+     "confidence": 0.99925,
      "probabilities": {
-      "yes": 0.9992479645710033,
-      "no": 0.0007520354289967413
+      "yes": 0.99925,
+      "no": 0.00075
      },
-     "noul": 0.9992479645710033
+     "noul": 0.99925
     }
    },
    "diagnostic_keys": [
@@ -815,15 +815,15 @@
     "timing"
    ],
    "reads": 2,
-   "denoise_ms": 209.53869819641113,
+   "denoise_ms": 209.5387,
    "probabilities": {
     "billing_issue": {
-     "yes": 0.9936458503711598,
-     "no": 0.006354149628840044
+     "yes": 0.99365,
+     "no": 0.00635
     },
     "refund": {
-     "yes": 0.9992479645710033,
-     "no": 0.0007520354289967413
+     "yes": 0.99925,
+     "no": 0.00075
     }
    },
    "labels": {
@@ -853,21 +853,21 @@
    "answers": {
     "urgent": {
      "type": "noul",
-     "noul": 0.14047574650554137,
+     "noul": 0.14048,
      "probabilities": {
-      "true": 0.14047574650554137,
-      "false": 0.8595242534944586
+      "true": 0.14048,
+      "false": 0.85952
      },
-     "confidence": 0.8595242534944587
+     "confidence": 0.85952
     },
     "billing": {
      "type": "noul",
-     "noul": 0.9909043226319257,
+     "noul": 0.9909,
      "probabilities": {
-      "true": 0.9909043226319257,
-      "false": 0.009095677368074262
+      "true": 0.9909,
+      "false": 0.0091
      },
-     "confidence": 0.9909043226319257
+     "confidence": 0.9909
     }
    },
    "diagnostic_keys": [
@@ -886,15 +886,15 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 87.04185485839844,
+   "denoise_ms": 87.04185,
    "probabilities": {
     "urgent": {
-     "true": 0.14047574650554137,
-     "false": 0.8595242534944586
+     "true": 0.14048,
+     "false": 0.85952
     },
     "billing": {
-     "true": 0.9909043226319257,
-     "false": 0.009095677368074262
+     "true": 0.9909,
+     "false": 0.0091
     }
    },
    "labels": {
@@ -921,12 +921,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9976382990098119,
-      "weather": 0.0014678735676890888,
-      "play_music": 0.00021766254564314677,
-      "send_email": 0.0006761648768559284
+      "set_alarm": 0.99764,
+      "weather": 0.00147,
+      "play_music": 0.00022,
+      "send_email": 0.00068
      },
-     "confidence": 0.9976382990098119
+     "confidence": 0.99764
     }
    },
    "diagnostic_keys": [
@@ -945,13 +945,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 84.05375480651855,
+   "denoise_ms": 84.05375,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9976382990098119,
-     "weather": 0.0014678735676890888,
-     "play_music": 0.00021766254564314677,
-     "send_email": 0.0006761648768559284
+     "set_alarm": 0.99764,
+     "weather": 0.00147,
+     "play_music": 0.00022,
+     "send_email": 0.00068
     }
    },
    "labels": {
@@ -976,12 +976,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9971931318380056,
-      "weather": 0.0016874926854365641,
-      "play_music": 0.0005792895199951794,
-      "send_email": 0.0005400859565626711
+      "set_alarm": 0.99719,
+      "weather": 0.00169,
+      "play_music": 0.00058,
+      "send_email": 0.00054
      },
-     "confidence": 0.9971931318380056
+     "confidence": 0.99719
     }
    },
    "diagnostic_keys": [
@@ -1000,13 +1000,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 109.65156555175781,
+   "denoise_ms": 109.65157,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9971931318380056,
-     "weather": 0.0016874926854365641,
-     "play_music": 0.0005792895199951794,
-     "send_email": 0.0005400859565626711
+     "set_alarm": 0.99719,
+     "weather": 0.00169,
+     "play_music": 0.00058,
+     "send_email": 0.00054
     }
    },
    "labels": {
@@ -1031,12 +1031,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9977460802871164,
-      "weather": 0.0017898857637206557,
-      "play_music": 0.0002320169745815107,
-      "send_email": 0.0002320169745815107
+      "set_alarm": 0.99775,
+      "weather": 0.00179,
+      "play_music": 0.00023,
+      "send_email": 0.00023
      },
-     "confidence": 0.9977460802871164
+     "confidence": 0.99775
     }
    },
    "diagnostic_keys": [
@@ -1055,13 +1055,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 93.47009658813477,
+   "denoise_ms": 93.4701,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9977460802871164,
-     "weather": 0.0017898857637206557,
-     "play_music": 0.0002320169745815107,
-     "send_email": 0.0002320169745815107
+     "set_alarm": 0.99775,
+     "weather": 0.00179,
+     "play_music": 0.00023,
+     "send_email": 0.00023
     }
    },
    "labels": {
@@ -1086,12 +1086,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9973463117781117,
-      "weather": 0.0015186760822176542,
-      "play_music": 0.00010865853927177207,
-      "send_email": 0.001026353600398818
+      "set_alarm": 0.99735,
+      "weather": 0.00152,
+      "play_music": 0.00011,
+      "send_email": 0.00103
      },
-     "confidence": 0.9973463117781117
+     "confidence": 0.99735
     }
    },
    "diagnostic_keys": [
@@ -1110,13 +1110,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 91.41087532043457,
+   "denoise_ms": 91.41088,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9973463117781117,
-     "weather": 0.0015186760822176542,
-     "play_music": 0.00010865853927177207,
-     "send_email": 0.001026353600398818
+     "set_alarm": 0.99735,
+     "weather": 0.00152,
+     "play_music": 0.00011,
+     "send_email": 0.00103
     }
    },
    "labels": {
@@ -1141,12 +1141,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9984598373696071,
-      "weather": 0.0008766756388376903,
-      "play_music": 7.23462988510585e-05,
-      "send_email": 0.0005911406927041343
+      "set_alarm": 0.99846,
+      "weather": 0.00088,
+      "play_music": 7e-05,
+      "send_email": 0.00059
      },
-     "confidence": 0.9984598373696071
+     "confidence": 0.99846
     }
    },
    "diagnostic_keys": [
@@ -1165,13 +1165,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 88.21487426757812,
+   "denoise_ms": 88.21487,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9984598373696071,
-     "weather": 0.0008766756388376903,
-     "play_music": 7.23462988510585e-05,
-     "send_email": 0.0005911406927041343
+     "set_alarm": 0.99846,
+     "weather": 0.00088,
+     "play_music": 7e-05,
+     "send_email": 0.00059
     }
    },
    "labels": {
@@ -1194,12 +1194,12 @@
    "answers": {
     "billing": {
      "type": "noul",
-     "noul": 0.983006663350315,
+     "noul": 0.98301,
      "probabilities": {
-      "true": 0.983006663350315,
-      "false": 0.016993336649685054
+      "true": 0.98301,
+      "false": 0.01699
      },
-     "confidence": 0.983006663350315
+     "confidence": 0.98301
     }
    },
    "diagnostic_keys": [
@@ -1218,11 +1218,11 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 70.61934471130371,
+   "denoise_ms": 70.61934,
    "probabilities": {
     "billing": {
-     "true": 0.983006663350315,
-     "false": 0.016993336649685054
+     "true": 0.98301,
+     "false": 0.01699
     }
    },
    "labels": {

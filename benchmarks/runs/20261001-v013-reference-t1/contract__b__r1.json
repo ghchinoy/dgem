@@ -21,34 +21,34 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9529057966987483,
+     "confidence": 0.95291,
      "probabilities": {
-      "yes": 0.9529057966987483,
-      "no": 0.04709420330125182
+      "yes": 0.95291,
+      "no": 0.04709
      },
-     "noul": 0.9529057966987483
+     "noul": 0.95291
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9711100140893667,
+     "confidence": 0.97111,
      "probabilities": {
-      "billing": 0.028260733901323772,
-      "support": 0.0006292520093094833,
-      "engineering": 0.9711100140893667
+      "billing": 0.02826,
+      "support": 0.00063,
+      "engineering": 0.97111
      },
      "choice": "engineering"
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9873808842597463,
+     "confidence": 0.98738,
      "probabilities": {
-      "calm": 0.006590780777213268,
-      "frustrated": 0.9873808842597463,
-      "furious": 0.0060283349630402515
+      "calm": 0.00659,
+      "frustrated": 0.98738,
+      "furious": 0.00603
      },
-     "score": 1.9994375541858267,
+     "score": 1.99944,
      "level": "frustrated"
     }
    },
@@ -68,21 +68,21 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 106.2018871307373,
+   "denoise_ms": 106.20189,
    "probabilities": {
     "urgent": {
-     "yes": 0.9529057966987483,
-     "no": 0.04709420330125182
+     "yes": 0.95291,
+     "no": 0.04709
     },
     "team": {
-     "billing": 0.028260733901323772,
-     "support": 0.0006292520093094833,
-     "engineering": 0.9711100140893667
+     "billing": 0.02826,
+     "support": 0.00063,
+     "engineering": 0.97111
     },
     "sentiment": {
-     "calm": 0.006590780777213268,
-     "frustrated": 0.9873808842597463,
-     "furious": 0.0060283349630402515
+     "calm": 0.00659,
+     "frustrated": 0.98738,
+     "furious": 0.00603
     }
    },
    "labels": {
@@ -110,40 +110,40 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9179069405760123,
+     "confidence": 0.91791,
      "probabilities": {
-      "yes": 0.9179069405760123,
-      "no": 0.08209305942398767
+      "yes": 0.91791,
+      "no": 0.08209
      },
-     "noul": 0.9179069405760123,
-     "stderr": 0.03466647981198201,
+     "noul": 0.91791,
+     "stderr": 0.03467,
      "agreement": 1.0
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9203132985099922,
+     "confidence": 0.92031,
      "probabilities": {
-      "billing": 0.07668376197861002,
-      "support": 0.003002939511397696,
-      "engineering": 0.9203132985099922
+      "billing": 0.07668,
+      "support": 0.003,
+      "engineering": 0.92031
      },
      "choice": "engineering",
-     "stderr": 0.01474050166897607,
+     "stderr": 0.01474,
      "agreement": 1.0
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9862004904964323,
+     "confidence": 0.9862,
      "probabilities": {
-      "calm": 0.007561953698229565,
-      "frustrated": 0.9862004904964323,
-      "furious": 0.006237555805338124
+      "calm": 0.00756,
+      "frustrated": 0.9862,
+      "furious": 0.00624
      },
-     "score": 1.9986756021071086,
+     "score": 1.99868,
      "level": "frustrated",
-     "stderr": 0.0025887297471781324,
+     "stderr": 0.00259,
      "agreement": 1.0
     }
    },
@@ -163,21 +163,21 @@
     "timing"
    ],
    "reads": 4,
-   "denoise_ms": 148.73981475830078,
+   "denoise_ms": 148.73981,
    "probabilities": {
     "urgent": {
-     "yes": 0.9179069405760123,
-     "no": 0.08209305942398767
+     "yes": 0.91791,
+     "no": 0.08209
     },
     "team": {
-     "billing": 0.07668376197861002,
-     "support": 0.003002939511397696,
-     "engineering": 0.9203132985099922
+     "billing": 0.07668,
+     "support": 0.003,
+     "engineering": 0.92031
     },
     "sentiment": {
-     "calm": 0.007561953698229565,
-     "frustrated": 0.9862004904964323,
-     "furious": 0.006237555805338124
+     "calm": 0.00756,
+     "frustrated": 0.9862,
+     "furious": 0.00624
     }
    },
    "labels": {
@@ -205,40 +205,40 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9179069405760123,
+     "confidence": 0.91791,
      "probabilities": {
-      "yes": 0.9179069405760123,
-      "no": 0.08209305942398767
+      "yes": 0.91791,
+      "no": 0.08209
      },
-     "noul": 0.9179069405760123,
-     "stderr": 0.03466647981198201,
+     "noul": 0.91791,
+     "stderr": 0.03467,
      "agreement": 1.0
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9203132985099922,
+     "confidence": 0.92031,
      "probabilities": {
-      "billing": 0.07668376197861002,
-      "support": 0.003002939511397696,
-      "engineering": 0.9203132985099922
+      "billing": 0.07668,
+      "support": 0.003,
+      "engineering": 0.92031
      },
      "choice": "engineering",
-     "stderr": 0.01474050166897607,
+     "stderr": 0.01474,
      "agreement": 1.0
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9862004904964323,
+     "confidence": 0.9862,
      "probabilities": {
-      "calm": 0.007561953698229565,
-      "frustrated": 0.9862004904964323,
-      "furious": 0.006237555805338124
+      "calm": 0.00756,
+      "frustrated": 0.9862,
+      "furious": 0.00624
      },
-     "score": 1.9986756021071086,
+     "score": 1.99868,
      "level": "frustrated",
-     "stderr": 0.0025887297471781324,
+     "stderr": 0.00259,
      "agreement": 1.0
     }
    },
@@ -258,21 +258,21 @@
     "timing"
    ],
    "reads": 4,
-   "denoise_ms": 148.19002151489258,
+   "denoise_ms": 148.19002,
    "probabilities": {
     "urgent": {
-     "yes": 0.9179069405760123,
-     "no": 0.08209305942398767
+     "yes": 0.91791,
+     "no": 0.08209
     },
     "team": {
-     "billing": 0.07668376197861002,
-     "support": 0.003002939511397696,
-     "engineering": 0.9203132985099922
+     "billing": 0.07668,
+     "support": 0.003,
+     "engineering": 0.92031
     },
     "sentiment": {
-     "calm": 0.007561953698229565,
-     "frustrated": 0.9862004904964323,
-     "furious": 0.006237555805338124
+     "calm": 0.00756,
+     "frustrated": 0.9862,
+     "furious": 0.00624
     }
    },
    "labels": {
@@ -300,34 +300,34 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9776617640823636,
+     "confidence": 0.97766,
      "probabilities": {
-      "yes": 0.9776617640823636,
-      "no": 0.022338235917636465
+      "yes": 0.97766,
+      "no": 0.02234
      },
-     "noul": 0.9776617640823636
+     "noul": 0.97766
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9539210661135193,
+     "confidence": 0.95392,
      "probabilities": {
-      "billing": 0.043575727053451495,
-      "support": 0.0025032068330290546,
-      "engineering": 0.9539210661135193
+      "billing": 0.04358,
+      "support": 0.0025,
+      "engineering": 0.95392
      },
      "choice": "engineering"
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9840907633953897,
+     "confidence": 0.98409,
      "probabilities": {
-      "calm": 0.002857910861713772,
-      "frustrated": 0.9840907633953897,
-      "furious": 0.013051325742896455
+      "calm": 0.00286,
+      "frustrated": 0.98409,
+      "furious": 0.01305
      },
-     "score": 2.0101934148811824,
+     "score": 2.01019,
      "level": "frustrated"
     }
    },
@@ -347,21 +347,21 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 150.44188499450684,
+   "denoise_ms": 150.44188,
    "probabilities": {
     "urgent": {
-     "yes": 0.9776617640823636,
-     "no": 0.022338235917636465
+     "yes": 0.97766,
+     "no": 0.02234
     },
     "team": {
-     "billing": 0.043575727053451495,
-     "support": 0.0025032068330290546,
-     "engineering": 0.9539210661135193
+     "billing": 0.04358,
+     "support": 0.0025,
+     "engineering": 0.95392
     },
     "sentiment": {
-     "calm": 0.002857910861713772,
-     "frustrated": 0.9840907633953897,
-     "furious": 0.013051325742896455
+     "calm": 0.00286,
+     "frustrated": 0.98409,
+     "furious": 0.01305
     }
    },
    "labels": {
@@ -389,67 +389,67 @@
     "urgent": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.8326051529011661,
+     "confidence": 0.83261,
      "probabilities": {
-      "yes": 0.8326051529011661,
-      "no": 0.167394847098834
+      "yes": 0.83261,
+      "no": 0.16739
      },
-     "noul": 0.8326051529011661
+     "noul": 0.83261
     },
     "team": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9074546860993334,
+     "confidence": 0.90745,
      "probabilities": {
-      "billing": 0.08806964116800704,
-      "support": 0.004475672732659431,
-      "engineering": 0.9074546860993334
+      "billing": 0.08807,
+      "support": 0.00448,
+      "engineering": 0.90745
      },
      "choice": "engineering"
     },
     "sentiment": {
      "type": "score",
      "label": "2",
-     "confidence": 0.9792170831278607,
+     "confidence": 0.97922,
      "probabilities": {
-      "calm": 0.016425953941938843,
-      "frustrated": 0.9792170831278607,
-      "furious": 0.004356962930200319
+      "calm": 0.01643,
+      "frustrated": 0.97922,
+      "furious": 0.00436
      },
-     "score": 1.9879310089882611,
+     "score": 1.98793,
      "level": "frustrated"
     },
     "urgent__rev": {
      "type": "choice",
      "label": "B",
-     "confidence": 0.5769982583567949,
+     "confidence": 0.577,
      "probabilities": {
-      "no": 0.42300174164320525,
-      "yes": 0.5769982583567949
+      "no": 0.423,
+      "yes": 0.577
      },
      "choice": "yes"
     },
     "team__rev": {
      "type": "choice",
      "label": "A",
-     "confidence": 0.9048547276932323,
+     "confidence": 0.90485,
      "probabilities": {
-      "engineering": 0.9048547276932323,
-      "support": 0.014040547689122008,
-      "billing": 0.08110472461764573
+      "engineering": 0.90485,
+      "support": 0.01404,
+      "billing": 0.0811
      },
      "choice": "engineering"
     },
     "sentiment__rev": {
      "type": "score",
      "label": "2",
-     "confidence": 0.6433791492570328,
+     "confidence": 0.64338,
      "probabilities": {
-      "furious": 0.1164111238097488,
-      "frustrated": 0.6433791492570328,
-      "calm": 0.24020972693321835
+      "furious": 0.11641,
+      "frustrated": 0.64338,
+      "calm": 0.24021
      },
-     "score": 2.1237986031234692,
+     "score": 2.1238,
      "level": "frustrated"
     }
    },
@@ -469,35 +469,35 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 149.4126319885254,
+   "denoise_ms": 149.41263,
    "probabilities": {
     "urgent": {
-     "yes": 0.8326051529011661,
-     "no": 0.167394847098834
+     "yes": 0.83261,
+     "no": 0.16739
     },
     "team": {
-     "billing": 0.08806964116800704,
-     "support": 0.004475672732659431,
-     "engineering": 0.9074546860993334
+     "billing": 0.08807,
+     "support": 0.00448,
+     "engineering": 0.90745
     },
     "sentiment": {
-     "calm": 0.016425953941938843,
-     "frustrated": 0.9792170831278607,
-     "furious": 0.004356962930200319
+     "calm": 0.01643,
+     "frustrated": 0.97922,
+     "furious": 0.00436
     },
     "urgent__rev": {
-     "no": 0.42300174164320525,
-     "yes": 0.5769982583567949
+     "no": 0.423,
+     "yes": 0.577
     },
     "team__rev": {
-     "engineering": 0.9048547276932323,
-     "support": 0.014040547689122008,
-     "billing": 0.08110472461764573
+     "engineering": 0.90485,
+     "support": 0.01404,
+     "billing": 0.0811
     },
     "sentiment__rev": {
-     "furious": 0.1164111238097488,
-     "frustrated": 0.6433791492570328,
-     "calm": 0.24020972693321835
+     "furious": 0.11641,
+     "frustrated": 0.64338,
+     "calm": 0.24021
     }
    },
    "labels": {
@@ -528,24 +528,24 @@
     "department": {
      "type": "choice",
      "label": "D",
-     "confidence": 0.9932070529744247,
+     "confidence": 0.99321,
      "probabilities": {
-      "it_helpdesk": 8.557432751975149e-06,
-      "hr_people_ops": 0.006764259889454382,
-      "facilities": 2.012970336889749e-05,
-      "other_unclassified": 0.9932070529744247
+      "it_helpdesk": 1e-05,
+      "hr_people_ops": 0.00676,
+      "facilities": 2e-05,
+      "other_unclassified": 0.99321
      },
      "choice": "other_unclassified"
     },
     "requires_new_category": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9993616890982231,
+     "confidence": 0.99936,
      "probabilities": {
-      "yes": 0.9993616890982231,
-      "no": 0.0006383109017769751
+      "yes": 0.99936,
+      "no": 0.00064
      },
-     "noul": 0.9993616890982231
+     "noul": 0.99936
     }
    },
    "diagnostic_keys": [
@@ -564,17 +564,17 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 468.74308586120605,
+   "denoise_ms": 468.74309,
    "probabilities": {
     "department": {
-     "it_helpdesk": 8.557432751975149e-06,
-     "hr_people_ops": 0.006764259889454382,
-     "facilities": 2.012970336889749e-05,
-     "other_unclassified": 0.9932070529744247
+     "it_helpdesk": 1e-05,
+     "hr_people_ops": 0.00676,
+     "facilities": 2e-05,
+     "other_unclassified": 0.99321
     },
     "requires_new_category": {
-     "yes": 0.9993616890982231,
-     "no": 0.0006383109017769751
+     "yes": 0.99936,
+     "no": 0.00064
     }
    },
    "labels": {
@@ -601,22 +601,22 @@
     "has_button": {
      "type": "noul",
      "label": "no",
-     "confidence": 0.9917863524550907,
+     "confidence": 0.99179,
      "probabilities": {
-      "yes": 0.008213647544909374,
-      "no": 0.9917863524550907
+      "yes": 0.00821,
+      "no": 0.99179
      },
-     "noul": 0.008213647544909374
+     "noul": 0.00821
     },
     "dominant_color": {
      "type": "choice",
      "label": "C",
-     "confidence": 0.9994189365303309,
+     "confidence": 0.99942,
      "probabilities": {
-      "red": 0.00023623561002267355,
-      "green": 0.00031783883218498653,
-      "blue": 0.9994189365303309,
-      "white": 2.698902746140898e-05
+      "red": 0.00024,
+      "green": 0.00032,
+      "blue": 0.99942,
+      "white": 3e-05
      },
      "choice": "blue"
     }
@@ -637,17 +637,17 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 131.10589981079102,
+   "denoise_ms": 131.1059,
    "probabilities": {
     "has_button": {
-     "yes": 0.008213647544909374,
-     "no": 0.9917863524550907
+     "yes": 0.00821,
+     "no": 0.99179
     },
     "dominant_color": {
-     "red": 0.00023623561002267355,
-     "green": 0.00031783883218498653,
-     "blue": 0.9994189365303309,
-     "white": 2.698902746140898e-05
+     "red": 0.00024,
+     "green": 0.00032,
+     "blue": 0.99942,
+     "white": 3e-05
     }
    },
    "labels": {
@@ -674,34 +674,34 @@
     "pick": {
      "type": "choice",
      "label": "B",
-     "confidence": 0.7306427539374732,
+     "confidence": 0.73064,
      "probabilities": {
-      "opt_00": 0.15891144799462087,
-      "opt_01": 0.7306427539374732,
-      "opt_02": 0.034096117678844184,
-      "opt_03": 0.00643183780514074,
-      "opt_04": 0.0041630400555462115,
-      "opt_05": 0.0011651969237046493,
-      "opt_06": 0.009206893379690526,
-      "opt_07": 0.00024231949139775957,
-      "opt_08": 0.00016247846321799909,
-      "opt_09": 0.0020254431435502837,
-      "opt_10": 0.0007037991991302855,
-      "opt_11": 0.007259176020953605,
-      "opt_12": 0.0416243974156095,
-      "opt_13": 0.0005231029575493943,
-      "opt_14": 5.3576208607639916e-06,
-      "opt_15": 0.0007572470074977929,
-      "opt_16": 0.0014378056141842973,
-      "opt_17": 0.00014981498898501927,
-      "opt_18": 7.715610613917097e-05,
-      "opt_19": 7.088660589188376e-05,
-      "opt_20": 4.227386472397739e-05,
-      "opt_21": 5.897526799104601e-06,
-      "opt_22": 2.7178420156672935e-05,
-      "opt_23": 1.3131036585639625e-05,
-      "opt_24": 0.00011716329937289806,
-      "opt_25": 0.00013808344237350312
+      "opt_00": 0.15891,
+      "opt_01": 0.73064,
+      "opt_02": 0.0341,
+      "opt_03": 0.00643,
+      "opt_04": 0.00416,
+      "opt_05": 0.00117,
+      "opt_06": 0.00921,
+      "opt_07": 0.00024,
+      "opt_08": 0.00016,
+      "opt_09": 0.00203,
+      "opt_10": 0.0007,
+      "opt_11": 0.00726,
+      "opt_12": 0.04162,
+      "opt_13": 0.00052,
+      "opt_14": 1e-05,
+      "opt_15": 0.00076,
+      "opt_16": 0.00144,
+      "opt_17": 0.00015,
+      "opt_18": 8e-05,
+      "opt_19": 7e-05,
+      "opt_20": 4e-05,
+      "opt_21": 1e-05,
+      "opt_22": 3e-05,
+      "opt_23": 1e-05,
+      "opt_24": 0.00012,
+      "opt_25": 0.00014
      },
      "choice": "opt_01"
     }
@@ -722,35 +722,35 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 126.56497955322266,
+   "denoise_ms": 126.56498,
    "probabilities": {
     "pick": {
-     "opt_00": 0.15891144799462087,
-     "opt_01": 0.7306427539374732,
-     "opt_02": 0.034096117678844184,
-     "opt_03": 0.00643183780514074,
-     "opt_04": 0.0041630400555462115,
-     "opt_05": 0.0011651969237046493,
-     "opt_06": 0.009206893379690526,
-     "opt_07": 0.00024231949139775957,
-     "opt_08": 0.00016247846321799909,
-     "opt_09": 0.0020254431435502837,
-     "opt_10": 0.0007037991991302855,
-     "opt_11": 0.007259176020953605,
-     "opt_12": 0.0416243974156095,
-     "opt_13": 0.0005231029575493943,
-     "opt_14": 5.3576208607639916e-06,
-     "opt_15": 0.0007572470074977929,
-     "opt_16": 0.0014378056141842973,
-     "opt_17": 0.00014981498898501927,
-     "opt_18": 7.715610613917097e-05,
-     "opt_19": 7.088660589188376e-05,
-     "opt_20": 4.227386472397739e-05,
-     "opt_21": 5.897526799104601e-06,
-     "opt_22": 2.7178420156672935e-05,
-     "opt_23": 1.3131036585639625e-05,
-     "opt_24": 0.00011716329937289806,
-     "opt_25": 0.00013808344237350312
+     "opt_00": 0.15891,
+     "opt_01": 0.73064,
+     "opt_02": 0.0341,
+     "opt_03": 0.00643,
+     "opt_04": 0.00416,
+     "opt_05": 0.00117,
+     "opt_06": 0.00921,
+     "opt_07": 0.00024,
+     "opt_08": 0.00016,
+     "opt_09": 0.00203,
+     "opt_10": 0.0007,
+     "opt_11": 0.00726,
+     "opt_12": 0.04162,
+     "opt_13": 0.00052,
+     "opt_14": 1e-05,
+     "opt_15": 0.00076,
+     "opt_16": 0.00144,
+     "opt_17": 0.00015,
+     "opt_18": 8e-05,
+     "opt_19": 7e-05,
+     "opt_20": 4e-05,
+     "opt_21": 1e-05,
+     "opt_22": 3e-05,
+     "opt_23": 1e-05,
+     "opt_24": 0.00012,
+     "opt_25": 0.00014
     }
    },
    "labels": {
@@ -781,22 +781,22 @@
     "billing_issue": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9747323364317422,
+     "confidence": 0.97473,
      "probabilities": {
-      "yes": 0.9747323364317422,
-      "no": 0.02526766356825773
+      "yes": 0.97473,
+      "no": 0.02527
      },
-     "noul": 0.9747323364317422
+     "noul": 0.97473
     },
     "refund": {
      "type": "noul",
      "label": "yes",
-     "confidence": 0.9987732575265655,
+     "confidence": 0.99877,
      "probabilities": {
-      "yes": 0.9987732575265655,
-      "no": 0.0012267424734344818
+      "yes": 0.99877,
+      "no": 0.00123
      },
-     "noul": 0.9987732575265655
+     "noul": 0.99877
     }
    },
    "diagnostic_keys": [
@@ -815,15 +815,15 @@
     "timing"
    ],
    "reads": 2,
-   "denoise_ms": 205.4154872894287,
+   "denoise_ms": 205.41549,
    "probabilities": {
     "billing_issue": {
-     "yes": 0.9747323364317422,
-     "no": 0.02526766356825773
+     "yes": 0.97473,
+     "no": 0.02527
     },
     "refund": {
-     "yes": 0.9987732575265655,
-     "no": 0.0012267424734344818
+     "yes": 0.99877,
+     "no": 0.00123
     }
    },
    "labels": {
@@ -853,21 +853,21 @@
    "answers": {
     "urgent": {
      "type": "noul",
-     "noul": 0.041515899769114045,
+     "noul": 0.04152,
      "probabilities": {
-      "true": 0.041515899769114045,
-      "false": 0.9584841002308859
+      "true": 0.04152,
+      "false": 0.95848
      },
-     "confidence": 0.9584841002308859
+     "confidence": 0.95848
     },
     "billing": {
      "type": "noul",
-     "noul": 0.995973098557882,
+     "noul": 0.99597,
      "probabilities": {
-      "true": 0.995973098557882,
-      "false": 0.004026901442118036
+      "true": 0.99597,
+      "false": 0.00403
      },
-     "confidence": 0.995973098557882
+     "confidence": 0.99597
     }
    },
    "diagnostic_keys": [
@@ -886,15 +886,15 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 90.52062034606934,
+   "denoise_ms": 90.52062,
    "probabilities": {
     "urgent": {
-     "true": 0.041515899769114045,
-     "false": 0.9584841002308859
+     "true": 0.04152,
+     "false": 0.95848
     },
     "billing": {
-     "true": 0.995973098557882,
-     "false": 0.004026901442118036
+     "true": 0.99597,
+     "false": 0.00403
     }
    },
    "labels": {
@@ -921,12 +921,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.99791148867825,
-      "weather": 0.0011390559089878858,
-      "play_music": 0.00029417933389196826,
-      "send_email": 0.0006552760788702622
+      "set_alarm": 0.99791,
+      "weather": 0.00114,
+      "play_music": 0.00029,
+      "send_email": 0.00066
      },
-     "confidence": 0.99791148867825
+     "confidence": 0.99791
     }
    },
    "diagnostic_keys": [
@@ -945,13 +945,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 81.97307586669922,
+   "denoise_ms": 81.97308,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.99791148867825,
-     "weather": 0.0011390559089878858,
-     "play_music": 0.00029417933389196826,
-     "send_email": 0.0006552760788702622
+     "set_alarm": 0.99791,
+     "weather": 0.00114,
+     "play_music": 0.00029,
+     "send_email": 0.00066
     }
    },
    "labels": {
@@ -976,12 +976,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.998848537127007,
-      "weather": 0.0006893073262279225,
-      "play_music": 0.00014191625929279236,
-      "send_email": 0.0003202392874723257
+      "set_alarm": 0.99885,
+      "weather": 0.00069,
+      "play_music": 0.00014,
+      "send_email": 0.00032
      },
-     "confidence": 0.998848537127007
+     "confidence": 0.99885
     }
    },
    "diagnostic_keys": [
@@ -1000,13 +1000,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 82.8402042388916,
+   "denoise_ms": 82.8402,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.998848537127007,
-     "weather": 0.0006893073262279225,
-     "play_music": 0.00014191625929279236,
-     "send_email": 0.0003202392874723257
+     "set_alarm": 0.99885,
+     "weather": 0.00069,
+     "play_music": 0.00014,
+     "send_email": 0.00032
     }
    },
    "labels": {
@@ -1031,12 +1031,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9983373708194895,
-      "weather": 0.000925543522984415,
-      "play_music": 0.0003554925890964219,
-      "send_email": 0.0003815930684297524
+      "set_alarm": 0.99834,
+      "weather": 0.00093,
+      "play_music": 0.00036,
+      "send_email": 0.00038
      },
-     "confidence": 0.9983373708194895
+     "confidence": 0.99834
     }
    },
    "diagnostic_keys": [
@@ -1055,13 +1055,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 87.6016616821289,
+   "denoise_ms": 87.60166,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9983373708194895,
-     "weather": 0.000925543522984415,
-     "play_music": 0.0003554925890964219,
-     "send_email": 0.0003815930684297524
+     "set_alarm": 0.99834,
+     "weather": 0.00093,
+     "play_music": 0.00036,
+     "send_email": 0.00038
     }
    },
    "labels": {
@@ -1086,12 +1086,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9983424042565261,
-      "weather": 0.0012145909655127975,
-      "play_music": 8.56612153101877e-05,
-      "send_email": 0.00035734356265101165
+      "set_alarm": 0.99834,
+      "weather": 0.00121,
+      "play_music": 9e-05,
+      "send_email": 0.00036
      },
-     "confidence": 0.9983424042565261
+     "confidence": 0.99834
     }
    },
    "diagnostic_keys": [
@@ -1110,13 +1110,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 87.27669715881348,
+   "denoise_ms": 87.2767,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9983424042565261,
-     "weather": 0.0012145909655127975,
-     "play_music": 8.56612153101877e-05,
-     "send_email": 0.00035734356265101165
+     "set_alarm": 0.99834,
+     "weather": 0.00121,
+     "play_music": 9e-05,
+     "send_email": 0.00036
     }
    },
    "labels": {
@@ -1141,12 +1141,12 @@
      "type": "choice",
      "choice": "set_alarm",
      "probabilities": {
-      "set_alarm": 0.9947420732913401,
-      "weather": 0.004072562798655542,
-      "play_music": 0.000410801098011128,
-      "send_email": 0.0007745628119932282
+      "set_alarm": 0.99474,
+      "weather": 0.00407,
+      "play_music": 0.00041,
+      "send_email": 0.00077
      },
-     "confidence": 0.9947420732913401
+     "confidence": 0.99474
     }
    },
    "diagnostic_keys": [
@@ -1165,13 +1165,13 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 86.71712875366211,
+   "denoise_ms": 86.71713,
    "probabilities": {
     "intent": {
-     "set_alarm": 0.9947420732913401,
-     "weather": 0.004072562798655542,
-     "play_music": 0.000410801098011128,
-     "send_email": 0.0007745628119932282
+     "set_alarm": 0.99474,
+     "weather": 0.00407,
+     "play_music": 0.00041,
+     "send_email": 0.00077
     }
    },
    "labels": {
@@ -1194,12 +1194,12 @@
    "answers": {
     "billing": {
      "type": "noul",
-     "noul": 0.9965259842753621,
+     "noul": 0.99653,
      "probabilities": {
-      "true": 0.9965259842753621,
-      "false": 0.003474015724637902
+      "true": 0.99653,
+      "false": 0.00347
      },
-     "confidence": 0.9965259842753621
+     "confidence": 0.99653
     }
    },
    "diagnostic_keys": [
@@ -1218,11 +1218,11 @@
     "timing"
    ],
    "reads": 1,
-   "denoise_ms": 75.78325271606445,
+   "denoise_ms": 75.78325,
    "probabilities": {
     "billing": {
-     "true": 0.9965259842753621,
-     "false": 0.003474015724637902
+     "true": 0.99653,
+     "false": 0.00347
     }
    },
    "labels": {
