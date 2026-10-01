@@ -9,8 +9,22 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.1.3 (2026-10-01)
+
+Serving images rebuilt (structured server fix). Gateway, MCP and CLI from the same commit.
+
+- **Fix (#42):** `/v1/systemone` escaped every non-ASCII character in a JSON-object `state` to `\uXXXX`
+  (`json.dumps` defaults, inherited from vLLM's example), so Russian, Thai or Hindi input reached the model as hex
+  codes. Now `ensure_ascii=False`; ASCII-only states produce byte-identical prompts. MASSIVE (51 languages, 20 options)
+  macro accuracy 0.444 → 0.821 on Vertex G4. `chat/completions` (`dgem decide`, bench commands), the gateway's default
+  systemone adapter and string states were not affected.
+- `/v1/systemone` noul answers include `probabilities` (`true`/`false`) and `confidence`, like choice and score.
+- Decision responses send `Server-Timing: decide;dur=<ms>` and `X-Inference-Time-Ms`.
+- `scripts/contract_diff.py`: six multilingual systemone cases with known answers, reported as `WRONG` on any target.
 - `bench-intents`: more than 26 candidate intents run as a 2-stage bracket (groups of ≤ 20, top 5 to a final round)
   instead of being rejected by the server (`--dataset banking77` sends 30).
+- Docs: self-hosted evaluation guide; EXP-18 rerun on v0.1.0, throughput and cost per 1k; CI check for docs/ and
+  docs-site/ drift.
 
 ## v0.1.2 (2026-09-28)
 
