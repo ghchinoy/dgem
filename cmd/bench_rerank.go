@@ -174,7 +174,7 @@ func renderRerankReceipt(path string, asJSON bool) error {
 
 func init() {
 	benchRerankCmd.Flags().StringVarP(&rerankDatasetPath, "dataset", "d", "benchmarks/rerank_suite.jsonl", "Path to the reranking JSONL dataset")
-	benchRerankCmd.Flags().StringVarP(&rerankReceiptPath, "output", "o", "benchmarks/results_rerank_cloudrun.json", "Output path for the JSON telemetry receipt")
+	benchRerankCmd.Flags().StringVarP(&rerankReceiptPath, "output", "o", "", "Output path for the JSON telemetry receipt (not written when empty)")
 	benchRerankCmd.Flags().StringVar(&rerankFromReceipt, "from-receipt", "", "Render formatted summary from an existing JSON receipt file without invoking GPU")
 	benchRerankCmd.Flags().BoolVar(&rerankVerifyMath, "verify-math", false, "Run offline mathematical & fixture verification (no GPU required)")
 	benchRerankCmd.Flags().BoolVar(&rerankJSONOutput, "json", false, "Emit machine-readable JSON when inspecting a receipt")

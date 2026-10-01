@@ -3,8 +3,6 @@ title: "EXP-13: Permutation Sensitivity & O(1) Dual-Mirror Canvas"
 description: "Measuring content-free positional 'A'-bias, Cyclic Jensen-Shannon Divergence (I(Y; Π | X)), and O(1) single-pass Dual-Mirror Canvas calibration on Cloud Run GPU."
 ---
 
-# EXP-13: Permutation Sensitivity, Content-Free Null-Prior De-Biasing & O(1) Dual-Mirror Canvas Calibration
-
 > **Update (EXP-14, 2026-09-25):** A same-session re-run on the Vertex AI endpoint reproduced the slot-A habit but not every case below (e.g. `perm_08`). It also found that the production `--dual-mirror` path named the reversed slot `<id>__mirror_rev`, and that the word "mirror" in a slot id degraded both readings; `bench-permutation` (used here) names its slots `decision_fwd` / `decision_rev` and was not affected. See [EXP-14](/dgem/experiments/exp-14-idc-rerun/).
 
 ## 1. Motivation & Problem Statement
@@ -33,7 +31,7 @@ where:
 
 ## 3. Empirical Results on Live Cloud Run GPU (`dgemma`)
 
-Executed via `./bin/dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2` (`benchmarks/results_permutation_cloudrun.json`).
+Executed via `./bin/dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2 -o benchmarks/results_permutation_cloudrun.json` (`benchmarks/results_permutation_cloudrun.json`).
 
 ### 3.1 `EXP-13B`: Measured Content-Free Positional Null Priors ($p_0$)
 

@@ -247,7 +247,9 @@ func renderPermutationReport(r *permutation.PermutationReport) {
 func init() {
 	RootCmd.AddCommand(benchPermutationCmd)
 	benchPermutationCmd.Flags().StringVar(&permDatasetPath, "dataset", "benchmarks/permutation_suite.jsonl", "Path to EXP-13 permutation benchmark JSONL dataset")
-	benchPermutationCmd.Flags().StringVar(&permOutPath, "out", "benchmarks/results_permutation_cloudrun.json", "Path to write EXP-13 permutation receipt JSON")
+	benchPermutationCmd.Flags().StringVarP(&permOutPath, "output", "o", "", "Path to write the EXP-13 permutation receipt JSON (not written when empty)")
+	benchPermutationCmd.Flags().StringVar(&permOutPath, "out", "", "Deprecated alias for --output")
+	_ = benchPermutationCmd.Flags().MarkDeprecated("out", "use -o/--output")
 	benchPermutationCmd.Flags().StringVar(&permFromReceipt, "from-receipt", "", "Replay scorecard from a saved EXP-13 permutation receipt JSON")
 	benchPermutationCmd.Flags().Float64Var(&permGateNormH, "gate-threshold", 0.16, "Normalized entropy gate threshold tau in [0,1]")
 	benchPermutationCmd.Flags().Float64Var(&permPriorAlpha, "prior-alpha", 0.75, "Content-free prior de-biasing exponent alpha in [0,1]")

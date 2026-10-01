@@ -306,7 +306,9 @@ func renderDecisionIndexReceipt(r *DecisionIndexReceipt) {
 func init() {
 	RootCmd.AddCommand(benchDecisionIndexCmd)
 	benchDecisionIndexCmd.Flags().StringVar(&diDatasetPath, "dataset", "benchmarks/decision_index/panel_suite.jsonl", "Path to Decision Index JSONL suite (auto-populated if missing)")
-	benchDecisionIndexCmd.Flags().StringVar(&diOutPath, "out", "benchmarks/decision_index/results_decision_index_cloudrun.json", "Path to write Decision Index JSON receipt")
+	benchDecisionIndexCmd.Flags().StringVarP(&diOutPath, "output", "o", "", "Path to write the Decision Index JSON receipt (not written when empty)")
+	benchDecisionIndexCmd.Flags().StringVar(&diOutPath, "out", "", "Deprecated alias for --output")
+	_ = benchDecisionIndexCmd.Flags().MarkDeprecated("out", "use -o/--output")
 	benchDecisionIndexCmd.Flags().StringVar(&diFromReceipt, "from-receipt", "", "Replay scorecard from an existing Decision Index receipt JSON file")
 	benchDecisionIndexCmd.Flags().Float64Var(&diTempScale, "temperature-scale", 1.25, "Post-hoc slot temperature scaling T* for Brier & ECE calibration")
 	benchDecisionIndexCmd.Flags().IntVarP(&diWorkers, "workers", "w", 2, "Number of concurrent benchmark evaluation workers")
