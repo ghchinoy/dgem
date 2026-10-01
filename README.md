@@ -84,7 +84,7 @@ Open **[http://localhost:8090](http://localhost:8090)** to inspect all 26+ templ
 | Listwise reranking of 10 passages in one pass (`EXP-10`) | 0.9265 nDCG@10, 0% ties | 30 queries | `results_rerank_cloudrun.json` |
 | Content-free Slot-A habit (`EXP-13B`) | 88.3% / 78.3% / 49.3% for K = 2 / 3 / 4 | probe | `results_permutation_cloudrun.json` |
 
-Run-to-run noise is about ±1 item on 50 and ±2 on 231. Cascade thresholds were chosen on the evaluation items; treat these as directional. Compare runs with `python3 scripts/bench_runs.py compare`. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
+Answers are not deterministic (about 5–7% of items change between identical runs), so compare runs with the [regression matrix](docs/operate/regression-matrix.md), which measures that noise floor in every run. Cascade thresholds were chosen on the evaluation items; treat these as directional. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
 
 ---
 

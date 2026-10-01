@@ -1,0 +1,1237 @@
+{
+ "kind": "contract",
+ "target": "a",
+ "cases": {
+  "triage_s1": {
+   "status": 200,
+   "server_timing": "decide;dur=153.40",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "urgent": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.92036,
+     "probabilities": {
+      "yes": 0.92036,
+      "no": 0.07964
+     },
+     "noul": 0.92036
+    },
+    "team": {
+     "type": "choice",
+     "label": "C",
+     "confidence": 0.93235,
+     "probabilities": {
+      "billing": 0.06532,
+      "support": 0.00232,
+      "engineering": 0.93235
+     },
+     "choice": "engineering"
+    },
+    "sentiment": {
+     "type": "score",
+     "label": "2",
+     "confidence": 0.98826,
+     "probabilities": {
+      "calm": 0.00176,
+      "frustrated": 0.98826,
+      "furious": 0.00998
+     },
+     "score": 2.00822,
+     "level": "frustrated"
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 153.39947,
+   "probabilities": {
+    "urgent": {
+     "yes": 0.92036,
+     "no": 0.07964
+    },
+    "team": {
+     "billing": 0.06532,
+     "support": 0.00232,
+     "engineering": 0.93235
+    },
+    "sentiment": {
+     "calm": 0.00176,
+     "frustrated": 0.98826,
+     "furious": 0.00998
+    }
+   },
+   "labels": {
+    "urgent": "yes",
+    "team": "C",
+    "sentiment": "2"
+   }
+  },
+  "triage_s4": {
+   "status": 200,
+   "server_timing": "decide;dur=159.12",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "urgent": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.88284,
+     "probabilities": {
+      "yes": 0.88284,
+      "no": 0.11716
+     },
+     "noul": 0.88284,
+     "stderr": 0.05595,
+     "agreement": 1.0
+    },
+    "team": {
+     "type": "choice",
+     "label": "C",
+     "confidence": 0.93004,
+     "probabilities": {
+      "billing": 0.06566,
+      "support": 0.0043,
+      "engineering": 0.93004
+     },
+     "choice": "engineering",
+     "stderr": 0.0233,
+     "agreement": 1.0
+    },
+    "sentiment": {
+     "type": "score",
+     "label": "2",
+     "confidence": 0.9897,
+     "probabilities": {
+      "calm": 0.00422,
+      "frustrated": 0.9897,
+      "furious": 0.00608
+     },
+     "score": 2.00186,
+     "level": "frustrated",
+     "stderr": 0.00157,
+     "agreement": 1.0
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 4,
+   "denoise_ms": 159.11984,
+   "probabilities": {
+    "urgent": {
+     "yes": 0.88284,
+     "no": 0.11716
+    },
+    "team": {
+     "billing": 0.06566,
+     "support": 0.0043,
+     "engineering": 0.93004
+    },
+    "sentiment": {
+     "calm": 0.00422,
+     "frustrated": 0.9897,
+     "furious": 0.00608
+    }
+   },
+   "labels": {
+    "urgent": "yes",
+    "team": "C",
+    "sentiment": "2"
+   }
+  },
+  "samples_string": {
+   "status": 200,
+   "server_timing": "decide;dur=158.66",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "urgent": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.88284,
+     "probabilities": {
+      "yes": 0.88284,
+      "no": 0.11716
+     },
+     "noul": 0.88284,
+     "stderr": 0.05595,
+     "agreement": 1.0
+    },
+    "team": {
+     "type": "choice",
+     "label": "C",
+     "confidence": 0.93004,
+     "probabilities": {
+      "billing": 0.06566,
+      "support": 0.0043,
+      "engineering": 0.93004
+     },
+     "choice": "engineering",
+     "stderr": 0.0233,
+     "agreement": 1.0
+    },
+    "sentiment": {
+     "type": "score",
+     "label": "2",
+     "confidence": 0.9897,
+     "probabilities": {
+      "calm": 0.00422,
+      "frustrated": 0.9897,
+      "furious": 0.00608
+     },
+     "score": 2.00186,
+     "level": "frustrated",
+     "stderr": 0.00157,
+     "agreement": 1.0
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 4,
+   "denoise_ms": 158.66065,
+   "probabilities": {
+    "urgent": {
+     "yes": 0.88284,
+     "no": 0.11716
+    },
+    "team": {
+     "billing": 0.06566,
+     "support": 0.0043,
+     "engineering": 0.93004
+    },
+    "sentiment": {
+     "calm": 0.00422,
+     "frustrated": 0.9897,
+     "furious": 0.00608
+    }
+   },
+   "labels": {
+    "urgent": "yes",
+    "team": "C",
+    "sentiment": "2"
+   }
+  },
+  "default_samples": {
+   "status": 200,
+   "server_timing": "decide;dur=153.71",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "urgent": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.92036,
+     "probabilities": {
+      "yes": 0.92036,
+      "no": 0.07964
+     },
+     "noul": 0.92036
+    },
+    "team": {
+     "type": "choice",
+     "label": "C",
+     "confidence": 0.93235,
+     "probabilities": {
+      "billing": 0.06532,
+      "support": 0.00232,
+      "engineering": 0.93235
+     },
+     "choice": "engineering"
+    },
+    "sentiment": {
+     "type": "score",
+     "label": "2",
+     "confidence": 0.98826,
+     "probabilities": {
+      "calm": 0.00176,
+      "frustrated": 0.98826,
+      "furious": 0.00998
+     },
+     "score": 2.00822,
+     "level": "frustrated"
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 153.71227,
+   "probabilities": {
+    "urgent": {
+     "yes": 0.92036,
+     "no": 0.07964
+    },
+    "team": {
+     "billing": 0.06532,
+     "support": 0.00232,
+     "engineering": 0.93235
+    },
+    "sentiment": {
+     "calm": 0.00176,
+     "frustrated": 0.98826,
+     "furious": 0.00998
+    }
+   },
+   "labels": {
+    "urgent": "yes",
+    "team": "C",
+    "sentiment": "2"
+   }
+  },
+  "mirror_s1": {
+   "status": 200,
+   "server_timing": "decide;dur=154.63",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "urgent": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.75465,
+     "probabilities": {
+      "yes": 0.75465,
+      "no": 0.24535
+     },
+     "noul": 0.75465
+    },
+    "team": {
+     "type": "choice",
+     "label": "C",
+     "confidence": 0.84402,
+     "probabilities": {
+      "billing": 0.15324,
+      "support": 0.00274,
+      "engineering": 0.84402
+     },
+     "choice": "engineering"
+    },
+    "sentiment": {
+     "type": "score",
+     "label": "2",
+     "confidence": 0.9054,
+     "probabilities": {
+      "calm": 0.07915,
+      "frustrated": 0.9054,
+      "furious": 0.01545
+     },
+     "score": 1.9363,
+     "level": "frustrated"
+    },
+    "urgent__rev": {
+     "type": "choice",
+     "label": "B",
+     "confidence": 0.51552,
+     "probabilities": {
+      "no": 0.48448,
+      "yes": 0.51552
+     },
+     "choice": "yes"
+    },
+    "team__rev": {
+     "type": "choice",
+     "label": "A",
+     "confidence": 0.91987,
+     "probabilities": {
+      "engineering": 0.91987,
+      "support": 0.01828,
+      "billing": 0.06185
+     },
+     "choice": "engineering"
+    },
+    "sentiment__rev": {
+     "type": "score",
+     "label": "2",
+     "confidence": 0.5941,
+     "probabilities": {
+      "furious": 0.11903,
+      "frustrated": 0.5941,
+      "calm": 0.28687
+     },
+     "score": 2.16784,
+     "level": "frustrated"
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 154.62828,
+   "probabilities": {
+    "urgent": {
+     "yes": 0.75465,
+     "no": 0.24535
+    },
+    "team": {
+     "billing": 0.15324,
+     "support": 0.00274,
+     "engineering": 0.84402
+    },
+    "sentiment": {
+     "calm": 0.07915,
+     "frustrated": 0.9054,
+     "furious": 0.01545
+    },
+    "urgent__rev": {
+     "no": 0.48448,
+     "yes": 0.51552
+    },
+    "team__rev": {
+     "engineering": 0.91987,
+     "support": 0.01828,
+     "billing": 0.06185
+    },
+    "sentiment__rev": {
+     "furious": 0.11903,
+     "frustrated": 0.5941,
+     "calm": 0.28687
+    }
+   },
+   "labels": {
+    "urgent": "yes",
+    "team": "C",
+    "sentiment": "2",
+    "urgent__rev": "B",
+    "team__rev": "A",
+    "sentiment__rev": "2"
+   }
+  },
+  "think120": {
+   "status": 200,
+   "server_timing": "decide;dur=489.08",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "department": {
+     "type": "choice",
+     "label": "D",
+     "confidence": 0.99566,
+     "probabilities": {
+      "it_helpdesk": 6e-05,
+      "hr_people_ops": 0.00425,
+      "facilities": 3e-05,
+      "other_unclassified": 0.99566
+     },
+     "choice": "other_unclassified"
+    },
+    "requires_new_category": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.99851,
+     "probabilities": {
+      "yes": 0.99851,
+      "no": 0.00149
+     },
+     "noul": 0.99851
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 489.08472,
+   "probabilities": {
+    "department": {
+     "it_helpdesk": 6e-05,
+     "hr_people_ops": 0.00425,
+     "facilities": 3e-05,
+     "other_unclassified": 0.99566
+    },
+    "requires_new_category": {
+     "yes": 0.99851,
+     "no": 0.00149
+    }
+   },
+   "labels": {
+    "department": "D",
+    "requires_new_category": "yes"
+   }
+  },
+  "image_s1": {
+   "status": 200,
+   "server_timing": "decide;dur=122.02",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "has_button": {
+     "type": "noul",
+     "label": "no",
+     "confidence": 0.99199,
+     "probabilities": {
+      "yes": 0.00801,
+      "no": 0.99199
+     },
+     "noul": 0.00801
+    },
+    "dominant_color": {
+     "type": "choice",
+     "label": "C",
+     "confidence": 0.9991,
+     "probabilities": {
+      "red": 0.00053,
+      "green": 0.00037,
+      "blue": 0.9991,
+      "white": 1e-05
+     },
+     "choice": "blue"
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 122.02191,
+   "probabilities": {
+    "has_button": {
+     "yes": 0.00801,
+     "no": 0.99199
+    },
+    "dominant_color": {
+     "red": 0.00053,
+     "green": 0.00037,
+     "blue": 0.9991,
+     "white": 1e-05
+    }
+   },
+   "labels": {
+    "has_button": "no",
+    "dominant_color": "C"
+   }
+  },
+  "choice_26": {
+   "status": 200,
+   "server_timing": "decide;dur=132.71",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "pick": {
+     "type": "choice",
+     "label": "B",
+     "confidence": 0.69387,
+     "probabilities": {
+      "opt_00": 0.24366,
+      "opt_01": 0.69387,
+      "opt_02": 0.02127,
+      "opt_03": 0.0045,
+      "opt_04": 0.00222,
+      "opt_05": 0.00063,
+      "opt_06": 0.0069,
+      "opt_07": 0.00037,
+      "opt_08": 5e-05,
+      "opt_09": 0.00181,
+      "opt_10": 0.00059,
+      "opt_11": 0.00148,
+      "opt_12": 0.01812,
+      "opt_13": 0.0003,
+      "opt_14": 1e-05,
+      "opt_15": 0.00059,
+      "opt_16": 0.00288,
+      "opt_17": 0.00019,
+      "opt_18": 8e-05,
+      "opt_19": 5e-05,
+      "opt_20": 4e-05,
+      "opt_21": 0.0,
+      "opt_22": 2e-05,
+      "opt_23": 2e-05,
+      "opt_24": 0.00012,
+      "opt_25": 0.00022
+     },
+     "choice": "opt_01"
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 132.7107,
+   "probabilities": {
+    "pick": {
+     "opt_00": 0.24366,
+     "opt_01": 0.69387,
+     "opt_02": 0.02127,
+     "opt_03": 0.0045,
+     "opt_04": 0.00222,
+     "opt_05": 0.00063,
+     "opt_06": 0.0069,
+     "opt_07": 0.00037,
+     "opt_08": 5e-05,
+     "opt_09": 0.00181,
+     "opt_10": 0.00059,
+     "opt_11": 0.00148,
+     "opt_12": 0.01812,
+     "opt_13": 0.0003,
+     "opt_14": 1e-05,
+     "opt_15": 0.00059,
+     "opt_16": 0.00288,
+     "opt_17": 0.00019,
+     "opt_18": 8e-05,
+     "opt_19": 5e-05,
+     "opt_20": 4e-05,
+     "opt_21": 0.0,
+     "opt_22": 2e-05,
+     "opt_23": 2e-05,
+     "opt_24": 0.00012,
+     "opt_25": 0.00022
+    }
+   },
+   "labels": {
+    "pick": "B"
+   }
+  },
+  "choice_27_error": {
+   "status": 400,
+   "server_timing": null,
+   "error": "question 'pick': at most 26 alternatives"
+  },
+  "depends_on_2reads": {
+   "status": 200,
+   "server_timing": "decide;dur=210.99",
+   "top_keys": [
+    "choices",
+    "created",
+    "id",
+    "model",
+    "object",
+    "usage"
+   ],
+   "envelope_keys": [
+    "answers",
+    "diagnostics"
+   ],
+   "answers": {
+    "billing_issue": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.99365,
+     "probabilities": {
+      "yes": 0.99365,
+      "no": 0.00635
+     },
+     "noul": 0.99365
+    },
+    "refund": {
+     "type": "noul",
+     "label": "yes",
+     "confidence": 0.99765,
+     "probabilities": {
+      "yes": 0.99765,
+      "no": 0.00235
+     },
+     "noul": 0.99765
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 2,
+   "denoise_ms": 210.99234,
+   "probabilities": {
+    "billing_issue": {
+     "yes": 0.99365,
+     "no": 0.00635
+    },
+    "refund": {
+     "yes": 0.99765,
+     "no": 0.00235
+    }
+   },
+   "labels": {
+    "billing_issue": "yes",
+    "refund": "yes"
+   }
+  },
+  "unknown_type_error": {
+   "status": 400,
+   "server_timing": null,
+   "error": "question 'a': unknown type 'banana'"
+  },
+  "empty_questions_error": {
+   "status": 400,
+   "server_timing": null,
+   "error": "schema: needs a non-empty questions array"
+  },
+  "systemone": {
+   "status": 200,
+   "server_timing": "decide;dur=97.27",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "urgent": {
+     "type": "noul",
+     "noul": 0.04933,
+     "probabilities": {
+      "true": 0.04933,
+      "false": 0.95067
+     },
+     "confidence": 0.95067
+    },
+    "billing": {
+     "type": "noul",
+     "noul": 0.99754,
+     "probabilities": {
+      "true": 0.99754,
+      "false": 0.00246
+     },
+     "confidence": 0.99754
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 97.26644,
+   "probabilities": {
+    "urgent": {
+     "true": 0.04933,
+     "false": 0.95067
+    },
+    "billing": {
+     "true": 0.99754,
+     "false": 0.00246
+    }
+   },
+   "labels": {
+    "urgent": "no",
+    "billing": "yes"
+   }
+  },
+  "invalid_json_error": {
+   "status": 400,
+   "server_timing": null,
+   "error": "invalid body: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+  },
+  "ml_ru": {
+   "status": 200,
+   "server_timing": "decide;dur=82.12",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "set_alarm",
+     "probabilities": {
+      "set_alarm": 0.99764,
+      "weather": 0.00147,
+      "play_music": 0.00022,
+      "send_email": 0.00068
+     },
+     "confidence": 0.99764
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 82.11756,
+   "probabilities": {
+    "intent": {
+     "set_alarm": 0.99764,
+     "weather": 0.00147,
+     "play_music": 0.00022,
+     "send_email": 0.00068
+    }
+   },
+   "labels": {
+    "intent": "set_alarm"
+   },
+   "expected_labels": {
+    "intent": "set_alarm"
+   },
+   "wrong": false
+  },
+  "ml_th": {
+   "status": 200,
+   "server_timing": "decide;dur=87.70",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "set_alarm",
+     "probabilities": {
+      "set_alarm": 0.99822,
+      "weather": 0.00123,
+      "play_music": 0.00013,
+      "send_email": 0.00041
+     },
+     "confidence": 0.99822
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 87.6987,
+   "probabilities": {
+    "intent": {
+     "set_alarm": 0.99822,
+     "weather": 0.00123,
+     "play_music": 0.00013,
+     "send_email": 0.00041
+    }
+   },
+   "labels": {
+    "intent": "set_alarm"
+   },
+   "expected_labels": {
+    "intent": "set_alarm"
+   },
+   "wrong": false
+  },
+  "ml_hi": {
+   "status": 200,
+   "server_timing": "decide;dur=87.71",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "set_alarm",
+     "probabilities": {
+      "set_alarm": 0.99652,
+      "weather": 0.0024,
+      "play_music": 0.00026,
+      "send_email": 0.00083
+     },
+     "confidence": 0.99652
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 87.71133,
+   "probabilities": {
+    "intent": {
+     "set_alarm": 0.99652,
+     "weather": 0.0024,
+     "play_music": 0.00026,
+     "send_email": 0.00083
+    }
+   },
+   "labels": {
+    "intent": "set_alarm"
+   },
+   "expected_labels": {
+    "intent": "set_alarm"
+   },
+   "wrong": false
+  },
+  "ml_ja": {
+   "status": 200,
+   "server_timing": "decide;dur=77.25",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "set_alarm",
+     "probabilities": {
+      "set_alarm": 0.99892,
+      "weather": 0.00059,
+      "play_music": 3e-05,
+      "send_email": 0.00045
+     },
+     "confidence": 0.99892
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 77.25167,
+   "probabilities": {
+    "intent": {
+     "set_alarm": 0.99892,
+     "weather": 0.00059,
+     "play_music": 3e-05,
+     "send_email": 0.00045
+    }
+   },
+   "labels": {
+    "intent": "set_alarm"
+   },
+   "expected_labels": {
+    "intent": "set_alarm"
+   },
+   "wrong": false
+  },
+  "ml_es": {
+   "status": 200,
+   "server_timing": "decide;dur=78.97",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "set_alarm",
+     "probabilities": {
+      "set_alarm": 0.99686,
+      "weather": 0.00222,
+      "play_music": 0.00012,
+      "send_email": 0.0008
+     },
+     "confidence": 0.99686
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 78.9659,
+   "probabilities": {
+    "intent": {
+     "set_alarm": 0.99686,
+     "weather": 0.00222,
+     "play_music": 0.00012,
+     "send_email": 0.0008
+    }
+   },
+   "labels": {
+    "intent": "set_alarm"
+   },
+   "expected_labels": {
+    "intent": "set_alarm"
+   },
+   "wrong": false
+  },
+  "ml_el_noul": {
+   "status": 200,
+   "server_timing": "decide;dur=79.72",
+   "envelope_keys": [
+    "answers",
+    "diagnostics",
+    "model",
+    "usage"
+   ],
+   "answers": {
+    "billing": {
+     "type": "noul",
+     "noul": 0.99132,
+     "probabilities": {
+      "true": 0.99132,
+      "false": 0.00868
+     },
+     "confidence": 0.99132
+    }
+   },
+   "diagnostic_keys": [
+    "chunk_prompt",
+    "chunks",
+    "conditioning",
+    "engine",
+    "prompt_tokens",
+    "questions",
+    "samples",
+    "sequential",
+    "skipped",
+    "stages",
+    "steps",
+    "thought",
+    "timing"
+   ],
+   "reads": 1,
+   "denoise_ms": 79.71954,
+   "probabilities": {
+    "billing": {
+     "true": 0.99132,
+     "false": 0.00868
+    }
+   },
+   "labels": {
+    "billing": "yes"
+   },
+   "expected_labels": {
+    "billing": "yes"
+   },
+   "wrong": false
+  }
+ }
+}

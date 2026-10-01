@@ -12,8 +12,8 @@ criterion, so a problem found in step 3 is not mistaken for a model limitation i
 | 0 | Hardware | — | GPU and host RAM meet the table below |
 | 1 | The container starts | 5–15 min (weight download) | `/health` shows `vllm_ready` and `warmed` |
 | 2 | A first decision | 1 min | Valid answers with probabilities; GPU time in the expected range |
-| 3 | Baseline on public benchmarks | ~10 min | JevBench and calibration scores inside our measured range, 0 errors |
-| 4 | Concurrency (optional) | 5 min | 0 errors at your expected concurrency |
+| 3 | Baseline with the regression matrix (T0, then T1) | ~1 + 10 min | Every gate PASS against our published reference ranges |
+| 4 | Concurrency and the full matrix (optional) | 5–30 min | 0 errors at your concurrency; T2 for multilingual and option-order coverage |
 | 5 | Write a policy and evaluate it on your own labelled data | hours to days | Accuracy, calibration and escalation rate meet your bar |
 
 Identifiers such as `<GPU_HOST>` are placeholders.
@@ -37,7 +37,7 @@ Latency on each: [From laptop to production](/dgem/deploy/) (RTX PRO 6000) and
 
 ```bash
 docker run --gpus all -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.3@sha256:ceb178879d2db28ecdcdf841696d3f0fb38de6f804d5787f64460c9927750d6a
 ```
 
 - The lean image downloads the weights from Hugging Face at boot. To avoid downloading on every start, download
@@ -53,7 +53,7 @@ Poll health until it is ready:
 ```bash
 curl -s http://<GPU_HOST>:8080/health
 # booting: {"phase": "...", "vllm_ready": false, ...}
-# ready:   {"status": "ok", "vllm_ready": true, "phase": "ready", "warmed": true, "version": "v0.1.0", ...}
+# ready:   {"status": "ok", "vllm_ready": true, "phase": "ready", "warmed": true, "version": "v0.1.3", ...}
 ```
 
 **Pass:** `vllm_ready` and `warmed` are both `true`. Record `version`, `revision` and `vllm_commit` from this
@@ -80,38 +80,60 @@ Run it three or four times and read the last runs.
 
 If the request fails with connection refused or `429`, the engine is still loading: go back to step 1.
 
-## 3. Baseline against public benchmarks
+## 3. Baseline with the regression matrix
 
-These suites ship with the repository and have known results on the same image, so they separate an install
-problem from a model limitation.
+The [regression matrix](/dgem/operate/regression-matrix/) is the same set of benchmarks we run against our own
+endpoints before every release. With one target it compares your install with the reference ranges we measured on
+the same image, so it separates an install problem from a model limitation.
+
+```bash
+make build                                                         # the matrix uses bin/dgem for some suites
+scripts/bench_matrix.py run --tier T0 --target gpu=http://<GPU_HOST>:8080   # ~1 minute
+scripts/bench_matrix.py run --tier T1 --target gpu=http://<GPU_HOST>:8080   # ~10 minutes on an RTX PRO 6000
+```
+
+If you set `API_KEY` on the container, export it as `DGEM_MATRIX_TOKEN` first. Each run writes
+`benchmarks/runs/<date>-<tier>/report.md`; the first table is the verdicts.
+
+**Pass:** every gate is PASS (INFO rows are reported, not gated):
+
+- **T0:** health, the API contract (including six multilingual cases with known answers), the calibration suite,
+  and a multilingual spot check (Russian, Thai, Hindi, Japanese and Spanish, at least 70% each).
+- **T1** adds three runs each of JevBench (through `bench-jev` and through `/v1/systemone`) and the calibration
+  suite, the intents slices, and latency. The report also shows your measured noise floor: how often repeated
+  identical runs agree.
+
+The reference ranges are RTX PRO 6000 figures for v0.1.3
+([table](/dgem/operate/regression-matrix/#reference-ranges-v013-vertex-g4)). Individual answers change between runs
+(about 5–7% of items), so the matrix compares totals and agreement, not single answers. A REVIEW at the edge of a
+range is worth one more run before you investigate.
+
+A score well below the range with no errors usually means the wrong weights or a modified serving image; errors
+usually mean the engine is overloaded or still loading. Latency on an L4 is about 3× ours, so expect latency
+REVIEWs there; accuracy should be close, but we have not measured the current image on an L4.
+
+The same commands by hand, without the matrix:
 
 ```bash
 ./bin/dgem bench-jev -u http://<GPU_HOST>:8080/v1 -w 4 -o jevbench_run1.json
 ./bin/dgem bench-calibration -u http://<GPU_HOST>:8080/v1 -w 4 -o calibration_run1.json
 ```
 
-**Pass:**
+## 4. Concurrency and the full matrix (optional)
 
-| Suite | Items | Our runs on RTX PRO 6000 (`samples=1`, 4 workers) | Investigate if |
-| :--- | ---: | :--- | :--- |
-| JevBench | 231 | 183–192 correct (16 runs; mean ~187) | below ~180, or any request errors |
-| Calibration suite | 50 | 43–45 correct (16 runs) | below ~42, or any request errors |
+- **Concurrency:** T1 already sweeps 16 and 32 concurrent requests (0 errors to pass). To test your own level,
+  repeat a suite with `--workers <N>`. The server processes up to `MAX_INFLIGHT` (default 8) decisions at a time and
+  queues the rest; it returns `503` if a request waits in the queue for more than 30 s. Throughput and latency under
+  load, and how to tune them: [Latency and capacity](/dgem/operate/latency-capacity/).
+- **Full matrix (T2):** multilingual intent (MASSIVE, 51 languages) and NLI (XNLI, 15 languages), a typed
+  multi-question benchmark, option-order stability, bounding boxes and the Decision Index panel. About 16,500
+  requests:
 
-Source: [image parity run](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260927-image-parity/README.md#accuracy-and-calibration-jevbench__json-calibration__json).
-Individual items can change between runs (roughly 5% of items flip between repeated runs), so compare totals, not
-item by item, and run twice if a result lands at the edge of the range. We have not measured these suites on an
-L4 with the current image; results should be close, but treat the ranges as RTX PRO 6000 figures.
-
-A score well below the range with no errors usually means the wrong weights or a modified serving image;
-errors usually mean the engine is overloaded or still loading.
-
-## 4. Concurrency (optional)
-
-Repeat step 3 with the concurrency you expect in production, for example `-w 16`.
-
-**Pass:** 0 errors and the same score range. The server processes up to `MAX_INFLIGHT` (default 8) decisions at a
-time and queues the rest; it returns `503` if a request waits in the queue for more than 30 s. Throughput and
-latency under load, and how to tune them: [Latency and capacity](/dgem/operate/latency-capacity/).
+  ```bash
+  pip install -r scripts/requirements-matrix.txt
+  scripts/bench_matrix.py fetch      # downloads the pinned public datasets and checks their SHA-256
+  scripts/bench_matrix.py run --tier T2 --confirm --target gpu=http://<GPU_HOST>:8080
+  ```
 
 ## 5. Evaluate your own decisions
 

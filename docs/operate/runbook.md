@@ -44,16 +44,19 @@ found four regressions that single-image testing would have missed.
 1. **Build** with an immutable tag: `GCP_PROJECT=<PROJECT> IMAGE_TAG=$(git rev-parse --short HEAD) ./scripts/build_cloudrun_image.sh`.
 2. **Canaries:** a second Vertex endpoint (`VERTEX_ENDPOINT_NAME=dgemma-canary-<TAG> VERTEX_MAX_REPLICAS=1`) and/or
    a Cloud Run service (`CLOUDRUN_SERVICE_NAME=dgemma-canary`) on the new image.
-3. **Compare** (all against production and the canary):
+3. **Compare** with the [regression matrix](regression-matrix.md), tier **T1**, production as the baseline in the
+   same session (tier **T2** as well for a release or a vLLM change):
 
-   | Check | Tool | Pass |
-   | :--- | :--- | :--- |
-   | API contract | `scripts/contract_diff.py --target old=<URL> --target new=<URL>` | Same status codes, errors, response keys, read counts; answer changes only where repeats also flip |
-   | Accuracy | 3× `dgem bench-jev` and `dgem bench-calibration` per image, then `scripts/receipt_agreement.py` | Inside run-to-run noise (JevBench 182–192 of 231) |
-   | Latency | `scripts/serving_speed.py modes` | No regression beyond noise |
-   | Load | `scripts/serving_speed.py sweep --workers 16 32 --min-requests 256` | 0 errors |
-   | Readiness | `/health` shows `vllm_ready` and `warmed` | Present |
-   | Cold start (Cloud Run) | `scripts/coldstart_probe.py` | Comparable to the current image |
+   ```bash
+   scripts/bench_matrix.py run --tier T1 --target prod=<PRODUCTION_URL> --target new=<CANARY_URL> \
+     --baseline prod --label image-<TAG>
+   ```
+
+   It covers the API contract (including multilingual cases with known answers), readiness, accuracy (calibration
+   and JevBench ×3 on both prompt paths, intents) judged against the noise floor it measures, a multilingual spot
+   check, and latency and load (modes, sweep at 16 and 32 workers, 0 errors). Promote only when every gate is PASS
+   or each REVIEW is explained; a FAIL blocks. On Cloud Run also run `scripts/coldstart_probe.py` (cold start
+   comparable to the current image): the matrix does not create revisions.
 
 4. **Switch** without downtime: Vertex with `VERTEX_NEW_TRAFFIC=0` then a traffic-split update
    ([steps](../deploy/vertex.md#5-swap-images-with-zero-downtime)); Cloud Run and the gateway with a `--no-traffic`
@@ -79,7 +82,8 @@ images carry `org.opencontainers.image.version`, and `dgem --version` prints it.
    commit already on origin).
 2. `make release VERSION=vX.Y.Z`: checks a clean `main`, runs the tests, tags git, builds `dgem` and
    `dgem-weights` with the version baked in, and adds the `vX.Y.Z` image tags. It prints the digests.
-3. Validate the release image next to production ([Promote a new serving image](#promote-a-new-serving-image)).
+3. Validate the release image next to production ([Promote a new serving image](#promote-a-new-serving-image)):
+   matrix tiers T1 and T2.
 4. `make publish-latest VERSION=vX.Y.Z` to move `:latest`, `git push origin vX.Y.Z`, and pin the new digests in
    [Public container images](../deploy/public-images.md).
 5. Deploy to your own endpoints by digest; record the version in your deployment log.

@@ -25,12 +25,20 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 | `20260926-prop16-slot-names` | PROP-16 / EXP-16: slot-id variants (single and two-slot copy) on JevBench, Vertex G4. |
 | `20260925-prop11-letter-collision` | PROP-11 / EXP-15: 3 baselines + 4 `--mirror-mode` conditions on JevBench, Vertex G4. |
 | `20260925-vertex-idc-mirrorfix` | Same session, after renaming the mirror slot to `__rev` (commit `2f731b0`), with fresh baselines. |
+| `20260927-image-parity` | Serving-image parity: old production vs two candidate images on Vertex G4 and Cloud Run, same session (JevBench ×3, calibration ×3, latency, sweep, cold start). The method the regression matrix automates. |
+| `20260928-v010-verification` | Every suite once against v0.1.0 on Vertex G4, plus a rollback drill (README only, no manifest). |
+| `20261001-v013-reference-t1` | **Regression matrix v1, T1**, v0.1.3 against itself on Vertex G4: the measured noise floor and reference ranges. |
+| `20261001-v013-reference-t2` | **Regression matrix v1, T2**, v0.1.3 on Vertex G4: full matrix incl. the frozen multilingual, typed-decisions and option-order sets. |
 
 Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
+
+Runs made with `scripts/bench_matrix.py` (the [regression matrix](../../docs/operate/regression-matrix.md)) add
+`report.md` and `summary.json` with verdicts.
 
 Tools:
 
 ```bash
+scripts/bench_matrix.py report benchmarks/runs/<run_id>   # rebuild a matrix report
 python3 scripts/bench_runs.py list                      # runs and receipts
 python3 scripts/bench_runs.py compare --suite jevbench  # comparison table across runs
 python3 scripts/analyze_idc.py cv-temperature <receipt...>

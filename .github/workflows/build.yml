@@ -48,6 +48,9 @@ jobs:
           python3 scripts/docs_sync_check.py
           python3 scripts/docs_link_check.py
 
+      - name: Regression matrix unit tests (offline)
+        run: python3 -m unittest scripts/matrix/test_matrix.py
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
