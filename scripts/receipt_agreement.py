@@ -9,17 +9,23 @@ cross-group pairs (old vs new image) should look the same if the change is neutr
 import argparse
 import itertools
 import json
+import os
 import statistics
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from matrix import metrics as M  # noqa: E402
 
 
 def load(path):
-    d = json.load(open(path))
-    cases = d.get("cases") or d.get("items") or d.get("results") or []
+    """Per-item answers from any receipt the regression matrix understands (bench-jev, bench-calibration,
+    bench-intents, matrix /v1/systemone receipts), via scripts/matrix/metrics.rows."""
+    with open(path) as f:
+        d = json.load(f)
     out = {}
-    for c in cases:
-        cid = c.get("id") or c.get("case_id")
-        out[cid] = {"actual": c.get("actual") or c.get("predicted"), "ok": bool(c.get("accurate", c.get("correct"))),
-                    "conf": c.get("confidence"), "wall": c.get("wall_time_ms"), "brier": c.get("brier_score")}
+    for r in M.rows(d):
+        out[r["id"]] = {"actual": r["actual"], "ok": r["accurate"], "conf": r.get("confidence"),
+                        "wall": r.get("wall_ms"), "brier": r.get("brier")}
     return out
 
 
