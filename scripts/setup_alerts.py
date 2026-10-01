@@ -17,6 +17,11 @@ Policies (display names are prefixed "dgem: "):
   probe-failed             A scheduled health check reported a failure (any target)
   probe-missing            No health check result for PROBE_MISSING_HOURS (2) hours (target=vertex)
   probe-latency            Health-check end-to-end median to Vertex > PROBE_P50_MS (400) ms
+  matrix-failed            A scheduled regression-matrix run reported a FAIL verdict (any gate, any tier)
+  matrix-missing-t0        No completed T0 matrix run for MATRIX_T0_MISSING_HOURS (25) hours (daily job; 25 h is the
+                           longest lookback Cloud Monitoring allows on a log-based metric)
+  matrix-missing-t1        No dgem-matrix-t1 job execution for MATRIX_T1_MISSING_HOURS (176 = 7 d + 8 h) hours (weekly
+                           job; uses Cloud Run's built-in job execution metric, which allows the longer window)
 
 Auth: gcloud access token (CLOUDSDK_AUTH_ACCESS_TOKEN_FILE or `gcloud auth print-access-token`).
 """
@@ -87,6 +92,16 @@ def log_metrics():
             "metricDescriptor": {"metricKind": "DELTA", "valueType": "INT64", "unit": "1", "labels": [
                 {"key": "target", "valueType": "STRING"}, {"key": "ok", "valueType": "STRING"}]},
             "labelExtractors": {"target": "EXTRACT(jsonPayload.probe_target)", "ok": "EXTRACT(jsonPayload.probe_ok)"},
+        },
+        "dgem_matrix_events": {
+            "description": "dgem scheduled regression-matrix events (scripts/bench_matrix.py --log-json), by event, tier, "
+                           "gate and verdict",
+            "filter": 'resource.type="cloud_run_job" AND jsonPayload.matrix_event:*',
+            "metricDescriptor": {"metricKind": "DELTA", "valueType": "INT64", "unit": "1", "labels": [
+                {"key": "event", "valueType": "STRING"}, {"key": "tier", "valueType": "STRING"},
+                {"key": "gate", "valueType": "STRING"}, {"key": "verdict", "valueType": "STRING"}]},
+            "labelExtractors": {"event": "EXTRACT(jsonPayload.matrix_event)", "tier": "EXTRACT(jsonPayload.tier)",
+                                "gate": "EXTRACT(jsonPayload.gate)", "verdict": "EXTRACT(jsonPayload.verdict)"},
         },
         "dgem_probe_latency_ms": {
             "description": "dgem health-check end-to-end median latency per run (ms), by target",
@@ -186,6 +201,21 @@ def policies(project, ep, cfg):
             promql(f'histogram_quantile(0.5, sum by (le) (rate({lm}dgem_probe_latency_ms_bucket{{{job},target="vertex"}}[3h]))) > {cfg["PROBE_P50_MS"]}',
                    0, 600),
             f"Median end-to-end latency above {cfg['PROBE_P50_MS']} ms (normal ~150-200 ms).", "WARNING", "7200s"),
+        pol("matrix-failed", "Scheduled regression matrix FAIL",
+            promql(f'sum by (tier, gate) (increase({lm}dgem_matrix_events{{{job},event="dgem.matrix.gate",verdict="FAIL"}}[2h])) > 0',
+                   0, 600),
+            "Open the run's report.md in the matrix bucket (jsonPayload.destination on the dgem.matrix.uploaded line).",
+            "ERROR", "86400s"),
+        pol("matrix-missing-t0", "Scheduled regression matrix T0 not completing",
+            promql(f'absent_over_time({lm}dgem_matrix_events{{{job},event="dgem.matrix.done",tier="T0"}}'
+                   f'[{int(cfg["MATRIX_T0_MISSING_HOURS"])}h])', 0, 1800),
+            f"No completed daily T0 run for {cfg['MATRIX_T0_MISSING_HOURS']} h: check the dgem-matrix-t0 job and its trigger.",
+            "WARNING", "86400s"),
+        pol("matrix-missing-t1", "Scheduled regression matrix T1 not completing",
+            promql(f'absent_over_time(run_googleapis_com:job_completed_execution_count{{{job},job_name="dgem-matrix-t1"}}'
+                   f'[{int(cfg["MATRIX_T1_MISSING_HOURS"])}h])', 0, 3600),
+            f"No completed weekly T1 run for {cfg['MATRIX_T1_MISSING_HOURS']} h: check the dgem-matrix-t1 job and its trigger.",
+            "WARNING", "86400s"),
     ]
 
 
@@ -222,7 +252,8 @@ def main():
         sys.exit("set GCP_PROJECT, ALERT_EMAIL and VERTEX_ENDPOINT_ID")
     cfg = {k: env(k, d) for k, d in {
         "VERTEX_NO_REPLICA_MIN": "5", "VERTEX_ERROR_RATE": "0.01", "FAILOVER_SHARE": "0.2",
-        "FAILOVER_MIN_DECISIONS": "5", "DECISION_P95_MS": "2000", "PROBE_MISSING_HOURS": "2", "PROBE_P50_MS": "400"}.items()}
+        "FAILOVER_MIN_DECISIONS": "5", "DECISION_P95_MS": "2000", "PROBE_MISSING_HOURS": "2", "PROBE_P50_MS": "400",
+        "MATRIX_T0_MISSING_HOURS": "25", "MATRIX_T1_MISSING_HOURS": "176"}.items()}
     print(f"Project {project}, endpoint {ep}, alerts to {email}")
     print("Thresholds: " + ", ".join(f"{k}={v}" for k, v in cfg.items()))
     if not a.skip_metrics:

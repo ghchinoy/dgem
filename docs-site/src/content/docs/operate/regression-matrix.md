@@ -145,7 +145,8 @@ a Cloud Storage bucket and one JSON log line per event (`matrix_event`: `dgem.ma
 `dgem.matrix.gate`, `dgem.matrix.done`), so log-based alerts can fire on a FAIL. Scheduled runs are single-target
 (compared with the reference ranges) and are not committed. T2 is never scheduled. The job image includes the verified dataset files T0 and T1 read,
 because anonymous Hugging Face downloads from cloud egress are rate-limited (`HF_TOKEN`, if set, is used for any
-other download). Alert on `jsonPayload.matrix_event="dgem.matrix.gate"` with `jsonPayload.verdict="FAIL"`.
+other download). `scripts/setup_alerts.py` creates the alerts: a FAIL verdict on any gate, no completed T0 run for 25 h, and no T1
+execution for 7 days + 8 h ([Monitoring and alerts](/dgem/operate/monitoring/#alerts-what-they-mean-and-what-to-do)).
 
 ## Related
 
