@@ -115,8 +115,8 @@ The ranges are stored in `matrix_v1.json` (`reference`) and used in single-targe
 | Intents, clinc150 slice | 30 | 7 | 0.967–1.000 | — |
 | Multilingual spot check (MASSIVE validation, 5 languages) | 100 | 3 | 0.830–0.850 (every language ≥ 0.75) | — |
 | MASSIVE test, 51 languages, 20 options *(frozen)* | 5,100 | 1 | 0.822 (± 2 SE: 0.811–0.832) | 0.080 → 0.036 |
-| XNLI test, 15 languages *(frozen)* | 4,500 | 1 | 0.678 (0.664–0.692) | 0.246 → 0.021 |
-| typed-decisions test, 2,000 decisions *(frozen)* | 2,000 | 1 | 0.667 (0.646–0.688); soft accuracy 0.554 | 0.234 → 0.018 |
+| XNLI test, 15 languages *(frozen)* | 4,500 | 1 | 0.678 (0.664–0.692) | 0.245 → 0.022 |
+| typed-decisions test, 2,000 decisions *(frozen)* | 2,000 | 1 | 0.667 (0.646–0.688); soft accuracy 0.554 | 0.232 → 0.017 |
 
 **Noise floor** (answer agreement between identical repeated runs, same image): calibration 0.99–1.00, JevBench
 0.93–0.96, clinc150 0.98, **banking77 0.82–0.86** (the two-stage bracket for 30 options is the least stable suite).
