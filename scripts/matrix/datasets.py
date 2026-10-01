@@ -9,6 +9,8 @@ import gzip
 import hashlib
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -37,7 +39,17 @@ def path(repo, file):
         return local
     os.makedirs(os.path.dirname(local), exist_ok=True)
     url = f"https://huggingface.co/datasets/{repo}/resolve/{ent['revision']}/{file}"
-    data = urllib.request.urlopen(url, timeout=300).read()
+    data = None
+    for attempt in range(6):  # the Hub rate-limits anonymous downloads (HTTP 429), notably from cloud egress
+        try:
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {os.environ['HF_TOKEN']}"}
+                                         if os.environ.get("HF_TOKEN") else {})
+            data = urllib.request.urlopen(req, timeout=300).read()
+            break
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503) or attempt == 5:
+                raise
+            time.sleep(10 * 2 ** attempt)
     got = hashlib.sha256(data).hexdigest()
     if got != meta["sha256"]:
         raise RuntimeError(f"SHA-256 mismatch for {repo}/{file}@{ent['revision'][:7]}: {got} != {meta['sha256']}")

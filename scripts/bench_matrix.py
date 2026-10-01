@@ -167,8 +167,11 @@ def cmd_run(a):
                         log_event(a.log_json, event="dgem.matrix.suite", run_id=run_id, suite=s, target=t.name, run=r,
                                   perm=perm or "", seconds=round(time.time() - t0, 1), status="ok")
                     except Exception as e:
+                        import traceback
+                        where = traceback.extract_tb(e.__traceback__)[-1]
                         log_event(a.log_json, event="dgem.matrix.suite", run_id=run_id, suite=s, target=t.name, run=r,
-                                  perm=perm or "", status="error", error=str(e)[:300])
+                                  perm=perm or "", status="error", error=str(e)[:300],
+                                  where=f"{os.path.basename(where.filename)}:{where.lineno}")
                         if a.fail_fast:
                             raise
     if "latency" in suites:

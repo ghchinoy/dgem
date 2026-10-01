@@ -130,6 +130,14 @@ class TestLockAndRedaction(unittest.TestCase):
         for lg in C.SPOT_LANGS:
             self.assertIn(f"validation/{lg}.json.gz", lock[D.MASSIVE]["files"])
 
+    def test_dump_handles_nested_probabilities(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = os.path.join(tmp, "c.json")
+            runners._dump(p, {"cases": {"a": {"probabilities": {"q": {"x": 0.5}}}}})
+            runners._dump(p, {"kind": "systemone", "cases": [{"probabilities": {"x": 0.999999, "y": 1e-7}}]})
+            with open(p) as f:
+                self.assertEqual(json.load(f)["cases"][0]["probabilities"], {"x": 1.0})
+
     def test_redact(self):
         t = Target("prod", "https://1234.us-central1-999.prediction.vertexai.goog/v1/projects/p/locations/r/endpoints/1234/invoke")
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:

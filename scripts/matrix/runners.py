@@ -29,8 +29,9 @@ def _round(x):
     if isinstance(x, float):
         return round(x, 5)
     if isinstance(x, dict):
-        if "probabilities" in x and isinstance(x["probabilities"], dict):  # drop negligible options (< 1e-5)
-            x = {**x, "probabilities": {k: v for k, v in x["probabilities"].items() if v >= 1e-5}}
+        pr = x.get("probabilities")
+        if isinstance(pr, dict) and all(isinstance(v, (int, float)) for v in pr.values()):  # drop options < 1e-5
+            x = {**x, "probabilities": {k: v for k, v in pr.items() if v >= 1e-5}}
         return {k: _round(v) for k, v in x.items()}
     if isinstance(x, list):
         return [_round(v) for v in x]

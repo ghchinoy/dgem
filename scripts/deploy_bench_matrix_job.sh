@@ -37,8 +37,12 @@ BUCKET="${MATRIX_BUCKET#gs://}"; BUCKET="${BUCKET%%/*}"
 echo "==> Service account ${SA}"
 gcloud iam service-accounts describe "${SA}" --project="${PROJECT}" >/dev/null 2>&1 || \
   gcloud iam service-accounts create "${SA_NAME}" --project="${PROJECT}" --display-name="dgem scheduled regression matrix"
-gcloud projects add-iam-policy-binding "${PROJECT}" --member="serviceAccount:${SA}" \
-  --role="roles/aiplatform.user" --condition=None --quiet >/dev/null
+for i in 1 2 3 4 5 6; do  # a new service account takes a few seconds to become visible to IAM
+  gcloud projects add-iam-policy-binding "${PROJECT}" --member="serviceAccount:${SA}" \
+    --role="roles/aiplatform.user" --condition=None --quiet >/dev/null 2>&1 && break
+  [[ $i == 6 ]] && { echo "could not grant roles/aiplatform.user to ${SA}" >&2; exit 1; }
+  sleep 10
+done
 if [[ "${MATRIX_TARGET}" == *".run.app"* ]]; then
   SVC="$(echo "${MATRIX_TARGET}" | sed -E 's#https://([a-z0-9-]+---)?([a-z0-9-]+)-[a-z0-9]+-[a-z]{2}\.a\.run\.app.*#\2#')"
   gcloud run services add-iam-policy-binding "${SVC}" --project="${PROJECT}" --region="${REGION}" \
@@ -61,6 +65,16 @@ cp -R "${REPO_ROOT}"/benchmarks/{jevbench,intents,matrix} "${A}/benchmarks/"
 cp "${REPO_ROOT}/benchmarks/calibration_suite.jsonl" "${A}/benchmarks/"
 cp -R "${REPO_ROOT}/templates" "${A}/"
 cp -R "${REPO_ROOT}/fixtures/bbox" "${A}/fixtures/"
+# Bake the verified datasets T0/T1 read (MASSIVE validation spot languages + their test label sets) into the image:
+# anonymous Hugging Face downloads from cloud egress get rate-limited.
+DGEM_MATRIX_CACHE="${A}/.cache" python3 - "${REPO_ROOT}" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1] + "/scripts")
+from matrix import cases, datasets
+for lg in cases.SPOT_LANGS:
+    datasets.path(datasets.MASSIVE, f"validation/{lg}.json.gz")
+    datasets.path(datasets.MASSIVE, f"test/{lg}.json.gz")
+PY
 cp "${REPO_ROOT}/deploy/bench-matrix/Dockerfile" "${CTX}/Dockerfile"
 gcloud builds submit "${CTX}" --project="${PROJECT}" --tag="${IMAGE}" --suppress-logs --quiet
 
