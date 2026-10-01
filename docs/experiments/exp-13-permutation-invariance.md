@@ -33,7 +33,7 @@ where:
 
 ## 3. Empirical Results on Live Cloud Run GPU (`dgemma`)
 
-Executed via `./bin/dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2` (`benchmarks/results_permutation_cloudrun.json`).
+Executed via `./bin/dgem bench-permutation -u "https://dgemma-<hash>-uc.a.run.app/v1" --gcp-auth -w 2 -o benchmarks/results_permutation_cloudrun.json` (`benchmarks/results_permutation_cloudrun.json`).
 
 ### 3.1 `EXP-13B`: Measured Content-Free Positional Null Priors ($p_0$)
 

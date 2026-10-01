@@ -723,9 +723,11 @@ def main() -> None:
         "total_query_passage_pairs": len(cases) * 10,
         "summary_metrics": summary,
     }
-    target_receipt_path = args.output if args.output else RECEIPT_PATH
-    with open(target_receipt_path, "w", encoding="utf-8") as f:
-        json.dump(receipt, f, indent=2)
+    # Only write a receipt when asked: the default path is a committed reference receipt.
+    target_receipt_path = args.output or "(not written; pass --output)"
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            json.dump(receipt, f, indent=2)
 
     print("=" * 116)
     print(f" EXP-11 PHASE-0 RERANKING VALIDATION SUITE ({mode_banner})")
