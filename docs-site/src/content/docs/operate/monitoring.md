@@ -43,9 +43,12 @@ All policies are named `dgem: …`, notify the email channel, and link back to t
 | **Gateway decision latency p95 (Vertex)** (warning) | p95 of Vertex-answered decision wall time > 2,000 ms over 15 min | Queueing under load, very long prompts or many-question policies, reasoning (`think`) templates | Compare with normal (150–500 ms for typical policies). If it's load, add replicas; if it's one template, it may just be heavy |
 | **Scheduled health check failed** | Any health-check run reported `probe_ok=false` in the last ~70 min | API contract changed (new image), endpoint down, auth or IAM change for the probe account, gateway fell back to Cloud Run | Read `jsonPayload.probe_failures` on the failing log line; it names the failing case or request |
 | **Scheduled health check not running** (warning) | No Vertex health-check result for 2 h | Scheduler paused or deleted, job failing to start, image pull or IAM problem | `gcloud scheduler jobs describe dgem-probe-hourly --location=<REGION>`; run the job by hand (below) and read its logs |
+| **Scheduled regression matrix FAIL** | A scheduled [regression-matrix](/dgem/operate/regression-matrix/) run (daily T0 or weekly T1) reported a FAIL verdict on any gate in the last 2 h | Serving regression (accuracy below the reference ranges, multilingual spot check, API contract), endpoint errors, a new image | Open the run's `report.md` in the matrix bucket (`jsonPayload.destination` on the `dgem.matrix.uploaded` log line). A single gate just under its range: rerun the job before acting; a contract or multilingual FAIL: treat as a real regression and roll back if it followed a deploy |
+| **Scheduled regression matrix T0 / T1 not completing** (warning) | No completed T0 run for 25 h, or no `dgem-matrix-t1` execution for 7 days + 8 h | Scheduler paused or deleted, job failing to start, image pull or IAM problem | `gcloud scheduler jobs describe dgem-matrix-t0 --location=<REGION>` (or `-t1`); run the job by hand and read its logs |
 | **Health-check latency to Vertex** (warning) | Health-check median end-to-end latency to Vertex > 400 ms | Slower serving image, GPU contention, network | Normal is ~80 ms from inside the region. Check `probe_denoise_p50_ms` (GPU time, normally ~55–60 ms): if GPU time rose, it's the model server; if only end-to-end rose, it's network or queueing |
 
-Alerts close automatically when the condition clears (after 30 min for Vertex alerts, 2 h for health-check alerts).
+Alerts close automatically when the condition clears (after 30 min for Vertex alerts, 2 h for health-check alerts,
+24 h for regression-matrix alerts).
 
 ## Changing thresholds
 
@@ -59,6 +62,8 @@ Every threshold is an environment variable read by `scripts/setup_alerts.py`:
 | `DECISION_P95_MS` | `2000` | Gateway decision p95 (ms) |
 | `PROBE_MISSING_HOURS` | `2` | Hours without a health-check result |
 | `PROBE_P50_MS` | `400` | Health-check median latency (ms) |
+| `MATRIX_T0_MISSING_HOURS` | `25` | Hours without a completed daily T0 matrix run (25 is the maximum for a log-based metric) |
+| `MATRIX_T1_MISSING_HOURS` | `176` | Hours without a weekly T1 matrix job execution |
 
 ```bash
 # Preview, then apply (updates policies in place)
@@ -85,7 +90,10 @@ PROBE_GATEWAY_AUDIENCE=<IAP programmatic client ID, if the gateway uses IAP> \
 ./scripts/deploy_probe.sh
 gcloud run jobs execute dgem-probe-hourly --region=<REGION> --wait     # run once now
 
-# 2. Metrics, email channel and alert policies
+# 2. Scheduled regression matrix (optional; T0 daily, T1 weekly): see regression-matrix.md
+GCP_PROJECT=<PROJECT> MATRIX_TARGET=<Vertex invoke base> MATRIX_BUCKET=gs://<bucket> ./scripts/deploy_bench_matrix_job.sh
+
+# 3. Metrics, email channel and alert policies
 GCP_PROJECT=<PROJECT> ALERT_EMAIL=<EMAIL> VERTEX_ENDPOINT_ID=<ENDPOINT_ID> python3 scripts/setup_alerts.py
 ```
 
@@ -95,8 +103,13 @@ GCP_PROJECT=<PROJECT> ALERT_EMAIL=<EMAIL> VERTEX_ENDPOINT_ID=<ENDPOINT_ID> pytho
   `PROBE_GATEWAY_AUDIENCE` is set. Use the gateway's `run.app` URL, not a custom domain.
 - **After changing the Vertex endpoint** (new endpoint ID), re-run both scripts with the new values.
 - **Failover and latency alerts need gateway logs with `dgem_backend_requested`** (gateway v0.1.2 or later).
+- **Regression-matrix alerts** read the `dgem_matrix_events` log metric (T0 missing, FAIL verdicts) and Cloud Run's
+  built-in job execution count (T1 missing): Cloud Monitoring limits alerts on log-based metrics to a 25 h lookback,
+  too short for a weekly job. If the matrix jobs are not deployed, skip those policies with
+  `--only` listing the others, or delete the three `dgem: Scheduled regression matrix …` policies.
 - **Removing everything:** delete the `dgem:` alert policies, the scheduler jobs and Cloud Run jobs
-  (`dgem-probe-hourly`, `dgem-probe-daily`), and the `dgem-probe-sa` account.
+  (`dgem-probe-hourly`, `dgem-probe-daily`, `dgem-matrix-t0`, `dgem-matrix-t1`), and the `dgem-probe-sa` and
+  `dgem-matrix-sa` accounts.
 
 ## Manual checks
 
