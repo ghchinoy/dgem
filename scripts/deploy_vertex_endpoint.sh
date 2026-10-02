@@ -67,6 +67,8 @@ MAX_REPLICAS="${VERTEX_MAX_REPLICAS:-$P_MAXREP}"
 # Engine settings are passed explicitly so Vertex and Cloud Run can run identical configurations.
 KV_CACHE_GB="${KV_CACHE_GB:-$P_KV}"
 MAX_SEQS="${MAX_SEQS:-$P_SEQS}"
+# Context length; 4096 in production. The Decision Index canary uses 32768 (long suite rows).
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
 CANVAS="${CANVAS:-128}"
 DEFAULT_SAMPLES="${DEFAULT_SAMPLES:-1}"
 MAX_INFLIGHT="${MAX_INFLIGHT:-8}"
@@ -102,6 +104,7 @@ UPLOAD_PAYLOAD=$(cat <<EOF
         { "name": "GPU_UTIL", "value": "0.85" },
         { "name": "KV_CACHE_GB", "value": "${KV_CACHE_GB}" },
         { "name": "MAX_SEQS", "value": "${MAX_SEQS}" },
+        { "name": "MAX_MODEL_LEN", "value": "${MAX_MODEL_LEN}" },
         { "name": "DEFAULT_SAMPLES", "value": "${DEFAULT_SAMPLES}" },
         { "name": "MAX_INFLIGHT", "value": "${MAX_INFLIGHT}" }
       ]

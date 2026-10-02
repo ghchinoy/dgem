@@ -22,18 +22,19 @@
  state, either as multipart/form-data with the JSON body in a part named
  "request" and each image as a file part, or as an "images" array of data
  URLs in the JSON body.
-@@ -64,7 +65,9 @@
+@@ -64,7 +65,10 @@
  prefilled, and "chunk_prompt": "shared" lists every question in each
  chunk's prompt. "think": N lets the model write up to N tokens in its
  thought channel, as an ordinary generation, and the read then runs with
 -that thought in its prompt. With images the model writes the thought with
-+that thought in its prompt. "layout": "document_first" sends the state
-+first and the questions after it, both in the user turn, instead of the
-+questions as the system prompt (the default, "schema_first"). With images the model writes the thought with
++that thought in its prompt. "layout" picks the prompt layout:
++"document_first" (the default; env DEFAULT_LAYOUT) sends the state first
++and the questions after it, both in the user turn; "schema_first" sends the
++questions as the system prompt. With images the model writes the thought with
  the image in view and the server seeds it into the canvas ahead of the
  answer, so the canvas bounds it. The noise draws of a decision share one
  thought.
-@@ -97,9 +100,12 @@
+@@ -97,9 +101,15 @@
  
  ARGS = None
  TOK = None
@@ -43,13 +44,16 @@
 +API_KEY = os.environ.get("API_KEY", "")
 +DEFAULT_SAMPLES = os.environ.get("DEFAULT_SAMPLES", "1")
 +MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
++# The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
++# the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
++DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
 +INFLIGHT_WAIT_S = float(os.environ.get("INFLIGHT_WAIT_S", "30.0"))
 +_INFLIGHT = threading.BoundedSemaphore(MAX_INFLIGHT) if MAX_INFLIGHT > 0 else None
 +_upstream_ready = False  # when set, POST routes need "Authorization: Bearer <key>"
  CANVAS_LEN = 64  # the served canvas length. A request may be narrower.
  CANVAS_STEP = 16  # request widths are multiples of this
  VOCAB = 262144
-@@ -213,7 +219,10 @@
+@@ -213,7 +223,10 @@
                      f"must be among {names}"
                  )
      schedule(qs)  # refuses a cycle
@@ -61,17 +65,17 @@
      if samples == "auto":
          policy = {
              "mode": "auto",
-@@ -240,6 +249,9 @@
+@@ -240,6 +253,9 @@
      if chunk_prompt not in ("shared", "own"):
          raise SchemaError('schema: chunk_prompt must be "shared" or "own"')
      sequential = bool(value.get("sequential", False))
-+    layout = value.get("layout", "schema_first")
++    layout = value.get("layout", DEFAULT_LAYOUT)
 +    if layout not in LAYOUTS:
 +        raise SchemaError('schema: layout must be "schema_first" or "document_first"')
      think = value.get("think", 0)
      if isinstance(think, bool) or not isinstance(think, int) or not 0 <= think <= 4096:
          raise SchemaError("schema: think must be a thought budget in tokens, 0 to 4096")
-@@ -253,6 +265,7 @@
+@@ -253,6 +269,7 @@
          "chunk_rows": chunk_rows,
          "chunk_prompt": chunk_prompt,
          "sequential": sequential,
@@ -79,11 +83,13 @@
          "format": "lines" if len(qs) <= 10 else "indexed",
      }
  
-@@ -280,6 +293,36 @@
+@@ -280,6 +297,38 @@
  }
  
  
 +LAYOUTS = ("schema_first", "document_first")
++if DEFAULT_LAYOUT not in LAYOUTS:
++    raise SystemExit(f"DEFAULT_LAYOUT must be one of {LAYOUTS}")
 +
 +
 +class SystemText(str):
@@ -116,16 +122,16 @@
  def system_text(schema, chunked=False):
      s = (
          "Answer a fixed set of questions about the state the user provides. "
-@@ -303,6 +346,8 @@
+@@ -303,6 +352,8 @@
              " A reply may cover only some of the questions; answer every line "
              "that is present."
          )
 +    s = SystemText(s)
-+    s.layout = schema.get("layout", "schema_first")
++    s.layout = schema.get("layout", DEFAULT_LAYOUT)
      return s
  
  
-@@ -432,7 +477,24 @@
+@@ -432,7 +483,24 @@
      return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
  
  
@@ -150,7 +156,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/chat/completions",
          data=json.dumps(body).encode(),
-@@ -441,7 +503,32 @@
+@@ -441,7 +509,32 @@
      return json.load(urllib.request.urlopen(req, timeout=timeout))
  
  
@@ -183,7 +189,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -454,10 +541,7 @@
+@@ -454,10 +547,7 @@
      """The prompt the chat endpoint would build, as token ids, ending after
      the model turn marker. Text states only. ``thinking`` turns the chat
      template's thinking marker on."""
@@ -195,7 +201,7 @@
      out = TOK.apply_chat_template(
          messages, tokenize=True, add_generation_prompt=True, enable_thinking=thinking
      )
-@@ -502,10 +586,7 @@
+@@ -502,10 +592,7 @@
      Returns the thought's token ids and a diagnostics dict."""
      body = {
          "model": ARGS.model,
@@ -207,7 +213,7 @@
          "max_tokens": budget,
          "logprobs": True,
          "top_logprobs": 0,
-@@ -538,10 +619,7 @@
+@@ -538,10 +625,7 @@
  ):
      if prefix is not None:
          return one_read_continuation(schema, template, slots, prefix, seed)
@@ -219,7 +225,7 @@
      body = {
          "model": ARGS.model,
          "messages": messages,
-@@ -1065,6 +1143,7 @@
+@@ -1065,6 +1149,7 @@
      "chunk_rows",
      "chunk_prompt",
      "sequential",
@@ -227,7 +233,7 @@
  )
  
  
-@@ -1160,7 +1239,8 @@
+@@ -1160,7 +1245,8 @@
      state = body.get("state")
      if state is None:
          raise SchemaError("state: required")
@@ -237,7 +243,7 @@
      if not image_parts:
          return text
      return list(image_parts) + [{"type": "text", "text": text}]
-@@ -1170,7 +1250,13 @@
+@@ -1170,7 +1256,13 @@
      if a is None:
          return None
      if q["type"] == "noul":
@@ -252,7 +258,7 @@
      if q["type"] == "choice":
          return {
              "type": "choice",
-@@ -1201,19 +1287,38 @@
+@@ -1201,19 +1293,38 @@
      return c if isinstance(c, str) else ""
  
  
@@ -292,7 +298,7 @@
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1251,6 +1356,7 @@
+@@ -1251,6 +1362,7 @@
  
      def do_POST(self):
          if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
@@ -300,7 +306,7 @@
              return self._json(
                  401,
                  {
-@@ -1276,7 +1382,8 @@
+@@ -1276,7 +1388,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -310,7 +316,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1410,8 @@
+@@ -1303,6 +1416,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -319,7 +325,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1427,12 @@
+@@ -1318,6 +1433,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -332,7 +338,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1362,6 +1477,7 @@
+@@ -1362,6 +1483,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -340,7 +346,7 @@
          )
  
      def _chat(self, req):
-@@ -1451,9 +1567,18 @@
+@@ -1451,9 +1573,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -359,7 +365,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,7 +1612,7 @@
+@@ -1487,7 +1618,7 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -368,7 +374,7 @@
      srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
      threading.Thread(target=srv.serve_forever, daemon=True).start()
      return srv
-@@ -1537,7 +1662,7 @@
+@@ -1537,7 +1668,7 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )

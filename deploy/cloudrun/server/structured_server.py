@@ -65,9 +65,10 @@ read, "sequential": true runs the chunks in order with the earlier answers
 prefilled, and "chunk_prompt": "shared" lists every question in each
 chunk's prompt. "think": N lets the model write up to N tokens in its
 thought channel, as an ordinary generation, and the read then runs with
-that thought in its prompt. "layout": "document_first" sends the state
-first and the questions after it, both in the user turn, instead of the
-questions as the system prompt (the default, "schema_first"). With images the model writes the thought with
+that thought in its prompt. "layout" picks the prompt layout:
+"document_first" (the default; env DEFAULT_LAYOUT) sends the state first
+and the questions after it, both in the user turn; "schema_first" sends the
+questions as the system prompt. With images the model writes the thought with
 the image in view and the server seeds it into the canvas ahead of the
 answer, so the canvas bounds it. The noise draws of a decision share one
 thought.
@@ -103,6 +104,9 @@ TOK = None
 API_KEY = os.environ.get("API_KEY", "")
 DEFAULT_SAMPLES = os.environ.get("DEFAULT_SAMPLES", "1")
 MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
+# The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
+# the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
+DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
 INFLIGHT_WAIT_S = float(os.environ.get("INFLIGHT_WAIT_S", "30.0"))
 _INFLIGHT = threading.BoundedSemaphore(MAX_INFLIGHT) if MAX_INFLIGHT > 0 else None
 _upstream_ready = False  # when set, POST routes need "Authorization: Bearer <key>"
@@ -249,7 +253,7 @@ def parse_schema(value):
     if chunk_prompt not in ("shared", "own"):
         raise SchemaError('schema: chunk_prompt must be "shared" or "own"')
     sequential = bool(value.get("sequential", False))
-    layout = value.get("layout", "schema_first")
+    layout = value.get("layout", DEFAULT_LAYOUT)
     if layout not in LAYOUTS:
         raise SchemaError('schema: layout must be "schema_first" or "document_first"')
     think = value.get("think", 0)
@@ -294,6 +298,8 @@ FORMATS = {
 
 
 LAYOUTS = ("schema_first", "document_first")
+if DEFAULT_LAYOUT not in LAYOUTS:
+    raise SystemExit(f"DEFAULT_LAYOUT must be one of {LAYOUTS}")
 
 
 class SystemText(str):
@@ -347,7 +353,7 @@ def system_text(schema, chunked=False):
             "that is present."
         )
     s = SystemText(s)
-    s.layout = schema.get("layout", "schema_first")
+    s.layout = schema.get("layout", DEFAULT_LAYOUT)
     return s
 
 
