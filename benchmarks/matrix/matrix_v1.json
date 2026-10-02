@@ -227,7 +227,7 @@
    "benchmarks/runs/20261001-v013-reference-t1",
    "benchmarks/runs/20261001-v013-reference-t2"
   ],
-  "note": "Accuracy ranges = min..max over the reference runs (multi-run suites) or value +/- 2 standard errors (single-run frozen sets). Used in single-target mode; a REVIEW is within reference_slack below the range. di_wide: 3 runs on 2026-10-02 against v0.1.3 through the v0.1.4 adapter.",
+  "note": "Accuracy ranges = min..max over the reference runs (multi-run suites) or value +/- 2 standard errors (single-run frozen sets). Used in single-target mode; a REVIEW is within reference_slack below the range. di_wide: 9 runs on 2026-10-02 against v0.1.3 (6 with the pre-#50 adapter, 3 with #50's; the fusion change keeps the top answer, so accuracy is comparable).",
   "suites": {
    "calibration": {
     "accuracy": [
@@ -303,10 +303,10 @@
    },
    "di_wide": {
     "accuracy": [
-     0.84,
-     0.86
+     0.83,
+     0.89
     ],
-    "runs": 3,
+    "runs": 9,
     "n": 100
    }
   }

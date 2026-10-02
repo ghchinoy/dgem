@@ -297,7 +297,7 @@ def build(run_dir, matrix):
             if tops:
                 gates.append(("di_confidence_cap", n, "INFO",
                               f"top probability on unambiguous wide-option probes: {min(tops):.3f}–{max(tops):.3f} "
-                              f"(bracket routing assigns finalists a fixed share of the mass)"))
+                              f"(a flat ceiling across K means bracket fusion is capping confidence)"))
         L.append("")
     if "di_kit_compat" in by:
         for n, lst in by["di_kit_compat"].items():

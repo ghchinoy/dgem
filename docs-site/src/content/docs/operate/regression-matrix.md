@@ -107,8 +107,8 @@ target. These suites therefore test the adapter code you are about to ship again
 
 | Suite | Checks |
 | :--- | :--- |
-| `di_probes` | Wide options at K = 27, 41, 61, 101, 151 and 255 (right answer; probabilities for every option, summing to 1); a 12-question request (slot batching); a ~31k-token input that must be answered or refused with 422 plus a kit marker (`maximum context length`, `options per choice`, …). Any miss is a FAIL. It also reports, as INFO, the top probability on unambiguous wide-option items, which shows any cap bracket routing places on confidence |
-| `di_wide` | MASSIVE validation (English) with the full ~60-label set as options, 100 items ×3, judged like the other accuracy suites (reference 0.84–0.86) |
+| `di_probes` | Wide options at K = 27, 41, 61, 101, 151 and 255 (right answer; probabilities for every option, summing to 1); a 12-question request (slot batching); a ~31k-token input that must be answered or refused with 422 plus a kit marker (`maximum context length`, `options per choice`, …). Any miss is a FAIL. It also reports, as INFO, the top probability on unambiguous wide-option items: a flat ceiling across K would mean bracket fusion is capping confidence (before #50 a fixed 92/8 split capped it at about 0.92) |
+| `di_wide` | MASSIVE validation (English) with the full ~60-label set as options, 100 items ×3, judged like the other accuracy suites (reference 0.83–0.89; accuracy does not depend on the probability fusion, which keeps the final-round winner) |
 | `di_kit_compat` (T2) | The Decision Index kit's own compatibility pass (86 requests) through the adapter. Runs only when `DGEM_DI_KIT_DIR` (a kit checkout with its `.venv`) and `DGEM_DI_COMPAT_ROWS` (compatibility rows built from a rebuilt suite) are set; otherwise reported as skipped. FAIL on any `error` row |
 
 ## Frozen held-out sets
