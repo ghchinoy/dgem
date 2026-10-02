@@ -134,43 +134,55 @@ each file pinned to a Hugging Face dataset commit and checked against its SHA-25
 `~/.cache/dgem-matrix` (`DGEM_MATRIX_CACHE`) and never committed. Licences: MASSIVE CC BY 4.0, typed-decisions
 Apache-2.0, XNLI CC BY-NC 4.0, dair-ai/emotion per its dataset card.
 
-## Reference ranges (v0.1.3, Vertex G4)
+## Reference ranges (v0.2.0, Vertex G4)
 
-Measured on 2026-10-01 against v0.1.3 on Vertex G4 (`g4-standard-48`, 1× RTX PRO 6000), `samples=1`:
-[T1, v0.1.3 against itself](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261001-v013-reference-t1/report.md) (the self-comparison passes
-every gate, which also checks the verdict rules) and [T2](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261001-v013-reference-t2/report.md).
-The ranges are stored in `matrix_v1.json` (`reference`) and used in single-target mode.
+Measured on 2026-10-02 with the v0.2.0 server (prompt layout `document_first`) on Vertex G4 (`g4-standard-48`,
+1× RTX PRO 6000), `samples=1`, in two T2 sessions:
+[production](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261002-v020-reference-t2/report.md) and the
+[release-gate canary](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261002-v020-release-t2/report.md), which also compares v0.2.0 with
+v0.1.3 item by item. The ranges are stored in `matrix_v1.json` (`reference`) and used in single-target mode. The v0.1.3
+reference is in [T1](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261001-v013-reference-t1/report.md) and
+[T2](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261001-v013-reference-t2/report.md).
 
-| Suite | Items | Runs | Accuracy range | ECE raw → held-out |
+| Suite | Items | Runs | Accuracy range (v0.1.3) | ECE raw → held-out |
 | :--- | ---: | ---: | :--- | :--- |
-| Calibration suite (`bench-calibration`) | 50 | 9 | 0.860–0.880 (43–44 correct) | 0.123 → 0.119 |
-| JevBench (`bench-jev`, chat/completions) | 231 | 9 | 0.792–0.823 (183–190) | 0.070 → 0.042 |
-| JevBench (`/v1/systemone`, native types) | 231 | 9 | 0.823–0.862 (190–199) | 0.082 → 0.065 |
-| Intents, banking77 slice (30 options, bracket) | 30 | 7 | 0.733–0.833 | — |
-| Intents, clinc150 slice | 30 | 7 | 0.967–1.000 | — |
-| Multilingual spot check (MASSIVE validation, 5 languages) | 100 | 3 | 0.830–0.850 (every language ≥ 0.75) | — |
-| MASSIVE test, 51 languages, 20 options *(frozen)* | 5,100 | 1 | 0.822 (± 2 SE: 0.811–0.832) | 0.080 → 0.036 |
-| XNLI test, 15 languages *(frozen)* | 4,500 | 1 | 0.678 (0.664–0.692) | 0.245 → 0.022 |
-| typed-decisions test, 2,000 decisions *(frozen)* | 2,000 | 1 | 0.667 (0.646–0.688); soft accuracy 0.554 | 0.232 → 0.017 |
+| Calibration suite (`bench-calibration`) | 50 | 6 | 0.860–0.900 (0.860–0.880) | 0.106 → 0.104 |
+| JevBench (`bench-jev`, chat/completions) | 231 | 6 | 0.800–0.817 (0.792–0.823) | 0.102 → 0.040 |
+| JevBench (`/v1/systemone`, native types) | 231 | 6 | 0.827–0.857 (0.823–0.862) | 0.085 → 0.038 |
+| Intents, banking77 slice (30 options, bracket) | 30 | 6 | 0.767–0.833 (0.733–0.833) | — |
+| Intents, clinc150 slice | 30 | 6 | 0.967–1.000 (same) | — |
+| Multilingual spot check (MASSIVE validation, 5 languages) | 100 | 2 | 0.96 (0.83–0.85) | 0.036 → 0.031 |
+| Decision Index format, wide options (`di_wide`) | 100 | 6 | 0.850–0.890 (0.830–0.890) | 0.070 → 0.035 |
+| CLINC150 validation, 151 options (`di_catchall`) | 100 | 6 | 0.850–0.880 (0.691–0.859) | 0.125 → 0.085 |
+| RAGTruth train (`rag_dev`) | 198 | 6 | 0.758–0.773 (0.674–0.800) | 0.198 → 0.039 |
+| MASSIVE test, 51 languages, 20 options *(frozen)* | 5,100 | 2 | 0.824–0.826 (0.822) | 0.103 → 0.046 |
+| XNLI test, 15 languages *(frozen)* | 4,500 | 2 | 0.697–0.699 (0.678) | 0.227 → 0.036 |
+| typed-decisions test, 2,000 decisions *(frozen)* | 2,000 | 2 | 0.723–0.728 (0.667) | 0.177 → 0.035 |
 
-**Noise floor** (answer agreement between identical repeated runs, same image): calibration 0.99–1.00, JevBench
-0.93–0.96, clinc150 0.98, **banking77 0.82–0.86** (the two-stage bracket for 30 options is the least stable suite).
+Frozen sets store min..max of the two sessions ± 2 SE as their range. One JevBench chat item (`long_policy`) now
+exceeds the 4,096-token context by a few tokens with the new layout, so `jev_native` answers 230 of 231.
+
+**Noise floor** (answer agreement between identical repeated runs, same image; v0.2.0 production): calibration 0.99,
+JevBench 0.95–0.97, clinc150 0.98, banking77 0.96 (0.82–0.86 on v0.1.3), Decision Index suites 0.94–0.95.
 Accuracy is judged against these measured values in every run, not against a fixed band.
 
-**Calibration needs a per-domain temperature.** The held-out temperature is about 1.5 on JevBench, MASSIVE and the
-calibration suite, but about 3.4 on typed-decisions and 4.0 on XNLI, where raw confidence is much too high. A single
+**Calibration needs a per-domain temperature.** With v0.2.0 the held-out temperature is about 1.2–1.9 on JevBench,
+MASSIVE, the wide-option suites and the calibration suite, but 2.6 on typed-decisions, 3.5 on RAGTruth and 3.6 on XNLI,
+where raw confidence is much too high. A single
 global temperature does not fit every domain; fit one on held-out data from your own decisions.
 
 **Option order** (T2, net flip = shuffled minus identical repeat): MASSIVE-en +0.065, emotion +0.050, XNLI-en
 +0.025, JevBench choice +0.029. On 6-option emotion the first-shown option is picked 42.5% of the time against a
 gold rate of 30.5%.
 
-**Latency** (T1, `/v1/systemone`, client in the same region, keep-alive): p50 wall / server time
-92 / 54 ms (1 question), 95 / 57 ms (5 questions), 101 / 60 ms (10), 111 / 62 ms (long policy state),
-134 / 95 ms (5 questions, `samples: 4`); about 62–66 requests/s at 16 and 32 concurrent requests with 0 errors.
+**Latency** (v0.2.0, `/v1/systemone`, client in the same region, keep-alive): p50 wall / server time
+92 / 54 ms (1 question), 99 / 58 ms (5 questions), 103 / 62 ms (10), 111 / 63 ms (long policy state),
+136 / 96 ms (5 questions, `samples: 4`); about 60–64 requests/s at 16 and 32 concurrent requests with 0 errors
+(unchanged from v0.1.3).
 Latency depends on hardware and network, so single-target runs report it but gate only on errors.
 
-Bounding boxes (12 cases): acc@IoU 0.5 = 36.4%, mean IoU 0.41. Decision Index panel (22 requests): 98.9.
+Bounding boxes (12 cases): acc@IoU 0.5 = 81.8%, mean IoU 0.61 (v0.1.3: 36.4%, 0.41). Decision Index panel (22
+requests): 96.7 (v0.1.3: 99.4 in the same session).
 
 ## Scheduled runs (our deployment)
 
