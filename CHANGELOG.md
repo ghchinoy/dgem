@@ -9,6 +9,15 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- `dgem systemone serve` options for two Decision Index weaknesses, **off by default** (measured on dev data; each
+  helps one benchmark family and costs another, so they are opt-in):
+  - `--catch-all off|final|both|verify`: handling of "none of the listed" / "out of scope" options in >26-option
+    bracket tournaments. On CLINC150 validation, `final` raised macro-F1 0.734 → 0.775 and in-scope accuracy
+    0.691 → 0.757, but lowered out-of-scope recall 0.96 → 0.87.
+  - `--noul-mode noul|choice`: read yes/no questions as a 2-option choice with the true/false criteria as
+    descriptions. On RAGTruth train (held-out confirm split), hallucination F1 0.441 → 0.752; slightly lower accuracy
+    on other yes/no sets (JevBench −3.6, calibration suite −6, typed-decisions −1 points; none significant alone).
+
 - **`dgem systemone serve` accepts non-string option descriptions.** The Decision Index suite sends objects (POP909
   chords, ChessBench moves) and arrays (cfcolor swatches) as `criteria` values; the adapter rejected them with HTTP 400
   before reaching the model. Strings pass through unchanged; other values are rendered as compact JSON text.
