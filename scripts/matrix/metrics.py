@@ -78,6 +78,21 @@ def macro_f1(rs):
     return sum(f1s) / len(f1s)
 
 
+def case_exact(rs):
+    """Share of multi-question cases with every field right (rows carry `case`). None for single-question suites.
+    Field accuracy can hide this: a 77% field accuracy over 18 fields gave a 1% case-exact score on a Decision Index
+    benchmark."""
+    by = {}
+    for r in rs:
+        c = r.get("case")
+        if c is None or r.get("qid") is None:
+            return None
+        by.setdefault(c, []).append(bool(r["accurate"]))
+    if not by or all(len(v) == 1 for v in by.values()):
+        return None
+    return sum(all(v) for v in by.values()) / len(by)
+
+
 def reliability(rs, bins=10):
     """Reliability diagram bins: share of items, mean confidence and accuracy per confidence bin."""
     rs = [r for r in rs if r.get("confidence") is not None]
@@ -146,7 +161,8 @@ def summary(rs):
     hits = [1 if r["accurate"] else 0 for r in rs]
     confs = [float(r["confidence"]) for r in rs]
     out = {"n": n, "correct": sum(hits), "accuracy": sum(hits) / n, "ece10": ece(confs, hits),
-           "auroc": auroc(confs, hits), "mean_conf": sum(confs) / n, "macro_f1": macro_f1(rs)}
+           "auroc": auroc(confs, hits), "mean_conf": sum(confs) / n, "macro_f1": macro_f1(rs),
+           "case_exact": case_exact(rs)}
     for k in ("brier", "nll", "soft_acc", "soft_brier", "abs_err_ev"):
         v = [r[k] for r in rs if k in r]
         if v:

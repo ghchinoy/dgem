@@ -229,7 +229,7 @@ def adapter_probes(adapter_target, out):
                 notes.append("422 without a Decision Index kit marker (the kit would record an error, not unsupported)")
         if st == 200 and isinstance(body, dict):
             ans = body.get("answers") or {}
-            for qid, want in (exp.get("answers") or {}).items():
+            for qid, want in {**(exp.get("answers") or {}), **(exp.get("answers_if_200") or {})}.items():
                 a = ans.get(qid) or {}
                 got = a.get("choice")
                 if got is None and a.get("noul") is not None:
@@ -238,13 +238,15 @@ def adapter_probes(adapter_target, out):
                     ok = False
                     notes.append(f"{qid}: {got} != {want}")
             if exp.get("complete"):
-                pr = (ans.get("intent") or {}).get("probabilities") or {}
+                qid0 = next(iter(exp.get("answers") or {"intent": None}))
+                pr = (ans.get(qid0) or {}).get("probabilities") or {}
                 tot = sum(pr.values())
                 info.update(keys=len(pr), prob_sum=tot, top_p=max(pr.values()) if pr else None)
                 if len(pr) != exp["complete"] or abs(tot - 1) > 0.01 or any(v != v or v < 0 for v in pr.values()):
                     ok = False
                     notes.append(f"probabilities: {len(pr)} keys (want {exp['complete']}), sum {tot:.4f}")
-        rows.append({"name": p["name"], "status": st, "ok": ok, "wall_ms": round(ms, 1), "notes": notes, **info})
+        rows.append({"name": p["name"], "status": st, "ok": ok, "wall_ms": round(ms, 1), "notes": notes,
+                     "info_only": bool(p.get("info_only")), **info})
     return _dump(out, {"kind": "adapter_probes", "target": adapter_target.name, "cases": rows})
 
 

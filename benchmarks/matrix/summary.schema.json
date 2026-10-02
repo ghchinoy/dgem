@@ -238,6 +238,13 @@
     },
     "abs_err_ev": {
      "type": "number"
+    },
+    "case_exact": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "share of multi-question cases with every field right; null for single-question suites"
     }
    }
   },
@@ -374,6 +381,12 @@
        }
       }
      }
+    },
+    "case_exact": {
+     "type": [
+      "number",
+      "null"
+     ]
     }
    }
   }

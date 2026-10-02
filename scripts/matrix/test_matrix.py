@@ -179,6 +179,15 @@ class TestSummaryContract(unittest.TestCase):
             self.assertEqual(_check_schema(s, self._schema()), [], run)
 
 
+class TestCaseExact(unittest.TestCase):
+    def test_case_exact(self):
+        rs = [{"case": "a", "qid": "q1", "accurate": True}, {"case": "a", "qid": "q2", "accurate": True},
+              {"case": "b", "qid": "q1", "accurate": True}, {"case": "b", "qid": "q2", "accurate": False}]
+        self.assertEqual(M.case_exact(rs), 0.5)
+        self.assertIsNone(M.case_exact([{"id": "x", "accurate": True}]))
+        self.assertIsNone(M.case_exact([{"case": "a", "qid": "q", "accurate": True}]))
+
+
 class TestDecisionIndexTrack(unittest.TestCase):
     def _report_with_probes(self, tmp, cases_):
         man = {"run_id": "t", "git_commit": "0" * 40, "receipts": [],
@@ -201,6 +210,20 @@ class TestDecisionIndexTrack(unittest.TestCase):
         self.assertIn("wide_41", g["di_probes"]["detail"])
         self.assertEqual(g["di_kit_compat"]["verdict"], "INFO")
         self.assertEqual(s["overall"]["p"], "FAIL")
+
+    def test_info_only_probe_does_not_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _md, s = self._report_with_probes(tmp, [
+                {"name": "wide_27", "status": 200, "ok": True, "notes": []},
+                {"name": "wide_catchall_151", "status": 200, "ok": False, "notes": ["intent: out_of_scope != refund_request"],
+                 "info_only": True}])
+        g = {x["gate"]: x for x in s["gates"]}
+        self.assertEqual(g["di_probes"]["verdict"], "PASS")
+        self.assertEqual(g["di_probe_wide_catchall_151"]["verdict"], "INFO")
+
+    def test_new_probes_present(self):
+        names = {p["name"] for p in C.di_probes()}
+        self.assertTrue({"criteria_objects", "noul_criteria", "wide_catchall_151", "long_9k"} <= names)
 
     def test_probes_cover_awkward_bracket_sizes(self):
         names = {p["name"] for p in C.di_probes()}
