@@ -19,6 +19,8 @@ var (
 	soTemperature  float64
 	soMaxSlots     int
 	soBracketSize  int
+	soCatchAll     string
+	soNoulMode     string
 	soAPIKey       string
 	soNullPrior    bool
 	soDualMirror   bool
@@ -55,6 +57,8 @@ func init() {
 	systemoneServeCmd.Flags().Float64Var(&soTemperature, "temperature", 1.0, "Post-hoc slot logit temperature scaling factor T* (default 1.0 unscaled)")
 	systemoneServeCmd.Flags().IntVar(&soMaxSlots, "max-slots", decisionindex.MaxSlotsPerPass, "Maximum simultaneous questions per forward pass (default 8)")
 	systemoneServeCmd.Flags().IntVar(&soBracketSize, "bracket-size", decisionindex.BracketSize, "Maximum options per Round-1 tournament bracket (default 20)")
+	systemoneServeCmd.Flags().StringVar(&soCatchAll, "catch-all", "off", "Wide-option catch-all handling ('none of the listed', 'out of scope', ...): off, final (skip Round 1, compete in the final), both (every bracket and the final), verify (final over real options, then pick vs catch-all)")
+	systemoneServeCmd.Flags().StringVar(&soNoulMode, "noul-mode", "noul", "How yes/no questions are read: noul, or choice (2-option yes/no choice with the true/false criteria as descriptions)")
 	systemoneServeCmd.Flags().StringVar(&soAPIKey, "api-key", "", "Optional secret key to enforce Authorization: Bearer <key> (env: SYSTEMONE_API_KEY or API_KEY)")
 	systemoneServeCmd.Flags().BoolVar(&soNullPrior, "null-prior-debias", false, "Divide out positional 'A'-bias prior")
 	systemoneServeCmd.Flags().BoolVar(&soDualMirror, "dual-mirror", false, "Evaluate dual-mirror reversed option ordering")
@@ -66,6 +70,14 @@ func init() {
 }
 
 func runSystemOneServe(cmd *cobra.Command, args []string) error {
+	switch soCatchAll {
+	case "off", "final", "both", "verify":
+	default:
+		return fmt.Errorf("--catch-all must be off, final, both or verify (got %q)", soCatchAll)
+	}
+	if soNoulMode != "noul" && soNoulMode != "choice" {
+		return fmt.Errorf("--noul-mode must be noul or choice (got %q)", soNoulMode)
+	}
 	defaultRetriesForLongRunning()
 
 	if envPort := os.Getenv("PORT"); envPort != "" && !cmd.Flags().Changed("port") {
@@ -112,6 +124,8 @@ func runSystemOneServe(cmd *cobra.Command, args []string) error {
 		NullPriorDebias:   soNullPrior,
 		PriorAlpha:        soPriorAlpha,
 		BracketSize:       soBracketSize,
+		CatchAll:          soCatchAll,
+		NoulMode:          soNoulMode,
 	}
 
 	cli := GetClientForURL(upstream)

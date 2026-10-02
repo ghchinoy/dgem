@@ -114,6 +114,8 @@ type EngineOptions struct {
 	NullPriorDebias   bool    // EXP-13B: Divide out content-free positional 'A'-bias prior
 	PriorAlpha        float64 // Damping exponent alpha in [0, 1] for null-prior de-biasing
 	BracketSize       int     // Max options per Round-1 bracket for wide (>26) choices; <=1 means BracketSize
+	CatchAll          string  // Wide-option catch-all handling: "off" (default), "final", "both" or "verify"; see catchAllKeys
+	NoulMode          string  // How yes/no questions are read: "noul" (default) or "choice" (2-option choice; see noulAsChoice)
 }
 
 // DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled (T*=1.0).
@@ -257,7 +259,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	for _, k := range wideKeys {
 		wideQs++
 		q := req.Questions[k]
-		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale, opts.BracketSize)
+		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll)
 		if err != nil {
 			return nil, err
 		}
@@ -293,7 +295,9 @@ func evaluateStandardBatch(
 	questionsPayload := make([]map[string]any, 0, len(batchKeys))
 	for _, qKey := range batchKeys {
 		qSpec := allQuestions[qKey]
-		if isNoulType(qSpec.Type) {
+		if isNoulType(qSpec.Type) && opts.NoulMode == "choice" {
+			questionsPayload = append(questionsPayload, noulAsChoice(qKey, qSpec))
+		} else if isNoulType(qSpec.Type) {
 			q := map[string]any{
 				"id":           qKey,
 				"type":         "boolean",
@@ -365,7 +369,14 @@ func evaluateStandardBatch(
 
 		if isNoulType(qSpec.Type) {
 			pYes := 0.5
-			if exists {
+			if exists && opts.NoulMode == "choice" {
+				// Rendered as a yes/no choice (noulAsChoice): read the option probabilities directly.
+				if py, ok := rawAns.Probabilities["yes"]; ok {
+					pYes = py
+				} else if pn, ok := rawAns.Probabilities["no"]; ok {
+					pYes = 1.0 - pn
+				}
+			} else if exists {
 				if rawAns.Noul > 0 {
 					pYes = rawAns.Noul
 				} else if rawAns.Confidence > 0 && (strings.EqualFold(rawAns.Label, "yes") || strings.EqualFold(rawAns.Label, "true")) {
@@ -457,9 +468,34 @@ func evaluateWideQuestionTournament(
 	qSpec SystemOneQuestion,
 	tempScale float64,
 	bracketSize int,
+	catchAllMode string,
 ) (SystemOneAnswer, int, error) {
 	optKeys := sortedOptionKeys(qSpec.Criteria)
 	numOpts := len(optKeys)
+	// Catch-all options ("none of the listed", "out of scope", ...) are the correct answer inside any Round-1 bracket
+	// that lacks the true option, so a flat tournament sends them to the final too often. Opt-in modes:
+	//   final  - catch-alls skip Round 1 and compete only in the final
+	//   both   - catch-alls appear in every Round-1 bracket and in the final
+	//   verify - the final runs over real options only, then a second read picks between that winner and the catch-alls
+	// Measured on CLINC150 validation (dev): final raised macro-F1 0.734 -> 0.775 but lowered out-of-scope recall
+	// 0.96 -> 0.87, so the default stays "off".
+	var catchAll []string
+	if catchAllMode != "" && catchAllMode != "off" && numOpts > MaxOptionsPerSlot {
+		catchAll = catchAllKeys(qSpec.Criteria)
+	}
+	isCatchAll := make(map[string]bool, len(catchAll))
+	for _, k := range catchAll {
+		isCatchAll[k] = true
+	}
+	roundKeys := optKeys
+	if len(catchAll) > 0 {
+		roundKeys = make([]string, 0, numOpts-len(catchAll))
+		for _, k := range optKeys {
+			if !isCatchAll[k] {
+				roundKeys = append(roundKeys, k)
+			}
+		}
+	}
 	if numOpts <= MaxOptionsPerSlot {
 		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale})
 		if err != nil {
@@ -471,7 +507,7 @@ func evaluateWideQuestionTournament(
 	if bracketSize <= 1 || bracketSize > MaxOptionsPerSlot {
 		bracketSize = BracketSize
 	}
-	brackets := balancedBrackets(optKeys, bracketSize)
+	brackets := balancedBrackets(roundKeys, bracketSize)
 
 	// Pack up to MaxSlotsPerPass bracket sub-questions into a single Round-1 canvas pass!
 	round1Questions := make(map[string]SystemOneQuestion, len(brackets))
@@ -479,9 +515,14 @@ func evaluateWideQuestionTournament(
 	for bIdx, bOpts := range brackets {
 		bKey := fmt.Sprintf("%s_b%02d", qKey, bIdx)
 		round1Keys = append(round1Keys, bKey)
-		subCriteria := make(map[string]string, len(bOpts))
+		subCriteria := make(map[string]string, len(bOpts)+len(catchAll))
 		for _, ok := range bOpts {
 			subCriteria[ok] = qSpec.Criteria[ok]
+		}
+		if catchAllMode == "both" {
+			for _, k := range catchAll {
+				subCriteria[k] = qSpec.Criteria[k]
+			}
 		}
 		round1Questions[bKey] = SystemOneQuestion{
 			Type:         "choice",
@@ -536,11 +577,20 @@ func evaluateWideQuestionTournament(
 		finalists = append(finalists, sortedLocal[:take]...)
 	}
 
-	if len(finalists) > 24 {
+	maxFinal := 24
+	if catchAllMode != "verify" {
+		maxFinal -= len(catchAll)
+	}
+	if len(finalists) > maxFinal {
 		sort.Slice(finalists, func(i, j int) bool {
 			return finalists[i].localProb > finalists[j].localProb
 		})
-		finalists = finalists[:24]
+		finalists = finalists[:maxFinal]
+	}
+	if catchAllMode == "final" || catchAllMode == "both" {
+		for _, k := range catchAll {
+			finalists = append(finalists, contender{key: k, localProb: 1})
+		}
 	}
 
 	finalCriteria := make(map[string]string, len(finalists))
@@ -562,6 +612,36 @@ func evaluateWideQuestionTournament(
 	passesUsed += p
 	finalAns := finalBatch[qKey]
 
+	if catchAllMode == "verify" && len(catchAll) > 0 {
+		best, bestP := "", -1.0
+		for k, v := range finalAns.Probabilities {
+			if v > bestP || (v == bestP && k < best) {
+				best, bestP = k, v
+			}
+		}
+		vCrit := map[string]string{best: qSpec.Criteria[best]}
+		for _, k := range catchAll {
+			vCrit[k] = qSpec.Criteria[k]
+		}
+		vBatch, p2, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey},
+			map[string]SystemOneQuestion{qKey: {Type: "choice", Instructions: FormatInstructions(qSpec.Instructions), Criteria: vCrit}},
+			EngineOptions{TemperatureScale: 1.0})
+		if err != nil {
+			return SystemOneAnswer{}, passesUsed + p2, err
+		}
+		passesUsed += p2
+		pv := vBatch[qKey].Probabilities
+		merged := make(map[string]float64, len(finalAns.Probabilities)+len(catchAll))
+		for k, v := range finalAns.Probabilities {
+			merged[k] = v * pv[best]
+		}
+		for _, k := range catchAll {
+			merged[k] = pv[k]
+			finalists = append(finalists, contender{key: k, localProb: 1})
+		}
+		finalAns.Probabilities = merged
+	}
+
 	finalistSet := make(map[string]bool, len(finalists))
 	for _, f := range finalists {
 		finalistSet[f.key] = true
@@ -570,6 +650,7 @@ func evaluateWideQuestionTournament(
 	for bIdx, bKey := range round1Keys {
 		round1[bIdx] = round1Results[bKey].Probabilities
 	}
+	// Catch-alls are in no bracket's option list, so fusion treats them as finalists carrying final-round mass only.
 	combined := fuseBracketProbabilities(brackets, round1, finalistSet, finalAns.Probabilities)
 
 	scaledProbs, winner, h, normH := NormalizeAndScaleProbabilities(combined, optKeys, tempScale)
@@ -790,6 +871,53 @@ func noulCriteria(c map[string]string) map[string]string {
 		}
 	}
 	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// noulAsChoice renders a yes/no question as a 2-option choice ("yes"/"no") whose descriptions are the question's
+// true/false criteria. Opt-in (NoulMode "choice"): on RAGTruth train (dev) it raised hallucination F1 0.441 -> 0.752
+// on a held-out confirm split, but lowered accuracy slightly on other yes/no families (JevBench, calibration suite,
+// typed-decisions), so it is not the default. The choice answer is mapped back to a noul answer.
+func noulAsChoice(qKey string, qSpec SystemOneQuestion) map[string]any {
+	yes, no := "yes", "no"
+	if crit := noulCriteria(qSpec.Criteria); crit != nil {
+		if v := crit["true"]; v != "" {
+			yes = v
+		}
+		if v := crit["false"]; v != "" {
+			no = v
+		}
+	}
+	return map[string]any{
+		"id":           qKey,
+		"type":         "choice",
+		"instructions": FormatInstructions(qSpec.Instructions),
+		"options":      []map[string]string{{"name": "yes", "description": yes}, {"name": "no", "description": no}},
+	}
+}
+
+// catchAllPatterns mark an option as "none of the others apply" by its description or name (generic wording only).
+var catchAllPatterns = []string{
+	"none of the listed", "none of the above", "none of these", "none of the options", "none apply",
+	"out of scope", "out-of-scope", "not listed", "no matching", "not applicable",
+}
+
+// catchAllKeys returns the options whose description (or name) says "none of the others apply". If more than 3
+// options match, the heuristic is not trusted and nothing is returned.
+func catchAllKeys(criteria map[string]string) []string {
+	var out []string
+	for _, k := range sortedOptionKeys(criteria) {
+		text := strings.ToLower(strings.TrimSpace(criteria[k]) + " " + strings.ReplaceAll(k, "_", " "))
+		for _, p := range catchAllPatterns {
+			if strings.Contains(text, p) {
+				out = append(out, k)
+				break
+			}
+		}
+	}
+	if len(out) > 3 {
 		return nil
 	}
 	return out
