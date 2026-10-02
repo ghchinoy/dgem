@@ -85,7 +85,18 @@ def load_summaries(source):
 
 
 def _when(s):
-    return s.get("finished") or s.get("started") or s.get("created") or s.get("run_id", "")
+    """Sortable ISO-8601 time of a run. v1 summaries carry no timestamp: derive it from the run id (YYYYMMDD and an
+    optional -HHMM, e.g. 20261001-scheduled-t0-2249), else from the object path; unparseable ids sort first."""
+    t = s.get("finished") or s.get("started") or s.get("created")
+    if t:
+        return t
+    import re
+    for text in (s.get("run_id") or "", s.get("_path") or ""):
+        m = re.search(r"(20\d{6})(?:\D.*?(?<!\d)(\d{4})(?!\d))?", text)
+        if m:
+            d, hm = m.group(1), m.group(2) or "0000"
+            return f"{d[:4]}-{d[4:6]}-{d[6:]}T{hm[:2]}:{hm[2:]}:00+00:00"
+    return "0000-00-00T00:00:00+00:00"
 
 
 def build(summaries, tier=None, since=None):
