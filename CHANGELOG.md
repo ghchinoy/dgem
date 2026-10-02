@@ -9,6 +9,22 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.2.0 (2026-10-02)
+
+Serving images rebuilt. **Behaviour change: the default prompt layout is now `document_first`.**
+
+- **Prompt layout.** The server puts the state first and the questions after it, both in the user turn. Before,
+  the questions were the system prompt. Requests can choose with `"layout": "schema_first" | "document_first"`, and a
+  deployment can restore the old default with `DEFAULT_LAYOUT=schema_first`. `dgem systemone serve --prompt-layout`
+  (default `document_first`) sets it on every upstream request. Measured (EXP-19; release gate T2, v0.2.0 vs v0.1.3):
+  typed-decisions 0.674 → 0.728, XNLI 0.662 → 0.699, MASSIVE 0.820 → 0.824, CLINC150-validation in the Decision
+  Index format 0.740 → 0.863 (out-of-scope recall 1.00 → 0.825), RAGTruth train 0.712 → 0.771; JevBench unchanged.
+  ECE improves on typed-decisions and XNLI and is slightly worse on MASSIVE (0.082 → 0.104).
+- `scripts/deploy_vertex_endpoint.sh` passes `MAX_MODEL_LEN` (default 4096).
+- Regression matrix: dev suites `di_catchall` (CLINC150 validation) and `rag_dev` (RAGTruth train) in T1/T2;
+  per-target request options (`--target name=<URL>#layout=schema_first`); fixed `summary.json` `baseline` on runs
+  with `rag_dev`.
+- Apache-2.0 headers, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`; receipts scrubbed of internal identifiers.
 - `dgem systemone serve` options for two Decision Index weaknesses, **off by default** (measured on dev data; each
   helps one benchmark family and costs another, so they are opt-in):
   - `--catch-all off|final|both|verify`: handling of "none of the listed" / "out of scope" options in >26-option
