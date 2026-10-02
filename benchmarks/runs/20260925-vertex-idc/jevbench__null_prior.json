@@ -2,7 +2,7 @@
   "timestamp": "2026-09-25T21:08:09Z",
   "idc_config": "null_prior(alpha=0.50)",
   "source": "live-evaluation",
-  "target_url": "https://4217256562927861760.us-central1-882920967572.prediction.vertexai.goog/v1/projects/genai-blackbelt-fishfooding/locations/us-central1/endpoints/4217256562927861760/invoke/v1/chat/completions",
+  "target_url": "https://<legacy-endpoint-id>.us-central1-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/us-central1/endpoints/<legacy-endpoint-id>/invoke/v1/chat/completions",
   "target_model": "diffgemma-26b-a4b-it-q4",
   "lock_commit_sha": "51a8d73fa798aa337bb1b26abd10995c0ab847e9",
   "total_cases": 231,

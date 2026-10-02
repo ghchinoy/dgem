@@ -273,7 +273,7 @@ Published at [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/) ([index
 
 ## Contributing
 
-Issues, bug reports, and feature discussions are welcome! However, **we are not accepting pull requests (PRs) at this time**. If you encounter a bug or have feedback on benchmark methodologies or templates, please open an [Issue](https://github.com/ghchinoy/dgem/issues).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contributor license agreement (CLA) requirements and community guidelines, and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for our Code of Conduct. If you encounter a bug or have feedback on benchmark methodologies or templates, please open an [Issue](https://github.com/GoogleCloudPlatform/dgem/issues).
 
 ## License
 

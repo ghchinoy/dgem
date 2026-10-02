@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-20T00:00:19Z",
-  "target_url": "http://35.193.147.242:8080/v1",
+  "target_url": "http://<GPU_HOST>:8080/v1",
   "target_model": "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
   "total_cases": 30,
   "mode": "slot",

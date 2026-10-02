@@ -4,7 +4,7 @@
  "n": 50,
  "targets": {
   "l4": {
-   "url": "https://4217256562927861760.us-central1-882920967572.prediction.vertexai.goog/v1/projects/genai-blackbelt-fishfooding/locations/us-central1/endpoints/4217256562927861760/invoke/v1/chat/completions",
+   "url": "https://<legacy-endpoint-id>.us-central1-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/us-central1/endpoints/<legacy-endpoint-id>/invoke/v1/chat/completions",
    "modes": {
     "1A_samples1": {
      "summary": {
@@ -2241,7 +2241,7 @@
    }
   },
   "cloudrun": {
-   "url": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1/chat/completions",
+   "url": "https://dgemma-<hash>-uc.a.run.app/v1/chat/completions",
    "modes": {
     "1A_samples1": {
      "summary": {

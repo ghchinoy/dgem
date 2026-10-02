@@ -30,7 +30,7 @@
       "suite": "calibration",
       "config": "null_prior",
       "path": "../../results_calibration_null_prior.json",
-      "sha256": "3082d90fc17a712833bd328d980bbcfa0cfa14754c927ee5fd59913a4103a917",
+      "sha256": "99403ae17527f1aea79247c0c411228a69c99698a950e940455a7d58aaab5d2f",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -51,7 +51,7 @@
       "suite": "calibration",
       "config": "dual_mirror",
       "path": "../../results_calibration_dual_mirror.json",
-      "sha256": "63acc5d7d07181d09797062c7c57d0d74ce0cba273f7b55d0c04d3688dfa45cd",
+      "sha256": "7f0faff63d023fe8ec801b09954e33c85dc9eea85c8e364b4903c1c5db00f820",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -72,7 +72,7 @@
       "suite": "calibration",
       "config": "cascade_raw035",
       "path": "../../results_calibration_cascade.json",
-      "sha256": "56856bb5c2913e4f158c6cd38e2bf9779fc6636afded5f83f0313c5957e45da7",
+      "sha256": "3fc3a4b24701f93bfa054497c17e4b49fd993ad764f1e525ce96b4dea2913239",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -93,7 +93,7 @@
       "suite": "calibration",
       "config": "cascade_norm016",
       "path": "../../results_calibration_cascade_normalized.json",
-      "sha256": "a6d0d86b4540d7faa18ca0a1dabfa9448045778ca44adb897d16c01a3faf2ebf",
+      "sha256": "1eb8cd71fdf1b02993b1514c0f20ccf079b0aa03ed6b33aab192c73d15c2cd69",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -114,7 +114,7 @@
       "suite": "calibration",
       "config": "gemini38",
       "path": "../../results_calibration_gemini38.json",
-      "sha256": "ba6ba3521f88997ce085da47287ee9c7c93acc68b3fa8c22af20b8cf009bbe89",
+      "sha256": "491747d6cb5b69f76c8ae475b209cdc689bc3fbd80c00c749b0771eb93205510",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -156,7 +156,7 @@
       "suite": "jevbench",
       "config": "djev_upstream_ref",
       "path": "../../jevbench/results_djev_upstream_ref.json",
-      "sha256": "6b75080f3d5dfc80f2db55ac9a06809af54b75a2a6903818e5a0d2a15be722d2",
+      "sha256": "647653de305af51a0ebee0c9ab8222b1c9fc3496920d5faf3d32100da0f42a14",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -177,7 +177,7 @@
       "suite": "permutation",
       "config": "exp13",
       "path": "../../results_permutation_cloudrun.json",
-      "sha256": "7c2648d20a933e4e400d255f7cfc580de07f67dbaa92846799bc0a23efafc775",
+      "sha256": "83981739d35c3092419d21fc29ecd64734b2ee7a0a010107ad8c40c844c476e1",
       "recorded": "2026-09-25T21:00:02+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {
@@ -192,7 +192,7 @@
       "suite": "jevbench",
       "config": "djev_cascade_h50",
       "path": "../../jevbench/results_djev_cascade_h50.json",
-      "sha256": "fba98cd1fc9b4cbffa17676a484b16a85cc802bcf2721b799eb78c6c61ba2260",
+      "sha256": "ac22833a95d7ea69b74e7749c6e2255a3aaac97954fef6619e5aa9430bfe73b1",
       "recorded": "2026-09-25T21:00:11+00:00",
       "command": "legacy receipt (pre-versioning)",
       "summary": {

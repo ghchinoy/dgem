@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-09-25T21:18:36Z",
   "source": "phase-2b-entropy-cascade",
-  "target_url": "cascade(benchmarks/runs/20260925-vertex-idc/jevbench__baseline.json -\u003e vertexai://genai-blackbelt-fishfooding/global)",
+  "target_url": "cascade(benchmarks/runs/20260925-vertex-idc/jevbench__baseline.json -\u003e vertexai://<project-id>/global)",
   "target_model": "DiffusionGemma [H_norm\u003c0.00] -\u003e gemini-3.8-flash [H_norm\u003e=0.00, prior-guided]",
   "lock_commit_sha": "51a8d73fa798aa337bb1b26abd10995c0ab847e9",
   "total_cases": 231,

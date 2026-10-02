@@ -1,6 +1,6 @@
 {
   "experiment": "EXP-11-Phase0-Reranking-Validation",
-  "execution_mode": "LIVE DGEM CLOUD RUN L4 EXECUTION (--endpoint https://4217256562927861760.us-central1-882920967572.prediction.vertexai.goog/v1/projects/genai-blackbelt-fishfooding/locations/us-central1/endpoints/4217256562927861760/invoke/v1/chat/completions)",
+  "execution_mode": "LIVE DGEM CLOUD RUN L4 EXECUTION (--endpoint https://<legacy-endpoint-id>.us-central1-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/us-central1/endpoints/<legacy-endpoint-id>/invoke/v1/chat/completions)",
   "mean_wall_latency_ms": 1631.9,
   "dataset_path": "/Users/ghchinoy/projects/dgem/benchmarks/rerank_suite.jsonl",
   "total_queries": 30,

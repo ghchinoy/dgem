@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Redact or detect internal identifiers in files before publication.
 
 Patterns are NOT stored in this repository. They are loaded from a gitignored
@@ -20,9 +34,9 @@ import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_PATTERNS = os.path.join(REPO, "scratch", "leak-patterns.txt")
-# Paths excluded from --check: raw JSON receipts, internal scratch, and this tool.
-# Markdown under benchmarks/ (run READMEs, deployment logs) is public prose and is scanned.
-CHECK_EXCLUDES = [":!benchmarks/*.json", ":!benchmarks/*.jsonl", ":!scratch"]
+# Paths excluded from --check: internal gitignored scratch directory.
+# Benchmarks (JSON receipts, run READMEs, deployment logs) and scripts are scanned.
+CHECK_EXCLUDES = [":!scratch"]
 
 
 def load_patterns(path):

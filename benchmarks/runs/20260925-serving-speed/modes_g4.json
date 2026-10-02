@@ -4,7 +4,7 @@
  "n": 50,
  "targets": {
   "g4": {
-   "url": "https://4423577720856772608.us-central1-882920967572.prediction.vertexai.goog/v1/projects/genai-blackbelt-fishfooding/locations/us-central1/endpoints/4423577720856772608/invoke/v1/chat/completions",
+   "url": "https://<endpoint-id>.us-central1-<project-number>.prediction.vertexai.goog/v1/projects/<project-id>/locations/us-central1/endpoints/<endpoint-id>/invoke/v1/chat/completions",
    "modes": {
     "1A_samples1": {
      "summary": {

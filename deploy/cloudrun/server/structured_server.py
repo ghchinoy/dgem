@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+# Modifications Copyright 2026 Google LLC (see deploy/cloudrun/server/dgem.patch)
 """Structured decisions in front of a vLLM DiffusionGemma server.
 
 POST /v1/systemone takes Jev's request body: {"model", "state", "questions"}.
