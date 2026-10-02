@@ -345,6 +345,34 @@
      "bytes": 128987
     }
    }
+  },
+  "clinc/clinc_oos": {
+   "license": "CC BY 3.0",
+   "format": "parquet",
+   "used_by": [
+    "di_catchall (validation)"
+   ],
+   "revision": "155b9c710419136e17307b80d0a13e68cd46b4ec",
+   "files": {
+    "plus/validation-00000-of-00001.parquet": {
+     "sha256": "fbd545b46c611c4a7ba4b48cae6c7f09bb5b59f33ff56206ad1cd366c85cdfaa",
+     "bytes": 77789
+    }
+   }
+  },
+  "wandb/RAGTruth-processed": {
+   "license": "see dataset card (RAGTruth: MIT annotations; contexts from source datasets); downloaded at run time",
+   "format": "parquet",
+   "used_by": [
+    "rag_dev (train)"
+   ],
+   "revision": "eb4f4b9d1b68eb7092d3e1a61c0cd82d9808737b",
+   "files": {
+    "data/train-00000-of-00001.parquet": {
+     "sha256": "c14ae31ff459c829edc860bda034ee2dbc0a11107b7511195a32bb4ab1ee8000",
+     "bytes": 22282953
+    }
+   }
   }
  }
 }

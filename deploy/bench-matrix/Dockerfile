@@ -2,6 +2,8 @@
 # stages a static dgem binary and the repository subset the T0/T1 suites read. T2 is never scheduled.
 FROM python:3.12-slim
 WORKDIR /app
+# T1 reads parquet for di_catchall (CLINC150) and rag_dev (RAGTruth)
+RUN pip install --no-cache-dir 'pyarrow>=15'
 COPY dgem /usr/local/bin/dgem
 COPY app/ /app/
 ENV PYTHONUNBUFFERED=1 DGEM_MATRIX_CACHE=/app/.cache

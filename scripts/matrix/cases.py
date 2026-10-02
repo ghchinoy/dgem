@@ -323,7 +323,73 @@ def di_probes():
     return out
 
 
+# ---------------------------------------------------------------- development sets for adapter weaknesses
+CATCHALL_LABEL = "out of scope: none of the listed intents"
+
+
+def di_catchall(n_in=80, n_oos=20):
+    """CLINC150 validation (never the test split) in the Decision Index request format: 151 options keyed option_N in
+    sorted label order, the utterance in the instructions, an empty state, and an 'out of scope' catch-all option.
+    Tracks how often in-scope requests are answered 'out of scope' by the adapter's bracket routing."""
+    f = "plus/validation-00000-of-00001.parquet"
+    names = ds.parquet_labels(ds.CLINC, f, "intent")
+    order = sorted(names)
+    crit = {f"option_{i}": (CATCHALL_LABEL if nm == "oos" else nm.replace("_", " ")) for i, nm in enumerate(order)}
+    key = {nm: f"option_{i}" for i, nm in enumerate(order)}
+    rows = ds.parquet(ds.CLINC, f)
+    rng = random.Random(20261002)
+    ins = [r for r in rows if names[r["intent"]] != "oos"]
+    oos = [r for r in rows if names[r["intent"]] == "oos"]
+    rng.shuffle(ins)
+    rng.shuffle(oos)
+    out = []
+    for i, r in enumerate(ins[:n_in] + oos[:n_oos]):
+        nm = names[r["intent"]]
+        q = {"qid": "q", "type": "choice",
+             "instructions": "Classify the intent of this user request, or choose out of scope if none applies:\n" + r["text"],
+             "criteria": crit, "labels": list(crit), "expected": key[nm], "values": None}
+        out.append({"id": f"di_catchall-{i:03d}", "suite": "di_catchall", "subset": "oos" if nm == "oos" else "in",
+                    "tier": None, "state": {}, "qs": [q]})
+    return out
+
+
+RAG_INS = "The response contains content that is not supported by the context in the prompt."
+
+
+def rag_dev(n=200):
+    """RAGTruth train split (never test), the Decision Index hallucination question wording with true/false criteria.
+    Tracks the yes/no 'no' bias (F1 on the hallucinated class vs the always-flag baseline)."""
+    import ast
+    rows = ds.parquet(ds.RAGTRUTH, "data/train-00000-of-00001.parquet")
+    rng = random.Random(20261002)
+    by = {}
+    for r in rows:
+        by.setdefault(r["task_type"], []).append(r)
+    out = []
+    per = n // max(1, len(by))
+    for task in sorted(by):
+        rs = by[task]
+        rng.shuffle(rs)
+        for r in rs[:per]:
+            lab = r["hallucination_labels_processed"]
+            if not isinstance(lab, dict):
+                try:
+                    lab = ast.literal_eval(lab)
+                except Exception:
+                    lab = json.loads(str(lab).replace("'", '"'))
+            hall = (int(lab.get("evident_conflict", 0)) + int(lab.get("baseless_info", 0))) > 0
+            prompt = r["query"] + "\n" + r["context"] if r["context"] else r["query"]
+            q = {"qid": "q", "type": "noul", "instructions": RAG_INS,
+                 "criteria": {"true": RAG_INS, "false": "All content of the response is supported by the context in the prompt."},
+                 "labels": ["yes", "no"], "expected": "yes" if hall else "no", "values": None}
+            out.append({"id": f"rag_dev-{task}-{r['id']}", "suite": "rag_dev", "subset": task, "tier": None,
+                        "state": {"prompt": prompt, "response": r["output"]}, "qs": [q]})
+    return out
+
+
 SUITES = {
+    "di_catchall": di_catchall,
+    "rag_dev": rag_dev,
     "di_wide": massive_wide,
     "jev_systemone": jevbench,
     "massive_spot": massive_spot,

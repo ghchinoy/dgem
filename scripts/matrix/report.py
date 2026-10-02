@@ -133,7 +133,7 @@ def build(run_dir, matrix):
 
     # ---------------- per-item accuracy suites
     acc_suites = [s for s in ("calibration", "jev_native", "jev_systemone", "intents_banking77", "intents_clinc150",
-                              "massive_spot", "di_wide", "massive", "xnli", "typed") if s in by]
+                              "massive_spot", "di_wide", "di_catchall", "rag_dev", "massive", "xnli", "typed") if s in by]
     rows = {s: {n: [M.rows(r) for _, r in lst] for n, lst in by[s].items()} for s in acc_suites}
     noise = {}
     for n in names:
@@ -279,6 +279,28 @@ def build(run_dir, matrix):
                 gates.append(("order", n, "REVIEW" if worse else "PASS", "net flip vs baseline: " + (", ".join(worse) or "within tolerance")))
             elif n in net_by:
                 gates.append(("order", n, "INFO", ", ".join(f"{s} net {v:+.3f}" for s, v in net_by[n].items())))
+
+    # ---------------- adapter-weakness diagnostics (INFO): catch-all over-selection, yes/no 'no' bias
+    for n in names:
+        if "di_catchall" in rows and rows["di_catchall"].get(n):
+            rr = [r for run in rows["di_catchall"][n] for r in run]
+            ins = [r for r in rr if r.get("subset") == "in"]
+            oo = [r for r in rr if r.get("subset") == "oos"]
+            ca = next((r["expected"] for r in oo), None)
+            if ins and ca:
+                gates.append(("di_catchall_oos_rate", n, "INFO",
+                              f"in-scope answered as the catch-all: {sum(r['actual'] == ca for r in ins) / len(ins):.1%}; "
+                              f"out-of-scope recall {sum(r['accurate'] for r in oo) / max(1, len(oo)):.1%} (pooled runs)"))
+        if "rag_dev" in rows and rows["rag_dev"].get(n):
+            rr = [r for run in rows["rag_dev"][n] for r in run]
+            tp = sum(1 for r in rr if r["actual"] == "yes" and r["expected"] == "yes")
+            fp = sum(1 for r in rr if r["actual"] == "yes" and r["expected"] == "no")
+            fn = sum(1 for r in rr if r["actual"] == "no" and r["expected"] == "yes")
+            pos = tp + fn
+            base = 2 * pos / (2 * pos + (len(rr) - pos)) if rr else 0
+            gates.append(("rag_dev_yes_bias", n, "INFO",
+                          f"hallucinated-class F1 {2 * tp / max(1, 2 * tp + fp + fn):.3f} (always-flag {base:.3f}), "
+                          f"recall {tp / max(1, pos):.1%}, predicted yes {(tp + fp) / max(1, len(rr)):.1%} vs gold {pos / max(1, len(rr)):.1%}"))
 
     # ---------------- Decision Index adapter probes + kit compatibility pass
     probes_summ = {}

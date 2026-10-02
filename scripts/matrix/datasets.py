@@ -21,6 +21,8 @@ MASSIVE = "mteb/amazon_massive_intent"
 XNLI = "facebook/xnli"
 TYPED = "LocalLLaMA/typed-decisions"
 EMOTION = "dair-ai/emotion"
+CLINC = "clinc/clinc_oos"
+RAGTRUTH = "wandb/RAGTruth-processed"
 
 
 def lock():
@@ -110,3 +112,15 @@ def xnli_label_names():
 
 def emotion_label_names():
     return ["sadness", "joy", "love", "anger", "fear", "surprise"]  # dair-ai/emotion ClassLabel order
+
+
+def parquet_labels(repo, file, column):
+    """ClassLabel names for a parquet column, from the Hugging Face schema metadata."""
+    try:
+        import pyarrow.parquet as pq
+    except ImportError as e:
+        raise SystemExit("this suite reads parquet: pip install -r scripts/requirements-matrix.txt") from e
+    meta = pq.read_schema(path(repo, file)).metadata or {}
+    import json as _json
+    feats = _json.loads(meta.get(b"huggingface", b"{}")).get("info", {}).get("features", {})
+    return feats.get(column, {}).get("names")

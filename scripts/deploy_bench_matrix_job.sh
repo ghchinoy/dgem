@@ -76,6 +76,8 @@ for lg in cases.SPOT_LANGS:
     datasets.path(datasets.MASSIVE, f"test/{lg}.json.gz")
 for f in ("validation/en.json.gz", "test/en.json.gz"):  # di_wide (Decision Index adapter track)
     datasets.path(datasets.MASSIVE, f)
+datasets.path(datasets.CLINC, "plus/validation-00000-of-00001.parquet")  # di_catchall
+datasets.path(datasets.RAGTRUTH, "data/train-00000-of-00001.parquet")   # rag_dev
 PY
 cp "${REPO_ROOT}/deploy/bench-matrix/Dockerfile" "${CTX}/Dockerfile"
 gcloud builds submit "${CTX}" --project="${PROJECT}" --tag="${IMAGE}" --suppress-logs --quiet

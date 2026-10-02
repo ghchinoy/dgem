@@ -323,6 +323,16 @@ class TestReport(unittest.TestCase):
             md, s = _run(tmp, 0.65, 0.05)
         self.assertEqual(s["overall"]["new"], "FAIL", md)
 
+    def test_dev_suites_registered(self):
+        mx = json.load(open(MATRIX))
+        for sid in ("di_catchall", "rag_dev"):
+            self.assertIn(sid, mx["tiers"]["T1"])
+            self.assertEqual(mx["suites"][sid]["via"], "adapter")
+            self.assertIn(mx["suites"][sid]["cases"], C.SUITES)
+        lock = D.lock()
+        self.assertIn(D.CLINC, lock)
+        self.assertIn(D.RAGTRUTH, lock)
+
     def test_matrix_definition(self):
         mx = json.load(open(MATRIX))
         for tier, suites in mx["tiers"].items():
