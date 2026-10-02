@@ -294,11 +294,18 @@ func evaluateStandardBatch(
 	for _, qKey := range batchKeys {
 		qSpec := allQuestions[qKey]
 		if isNoulType(qSpec.Type) {
-			questionsPayload = append(questionsPayload, map[string]any{
+			q := map[string]any{
 				"id":           qKey,
 				"type":         "boolean",
 				"instructions": FormatInstructions(qSpec.Instructions),
-			})
+			}
+			// Keep the request's true/false descriptions: the structured server renders them next to yes/no.
+			// Dropping them changed the question (e.g. RAGTruth states the claim in `instructions` and defines
+			// what yes and no mean only in `criteria`).
+			if crit := noulCriteria(qSpec.Criteria); crit != nil {
+				q["criteria"] = crit
+			}
+			questionsPayload = append(questionsPayload, q)
 		} else {
 			optKeys := sortedOptionKeys(qSpec.Criteria)
 			optObjs := make([]map[string]string, 0, len(optKeys))
@@ -759,6 +766,31 @@ func fuseBracketProbabilities(brackets [][]string, round1 []map[string]float64, 
 	}
 	for o := range out {
 		out[o] /= sum
+	}
+	return out
+}
+
+// noulCriteria maps a noul question's criteria to the structured server's boolean form ({"true", "false"}),
+// accepting "yes"/"no" keys as synonyms. Returns nil when neither description is present.
+func noulCriteria(c map[string]string) map[string]string {
+	if len(c) == 0 {
+		return nil
+	}
+	out := map[string]string{}
+	for k, v := range c {
+		v = strings.TrimSpace(v)
+		if v == "" {
+			continue
+		}
+		switch strings.ToLower(strings.TrimSpace(k)) {
+		case "true", "yes":
+			out["true"] = v
+		case "false", "no":
+			out["false"] = v
+		}
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
