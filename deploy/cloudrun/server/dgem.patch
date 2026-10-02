@@ -1,5 +1,5 @@
---- deploy/cloudrun/server/structured_server.upstream.py	2026-10-02 20:33:58.136791011 +0000
-+++ deploy/cloudrun/server/structured_server.py	2026-10-02 20:33:58.147007553 +0000
+--- deploy/cloudrun/server/structured_server.upstream.py
++++ deploy/cloudrun/server/structured_server.py
 @@ -1,5 +1,6 @@
  # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
