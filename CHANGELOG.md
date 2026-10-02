@@ -9,6 +9,26 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.1.4 (2026-10-02)
+
+Gateway, MCP and CLI only. **Serving images are unchanged**: the serving image is still `v0.1.3`
+(`dgem@sha256:ceb17887…`), and production Vertex and Cloud Run keep running it.
+
+- **Regression matrix (#45):** `scripts/bench_matrix.py` runs a versioned set of benchmarks (tiers T0 smoke, T1
+  gate, T2 full with `--confirm`) against one or more serving targets (Vertex, Cloud Run, or a self-hosted
+  `http://<GPU_HOST>:8080`). It judges accuracy against the noise floor it measures in the same session, and writes
+  `benchmarks/runs/<run>/` with redacted receipts, `report.md` and `summary.json`. Datasets are pinned by Hugging Face
+  commit and SHA-256 (`benchmarks/matrix/datasets.lock.json`); v0.1.3 reference ranges are in
+  `benchmarks/matrix/matrix_v1.json`. Guide: `docs/operate/regression-matrix.md`. The evaluate-on-your-own-GPU guide,
+  the runbook and the release process use it.
+- Scheduled matrix runs (`scripts/deploy_bench_matrix_job.sh`): T0 daily and T1 weekly as Cloud Run jobs, with
+  reports in Cloud Storage and verdicts in Cloud Logging.
+- **Alerts (#46):** `scripts/setup_alerts.py` adds a scheduled-matrix FAIL alert and missing-run alerts for T0 (25 h)
+  and T1 (7 d + 8 h).
+- **CLI (#43):** `bench-permutation`, `bench-decision-index` and `bench-rerank` no longer write to committed
+  reference receipts by default; pass `-o/--output`. `--out` remains as a deprecated alias.
+- `scripts/receipt_agreement.py` reads every receipt format.
+
 ## v0.1.3 (2026-10-01)
 
 Serving images rebuilt (structured server fix). Gateway, MCP and CLI from the same commit.
