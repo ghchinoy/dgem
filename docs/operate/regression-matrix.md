@@ -64,10 +64,22 @@ Each run is a directory, `benchmarks/runs/<YYYYMMDD>-<label>/` by default (`--ou
 | `manifest.json` | matrix version, tier, targets with the `version` / `revision` / `vllm_commit` each reported at `/health`, git commit, one entry per receipt with its SHA-256 (compatible with `scripts/bench_runs.py list`) |
 | `<suite>__<target>__r<N>.json` | receipts: the `dgem bench-*` receipt as written, or per-item `/v1/systemone` rows |
 | `report.md` | verdicts, per-suite tables, the measured noise floor, raw vs held-out calibration, per-language tables, latency |
-| `summary.json` | verdicts and headline numbers, for automation |
+| `summary.json` | the machine-readable result ([schema](../../benchmarks/matrix/summary.schema.json), `dgem.matrix.summary/v2`): verdicts, the noise floor, and per suite and target every run's accuracy, coverage, macro-F1, ECE, Brier, NLL, AUROC and latency, plus held-out calibration and reliability bins; option-order flip rates; latency modes and sweep. Dashboards and automation read this file, not `report.md` |
 
 Receipts and logs are redacted as they are written: endpoint URLs become `<kind:name>` and tokens `<TOKEN>`, so a
 run directory can be committed. Run `make check-public` before committing one anyway.
+
+### Metrics in the report
+
+- **Coverage:** answered / attempted items. Refusals (for example HTTP 422 when a request exceeds a capacity limit) and
+  errors count as unanswered, the way the Decision Index scores them. Accuracy and the calibration metrics are computed
+  over answered items, so read them together with coverage.
+- **Macro-F1:** F1 averaged over gold labels, with labels kept separate per question in multi-question suites. Intent
+  benchmarks such as BANKING77 and CLINC150 are usually reported this way, so use it when comparing with published
+  numbers; accuracy alone favours frequent labels.
+- **ECE, Brier, NLL, AUROC:** confidence quality: how well stated confidence matches accuracy (ECE), proper scores for
+  the whole distribution (Brier, NLL), and how well confidence separates right from wrong answers (AUROC). Held-out ECE
+  uses a temperature fitted on other folds.
 
 ## How verdicts are decided
 

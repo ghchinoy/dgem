@@ -28,20 +28,22 @@ Overall: **b: PASS**
 
 ## Suites
 
-| suite | target | runs: correct / n | mean accuracy | ECE10 | Brier | AUROC | wall p50 ms |
-|---|---|---|---|---|---|---|---|
-| calibration | a | 43, 44, 43 / 50 | 0.867 | 0.069 | 0.218 | 0.900 | 185 |
-| calibration | b | 44, 44, 44 / 50 | 0.880 | 0.042 | 0.215 | 0.879 | 164 |
-| jev_native | a | 187, 188, 187 / 231 | 0.811 | 0.076 | 0.266 | 0.850 | 131 |
-| jev_native | b | 183, 185, 190 / 231 | 0.805 | 0.080 | 0.267 | 0.855 | 126 |
-| jev_systemone | a | 193, 191, 193 / 231 | 0.833 | 0.084 | 0.252 | 0.770 | 264 |
-| jev_systemone | b | 193, 190, 192 / 231 | 0.830 | 0.095 | 0.252 | 0.776 | 219 |
-| intents_banking77 | a | 24, 22, 24 / 30 | 0.778 | 0.156 | 0.392 | 0.870 | 404 |
-| intents_banking77 | b | 24, 23, 24 / 30 | 0.789 | 0.139 | 0.398 | 0.825 | 442 |
-| intents_clinc150 | a | 30, 29, 30 / 30 | 0.989 | 0.049 | 0.049 | 0.828 | 142 |
-| intents_clinc150 | b | 29, 30, 29 / 30 | 0.978 | 0.045 | 0.053 | 0.914 | 151 |
-| massive_spot | a | 83 / 100 | 0.830 | 0.098 | 0.237 | 0.888 | 221 |
-| massive_spot | b | 83 / 100 | 0.830 | 0.099 | 0.228 | 0.872 | 216 |
+Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision Index scores them). Accuracy, ECE and the other metrics are over answered items.
+
+| suite | target | runs: correct / n | coverage | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |
+|---|---|---|---|---|---|---|---|---|---|
+| calibration | a | 43, 44, 43 / 50 | 1.000 | 0.867 | 0.716 | 0.069 | 0.218 | 0.900 | 185 |
+| calibration | b | 44, 44, 44 / 50 | 1.000 | 0.880 | 0.743 | 0.042 | 0.215 | 0.879 | 164 |
+| jev_native | a | 187, 188, 187 / 231 | 1.000 | 0.811 | 0.783 | 0.076 | 0.266 | 0.850 | 131 |
+| jev_native | b | 183, 185, 190 / 231 | 1.000 | 0.805 | 0.769 | 0.080 | 0.267 | 0.855 | 126 |
+| jev_systemone | a | 193, 191, 193 / 231 | 1.000 | 0.833 | 0.786 | 0.084 | 0.252 | 0.770 | 264 |
+| jev_systemone | b | 193, 190, 192 / 231 | 1.000 | 0.830 | 0.789 | 0.095 | 0.252 | 0.776 | 219 |
+| intents_banking77 | a | 24, 22, 24 / 30 | 1.000 | 0.778 | 0.715 | 0.156 | 0.392 | 0.870 | 404 |
+| intents_banking77 | b | 24, 23, 24 / 30 | 1.000 | 0.789 | 0.722 | 0.139 | 0.398 | 0.825 | 442 |
+| intents_clinc150 | a | 30, 29, 30 / 30 | 1.000 | 0.989 | 0.983 | 0.049 | 0.049 | 0.828 | 142 |
+| intents_clinc150 | b | 29, 30, 29 / 30 | 1.000 | 0.978 | 0.966 | 0.045 | 0.053 | 0.914 | 151 |
+| massive_spot | a | 83 / 100 | 1.000 | 0.830 | 0.793 | 0.098 | 0.237 | 0.888 | 221 |
+| massive_spot | b | 83 / 100 | 1.000 | 0.830 | 0.839 | 0.099 | 0.228 | 0.872 | 216 |
 
 ## Measured noise floor (answer agreement between repeated identical runs)
 

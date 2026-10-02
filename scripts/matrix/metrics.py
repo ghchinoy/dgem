@@ -41,6 +41,57 @@ def rows(receipt):
     return out
 
 
+def attempted(receipt):
+    """(answered, total) item counts, for coverage. Unanswered = refused (HTTP 4xx, e.g. 422 capacity), errors, n/a.
+    The Decision Index scores unanswered items as wrong, so coverage belongs next to accuracy."""
+    d = receipt
+    if d.get("kind") == "systemone":
+        cs = d.get("cases") or []
+        return sum(1 for r in cs if r.get("status") == 200), len(cs)
+    res = d.get("results")
+    if isinstance(res, list) and res and "intent_accurate" in res[0]:
+        return sum(1 for r in res if not r.get("error")), len(res)
+    cs = d.get("cases") or []
+    return sum(1 for c in cs if not c.get("error")), len(cs)
+
+
+def macro_f1(rs):
+    """Macro-averaged F1 over gold labels (labels namespaced by question id for multi-question suites). The Decision
+    Index and published decision-model results report intent benchmarks (BANKING77, CLINC150) as macro-F1."""
+    def key(r, lab):
+        return f"{r['qid']}:{lab}" if r.get("qid") else str(lab)
+    tp, fp, fn = {}, {}, {}
+    for r in rs:
+        g, p = key(r, r["expected"]), key(r, r["actual"])
+        if g == p:
+            tp[g] = tp.get(g, 0) + 1
+        else:
+            fn[g] = fn.get(g, 0) + 1
+            fp[p] = fp.get(p, 0) + 1
+    labels = set(tp) | set(fn)  # gold labels only: a label never in the gold set has no recall to average
+    if not labels:
+        return None
+    f1s = []
+    for lab in labels:
+        t, f_p, f_n = tp.get(lab, 0), fp.get(lab, 0), fn.get(lab, 0)
+        f1s.append(2 * t / (2 * t + f_p + f_n) if t else 0.0)
+    return sum(f1s) / len(f1s)
+
+
+def reliability(rs, bins=10):
+    """Reliability diagram bins: share of items, mean confidence and accuracy per confidence bin."""
+    rs = [r for r in rs if r.get("confidence") is not None]
+    n = len(rs)
+    out = []
+    for b in range(bins):
+        sel = [r for r in rs if min(int(float(r["confidence"]) * bins), bins - 1) == b]
+        out.append({"lo": b / bins, "hi": (b + 1) / bins, "count": len(sel),
+                    "share": (len(sel) / n) if n else 0.0,
+                    "conf": (sum(float(r["confidence"]) for r in sel) / len(sel)) if sel else None,
+                    "acc": (sum(1 for r in sel if r["accurate"]) / len(sel)) if sel else None})
+    return out
+
+
 def _row(i, exp, act, acc, conf, tp, ms):
     r = {"id": i, "expected": exp, "actual": act, "accurate": bool(acc), "confidence": conf, "wall_ms": ms}
     if tp:
@@ -95,7 +146,7 @@ def summary(rs):
     hits = [1 if r["accurate"] else 0 for r in rs]
     confs = [float(r["confidence"]) for r in rs]
     out = {"n": n, "correct": sum(hits), "accuracy": sum(hits) / n, "ece10": ece(confs, hits),
-           "auroc": auroc(confs, hits), "mean_conf": sum(confs) / n}
+           "auroc": auroc(confs, hits), "mean_conf": sum(confs) / n, "macro_f1": macro_f1(rs)}
     for k in ("brier", "nll", "soft_acc", "soft_brier", "abs_err_ev"):
         v = [r[k] for r in rs if k in r]
         if v:
