@@ -273,7 +273,7 @@ Published at [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/) ([index
 
 ## Contributing
 
-Issues, bug reports, and feature discussions are welcome! However, **we are not accepting pull requests (PRs) at this time**. If you encounter a bug or have feedback on benchmark methodologies or templates, please open an [Issue](https://github.com/ghchinoy/dgem/issues).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contributor license agreement (CLA) requirements and community guidelines, and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for our Code of Conduct. If you encounter a bug or have feedback on benchmark methodologies or templates, please open an [Issue](https://github.com/GoogleCloudPlatform/dgem/issues).
 
 ## License
 
@@ -282,5 +282,6 @@ This project is licensed under the [Apache-2.0 License](LICENSE).
 ## Disclaimer
 
 > [!CAUTION]
-> This is **not** an officially supported Google product.
-> This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
+> This is **not** an officially supported Google product. This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
+>
+> Eligibility for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security) is determined by the [Google Open Source Software Vulnerability Reward Program Rules](https://bughunters.google.com/about/rules/open-source/google-open-source-software-vulnerability-reward-program-rules).

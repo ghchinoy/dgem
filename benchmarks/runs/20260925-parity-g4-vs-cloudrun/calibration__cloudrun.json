@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-09-25T23:45:26Z",
   "idc_config": "none",
-  "target_url": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1",
+  "target_url": "https://dgemma-<hash>-uc.a.run.app/v1",
   "target_model": "/mnt/gcs/dgemma",
   "workers": 4,
   "total_cases": 50,

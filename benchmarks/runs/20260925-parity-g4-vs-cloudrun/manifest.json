@@ -5,17 +5,17 @@
   "git_dirty_paths": [
     "kg/permutation/suite.go"
   ],
-  "notes": "Parity probe: Vertex G4 (4423577720856772608, g4-standard-48 + RTX PRO 6000) vs Cloud Run dgemma (RTX PRO 6000), both image dgemma:ab208dd. Interleaved baselines; Vertex repeated for determinism. Pre-registered pass: Vertex within 3 items (231) / 2 items (50) of Cloud Run or better, with high per-item agreement.",
+  "notes": "Parity probe: Vertex G4 (<endpoint-id>, g4-standard-48 + RTX PRO 6000) vs Cloud Run dgemma (RTX PRO 6000), both image dgemma:ab208dd. Interleaved baselines; Vertex repeated for determinism. Pre-registered pass: Vertex within 3 items (231) / 2 items (50) of Cloud Run or better, with high per-item agreement.",
   "receipts": [
     {
       "suite": "jevbench",
       "config": "vertex_r1",
       "path": "jevbench__vertex_r1.json",
-      "sha256": "8ff48c936ec4169a4187d6f94027f64b3d04318eae99000f81694b1fd1a1a40a",
+      "sha256": "3a4a1368a76ba203cca28ede1d86e300b15d644b50fa45ff4a69a4e0fdfe8d49",
       "recorded": "2026-09-25T23:44:51+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r1.json",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r1.json",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -25,7 +25,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -47,9 +47,9 @@
       "suite": "jevbench",
       "config": "cloudrun_r1",
       "path": "jevbench__cloudrun_r1.json",
-      "sha256": "9788e27475c723bd72e46bdece98b94ad29d4e1d44d940d732fcc625d690f6ba",
+      "sha256": "fe5ecb05d4acab7aa1dcdea3293ff4943b66f34b0374ca2c97514ca39ab9db4c",
       "recorded": "2026-09-25T23:45:04+00:00",
-      "command": "./bin/dgem bench-jev -u https://dgemma-tkb3aiuiea-uc.a.run.app/v1 -m /mnt/gcs/dgemma --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__cloudrun_r1.json",
+      "command": "./bin/dgem bench-jev -u https://dgemma-<hash>-uc.a.run.app/v1 -m /mnt/gcs/dgemma --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__cloudrun_r1.json",
       "backend_state": null,
       "summary": {
         "timestamp": "2026-09-25T23:45:04Z",
@@ -69,11 +69,11 @@
       "suite": "jevbench",
       "config": "vertex_r2",
       "path": "jevbench__vertex_r2.json",
-      "sha256": "7c221955334dbc4b78abae72abee73b2c7662601d40836f424a9a59a3637102d",
+      "sha256": "6a6e3cd19ee14dd52d778c2ad2fe0bc381de6bc9dd9d6b387d61cba3e6fd4fb0",
       "recorded": "2026-09-25T23:45:11+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r2.json",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/jevbench__vertex_r2.json",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -83,7 +83,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -105,11 +105,11 @@
       "suite": "calibration",
       "config": "vertex",
       "path": "calibration__vertex.json",
-      "sha256": "66554f36f96691f9923f8a3c8554960634cf1e18aac0f84a5678d01aa20705ed",
+      "sha256": "8d097e63c2908371d6cfd3c2b2d3c3bd2b2b5a512b4cc299e8a69b5c5d29026f",
       "recorded": "2026-09-25T23:45:16+00:00",
-      "command": "./bin/dgem bench-calibration --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/calibration__vertex.json",
+      "command": "./bin/dgem bench-calibration --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/calibration__vertex.json",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -119,7 +119,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -141,9 +141,9 @@
       "suite": "calibration",
       "config": "cloudrun",
       "path": "calibration__cloudrun.json",
-      "sha256": "c9591b7e2d528babe94011a1f61ae77100892552fb6c68d9d795bb6aff1aed7d",
+      "sha256": "a62b9be3ea6135d479f7732acbecdf4ab436f56208ecdaf0eafd46ae0bd4320f",
       "recorded": "2026-09-25T23:45:26+00:00",
-      "command": "./bin/dgem bench-calibration -u https://dgemma-tkb3aiuiea-uc.a.run.app/v1 -m /mnt/gcs/dgemma --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/calibration__cloudrun.json",
+      "command": "./bin/dgem bench-calibration -u https://dgemma-<hash>-uc.a.run.app/v1 -m /mnt/gcs/dgemma --gcp-auth -w 4 -o /workspace/dgem/benchmarks/runs/20260925-parity-g4-vs-cloudrun/calibration__cloudrun.json",
       "backend_state": null,
       "summary": {
         "timestamp": "2026-09-25T23:45:26Z",

@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-23T16:41:29Z",
-  "target_url": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1",
+  "target_url": "https://dgemma-<hash>-uc.a.run.app/v1",
   "target_model": "diffgemma-26b-a4b-it-q4",
   "workers": 4,
   "total_cases": 50,

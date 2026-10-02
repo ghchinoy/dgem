@@ -4,7 +4,7 @@
  "n": 50,
  "targets": {
   "cloudrun": {
-   "url": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1/chat/completions",
+   "url": "https://dgemma-<hash>-uc.a.run.app/v1/chat/completions",
    "modes": {
     "1G_image_s1": {
      "summary": {

@@ -9,11 +9,11 @@
       "suite": "jevbench",
       "config": "baseline_b1",
       "path": "jevbench__baseline_b1.json",
-      "sha256": "e0cbc96d513435091c9ba4c1fa53422bfc5fe47642c1015c1cc6cea735c7fc68",
+      "sha256": "2ef01e426a3ed9e96fdd2632c65f681020b68168d5e68c6124ddaac78442b236",
       "recorded": "2026-09-26T00:10:19+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b1.json",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b1.json",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -23,7 +23,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -45,11 +45,11 @@
       "suite": "jevbench",
       "config": "id_q1",
       "path": "jevbench__id_q1.json",
-      "sha256": "c9c4ec439ba567aec50c931322e51cc6133d31450c275f11d2a219986473568a",
+      "sha256": "5d0288f3296e06e2ace01da265bf319cfa7043e3e7f2ea40d6d4c1b3e915cb9c",
       "recorded": "2026-09-26T00:10:31+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_q1.json --slot-id q1",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_q1.json --slot-id q1",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -59,7 +59,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -81,11 +81,11 @@
       "suite": "jevbench",
       "config": "id_random",
       "path": "jevbench__id_random.json",
-      "sha256": "74ab8a96e6c69134ea1902f0b5f9e42417215876433cadf8e3d6e2541ea3e17a",
+      "sha256": "e2e5a140ae38aa467fe1444ea62424659e4907bfc6a950a6284373d2935914e6",
       "recorded": "2026-09-26T00:10:43+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_random.json --slot-id x7k2q",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_random.json --slot-id x7k2q",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -95,7 +95,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -117,11 +117,11 @@
       "suite": "jevbench",
       "config": "two_copy_rev",
       "path": "jevbench__two_copy_rev.json",
-      "sha256": "b0ba20999a915da62049c470d9b1ea463754d530345b8c8ac8b049a222a7cc31",
+      "sha256": "d76876852767274646a29a1ed4d4e6d7ddc707da9745efd2a37c63a16fdbe9c2",
       "recorded": "2026-09-26T00:10:55+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_rev.json --dual-mirror --mirror-mode copy --mirror-slot-suffix __rev",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_rev.json --dual-mirror --mirror-mode copy --mirror-slot-suffix __rev",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -131,7 +131,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -153,11 +153,11 @@
       "suite": "jevbench",
       "config": "baseline_b2",
       "path": "jevbench__baseline_b2.json",
-      "sha256": "618473d77d86497c5c80f69c083013ffeb02c42c1760eb69790ee402bd19917e",
+      "sha256": "4f82d944124c5c3d04091e8826161da976aa8e6d479ff267ef6729e77fe228fe",
       "recorded": "2026-09-26T00:11:07+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b2.json",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b2.json",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -167,7 +167,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -189,11 +189,11 @@
       "suite": "jevbench",
       "config": "id_mirror",
       "path": "jevbench__id_mirror.json",
-      "sha256": "d21302b5f59f78b8040de648a743ab52fec839695e8723bbf20bf7d589b117ba",
+      "sha256": "e7d545444b242c6ccd7df79d61c94e4354e47fe1648b022c638611a269bc6c0d",
       "recorded": "2026-09-26T00:11:20+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_mirror.json --slot-id mirror",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_mirror.json --slot-id mirror",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -203,7 +203,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -225,11 +225,11 @@
       "suite": "jevbench",
       "config": "id_check",
       "path": "jevbench__id_check.json",
-      "sha256": "2f770fa501adeb900b833cbcd4a4d933e8d94cd99eec6cd089497fcdbd3b11bb",
+      "sha256": "cd8c8447c5cea25a2d63b359a5ded08b6be2c3dfb0f8e2721588ba64dce266f8",
       "recorded": "2026-09-26T00:11:32+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_check.json --slot-id check",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__id_check.json --slot-id check",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -239,7 +239,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -261,11 +261,11 @@
       "suite": "jevbench",
       "config": "two_copy_mirror_rev",
       "path": "jevbench__two_copy_mirror_rev.json",
-      "sha256": "4d84dba980f15a5d8c957b92aa934e98c78ccca3fd69b97c20f1aef3a0cb90e2",
+      "sha256": "3cab7b4cdd5bf58cf16561698b1d175aee705b458d420fa072d07c8f64830ac2",
       "recorded": "2026-09-26T00:11:45+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_mirror_rev.json --dual-mirror --mirror-mode copy --mirror-slot-suffix __mirror_rev",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_mirror_rev.json --dual-mirror --mirror-mode copy --mirror-slot-suffix __mirror_rev",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -275,7 +275,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -297,11 +297,11 @@
       "suite": "jevbench",
       "config": "two_copy_b",
       "path": "jevbench__two_copy_b.json",
-      "sha256": "58e5c58ec66b3dfc95b1d2aee461b0faea60f04ed10e3e2bbaeaf3c8107b645d",
+      "sha256": "00e39a11d84ccdb3a190d5293b765e9b91e8546fbcdaa559c6a2b386ede84a5d",
       "recorded": "2026-09-26T00:11:57+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_b.json --dual-mirror --mirror-mode copy --mirror-slot-suffix _b",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__two_copy_b.json --dual-mirror --mirror-mode copy --mirror-slot-suffix _b",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -311,7 +311,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },
@@ -333,11 +333,11 @@
       "suite": "jevbench",
       "config": "baseline_b3",
       "path": "jevbench__baseline_b3.json",
-      "sha256": "83c3b6fa0837cd9708999b3464daee0239f30cd5eedfa85a626463b2a66a4194",
+      "sha256": "22ae5236ea3142c53d81d7c8ffc708b711cd525412f3a86c499842200efc042a",
       "recorded": "2026-09-26T00:12:09+00:00",
-      "command": "./bin/dgem bench-jev --vertex-url 4423577720856772608 --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b3.json",
+      "command": "./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 -o /workspace/dgem-prop16/benchmarks/runs/20260926-prop16-slot-names/jevbench__baseline_b3.json",
       "backend_state": {
-        "endpoint": "4423577720856772608",
+        "endpoint": "<endpoint-id>",
         "deployed_models": [
           {
             "id": "5961425052208463872",
@@ -347,7 +347,7 @@
             "min_replicas": 1,
             "max_replicas": 2,
             "available_replicas": 1,
-            "image": "us-central1-docker.pkg.dev/genai-blackbelt-fishfooding/dgem/dgemma:ab208dd"
+            "image": "us-central1-docker.pkg.dev/<project-id>/dgem/dgemma:ab208dd"
           }
         ]
       },

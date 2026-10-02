@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-23T15:09:45Z",
-  "endpoint": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1",
+  "endpoint": "https://dgemma-<hash>-uc.a.run.app/v1",
   "model": "diffgemma-26b-a4b-it-q4",
   "gate_threshold_normalized_h": 0.16,
   "prior_damping_alpha": 0.75,

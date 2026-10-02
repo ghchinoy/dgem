@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-21T02:17:53Z",
-  "target_url": "cascade(benchmarks/results_calibration_cloudrun.json -\u003e vertexai://genai-blackbelt-fishfooding/global)",
+  "target_url": "cascade(benchmarks/results_calibration_cloudrun.json -\u003e vertexai://<project-id>/global)",
   "target_model": "DiffusionGemma [H\u003c0.35] -\u003e gemini-3.8-flash [H\u003e=0.35, prior-guided]",
   "workers": 4,
   "total_cases": 50,

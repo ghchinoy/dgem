@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-20T21:58:26Z",
-  "target_url": "vertexai://genai-blackbelt-fishfooding/locations/global",
+  "target_url": "vertexai://<project-id>/locations/global",
   "target_model": "gemini-3.8-flash",
   "workers": 6,
   "total_cases": 50,

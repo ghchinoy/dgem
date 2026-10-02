@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-23T13:54:50Z",
-  "endpoint": "https://dgemma-tkb3aiuiea-uc.a.run.app/v1",
+  "endpoint": "https://dgemma-<hash>-uc.a.run.app/v1",
   "model": "diffgemma-26b-a4b-it-q4",
   "dgem_wide_canvas_report": {
     "suite_edition": "release-v1-panel",
