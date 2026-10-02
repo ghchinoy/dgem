@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`dgem systemone serve` accepts non-string option descriptions.** The Decision Index suite sends objects (POP909
+  chords, ChessBench moves) and arrays (cfcolor swatches) as `criteria` values; the adapter rejected them with HTTP 400
+  before reaching the model. Strings pass through unchanged; other values are rendered as compact JSON text.
+
 ## v0.1.5 (2026-10-02)
 
 Gateway, MCP and CLI only. **Serving images are unchanged**: still `v0.1.3` (`dgem@sha256:ceb17887…`).
