@@ -179,6 +179,37 @@ class TestSummaryContract(unittest.TestCase):
             self.assertEqual(_check_schema(s, self._schema()), [], run)
 
 
+class TestDecisionIndexTrack(unittest.TestCase):
+    def _report_with_probes(self, tmp, cases_):
+        man = {"run_id": "t", "git_commit": "0" * 40, "receipts": [],
+               "matrix": {"matrix_version": "v1", "tier": "T1", "baseline": None, "targets": [{"name": "p", "kind": "vertex"}]}}
+        _w(os.path.join(tmp, "di_probes__p__r1.json"), {"kind": "adapter_probes", "cases": cases_})
+        man["receipts"].append({"path": "di_probes__p__r1.json", "suite": "di_probes", "config": "p", "run": 1, "perm": None})
+        _w(os.path.join(tmp, "di_kit_compat__p__r1.json"), {"kind": "kit_compat", "skipped": True, "reason": "x"})
+        man["receipts"].append({"path": "di_kit_compat__p__r1.json", "suite": "di_kit_compat", "config": "p", "run": 1, "perm": None})
+        _w(os.path.join(tmp, "manifest.json"), man)
+        with open(MATRIX) as f:
+            return R.build(tmp, json.load(f))
+
+    def test_probe_failure_fails_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _md, s = self._report_with_probes(tmp, [
+                {"name": "wide_41", "status": 500, "ok": False, "notes": ["HTTP 500"]},
+                {"name": "wide_27", "status": 200, "ok": True, "notes": [], "keys": 27, "prob_sum": 1.0, "top_p": 0.9}])
+        g = {x["gate"]: x for x in s["gates"]}
+        self.assertEqual(g["di_probes"]["verdict"], "FAIL")
+        self.assertIn("wide_41", g["di_probes"]["detail"])
+        self.assertEqual(g["di_kit_compat"]["verdict"], "INFO")
+        self.assertEqual(s["overall"]["p"], "FAIL")
+
+    def test_probes_cover_awkward_bracket_sizes(self):
+        names = {p["name"] for p in C.di_probes()}
+        for k in (41, 61, 101):  # K % 20 == 1 once produced a one-option bracket
+            self.assertIn(f"wide_{k}", names)
+        refusal = next(p for p in C.di_probes() if p["name"] == "context_refusal")
+        self.assertTrue(refusal["expect"]["marker_if_422"])
+
+
 class TestCases(unittest.TestCase):
     def test_jevbench_shapes(self):
         cs = C.jevbench()

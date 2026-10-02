@@ -132,7 +132,7 @@ def build(run_dir, matrix):
 
     # ---------------- per-item accuracy suites
     acc_suites = [s for s in ("calibration", "jev_native", "jev_systemone", "intents_banking77", "intents_clinc150",
-                              "massive_spot", "massive", "xnli", "typed") if s in by]
+                              "massive_spot", "di_wide", "massive", "xnli", "typed") if s in by]
     rows = {s: {n: [M.rows(r) for _, r in lst] for n, lst in by[s].items()} for s in acc_suites}
     noise = {}
     for n in names:
@@ -164,6 +164,9 @@ def build(run_dir, matrix):
             if n not in rows[s] or not rows[s][n]:
                 continue
             cand = rows[s][n]
+            if not any(cand):
+                gates.append((s, n, "FAIL", "no answered items (all refused, n/a or errors)"))
+                continue
             mean_c = statistics.mean([M.summary(r)["accuracy"] for r in cand if r])
             if s == "massive_spot":
                 bylang = defaultdict(list)
@@ -175,6 +178,9 @@ def build(run_dir, matrix):
                 continue
             if base and base in rows[s]:
                 bl = rows[s][base]
+                if not any(bl):
+                    gates.append((s, n, "REVIEW", "baseline has no answered items"))
+                    continue
                 mean_b = statistics.mean([M.summary(r)["accuracy"] for r in bl if r])
                 within = [w for w in (_within(cand), _within(bl)) if w is not None]
                 floor = statistics.mean(within) if within else statistics.mean([v for v in noise.values() if v] or [0.94])
@@ -273,6 +279,38 @@ def build(run_dir, matrix):
             elif n in net_by:
                 gates.append(("order", n, "INFO", ", ".join(f"{s} net {v:+.3f}" for s, v in net_by[n].items())))
 
+    # ---------------- Decision Index adapter probes + kit compatibility pass
+    probes_summ = {}
+    if "di_probes" in by:
+        L += ["## Decision Index adapter probes (`dgem systemone serve` from this checkout)", "",
+              "| target | probe | HTTP | ok | detail |", "|---|---|---|---|---|"]
+        for n, lst in by["di_probes"].items():
+            cs = lst[0][1]["cases"]
+            probes_summ[n] = cs
+            for c in cs:
+                det = "; ".join(c.get("notes") or []) or ", ".join(f"{k}={_f(c[k])}" for k in ("keys", "prob_sum", "top_p", "marker") if k in c)
+                L.append(f"| {n} | {c['name']} | {c['status']} | {'yes' if c['ok'] else '**no**'} | {det} |")
+            bad = [c["name"] for c in cs if not c["ok"]]
+            gates.append(("di_probes", n, "FAIL" if bad else "PASS",
+                          f"failed: {', '.join(bad)}" if bad else f"all {len(cs)} probes as expected"))
+            tops = [c["top_p"] for c in cs if c.get("top_p") is not None]
+            if tops:
+                gates.append(("di_confidence_cap", n, "INFO",
+                              f"top probability on unambiguous wide-option probes: {min(tops):.3f}–{max(tops):.3f} "
+                              f"(a flat ceiling across K means bracket fusion is capping confidence)"))
+        L.append("")
+    if "di_kit_compat" in by:
+        for n, lst in by["di_kit_compat"].items():
+            r = lst[0][1]
+            if r.get("skipped"):
+                gates.append(("di_kit_compat", n, "INFO", "skipped: " + r.get("reason", "")))
+                continue
+            c = r.get("counts") or {}
+            errs = c.get("error", 0)
+            gates.append(("di_kit_compat", n, "FAIL" if errs else "PASS",
+                          f"ok {c.get('ok', 0)}, unsupported {c.get('unsupported', 0)}, error {errs}"))
+            probes_summ.setdefault(n, [])
+
     # ---------------- summary-only suites
     summary_only = {}
     for s, keys in (("bbox", ("acc_at_50_expectation_pct", "mean_expectation_iou")),
@@ -338,5 +376,5 @@ def build(run_dir, matrix):
                "gates": [{"gate": g, "target": n, "verdict": v, "detail": d} for g, n, v, d in gates],
                "suites": suite_summ,
                "order": {n: dict(v) for n, v in order_summ.items()},
-               "latency": lat_summ, "summary_only": summary_only}
+               "latency": lat_summ, "summary_only": summary_only, "di_probes": probes_summ}
     return "\n".join(L) + "\n", summary

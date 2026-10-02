@@ -6,8 +6,9 @@
    "license": "CC BY 4.0 (Amazon MASSIVE; mirrored by MTEB)",
    "format": "jsonl.gz",
    "used_by": [
-    "massive_spot (validation)",
+    "di_wide (validation, en)",
     "massive (test)",
+    "massive_spot (validation)",
     "order_massive_en (test, en)"
    ],
    "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
@@ -216,13 +217,13 @@
      "sha256": "23a01dd66538ea30ea5cd6105f19870ca7703b2771067c2aac13a2caa8992bb1",
      "bytes": 57388
     },
-    "validation/ru.json.gz": {
-     "sha256": "d9a137e5457ffa0c655a9187a904d001d4ca3150c7616c94d0d9e7aee45e7aa9",
-     "bytes": 51802
+    "validation/en.json.gz": {
+     "sha256": "90707b81c3d1b70d6992b41d641a79f66874fdbf6c8a1cc4ccd97c246738fa67",
+     "bytes": 38340
     },
-    "validation/th.json.gz": {
-     "sha256": "d6ece30dff5bec7677f02b061a903c32a052ce11d5d69592e2410e7ae3e82db0",
-     "bytes": 49303
+    "validation/es.json.gz": {
+     "sha256": "9d8968aa28a590086de2fb362c1aef3f0347139abf6c164a88086f4e7a37fa57",
+     "bytes": 41255
     },
     "validation/hi.json.gz": {
      "sha256": "f9e52206f9295dc8b8e37351b94165ee4e137b4f2bc1e2b56bb2f0bba2ee6399",
@@ -232,9 +233,13 @@
      "sha256": "f2a5f8ec8c992c1c755e2336f824b739dbf4f0ead7c89087c0f4ce6a69ac9514",
      "bytes": 45536
     },
-    "validation/es.json.gz": {
-     "sha256": "9d8968aa28a590086de2fb362c1aef3f0347139abf6c164a88086f4e7a37fa57",
-     "bytes": 41255
+    "validation/ru.json.gz": {
+     "sha256": "d9a137e5457ffa0c655a9187a904d001d4ca3150c7616c94d0d9e7aee45e7aa9",
+     "bytes": 51802
+    },
+    "validation/th.json.gz": {
+     "sha256": "d6ece30dff5bec7677f02b061a903c32a052ce11d5d69592e2410e7ae3e82db0",
+     "bytes": 49303
     }
    }
   },

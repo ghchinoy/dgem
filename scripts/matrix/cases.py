@@ -72,6 +72,25 @@ def massive(split="test", langs=None, n=100, suite="massive"):
 SPOT_LANGS = ["ru", "th", "hi", "ja", "es"]
 
 
+def massive_wide(n=100):
+    """MASSIVE validation (English) with the language's FULL label set as options (~60): every item goes through
+    bracket routing in `dgem systemone serve`. Validation split, so it never touches the frozen test set."""
+    test = ds.jsonl_gz(ds.MASSIVE, "test/en.json.gz")
+    labels = sorted({r["label_text"] for r in test})
+    rows = ds.jsonl_gz(ds.MASSIVE, "validation/en.json.gz")[:n]
+    rng = random.Random(13)
+    out = []
+    for i, r in enumerate(rows):
+        keys = list(labels)
+        rng.shuffle(keys)
+        q = {"qid": "intent", "type": "choice", "instructions": "What is the user asking for in `utterance`?",
+             "criteria": {k: k.replace("_", " ").replace(".", ": ") for k in keys}, "labels": keys,
+             "expected": r["label_text"], "values": None}
+        out.append({"id": f"di_wide-en-{i:03d}", "suite": "di_wide", "subset": "en", "tier": None,
+                    "state": {"utterance": r["text"]}, "qs": [q]})
+    return out
+
+
 def massive_spot():
     """Multilingual smoke check: MASSIVE validation split (never the frozen test split), 5 languages x 20."""
     return massive("validation", SPOT_LANGS, 20, suite="massive_spot")
@@ -224,7 +243,52 @@ def score(q, dist):
     return out
 
 
+# ---------------------------------------------------------------- Decision Index adapter probes
+# Synthetic requests with known answers that exercise `dgem systemone serve` paths a Decision Index run depends on:
+# bracket routing at awkward option counts (K % 20 == 1 left a one-option bracket), slot batching (> 8 questions),
+# and capacity refusals that must come back as HTTP 422 with a kit-recognised marker (else the kit records "error").
+KIT_MARKERS = ("options per choice", "the canvas holds", "maximum context length", "context window", "too many tokens")
+
+
+def _wide_probe(k):
+    opts = {f"opt_{i:03d}": f"unrelated topic number {i}" for i in range(k - 1)}
+    opts["refund_request"] = "the customer asks for their money back"
+    keys = sorted(opts)
+    return {"state": {"message": "I was charged twice, please give me my money back."},
+            "questions": {"intent": {"type": "choice", "instructions": "What does the customer want?",
+                                     "criteria": {x: opts[x] for x in keys}}}}
+
+
+_BATCH_QS = [("Is the customer asking for a refund?", "yes"), ("Is the message in English?", "yes"),
+             ("Does the message mention a double charge?", "yes"), ("Is the customer threatening legal action?", "no"),
+             ("Is the customer asking about shipping?", "no"), ("Is the message polite?", "yes"),
+             ("Does the message mention a password?", "no"), ("Is this about billing?", "yes"),
+             ("Does the message include a phone number?", "no"), ("Is the customer asking to cancel?", "no"),
+             ("Is money involved?", "yes"), ("Is the message about a software bug?", "no")]
+
+
+def di_probes():
+    """-> list of probes {name, body, expect: {status, answers?, complete?}}."""
+    out = []
+    for k in (27, 41, 61, 101, 151, 255):
+        out.append({"name": f"wide_{k}", "body": _wide_probe(k),
+                    "expect": {"status": 200, "answers": {"intent": "refund_request"}, "complete": k}})
+    out.append({"name": "batch_12q",
+                "body": {"state": {"message": "Hi, I was charged twice for my order. Could you please refund one of "
+                                              "the charges? Thanks!"},
+                         "questions": {f"q{i:02d}": {"type": "noul", "instructions": ins}
+                                       for i, (ins, _) in enumerate(_BATCH_QS)}},
+                "expect": {"status": 200, "answers": {f"q{i:02d}": a for i, (_, a) in enumerate(_BATCH_QS)}}})
+    long_doc = " ".join(["The quarterly report discusses revenue, costs and outlook in detail."] * 2400)  # ~31k tokens
+    out.append({"name": "context_refusal",
+                "body": {"state": {"document": long_doc},
+                         "questions": {"q": {"type": "noul", "instructions": "Does the document mention revenue?"}}},
+                "expect": {"status_in": [200, 422], "marker_if_422": True}})
+    return out
+
+
 SUITES = {
+    "di_wide": massive_wide,
     "jev_systemone": jevbench,
     "massive_spot": massive_spot,
     "massive": massive,

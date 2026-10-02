@@ -100,7 +100,7 @@ def cmd_run(a):
     if os.path.exists(os.path.join(run_dir, "manifest.json")) and not a.resume:
         raise SystemExit(f"{run_dir} exists; choose another --label or pass --resume")
     os.makedirs(run_dir, exist_ok=True)
-    needs_dgem = any(mx["suites"][s]["kind"] == "dgem" for s in suites)
+    needs_dgem = any(mx["suites"][s]["kind"] == "dgem" or mx["suites"][s].get("via") == "adapter" for s in suites)
     dgem_bin = find_dgem(a.dgem) if needs_dgem else None
     man_path = os.path.join(run_dir, "manifest.json")
     man = json.load(open(man_path)) if a.resume and os.path.exists(man_path) else {
@@ -123,6 +123,17 @@ def cmd_run(a):
         save()
 
     case_cache = {}
+    adapters = {}
+
+    def via(spec, t):
+        """The target a suite talks to: the target itself, or a local `dgem systemone serve` in front of it."""
+        if spec.get("via") != "adapter":
+            return t
+        if t.name not in adapters:
+            adapters[t.name] = runners.Adapter(t, dgem_bin, os.path.join(run_dir, f"adapter__{t.name}.log"))
+            import atexit
+            atexit.register(adapters[t.name].stop)
+        return Target(t.name, adapters[t.name].url)
 
     def cases_for(name):
         if name not in case_cache:
@@ -136,7 +147,7 @@ def cmd_run(a):
         order = targets if r % 2 else list(reversed(targets))  # alternate target order between runs
         for s in suites:
             spec = mx["suites"][s]
-            if r > runs_for(spec, tier) or (spec["kind"] in ("health", "contract", "latency") and r > 1):
+            if r > runs_for(spec, tier) or (spec["kind"] in ("health", "contract", "latency", "adapter_probes", "kit_compat") and r > 1):
                 continue
             if spec["kind"] == "latency":
                 continue  # after all accuracy work, so it is not measured under the matrix's own load
@@ -161,8 +172,13 @@ def cmd_run(a):
                             runners.dgem(t, spec["args"], out, dgem_bin, workers=a.workers)
                         elif spec["kind"] == "systemone":
                             p = "none" if perm in (None, "none2") else perm
-                            runners.systemone(t, cases_for(spec["cases"]), out, workers=a.workers * 2, permute=p, run=r,
-                                              suite=s)
+                            runners.systemone(via(spec, t), cases_for(spec["cases"]), out, workers=a.workers * 2,
+                                              permute=p, run=r, suite=s,
+                                              max_options=None if spec.get("via") == "adapter" else 26)
+                        elif spec["kind"] == "adapter_probes":
+                            runners.adapter_probes(via(spec, t), out)
+                        elif spec["kind"] == "kit_compat":
+                            runners.kit_compat(via(spec, t), out)
                         record(s, t, r, perm, out, time.time() - t0, spec["kind"])
                         log_event(a.log_json, event="dgem.matrix.suite", run_id=run_id, suite=s, target=t.name, run=r,
                                   perm=perm or "", seconds=round(time.time() - t0, 1), status="ok")
@@ -174,6 +190,8 @@ def cmd_run(a):
                                   where=f"{os.path.basename(where.filename)}:{where.lineno}")
                         if a.fail_fast:
                             raise
+    for ad in adapters.values():
+        ad.stop()
     if "latency" in suites:
         for t in targets:
             if ("latency", t.name, 1, None) in done:

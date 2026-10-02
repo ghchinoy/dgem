@@ -16,8 +16,8 @@ what a tier contains means a new matrix version, never an edit to a past run.
 | Tier | When | Suites | Size (per target, RTX PRO 6000) |
 | :--- | :--- | :--- | :--- |
 | **T0 smoke** | Every deploy or configuration change; daily on production | `/health`, API contract (incl. multilingual cases with known answers), calibration suite ×1, multilingual spot check (MASSIVE **validation**, ru/th/hi/ja/es × 20) | ~200 requests, under 1 minute |
-| **T1 gate** | Serving-image, prompt-path or server changes; release validation; weekly on production | T0 + calibration ×3, JevBench ×3 through `bench-jev` (chat/completions) and ×3 through `/v1/systemone`, intents slices ×3 (banking77, clinc150), latency (5 modes × 100, sweep at 16 and 32 workers) | ~3,000 requests, ~10 minutes |
-| **T2 full** | Release candidates, vLLM or model changes; never automatic; needs `--confirm` | T1 + MASSIVE test (51 languages × 100), XNLI test (15 × 300), typed-decisions test (2,000 decisions), option order (739 cases × 4 orderings), bounding boxes, Decision Index | ~16,500 requests, ~25 minutes |
+| **T1 gate** | Serving-image, prompt-path or server changes; release validation; weekly on production | T0 + calibration ×3, JevBench ×3 through `bench-jev` (chat/completions) and ×3 through `/v1/systemone`, intents slices ×3 (banking77, clinc150), the [Decision Index adapter track](#decision-index-adapter-track) (probes + wide-option MASSIVE ×3), latency (5 modes × 100, sweep at 16 and 32 workers) | ~3,500 requests, ~12 minutes |
+| **T2 full** | Release candidates, vLLM or model changes; never automatic; needs `--confirm` | T1 + MASSIVE test (51 languages × 100), XNLI test (15 × 300), typed-decisions test (2,000 decisions), option order (739 cases × 4 orderings), bounding boxes, Decision Index panel, and the Decision Index kit's compatibility pass when configured | ~17,000 requests, ~25 minutes |
 | **T-cal** | Calibration or threshold changes | Every report computes ECE and NLL with a 5-fold **held-out** temperature from the saved receipts; no extra requests | — |
 
 Excluded from v1 (and why) is listed under `excluded` in the matrix file: `bench-rerank` cannot target a Vertex
@@ -97,6 +97,19 @@ changes against it.
 | Bounding boxes, Decision Index | reported, not gated (INFO) | — |
 
 Thresholds live in `matrix_v1.json` (`thresholds`). Look at a REVIEW before promoting; a FAIL blocks.
+
+## Decision Index adapter track
+
+Decision Index runs go through `dgem systemone serve`, the adapter that splits questions with more than 26 options
+into brackets, batches more than 8 questions per request, and turns capacity limits into HTTP 422 responses the kit
+records as *unsupported*. The matrix starts that adapter locally, from this checkout's `bin/dgem`, in front of each
+target. These suites therefore test the adapter code you are about to ship against the deployed model:
+
+| Suite | Checks |
+| :--- | :--- |
+| `di_probes` | Wide options at K = 27, 41, 61, 101, 151 and 255 (right answer; probabilities for every option, summing to 1); a 12-question request (slot batching); a ~31k-token input that must be answered or refused with 422 plus a kit marker (`maximum context length`, `options per choice`, …). Any miss is a FAIL. It also reports, as INFO, the top probability on unambiguous wide-option items: a flat ceiling across K would mean bracket fusion is capping confidence (before #50 a fixed 92/8 split capped it at about 0.92) |
+| `di_wide` | MASSIVE validation (English) with the full ~60-label set as options, 100 items ×3, judged like the other accuracy suites (reference 0.83–0.89; accuracy does not depend on the probability fusion, which keeps the final-round winner) |
+| `di_kit_compat` (T2) | The Decision Index kit's own compatibility pass (86 requests) through the adapter. Runs only when `DGEM_DI_KIT_DIR` (a kit checkout with its `.venv`) and `DGEM_DI_COMPAT_ROWS` (compatibility rows built from a rebuilt suite) are set; otherwise reported as skipped. FAIL on any `error` row |
 
 ## Frozen held-out sets
 
