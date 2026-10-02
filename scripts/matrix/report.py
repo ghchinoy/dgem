@@ -311,9 +311,9 @@ def build(run_dir, matrix):
             fp = sum(1 for r in rr if r["actual"] == "yes" and r["expected"] == "no")
             fn = sum(1 for r in rr if r["actual"] == "no" and r["expected"] == "yes")
             pos = tp + fn
-            base = 2 * pos / (2 * pos + (len(rr) - pos)) if rr else 0
+            flag_f1 = 2 * pos / (2 * pos + (len(rr) - pos)) if rr else 0
             gates.append(("rag_dev_yes_bias", n, "INFO",
-                          f"hallucinated-class F1 {2 * tp / max(1, 2 * tp + fp + fn):.3f} (always-flag {base:.3f}), "
+                          f"hallucinated-class F1 {2 * tp / max(1, 2 * tp + fp + fn):.3f} (always-flag {flag_f1:.3f}), "
                           f"recall {tp / max(1, pos):.1%}, predicted yes {(tp + fp) / max(1, len(rr)):.1%} vs gold {pos / max(1, len(rr)):.1%}"))
 
     # ---------------- Decision Index adapter probes + kit compatibility pass
