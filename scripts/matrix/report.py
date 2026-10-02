@@ -14,6 +14,8 @@ from collections import defaultdict
 from . import metrics as M
 
 RANK = {"PASS": 0, "INFO": 0, "REVIEW": 1, "FAIL": 2}
+# summary.json contract; see benchmarks/matrix/summary.schema.json. Bump on breaking changes only.
+SUMMARY_SCHEMA = "dgem.matrix.summary/v2"
 
 
 def _f(x, d=3):
@@ -44,6 +46,41 @@ def _cross(ra, rb):
     vals = [M.agreement(a, b) for a in ra for b in rb]
     vals = [v for v in vals if v is not None]
     return statistics.mean(vals) if vals else None
+
+
+def _avg(xs, k):
+    v = [x[k] for x in xs if x.get(k) is not None]
+    return statistics.mean(v) if v else None
+
+
+def _suite_summary(entries, runs_rows):
+    """Machine-readable per-suite, per-target block for summary.json: every run, means, coverage, held-out
+    calibration (first run) and reliability bins (all runs pooled)."""
+    runs = []
+    for (e, receipt), rr in zip(entries, runs_rows):
+        x = M.summary(rr)
+        if not x.get("n"):
+            continue
+        answered, total = M.attempted(receipt)
+        x.update({"run": e.get("run", 1), "answered": answered, "attempted": total,
+                  "coverage": (answered / total) if total else None})
+        runs.append(x)
+    if not runs:
+        return None
+    pooled = [r for rr in runs_rows for r in rr]
+    ho = M.heldout_temperature(runs_rows[0])
+    return {
+        "runs": runs,
+        "accuracy": _avg(runs, "accuracy"), "accuracy_range": [min(x["accuracy"] for x in runs), max(x["accuracy"] for x in runs)],
+        "coverage": _avg(runs, "coverage"), "macro_f1": _avg(runs, "macro_f1"), "ece10": _avg(runs, "ece10"),
+        "brier": _avg(runs, "brier"), "nll": _avg(runs, "nll"), "auroc": _avg(runs, "auroc"),
+        "soft_acc": _avg(runs, "soft_acc"), "score_mae": _avg(runs, "abs_err_ev"),
+        "wall_p50": _avg(runs, "wall_p50"), "mean_conf": _avg(runs, "mean_conf"),
+        "noise_within": _within(runs_rows) if len(runs_rows) > 1 else None,
+        "heldout": ({"ece_raw": ho["ece_raw"], "ece_heldout": ho["ece_heldout"], "nll_raw": ho["nll_raw"],
+                     "nll_heldout": ho["nll_heldout"], "temperatures": ho["T"], "n": ho["n"]} if ho else None),
+        "reliability": M.reliability(pooled),
+    }
 
 
 def _noise_table(rows, acc_suites, names, noise):
@@ -102,21 +139,24 @@ def build(run_dir, matrix):
         ws = [_within(rows[s][n]) for s in acc_suites if n in rows[s] and len(rows[s][n]) > 1]
         ws = [w for w in ws if w is not None]
         noise[n] = statistics.mean(ws) if ws else None
-    L += ["## Suites", "", "| suite | target | runs: correct / n | mean accuracy | ECE10 | Brier | AUROC | wall p50 ms |",
-          "|---|---|---|---|---|---|---|---|"]
+    L += ["## Suites", "",
+          "Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision "
+          "Index scores them). Accuracy, ECE and the other metrics are over answered items.", "",
+          "| suite | target | runs: correct / n | coverage | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |",
+          "|---|---|---|---|---|---|---|---|---|---|"]
+    suite_summ = {}
     for s in acc_suites:
         for n in names:
             if n not in rows[s]:
                 continue
-            sums = [M.summary(r) for r in rows[s][n]]
-            ok = [x for x in sums if x.get("n")]
-            if not ok:
+            ss = _suite_summary(by[s][n], rows[s][n])
+            if not ss:
                 continue
-            accs = [x["accuracy"] for x in ok]
-            avg = lambda k: (statistics.mean([x[k] for x in ok if x.get(k) is not None])  # noqa: E731
-                             if any(x.get(k) is not None for x in ok) else None)
-            L.append(f"| {s} | {n} | {', '.join(str(x['correct']) for x in ok)} / {ok[0]['n']} | {statistics.mean(accs):.3f} | "
-                     f"{_f(avg('ece10'))} | {_f(avg('brier'))} | {_f(avg('auroc'))} | {_f(avg('wall_p50'), 0)} |")
+            suite_summ.setdefault(s, {})[n] = ss
+            ok = ss["runs"]
+            L.append(f"| {s} | {n} | {', '.join(str(x['correct']) for x in ok)} / {ok[0]['n']} | {_f(ss['coverage'])} | "
+                     f"{ss['accuracy']:.3f} | {_f(ss['macro_f1'])} | {_f(ss['ece10'])} | {_f(ss['brier'])} | "
+                     f"{_f(ss['auroc'])} | {_f(ss['wall_p50'], 0)} |")
     L.append("")
 
     for s in acc_suites:
@@ -203,6 +243,7 @@ def build(run_dir, matrix):
         L.append("")
 
     # ---------------- option order
+    order_summ = defaultdict(dict)
     if "order" in by:
         L += ["## Option order (flip = answer changes; net = minus the identical-repeat flip)", "",
               "| target | subset | n | identity flip | random flip (net) | reverse flip (net) | picks first shown / gold first shown |",
@@ -218,6 +259,9 @@ def build(run_dir, matrix):
                 first = statistics.mean([r["actual"] == r.get("shown_first") for r in P["none"]])
                 gfirst = statistics.mean([r["expected"] == r.get("shown_first") for r in P["none"]])
                 net_by[n][sub] = (fr or 0) - fi
+                order_summ[n][sub] = {"n": len(P["none"]), "identity_flip": fi, "random_flip": fr, "reverse_flip": fv,
+                                      "net_random": (fr or 0) - fi, "net_reverse": (fv or 0) - fi,
+                                      "first_shown_pick": first, "first_shown_gold": gfirst}
                 L.append(f"| {n} | {sub} | {len(P['none'])} | {fi:.3f} | {_f(fr)} ({(fr or 0) - fi:+.3f}) | "
                          f"{_f(fv)} ({(fv or 0) - fi:+.3f}) | {first:.3f} / {gfirst:.3f} |")
         L.append("")
@@ -230,12 +274,14 @@ def build(run_dir, matrix):
                 gates.append(("order", n, "INFO", ", ".join(f"{s} net {v:+.3f}" for s, v in net_by[n].items())))
 
     # ---------------- summary-only suites
+    summary_only = {}
     for s, keys in (("bbox", ("acc_at_50_expectation_pct", "mean_expectation_iou")),
                     ("decision_index", ("headline_decision_index", "ece_10bin"))):
         if s in by:
             for n, lst in by[s].items():
                 r = lst[0][1]
                 r = r.get("dgem_wide_canvas_report", r)
+                summary_only.setdefault(s, {})[n] = {k: r.get(k) for k in keys}
                 gates.append((s, n, "INFO", ", ".join(f"{k}={_f(r.get(k))}" for k in keys)))
 
     # ---------------- latency
@@ -282,7 +328,15 @@ def build(run_dir, matrix):
     head += ["", "Overall: " + ", ".join(f"**{n}: {overall.get(n, 'PASS')}**" for n in cands), ""]
     i = L.index("## Suites")
     L = L[:i] + head + L[i:]
-    summary = {"run_id": man["run_id"], "matrix_version": mx["matrix_version"], "tier": mx["tier"], "baseline": base,
+    lat_summ = {n: {"modes": lst[0][1].get("modes"), "sweep": lst[0][1].get("sweep")}
+                for n, lst in by.get("latency", {}).items()}
+    summary = {"schema": SUMMARY_SCHEMA, "run_id": man["run_id"], "created": man.get("created"),
+               "git_commit": man.get("git_commit"), "matrix_version": mx["matrix_version"], "tier": mx["tier"],
+               "baseline": base, "started": mx.get("started"), "finished": mx.get("finished"),
+               "targets": [{"name": t["name"], "kind": t.get("kind"), "health": t.get("health") or {}} for t in mx["targets"]],
                "overall": {n: overall.get(n, "PASS") for n in cands}, "noise_floor": noise,
-               "gates": [{"gate": g, "target": n, "verdict": v, "detail": d} for g, n, v, d in gates]}
+               "gates": [{"gate": g, "target": n, "verdict": v, "detail": d} for g, n, v, d in gates],
+               "suites": suite_summ,
+               "order": {n: dict(v) for n, v in order_summ.items()},
+               "latency": lat_summ, "summary_only": summary_only}
     return "\n".join(L) + "\n", summary

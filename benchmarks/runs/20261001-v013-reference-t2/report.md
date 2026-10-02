@@ -32,17 +32,19 @@ Overall: **prod: PASS**
 
 ## Suites
 
-| suite | target | runs: correct / n | mean accuracy | ECE10 | Brier | AUROC | wall p50 ms |
-|---|---|---|---|---|---|---|---|
-| calibration | prod | 44, 43, 43 / 50 | 0.867 | 0.100 | 0.239 | 0.858 | 207 |
-| jev_native | prod | 188, 184, 185 / 231 | 0.804 | 0.078 | 0.267 | 0.859 | 129 |
-| jev_systemone | prod | 199, 197, 195 / 231 | 0.853 | 0.076 | 0.239 | 0.737 | 220 |
-| intents_banking77 | prod | 25 / 30 | 0.833 | 0.093 | 0.331 | 0.896 | 401 |
-| intents_clinc150 | prod | 29 / 30 | 0.967 | 0.066 | 0.045 | 0.931 | 141 |
-| massive_spot | prod | 85 / 100 | 0.850 | 0.092 | 0.227 | 0.891 | 219 |
-| massive | prod | 4190 / 5100 | 0.822 | 0.080 | 0.269 | 0.911 | 212 |
-| xnli | prod | 3049 / 4500 | 0.678 | 0.246 | 0.551 | 0.648 | 200 |
-| typed | prod | 1334 / 2000 | 0.667 | 0.234 | 0.539 | 0.751 | 257 |
+Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision Index scores them). Accuracy, ECE and the other metrics are over answered items.
+
+| suite | target | runs: correct / n | coverage | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |
+|---|---|---|---|---|---|---|---|---|---|
+| calibration | prod | 44, 43, 43 / 50 | 1.000 | 0.867 | 0.703 | 0.100 | 0.239 | 0.858 | 207 |
+| jev_native | prod | 188, 184, 185 / 231 | 1.000 | 0.804 | 0.769 | 0.078 | 0.267 | 0.859 | 129 |
+| jev_systemone | prod | 199, 197, 195 / 231 | 1.000 | 0.853 | 0.820 | 0.076 | 0.239 | 0.737 | 220 |
+| intents_banking77 | prod | 25 / 30 | 1.000 | 0.833 | 0.778 | 0.093 | 0.331 | 0.896 | 401 |
+| intents_clinc150 | prod | 29 / 30 | 1.000 | 0.967 | 0.949 | 0.066 | 0.045 | 0.931 | 141 |
+| massive_spot | prod | 85 / 100 | 1.000 | 0.850 | 0.828 | 0.092 | 0.227 | 0.891 | 219 |
+| massive | prod | 4190 / 5100 | 1.000 | 0.822 | 0.790 | 0.080 | 0.269 | 0.911 | 212 |
+| xnli | prod | 3049 / 4500 | 1.000 | 0.678 | 0.682 | 0.246 | 0.551 | 0.648 | 200 |
+| typed | prod | 1334 / 2000 | 1.000 | 0.667 | 0.535 | 0.234 | 0.539 | 0.751 | 257 |
 
 ## Measured noise floor (answer agreement between repeated identical runs)
 

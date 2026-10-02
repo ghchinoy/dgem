@@ -1,4 +1,5 @@
 """Offline tests for the regression matrix (no network, no GPU): python3 -m unittest scripts/matrix/test_matrix.py"""
+import glob
 import json
 import os
 import random
@@ -90,6 +91,92 @@ class TestMetrics(unittest.TestCase):
         intents = {"results": [{"id": "b", "expected_intent": "x", "actual_intent": "x", "intent_accurate": True,
                                 "confidence": 0.5, "top_probabilities": {"x": 0.5, "y": 0.5}}]}
         self.assertTrue(M.rows(intents)[0]["accurate"])
+
+
+class TestMetricsV2(unittest.TestCase):
+    def test_macro_f1(self):
+        rs = [{"expected": "a", "actual": "a"}, {"expected": "a", "actual": "b"}, {"expected": "b", "actual": "b"},
+              {"expected": "c", "actual": "b"}]
+        # a: tp1 fn1 -> 2/3; b: tp1 fp2 -> 0.5; c: fn1 -> 0
+        self.assertAlmostEqual(M.macro_f1(rs), (2 / 3 + 0.5 + 0) / 3)
+        self.assertEqual(M.macro_f1([{"expected": "x", "actual": "x"}]), 1.0)
+        q = [{"qid": "q1", "expected": "0", "actual": "0"}, {"qid": "q2", "expected": "0", "actual": "1"}]
+        self.assertAlmostEqual(M.macro_f1(q), 0.5)  # labels namespaced per question
+
+    def test_attempted_counts_refusals(self):
+        sys1 = {"kind": "systemone", "cases": [{"status": 200}, {"status": 422}, {"status": "n/a"}, {"status": 200}]}
+        self.assertEqual(M.attempted(sys1), (2, 4))
+        native = {"cases": [{"id": 1}, {"id": 2, "error": "boom"}]}
+        self.assertEqual(M.attempted(native), (1, 2))
+
+    def test_reliability_bins(self):
+        rs = [{"confidence": 0.95, "accurate": True}, {"confidence": 0.92, "accurate": False}, {"confidence": 0.15, "accurate": False}]
+        b = M.reliability(rs)
+        self.assertEqual(len(b), 10)
+        self.assertEqual(b[9]["count"], 2)
+        self.assertAlmostEqual(b[9]["acc"], 0.5)
+        self.assertAlmostEqual(sum(x["share"] for x in b), 1.0)
+
+
+def _check_schema(obj, schema, path="$", root=None):
+    """Minimal JSON-schema check (type, required, enum, const, items, additionalProperties, $ref) without jsonschema."""
+    root = root or schema
+    if "$ref" in schema:
+        node = root
+        for part in schema["$ref"].lstrip("#/").split("/"):
+            node = node[part]
+        return _check_schema(obj, node, path, root)
+    errs = []
+    types = schema.get("type")
+    if types:
+        types = [types] if isinstance(types, str) else types
+        py = {"object": dict, "array": list, "string": str, "integer": int, "number": (int, float), "null": type(None),
+              "boolean": bool}
+        if not any(isinstance(obj, py[t]) and not (t in ("integer", "number") and isinstance(obj, bool)) for t in types):
+            return [f"{path}: {type(obj).__name__} not in {types}"]
+    if "const" in schema and obj != schema["const"]:
+        errs.append(f"{path}: {obj!r} != {schema['const']!r}")
+    if "enum" in schema and obj not in schema["enum"]:
+        errs.append(f"{path}: {obj!r} not in {schema['enum']}")
+    if isinstance(obj, dict):
+        for k in schema.get("required", []):
+            if k not in obj:
+                errs.append(f"{path}: missing {k}")
+        for k, v in obj.items():
+            if k in schema.get("properties", {}):
+                errs += _check_schema(v, schema["properties"][k], f"{path}.{k}", root)
+            elif isinstance(schema.get("additionalProperties"), dict):
+                errs += _check_schema(v, schema["additionalProperties"], f"{path}.{k}", root)
+    if isinstance(obj, list) and "items" in schema:
+        for i, v in enumerate(obj):
+            errs += _check_schema(v, schema["items"], f"{path}[{i}]", root)
+    return errs
+
+
+class TestSummaryContract(unittest.TestCase):
+    SCHEMA = os.path.join(D.REPO, "benchmarks", "matrix", "summary.schema.json")
+
+    def _schema(self):
+        with open(self.SCHEMA) as f:
+            return json.load(f)
+
+    def test_built_summary_matches_schema(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _md, s = _run(tmp, 0.85, 0.05)
+        self.assertEqual(s["schema"], R.SUMMARY_SCHEMA)
+        self.assertEqual(_check_schema(s, self._schema()), [])
+        blk = s["suites"]["jev_systemone"]["new"]
+        self.assertEqual(len(blk["runs"]), 3)
+        self.assertEqual(blk["runs"][0]["attempted"], 231)
+        self.assertIsNotNone(blk["macro_f1"])
+
+    def test_reference_runs_match_schema(self):
+        for run in sorted(glob.glob(os.path.join(D.REPO, "benchmarks", "runs", "*", "summary.json"))):
+            with open(run) as f:
+                s = json.load(f)
+            if s.get("schema") != R.SUMMARY_SCHEMA:
+                continue  # older runs predate v2; `bench_matrix.py report <run>` regenerates them
+            self.assertEqual(_check_schema(s, self._schema()), [], run)
 
 
 class TestCases(unittest.TestCase):
