@@ -77,6 +77,7 @@ type EngineOptions struct {
 	DualMirror        bool    // EXP-13C: Evaluate forward + reversed option orderings on the same diffusion canvas
 	NullPriorDebias   bool    // EXP-13B: Divide out content-free positional 'A'-bias prior
 	PriorAlpha        float64 // Damping exponent alpha in [0, 1] for null-prior de-biasing
+	BracketSize       int     // Max options per Round-1 bracket for wide (>26) choices; <=1 means BracketSize
 }
 
 // DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled (T*=1.0).
@@ -88,6 +89,7 @@ func DefaultEngineOptions() EngineOptions {
 		TemperatureScale:  1.0,
 		MaxConcurrency:    4,
 		PriorAlpha:        0.50,
+		BracketSize:       BracketSize,
 	}
 }
 
@@ -219,7 +221,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	for _, k := range wideKeys {
 		wideQs++
 		q := req.Questions[k]
-		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale)
+		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale, opts.BracketSize)
 		if err != nil {
 			return nil, err
 		}
@@ -411,6 +413,7 @@ func evaluateWideQuestionTournament(
 	qKey string,
 	qSpec SystemOneQuestion,
 	tempScale float64,
+	bracketSize int,
 ) (SystemOneAnswer, int, error) {
 	optKeys := sortedOptionKeys(qSpec.Criteria)
 	numOpts := len(optKeys)
@@ -422,15 +425,10 @@ func evaluateWideQuestionTournament(
 		return batchMap[qKey], passes, nil
 	}
 
-	// Build brackets of size BracketSize (20)
-	var brackets [][]string
-	for i := 0; i < numOpts; i += BracketSize {
-		end := i + BracketSize
-		if end > numOpts {
-			end = numOpts
-		}
-		brackets = append(brackets, optKeys[i:end])
+	if bracketSize <= 1 || bracketSize > MaxOptionsPerSlot {
+		bracketSize = BracketSize
 	}
+	brackets := balancedBrackets(optKeys, bracketSize)
 
 	// Pack up to MaxSlotsPerPass bracket sub-questions into a single Round-1 canvas pass!
 	round1Questions := make(map[string]SystemOneQuestion, len(brackets))
@@ -521,36 +519,15 @@ func evaluateWideQuestionTournament(
 	passesUsed += p
 	finalAns := finalBatch[qKey]
 
-	// Fuse Round-1 bracket probabilities with Round-2 Finals probabilities across all K options
-	// Finalists get 92% of total probability mass proportional to finalAns.Probabilities;
-	// non-finalists share the remaining 8% tail mass proportional to their Round-1 bracket probabilities.
-	combined := make(map[string]float64, numOpts)
 	finalistSet := make(map[string]bool, len(finalists))
 	for _, f := range finalists {
 		finalistSet[f.key] = true
-		combined[f.key] = 0.92 * math.Max(1e-6, finalAns.Probabilities[f.key])
 	}
-	nonFinalSum := 0.0
+	round1 := make([]map[string]float64, len(brackets))
 	for bIdx, bKey := range round1Keys {
-		bAns := round1Results[bKey]
-		for _, ok := range brackets[bIdx] {
-			if !finalistSet[ok] {
-				nonFinalSum += math.Max(1e-6, bAns.Probabilities[ok])
-			}
-		}
+		round1[bIdx] = round1Results[bKey].Probabilities
 	}
-	for bIdx, bKey := range round1Keys {
-		bAns := round1Results[bKey]
-		for _, ok := range brackets[bIdx] {
-			if !finalistSet[ok] {
-				if nonFinalSum > 0 {
-					combined[ok] = 0.08 * (math.Max(1e-6, bAns.Probabilities[ok]) / nonFinalSum)
-				} else {
-					combined[ok] = 0.08 / float64(maxInt(1, numOpts-len(finalists)))
-				}
-			}
-		}
-	}
+	combined := fuseBracketProbabilities(brackets, round1, finalistSet, finalAns.Probabilities)
 
 	scaledProbs, winner, h, normH := NormalizeAndScaleProbabilities(combined, optKeys, tempScale)
 	return SystemOneAnswer{
@@ -656,4 +633,96 @@ func NewSystemOneHTTPHandler(cli *client.Client, opts EngineOptions) http.Handle
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	}
+}
+
+// balancedBrackets splits keys into ceil(K/size) brackets of near-equal size (differing by at most one).
+// Fixed-size chunking left a 1-option tail whenever K % size == 1 (e.g. 41, 61, 101 options), which the
+// server rejects ("needs at least two alternatives").
+func balancedBrackets(keys []string, size int) [][]string {
+	if size < 2 {
+		size = 2
+	}
+	n := len(keys)
+	if n == 0 {
+		return nil
+	}
+	nb := (n + size - 1) / size
+	base, extra := n/nb, n%nb
+	out := make([][]string, 0, nb)
+	i := 0
+	for b := 0; b < nb; b++ {
+		sz := base
+		if b < extra {
+			sz++
+		}
+		out = append(out, keys[i:i+sz])
+		i += sz
+	}
+	return out
+}
+
+// fuseBracketProbabilities combines Round-1 bracket readouts and the Round-2 final into one distribution over all K
+// options, using the model's own outputs instead of a fixed finalist/non-finalist split (previously 92% / 8%, which
+// capped every wide-option confidence at ~0.92):
+//
+//	P(b)          = Σ_{f finalist in b} p_final(f)          (the final round is the evidence for which bracket wins)
+//	non-final o∈b = P(b) · p_b(o)                           (Round-1 share inside that bracket)
+//	finalist  f   = p_final(f) · (1 − Σ non-finalist mass)
+//
+// A uniform bracket prior (w_b = |b|/K) was rejected: Round-1 distributions sum to 1 even in brackets with no good
+// option, so it hands most of the mass to brackets the final round already rejected.
+// Every option gets a strictly positive probability, the result sums to 1, and the final-round winner stays the
+// argmax (a non-finalist is capped just below it before renormalising, which preserves order).
+func fuseBracketProbabilities(brackets [][]string, round1 []map[string]float64, finalist map[string]bool, final map[string]float64) map[string]float64 {
+	const eps = 1e-6
+	out := make(map[string]float64)
+	finTot := 0.0
+	for o := range finalist {
+		finTot += math.Max(eps, final[o])
+	}
+	if finTot == 0 {
+		finTot = 1
+	}
+	tail := 0.0
+	nonFin := make(map[string]float64)
+	for bIdx, b := range brackets {
+		mass, pb := 0.0, 0.0
+		for _, o := range b {
+			mass += math.Max(eps, round1[bIdx][o])
+			if finalist[o] {
+				pb += math.Max(eps, final[o]) / finTot
+			}
+		}
+		pb = math.Max(eps, pb)
+		for _, o := range b {
+			if !finalist[o] {
+				v := pb * math.Max(eps, round1[bIdx][o]) / mass
+				nonFin[o] = v
+				tail += v
+			}
+		}
+	}
+	tail = math.Min(1-eps, tail)
+	winner, best := "", -1.0
+	for o := range finalist {
+		v := (1 - tail) * math.Max(eps, final[o]) / finTot
+		out[o] = v
+		if v > best || (v == best && o < winner) {
+			winner, best = o, v
+		}
+	}
+	for o, v := range nonFin {
+		if winner != "" && v >= best {
+			v = best * 0.999
+		}
+		out[o] = math.Max(eps*eps, v)
+	}
+	sum := 0.0
+	for _, v := range out {
+		sum += v
+	}
+	for o := range out {
+		out[o] /= sum
+	}
+	return out
 }

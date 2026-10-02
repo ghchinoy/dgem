@@ -111,6 +111,7 @@ func runSystemOneServe(cmd *cobra.Command, args []string) error {
 		DualMirror:        soDualMirror,
 		NullPriorDebias:   soNullPrior,
 		PriorAlpha:        soPriorAlpha,
+		BracketSize:       soBracketSize,
 	}
 
 	cli := GetClientForURL(upstream)
