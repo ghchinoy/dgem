@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.1.5 (2026-10-02)
+
+Gateway, MCP and CLI only. **Serving images are unchanged**: still `v0.1.3` (`dgem@sha256:ceb17887…`).
+
 - **`dgem systemone serve` wide-option fixes (Decision Index adapter):**
   - Brackets are now balanced. With fixed chunks of 20, K % 20 == 1 (41, 61, 101 … options) left a 1-option
     bracket that the server rejected; the adapter returned HTTP 500, which the Decision Index kit retries as an error.
@@ -16,6 +20,16 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
     Round-1 shares the mass inside each one. Previously a fixed 92% / 8% finalist split capped every wide-option
     confidence at about 0.92, which set ECE/Brier on BANKING77, CLINC150, API-Bank and similar benchmarks.
   - `--bracket-size` is now passed to the engine (it was only reported in `/health`).
+  - Validated on production with real labels (59-option MASSIVE): accuracy unchanged; AUROC 0.826 → 0.851, Brier
+    0.248 → 0.240; 65% of items now reach ≥ 0.95 confidence, 97.9% correct there.
+- **Regression matrix:**
+  - `summary.json` is a self-contained, schema-checked result (`benchmarks/matrix/summary.schema.json`,
+    `dgem.matrix.summary/v2`) with per-run coverage, macro-F1, ECE, Brier, NLL, AUROC, held-out calibration and
+    reliability bins (#47).
+  - Decision Index adapter track (#48): `di_probes` (awkward option counts, complete probabilities, batching,
+    422 refusals with kit markers), `di_wide` (59-option MASSIVE through bracket routing), and `di_kit_compat` (the
+    kit's compatibility pass, when configured).
+  - `scripts/matrix_trends.py` turns scheduled runs into a time series per suite and gate (#49).
 
 ## v0.1.4 (2026-10-02)
 
