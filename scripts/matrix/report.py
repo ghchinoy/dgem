@@ -72,7 +72,8 @@ def _suite_summary(entries, runs_rows):
     return {
         "runs": runs,
         "accuracy": _avg(runs, "accuracy"), "accuracy_range": [min(x["accuracy"] for x in runs), max(x["accuracy"] for x in runs)],
-        "coverage": _avg(runs, "coverage"), "macro_f1": _avg(runs, "macro_f1"), "ece10": _avg(runs, "ece10"),
+        "coverage": _avg(runs, "coverage"), "macro_f1": _avg(runs, "macro_f1"), "case_exact": _avg(runs, "case_exact"),
+        "ece10": _avg(runs, "ece10"),
         "brier": _avg(runs, "brier"), "nll": _avg(runs, "nll"), "auroc": _avg(runs, "auroc"),
         "soft_acc": _avg(runs, "soft_acc"), "score_mae": _avg(runs, "abs_err_ev"),
         "wall_p50": _avg(runs, "wall_p50"), "mean_conf": _avg(runs, "mean_conf"),
@@ -290,9 +291,14 @@ def build(run_dir, matrix):
             for c in cs:
                 det = "; ".join(c.get("notes") or []) or ", ".join(f"{k}={_f(c[k])}" for k in ("keys", "prob_sum", "top_p", "marker") if k in c)
                 L.append(f"| {n} | {c['name']} | {c['status']} | {'yes' if c['ok'] else '**no**'} | {det} |")
-            bad = [c["name"] for c in cs if not c["ok"]]
+            gated = [c for c in cs if not c.get("info_only")]
+            bad = [c["name"] for c in gated if not c["ok"]]
             gates.append(("di_probes", n, "FAIL" if bad else "PASS",
-                          f"failed: {', '.join(bad)}" if bad else f"all {len(cs)} probes as expected"))
+                          f"failed: {', '.join(bad)}" if bad else f"all {len(gated)} gated probes as expected"))
+            for c in cs:
+                if c.get("info_only"):
+                    gates.append((f"di_probe_{c['name']}", n, "INFO",
+                                  ("as expected" if c["ok"] else "; ".join(c.get("notes") or [])) + " (known adapter gap; not gated)"))
             tops = [c["top_p"] for c in cs if c.get("top_p") is not None]
             if tops:
                 gates.append(("di_confidence_cap", n, "INFO",

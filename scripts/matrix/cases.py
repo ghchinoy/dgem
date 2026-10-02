@@ -267,6 +267,16 @@ _BATCH_QS = [("Is the customer asking for a refund?", "yes"), ("Is the message i
              ("Is money involved?", "yes"), ("Is the message about a software bug?", "no")]
 
 
+def _catchall_probe(k):
+    opts = {f"opt_{i:03d}": f"unrelated intent number {i}" for i in range(k - 2)}
+    opts["refund_request"] = "the customer asks for their money back"
+    opts["out_of_scope"] = "out of scope: none of the listed intents"
+    keys = sorted(opts)
+    return {"state": {"message": "I was charged twice, please give me my money back."},
+            "questions": {"intent": {"type": "choice", "instructions": "What does the customer want?",
+                                     "criteria": {x: opts[x] for x in keys}}}}
+
+
 def di_probes():
     """-> list of probes {name, body, expect: {status, answers?, complete?}}."""
     out = []
@@ -279,6 +289,32 @@ def di_probes():
                          "questions": {f"q{i:02d}": {"type": "noul", "instructions": ins}
                                        for i, (ins, _) in enumerate(_BATCH_QS)}},
                 "expect": {"status": 200, "answers": {f"q{i:02d}": a for i, (_, a) in enumerate(_BATCH_QS)}}})
+    # Non-string option descriptions (objects, arrays): the Decision Index sends them for POP909, ChessBench, cfcolor.
+    out.append({"name": "criteria_objects",
+                "body": {"state": {"swatch": "a bright pure red square"},
+                         "questions": {"color": {"type": "choice", "instructions": "Which colour value matches `swatch`?",
+                                                 "criteria": {"red": [255, 0, 0], "blue": [0, 0, 255], "green": {"rgb": [0, 255, 0]}}}}},
+                "expect": {"status": 200, "answers": {"color": "red"}, "complete": 3}})
+    # noul with true/false descriptions that carry the meaning (the claim is only defined there). Informational: the
+    # model often answers it right even when the adapter drops the criteria, so it cannot gate that bug reliably.
+    out.append({"name": "noul_criteria",
+                "body": {"state": {"context": "The meeting is on Tuesday at 10am in room 4.",
+                                   "response": "The meeting is on Friday at 3pm in room 9."},
+                         "questions": {"q": {"type": "noul", "instructions": "Hallucination check.",
+                                             "criteria": {"true": "The response contains content not supported by the context.",
+                                                          "false": "All content of the response is supported by the context."}}}},
+                "expect": {"status": 200, "answers": {"q": "yes"}}, "info_only": True})
+    # Catch-all among >26 options: the catch-all is correct inside its own bracket, so bracket finals can over-pick it
+    # (61.8% of in-scope CLINC150 items in the 2026-10-02 Decision Index run). This easy synthetic case passes today;
+    # it is informational until the adapter handles catch-alls and a harder, validation-split case replaces it.
+    out.append({"name": "wide_catchall_151", "body": _catchall_probe(151),
+                "expect": {"status": 200, "answers": {"intent": "refund_request"}, "complete": 151}, "info_only": True})
+    # Long input that fits a 32k canary but not a 4k server: must answer, or refuse with 422 + marker.
+    mid = " ".join(["The quarterly report discusses revenue, costs and outlook in detail."] * 700)  # ~9k tokens
+    out.append({"name": "long_9k",
+                "body": {"state": {"document": mid + " The total headcount at year end was 412 employees. " + mid},
+                         "questions": {"q": {"type": "noul", "instructions": "Does the document state the year-end headcount?"}}},
+                "expect": {"status_in": [200, 422], "marker_if_422": True, "answers_if_200": {"q": "yes"}}})
     long_doc = " ".join(["The quarterly report discusses revenue, costs and outlook in detail."] * 2400)  # ~31k tokens
     out.append({"name": "context_refusal",
                 "body": {"state": {"document": long_doc},
