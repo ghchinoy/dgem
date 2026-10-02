@@ -1,6 +1,7 @@
 package decisionindex
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,41 @@ type SystemOneQuestion struct {
 	Type         string            `json:"type"`
 	Instructions any               `json:"instructions"`
 	Criteria     map[string]string `json:"criteria"`
+}
+
+// UnmarshalJSON accepts any JSON value as an option description. The Decision Index suite sends objects (POP909
+// chords, ChessBench moves) and arrays (cfcolor swatches) as well as strings. Strings pass through unchanged; any
+// other value is rendered as compact JSON text for the prompt (a mechanical format conversion, no content change).
+func (q *SystemOneQuestion) UnmarshalJSON(b []byte) error {
+	var raw struct {
+		Type         string                     `json:"type"`
+		Instructions any                        `json:"instructions"`
+		Criteria     map[string]json.RawMessage `json:"criteria"`
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	q.Type, q.Instructions = raw.Type, raw.Instructions
+	q.Criteria = nil
+	if raw.Criteria != nil {
+		q.Criteria = make(map[string]string, len(raw.Criteria))
+		for k, v := range raw.Criteria {
+			q.Criteria[k] = criterionText(v)
+		}
+	}
+	return nil
+}
+
+func criterionText(v json.RawMessage) string {
+	var s string
+	if err := json.Unmarshal(v, &s); err == nil {
+		return s
+	}
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, v); err == nil {
+		return buf.String()
+	}
+	return string(v)
 }
 
 // SystemOneRequest matches the POST /v1/systemone payload sent by decision_index.engines.http:HttpSystemOne.
