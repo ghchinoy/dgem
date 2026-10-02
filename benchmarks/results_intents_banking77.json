@@ -1082,7 +1082,7 @@
   ],
   "samples_policy": 1,
   "target_model": "nvidia/diffusiongemma-26B-A4B-it-NVFP4",
-  "target_url": "http://34.121.236.110:8080/v1",
+  "target_url": "http://<GPU_HOST>:8080/v1",
   "tie_break_enabled": true,
   "tie_breaks_triggered": 0,
   "timestamp": "2026-09-20T16:00:56Z",

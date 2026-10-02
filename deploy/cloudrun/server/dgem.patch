@@ -1,11 +1,13 @@
---- deploy/cloudrun/server/structured_server.upstream.py
-+++ deploy/cloudrun/server/structured_server.py
-@@ -1,3 +1,4 @@
-+# Copyright 2026 Google LLC
+--- deploy/cloudrun/server/structured_server.upstream.py	2026-10-02 20:33:58.136791011 +0000
++++ deploy/cloudrun/server/structured_server.py	2026-10-02 20:33:58.147007553 +0000
+@@ -1,5 +1,6 @@
+ # SPDX-License-Identifier: Apache-2.0
  # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
- #
- # Licensed under the Apache License, Version 2.0 (the "License");
-@@ -20,7 +21,7 @@
++# Modifications Copyright 2026 Google LLC (see deploy/cloudrun/server/dgem.patch)
+ """Structured decisions in front of a vLLM DiffusionGemma server.
+ 
+ POST /v1/systemone takes Jev's request body: {"model", "state", "questions"}.
+@@ -9,7 +10,7 @@
    choice: option name -> description or null
    score:  ordered list of levels
  Answers take Jev's shapes, with this server's diagnostics alongside:
@@ -14,7 +16,7 @@
    choice: {"choice", "probabilities", "confidence"}
    score:  {"score", "legend", "probabilities", "confidence"}
  The request body may also carry the schema keys "instructions", "samples",
-@@ -108,9 +109,12 @@
+@@ -97,9 +98,12 @@
  
  ARGS = None
  TOK = None
@@ -30,7 +32,7 @@
  CANVAS_LEN = 64  # the served canvas length. A request may be narrower.
  CANVAS_STEP = 16  # request widths are multiples of this
  VOCAB = 262144
-@@ -224,7 +228,10 @@
+@@ -213,7 +217,10 @@
                      f"must be among {names}"
                  )
      schedule(qs)  # refuses a cycle
@@ -42,7 +44,7 @@
      if samples == "auto":
          policy = {
              "mode": "auto",
-@@ -443,7 +450,24 @@
+@@ -432,7 +439,24 @@
      return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
  
  
@@ -67,7 +69,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/chat/completions",
          data=json.dumps(body).encode(),
-@@ -452,7 +476,32 @@
+@@ -441,7 +465,32 @@
      return json.load(urllib.request.urlopen(req, timeout=timeout))
  
  
@@ -100,7 +102,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -1171,7 +1220,8 @@
+@@ -1160,7 +1209,8 @@
      state = body.get("state")
      if state is None:
          raise SchemaError("state: required")
@@ -110,7 +112,7 @@
      if not image_parts:
          return text
      return list(image_parts) + [{"type": "text", "text": text}]
-@@ -1181,7 +1231,13 @@
+@@ -1170,7 +1220,13 @@
      if a is None:
          return None
      if q["type"] == "noul":
@@ -125,7 +127,7 @@
      if q["type"] == "choice":
          return {
              "type": "choice",
-@@ -1212,19 +1268,38 @@
+@@ -1201,19 +1257,38 @@
      return c if isinstance(c, str) else ""
  
  
@@ -165,7 +167,7 @@
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1262,6 +1337,7 @@
+@@ -1251,6 +1326,7 @@
  
      def do_POST(self):
          if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
@@ -173,7 +175,7 @@
              return self._json(
                  401,
                  {
-@@ -1287,7 +1363,8 @@
+@@ -1276,7 +1352,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -183,7 +185,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1314,6 +1391,8 @@
+@@ -1303,6 +1380,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -192,7 +194,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1329,6 +1408,12 @@
+@@ -1318,6 +1397,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -205,7 +207,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1373,6 +1458,7 @@
+@@ -1362,6 +1447,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -213,7 +215,7 @@
          )
  
      def _chat(self, req):
-@@ -1462,9 +1548,18 @@
+@@ -1451,9 +1537,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -232,7 +234,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1498,7 +1593,7 @@
+@@ -1487,7 +1582,7 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -241,7 +243,7 @@
      srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
      threading.Thread(target=srv.serve_forever, daemon=True).start()
      return srv
-@@ -1548,7 +1643,7 @@
+@@ -1537,7 +1632,7 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
