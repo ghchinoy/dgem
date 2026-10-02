@@ -73,7 +73,7 @@ func init() {
 	systemoneServeCmd.Flags().IntVar(&soMaxSlots, "max-slots", decisionindex.MaxSlotsPerPass, "Maximum simultaneous questions per forward pass (default 8)")
 	systemoneServeCmd.Flags().IntVar(&soBracketSize, "bracket-size", decisionindex.BracketSize, "Maximum options per Round-1 tournament bracket (default 20)")
 	systemoneServeCmd.Flags().StringVar(&soCatchAll, "catch-all", "off", "Wide-option catch-all handling ('none of the listed', 'out of scope', ...): off, final (skip Round 1, compete in the final), both (every bracket and the final), verify (final over real options, then pick vs catch-all)")
-	systemoneServeCmd.Flags().StringVar(&soPromptLayout, "prompt-layout", "schema_first", "Server prompt layout: schema_first (questions as the system prompt), or document_first (the state first, then the questions; needs a serving image that supports \"layout\")")
+	systemoneServeCmd.Flags().StringVar(&soPromptLayout, "prompt-layout", "document_first", "Server prompt layout: document_first (the state first, then the questions; servers without the \"layout\" field ignore it), or schema_first (questions as the system prompt, the server default)")
 	systemoneServeCmd.Flags().StringVar(&soNoulMode, "noul-mode", "noul", "How yes/no questions are read: noul, or choice (2-option yes/no choice with the true/false criteria as descriptions)")
 	systemoneServeCmd.Flags().StringVar(&soAPIKey, "api-key", "", "Optional secret key to enforce Authorization: Bearer <key> (env: SYSTEMONE_API_KEY or API_KEY)")
 	systemoneServeCmd.Flags().BoolVar(&soNullPrior, "null-prior-debias", false, "Divide out positional 'A'-bias prior")

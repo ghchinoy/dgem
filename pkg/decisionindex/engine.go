@@ -130,7 +130,7 @@ type EngineOptions struct {
 	BracketSize       int     // Max options per Round-1 bracket for wide (>26) choices; <=1 means BracketSize
 	CatchAll          string  // Wide-option catch-all handling: "off" (default), "final", "both" or "verify"; see catchAllKeys
 	NoulMode          string  // How yes/no questions are read: "noul" (default) or "choice" (2-option choice; see noulAsChoice)
-	PromptLayout      string  // Server prompt layout: "" or "schema_first" (default, questions as the system prompt) or "document_first" (state first, then questions)
+	PromptLayout      string  // Server prompt layout: "document_first" (default: state first, then questions) or "schema_first"/"" (questions as the system prompt)
 }
 
 // DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled (T*=1.0).
@@ -143,6 +143,9 @@ func DefaultEngineOptions() EngineOptions {
 		MaxConcurrency:    4,
 		PriorAlpha:        0.50,
 		BracketSize:       BracketSize,
+		// document_first: on the wave-2 canary (dev suites, paired) it raised di_catchall 0.790 -> 0.870 and rag_dev
+		// 0.705 -> 0.770 with JevBench and di_wide unchanged; out-of-scope recall on di_catchall fell 1.00 -> 0.825.
+		PromptLayout: "document_first",
 	}
 }
 

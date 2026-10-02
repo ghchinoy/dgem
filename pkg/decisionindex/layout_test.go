@@ -67,6 +67,9 @@ func TestPromptLayout(t *testing.T) {
 	req := SystemOneRequest{State: "x", Questions: map[string]SystemOneQuestion{
 		"intent": {Type: "choice", Instructions: "Which intent?", Criteria: wideWithCatchAll()},
 		"h":      {Type: "noul", Instructions: "Hallucination?", Criteria: map[string]string{"true": "a", "false": "b"}}}}
+	if DefaultEngineOptions().PromptLayout != "document_first" {
+		t.Fatalf("default layout should be document_first")
+	}
 	for _, want := range []string{"", "document_first"} {
 		layouts = nil
 		opts := DefaultEngineOptions()
