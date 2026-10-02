@@ -422,15 +422,7 @@ func evaluateWideQuestionTournament(
 		return batchMap[qKey], passes, nil
 	}
 
-	// Build brackets of size BracketSize (20)
-	var brackets [][]string
-	for i := 0; i < numOpts; i += BracketSize {
-		end := i + BracketSize
-		if end > numOpts {
-			end = numOpts
-		}
-		brackets = append(brackets, optKeys[i:end])
-	}
+	brackets := balancedBrackets(optKeys, BracketSize)
 
 	// Pack up to MaxSlotsPerPass bracket sub-questions into a single Round-1 canvas pass!
 	round1Questions := make(map[string]SystemOneQuestion, len(brackets))
@@ -656,4 +648,30 @@ func NewSystemOneHTTPHandler(cli *client.Client, opts EngineOptions) http.Handle
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	}
+}
+
+// balancedBrackets splits keys into ceil(K/size) brackets of near-equal size (differing by at most one).
+// Fixed-size chunking left a 1-option tail whenever K % size == 1 (e.g. 41, 61, 101 options), which the
+// server rejects ("needs at least two alternatives").
+func balancedBrackets(keys []string, size int) [][]string {
+	if size < 2 {
+		size = 2
+	}
+	n := len(keys)
+	if n == 0 {
+		return nil
+	}
+	nb := (n + size - 1) / size
+	base, extra := n/nb, n%nb
+	out := make([][]string, 0, nb)
+	i := 0
+	for b := 0; b < nb; b++ {
+		sz := base
+		if b < extra {
+			sz++
+		}
+		out = append(out, keys[i:i+sz])
+		i += sz
+	}
+	return out
 }
