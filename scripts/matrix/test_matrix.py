@@ -210,6 +210,26 @@ class TestDecisionIndexTrack(unittest.TestCase):
         self.assertTrue(refusal["expect"]["marker_if_422"])
 
 
+class TestTrends(unittest.TestCase):
+    def test_build_mixes_v1_and_v2(self):
+        sys.path.insert(0, os.path.join(D.REPO, "scripts"))
+        import matrix_trends as T
+        v1 = {"run_id": "r1", "tier": "T0", "gates": [{"gate": "health", "target": "prod", "verdict": "PASS", "detail": ""}],
+              "overall": {"prod": "PASS"}}
+        v2 = {"schema": "dgem.matrix.summary/v2", "run_id": "r2", "tier": "T0", "finished": "2026-10-03T05:40:00+00:00",
+              "targets": [{"name": "prod", "kind": "vertex", "health": {"version": "v0.1.4"}}],
+              "gates": [{"gate": "health", "target": "prod", "verdict": "PASS", "detail": ""},
+                        {"gate": "calibration", "target": "prod", "verdict": "REVIEW", "detail": ""}],
+              "suites": {"calibration": {"prod": {"accuracy": 0.84, "coverage": 1.0, "macro_f1": 0.7, "ece10": 0.1,
+                                                  "runs": [{}]}}}}
+        tr = T.build([v2, v1], tier="T0")
+        self.assertEqual([r["run_id"] for r in tr["runs"]], ["r1", "r2"])
+        self.assertEqual(len(tr["gates"]["T0/health/prod"]), 2)
+        pt = tr["series"]["T0/calibration/prod"][0]
+        self.assertEqual((pt["accuracy"], pt["verdict"], pt["version"]), (0.84, "REVIEW", "v0.1.4"))
+        self.assertIn("T0/calibration/prod", T.markdown(tr))
+
+
 class TestCases(unittest.TestCase):
     def test_jevbench_shapes(self):
         cs = C.jevbench()

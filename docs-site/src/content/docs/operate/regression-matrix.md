@@ -168,7 +168,17 @@ Our production endpoints run T0 daily and T1 weekly as Cloud Run jobs
 ([`scripts/deploy_bench_matrix_job.sh`](https://github.com/ghchinoy/dgem/blob/main/scripts/deploy_bench_matrix_job.sh)). Each run writes its directory to
 a Cloud Storage bucket and one JSON log line per event (`matrix_event`: `dgem.matrix.start`, `dgem.matrix.suite`,
 `dgem.matrix.gate`, `dgem.matrix.done`), so log-based alerts can fire on a FAIL. Scheduled runs are single-target
-(compared with the reference ranges) and are not committed. T2 is never scheduled. The job image includes the verified dataset files T0 and T1 read,
+(compared with the reference ranges) and are not committed. T2 is never scheduled.
+
+To see how production has moved over time, collect the scheduled runs into a time series:
+
+```bash
+scripts/matrix_trends.py --source gs://<bucket> --out trends/     # trends.json (series per suite and gate) + trends.md
+```
+
+`trends.json` holds, per tier, suite and target, every run's accuracy, coverage, macro-F1, ECE, Brier, AUROC, verdict
+and the image version the target reported; and per gate the verdict history. Dashboards read that file. Runs written
+before summary schema v2 contribute verdicts only. The job image includes the verified dataset files T0 and T1 read,
 because anonymous Hugging Face downloads from cloud egress are rate-limited (`HF_TOKEN`, if set, is used for any
 other download). `scripts/setup_alerts.py` creates the alerts: a FAIL verdict on any gate, no completed T0 run for 25 h, and no T1
 execution for 7 days + 8 h ([Monitoring and alerts](/dgem/operate/monitoring/#alerts-what-they-mean-and-what-to-do)).
