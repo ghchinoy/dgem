@@ -347,6 +347,15 @@ class TestReport(unittest.TestCase):
         self.assertIn(D.CLINC, lock)
         self.assertIn(D.RAGTRUTH, lock)
 
+    def test_target_options(self):
+        from matrix.targets import Target
+        t = Target("doc", "http://h:8080/v1#layout=document_first")
+        self.assertEqual((t.base, t.options), ("http://h:8080", {"layout": "document_first"}))
+        self.assertEqual(Target("p", "http://h:8080").options, {})
+        self.assertEqual(t.redacted()["options"], {"layout": "document_first"})
+        with self.assertRaises(SystemExit):
+            Target("bad", "http://h#layout=sideways")
+
     def test_matrix_definition(self):
         mx = json.load(open(MATRIX))
         for tier, suites in mx["tiers"].items():

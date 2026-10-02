@@ -1,0 +1,14 @@
+{"kind": "adapter_probes", "target": "bf16", "cases": [
+{"name":"wide_27","status":200,"ok":true,"wall_ms":302.5,"notes":[],"info_only":false,"keys":27,"prob_sum":1.0,"top_p":0.98924},
+{"name":"wide_41","status":200,"ok":true,"wall_ms":225.1,"notes":[],"info_only":false,"keys":41,"prob_sum":1.0,"top_p":0.98932},
+{"name":"wide_61","status":200,"ok":true,"wall_ms":244.4,"notes":[],"info_only":false,"keys":61,"prob_sum":1.0,"top_p":0.9802},
+{"name":"wide_101","status":200,"ok":true,"wall_ms":286.5,"notes":[],"info_only":false,"keys":101,"prob_sum":1.0,"top_p":0.99072},
+{"name":"wide_151","status":200,"ok":true,"wall_ms":350.3,"notes":[],"info_only":false,"keys":151,"prob_sum":1.0,"top_p":0.99437},
+{"name":"wide_255","status":200,"ok":true,"wall_ms":665.1,"notes":[],"info_only":false,"keys":255,"prob_sum":1.0,"top_p":0.98241},
+{"name":"batch_12q","status":200,"ok":true,"wall_ms":195.2,"notes":[],"info_only":false},
+{"name":"criteria_objects","status":200,"ok":true,"wall_ms":92.9,"notes":[],"info_only":false,"keys":3,"prob_sum":1.0,"top_p":0.99875},
+{"name":"noul_criteria","status":200,"ok":true,"wall_ms":91.8,"notes":[],"info_only":true},
+{"name":"wide_catchall_151","status":200,"ok":true,"wall_ms":353.4,"notes":[],"info_only":true,"keys":151,"prob_sum":1.0,"top_p":0.99415},
+{"name":"long_9k","status":422,"ok":true,"wall_ms":149.5,"notes":[],"info_only":false,"marker":"maximum context length"},
+{"name":"context_refusal","status":422,"ok":true,"wall_ms":90.3,"notes":[],"info_only":false,"marker":"maximum context length"}
+]}

@@ -17,6 +17,11 @@
   Vertex dedicated endpoint: https://<ID>.<REGION>-<NUM>.prediction.vertexai.goog/v1/projects/<P>/locations/<R>/endpoints/<ID>/invoke
   Cloud Run:                 https://<service>-<hash>-<region>.run.app   (a tagged revision URL works too)
   Self-hosted:               http://<GPU_HOST>:8080
+
+A target may carry request options after "#", for an A/B of an opt-in serving option on one deployment:
+  --target docfirst=<url>#layout=document_first
+They are added to every /v1/systemone and chat schema body, and the local adapter gets the matching flag
+(layout -> --prompt-layout). `dgem decide` suites (templates) do not get them.
 """
 import json
 
@@ -24,7 +29,14 @@ from . import net
 
 
 class Target:
+    OPTIONS = {"layout": ("schema_first", "document_first")}
+
     def __init__(self, name, url):
+        url, _, frag = url.partition("#")
+        self.options = dict(kv.split("=", 1) for kv in frag.split("&") if kv)
+        for k, v in self.options.items():
+            if v not in self.OPTIONS.get(k, ()):
+                raise SystemExit(f"target {name}: unknown option {k}={v} (known: {self.OPTIONS})")
         self.name, self.base = name, url.rstrip("/")
         if self.base.endswith("/v1"):
             self.base = self.base[:-3]
@@ -47,10 +59,10 @@ class Target:
         return st, body
 
     def systemone(self, body, timeout=300):
-        return net.request(self.base + "/v1/systemone", body, timeout=timeout)
+        return net.request(self.base + "/v1/systemone", {**body, **self.options}, timeout=timeout)
 
     def chat(self, schema, state, timeout=300):
-        payload = {"model": "dgemma", "messages": [{"role": "system", "content": json.dumps(schema)},
+        payload = {"model": "dgemma", "messages": [{"role": "system", "content": json.dumps({**schema, **self.options})},
                                                    {"role": "user", "content": json.dumps(state, ensure_ascii=False)}],
                    "logprobs": True, "top_logprobs": 5}
         return net.request(self.base + "/v1/chat/completions", payload, timeout=timeout)
@@ -63,4 +75,4 @@ class Target:
         return st, b, h
 
     def redacted(self):
-        return {"name": self.name, "kind": self.kind}
+        return {"name": self.name, "kind": self.kind, **({"options": self.options} if self.options else {})}

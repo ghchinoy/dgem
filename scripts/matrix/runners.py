@@ -194,6 +194,8 @@ class Adapter:
         s.close()
         cmd = [dgem_bin, "systemone", "serve", "--host", "127.0.0.1", "--port", str(self.port),
                "--upstream", target.cli_url, "--temperature", "1.0", "--http-retries", "3"]
+        if target.options.get("layout"):
+            cmd += ["--prompt-layout", target.options["layout"]]
         tok = net.token_for(target.base)
         if tok:
             cmd += ["-k", tok]
