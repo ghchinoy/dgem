@@ -52,8 +52,8 @@ scripts/bench_matrix.py run --tier T2 --confirm --target prod=<PRODUCTION_URL>
   conditions. Latency runs last, so it is not measured under the matrix's own load.
 - **Request options (A/B on one deployment):** append `#option=value` to a target URL to add a request option to
   every `/v1/systemone` and chat body that target gets, and the matching flag to its local adapter. Today:
-  `layout=document_first` (the state first, then the questions; `--prompt-layout` on the adapter; needs a serving
-  image with the `layout` field). For example `--target base=<URL> --target doc=<URL>#layout=document_first
+  `layout=document_first` or `layout=schema_first` (`--prompt-layout` on the adapter; needs a serving image with
+  the `layout` field, default `document_first` from v0.2.0). For example `--target base=<URL> --target old=<URL>#layout=schema_first
   --baseline base`. Template suites (`dgem decide`) don't get the option.
 - **Resuming:** an interrupted run continues with `--resume` and the same `--label`.
 - **Exit code:** 1 if any target's overall verdict is FAIL, so the command can gate a script.
