@@ -1,0 +1,17 @@
+{
+ "kind": "health",
+ "target": "docfirst",
+ "target_kind": "vertex",
+ "status": 200,
+ "ok": true,
+ "body": {
+  "status": "ok",
+  "server": "dgem-structured-server",
+  "version": "v0.1.5-11-ga2d5b0b",
+  "revision": "a2d5b0b",
+  "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa",
+  "vllm_ready": true,
+  "warmed": true,
+  "phase": "ready"
+ }
+}
