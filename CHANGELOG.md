@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`dgem systemone serve` wide-option fixes (Decision Index adapter):**
+  - Brackets are now balanced. With fixed chunks of 20, K % 20 == 1 (41, 61, 101 … options) left a 1-option
+    bracket that the server rejected; the adapter returned HTTP 500, which the Decision Index kit retries as an error.
+  - Probabilities for >26 options are fused from the model's own readouts. The final round weights the brackets and
+    Round-1 shares the mass inside each one. Previously a fixed 92% / 8% finalist split capped every wide-option
+    confidence at about 0.92, which set ECE/Brier on BANKING77, CLINC150, API-Bank and similar benchmarks.
+  - `--bracket-size` is now passed to the engine (it was only reported in `/health`).
+
 ## v0.1.4 (2026-10-02)
 
 Gateway, MCP and CLI only. **Serving images are unchanged**: the serving image is still `v0.1.3`
