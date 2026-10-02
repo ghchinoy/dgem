@@ -17,7 +17,9 @@
    "jev_systemone",
    "intents_banking77",
    "intents_clinc150",
-   "latency"
+   "latency",
+   "di_probes",
+   "di_wide"
   ],
   "T2": [
    "health",
@@ -34,7 +36,10 @@
    "typed",
    "order",
    "bbox",
-   "decision_index"
+   "decision_index",
+   "di_probes",
+   "di_wide",
+   "di_kit_compat"
   ]
  },
  "confirm_required": [
@@ -177,6 +182,27 @@
    "runs": 1,
    "n": 22,
    "description": "Decision Index stand-in panel (wide options, many slots)"
+  },
+  "di_probes": {
+   "kind": "adapter_probes",
+   "via": "adapter",
+   "description": "Decision Index adapter (dgem systemone serve, this checkout's binary) against the target: wide options at K=27/41/61/101/151/255 (answer + complete probabilities summing to 1), 12-question slot batching, ~31k-token input must answer or refuse with HTTP 422 and a kit marker"
+  },
+  "di_wide": {
+   "kind": "systemone",
+   "via": "adapter",
+   "cases": "di_wide",
+   "runs": {
+    "T1": 3,
+    "T2": 3
+   },
+   "n": 100,
+   "description": "MASSIVE validation (English) with the full ~60-label set as options, through the adapter's bracket routing"
+  },
+  "di_kit_compat": {
+   "kind": "kit_compat",
+   "via": "adapter",
+   "description": "Decision Index kit compatibility pass (86 requests) through the adapter; runs only when DGEM_DI_KIT_DIR and DGEM_DI_COMPAT_ROWS are set, otherwise reported as skipped"
   }
  },
  "excluded": {
@@ -201,7 +227,7 @@
    "benchmarks/runs/20261001-v013-reference-t1",
    "benchmarks/runs/20261001-v013-reference-t2"
   ],
-  "note": "Accuracy ranges = min..max over the reference runs (multi-run suites) or value +/- 2 standard errors (single-run frozen sets). Used in single-target mode; a REVIEW is within reference_slack below the range.",
+  "note": "Accuracy ranges = min..max over the reference runs (multi-run suites) or value +/- 2 standard errors (single-run frozen sets). Used in single-target mode; a REVIEW is within reference_slack below the range. di_wide: 3 runs on 2026-10-02 against v0.1.3 through the v0.1.4 adapter.",
   "suites": {
    "calibration": {
     "accuracy": [
@@ -274,6 +300,14 @@
     ],
     "runs": 1,
     "n": 2000
+   },
+   "di_wide": {
+    "accuracy": [
+     0.84,
+     0.86
+    ],
+    "runs": 3,
+    "n": 100
    }
   }
  }

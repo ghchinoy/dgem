@@ -121,7 +121,7 @@ def redact_file(path, target, tok=None):
 
 
 # ---------------------------------------------------------------- /v1/systemone suites
-def _run_case(target, case, perm):
+def _run_case(target, case, perm, max_options=26):
     single = len(case["qs"]) == 1
     meta = []
     for q in case["qs"]:
@@ -129,7 +129,7 @@ def _run_case(target, case, perm):
         meta.append({"id": case["id"] if single else f"{case['id']}/{q['qid']}", "case": case["id"], "qid": q["qid"],
                      "suite": case["suite"], "subset": case["subset"], "tier": case.get("tier"), "perm": perm,
                      "type": q["type"], "K": len(q["labels"]), "expected": q["expected"], "shown_first": shown})
-    if any(q["type"] == "choice" and len(q["labels"]) > 26 for q in case["qs"]):
+    if max_options and any(q["type"] == "choice" and len(q["labels"]) > max_options for q in case["qs"]):
         return [{**m, "status": "n/a"} for m in meta]
     st, resp, ms, hdr = target.systemone(caselib.body(case))
     if st != 200:
@@ -147,12 +147,13 @@ def _run_case(target, case, perm):
     return rows
 
 
-def systemone(target, cases, out, workers=8, permute="none", run=1, suite=None):
+def systemone(target, cases, out, workers=8, permute="none", run=1, suite=None, max_options=26):
+    """max_options: the raw server takes at most 26 options per choice; None when the target is the adapter."""
     rng = random.Random(99)  # one Random(99) per suite pass, one shuffle per case
     todo = [caselib.permute(c, permute, rng) for c in cases]
     results = [None] * len(todo)
     with cf.ThreadPoolExecutor(workers) as ex:
-        futs = {ex.submit(_run_case, target, c, permute): i for i, c in enumerate(todo)}
+        futs = {ex.submit(_run_case, target, c, permute, max_options): i for i, c in enumerate(todo)}
         for f in cf.as_completed(futs):
             i = futs[f]
             try:
@@ -163,6 +164,115 @@ def systemone(target, cases, out, workers=8, permute="none", run=1, suite=None):
     rows = [r for rs in results for r in rs]
     return _dump(out, {"kind": "systemone", "suite": suite or (cases[0]["suite"] if cases else ""), "target": target.name,
                        "permute": permute, "run": run, "cases": rows})
+
+
+# ---------------------------------------------------------------- Decision Index adapter (`dgem systemone serve`)
+class Adapter:
+    """A local `dgem systemone serve` in front of a target: the adapter a Decision Index run uses (bracket routing for
+    > 26 options, slot batching, 422 capacity refusals). The matrix tests the adapter code of this checkout's dgem
+    binary against the deployed model. Started once per target and stopped at the end of the run."""
+
+    def __init__(self, target, dgem_bin, log_path):
+        import socket
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        self.port = s.getsockname()[1]
+        s.close()
+        cmd = [dgem_bin, "systemone", "serve", "--host", "127.0.0.1", "--port", str(self.port),
+               "--upstream", target.cli_url, "--temperature", "1.0", "--http-retries", "3"]
+        tok = net.token_for(target.base)
+        if tok:
+            cmd += ["-k", tok]
+        env = {k: v for k, v in os.environ.items() if not k.startswith("DGEM_VERTEX") and k not in ("DGEM_URL", "API_KEY")}
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        self.log = open(log_path, "w")
+        self.proc = subprocess.Popen(cmd, cwd=REPO, env=env, stdout=self.log, stderr=subprocess.STDOUT)
+        self.url = f"http://127.0.0.1:{self.port}"
+        for _ in range(60):
+            if self.proc.poll() is not None:
+                raise RuntimeError(f"systemone adapter exited ({self.proc.returncode}); see {log_path}")
+            st, _b, _ms, _h = net.request(self.url + "/health", timeout=5, retries=0)
+            if st == 200:
+                return
+            time.sleep(0.5)
+        raise RuntimeError("systemone adapter did not become healthy")
+
+    def stop(self):
+        if self.log.closed:
+            return
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(10)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+        self.log.close()
+
+
+def adapter_probes(adapter_target, out):
+    rows = []
+    for p in caselib.di_probes():
+        st, body, ms, _ = adapter_target.systemone(p["body"], timeout=600)
+        exp, ok, notes, info = p["expect"], True, [], {}
+        if "status" in exp and st != exp["status"]:
+            ok = False
+            notes.append(f"HTTP {st}: {str(body)[:160]}")
+        if "status_in" in exp and st not in exp["status_in"]:
+            ok = False
+            notes.append(f"HTTP {st} (want {exp['status_in']}): {str(body)[:160]}")
+        if st == 422 and exp.get("marker_if_422"):
+            txt = json.dumps(body).lower()
+            hit = [m for m in caselib.KIT_MARKERS if m in txt]
+            info["marker"] = hit[0] if hit else None
+            if not hit:
+                ok = False
+                notes.append("422 without a Decision Index kit marker (the kit would record an error, not unsupported)")
+        if st == 200 and isinstance(body, dict):
+            ans = body.get("answers") or {}
+            for qid, want in (exp.get("answers") or {}).items():
+                a = ans.get(qid) or {}
+                got = a.get("choice")
+                if got is None and a.get("noul") is not None:
+                    got = "yes" if a["noul"] >= 0.5 else "no"
+                if got != want:
+                    ok = False
+                    notes.append(f"{qid}: {got} != {want}")
+            if exp.get("complete"):
+                pr = (ans.get("intent") or {}).get("probabilities") or {}
+                tot = sum(pr.values())
+                info.update(keys=len(pr), prob_sum=tot, top_p=max(pr.values()) if pr else None)
+                if len(pr) != exp["complete"] or abs(tot - 1) > 0.01 or any(v != v or v < 0 for v in pr.values()):
+                    ok = False
+                    notes.append(f"probabilities: {len(pr)} keys (want {exp['complete']}), sum {tot:.4f}")
+        rows.append({"name": p["name"], "status": st, "ok": ok, "wall_ms": round(ms, 1), "notes": notes, **info})
+    return _dump(out, {"kind": "adapter_probes", "target": adapter_target.name, "cases": rows})
+
+
+def kit_compat(adapter_target, out):
+    """Optional: the Decision Index kit's compatibility pass through the adapter. Needs DGEM_DI_KIT_DIR (a kit
+    checkout with its .venv) and DGEM_DI_COMPAT_ROWS (compat rows built from a rebuilt suite). Skipped otherwise."""
+    kit, rows_path = os.environ.get("DGEM_DI_KIT_DIR"), os.environ.get("DGEM_DI_COMPAT_ROWS")
+    if not (kit and rows_path and os.path.exists(rows_path)):
+        return _dump(out, {"kind": "kit_compat", "target": adapter_target.name, "skipped": True,
+                           "reason": "set DGEM_DI_KIT_DIR and DGEM_DI_COMPAT_ROWS to run the kit compatibility pass"})
+    import tempfile
+    import collections
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run([os.path.join(kit, ".venv", "bin", "python"), "-m", "decision_index", "run", "--engine", "http",
+                        "--option", f"base_url={adapter_target.base}", "--option", "model=dgem", "--option", "timeout=900",
+                        "--rows", rows_path, "--out", tmp, "--fresh"], cwd=kit, check=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=7200)
+        counts, non_ok = collections.Counter(), collections.Counter()
+        res = os.path.join(tmp, "results.jsonl")
+        if os.path.exists(res):
+            with open(res) as f:
+                for line in f:
+                    r = json.loads(line)
+                    counts[r.get("status")] += 1
+                    if r.get("status") != "ok":
+                        non_ok[f"{r.get('dataset')}: {(r.get('error') or '')[:90]}"] += 1
+    return _dump(out, {"kind": "kit_compat", "target": adapter_target.name, "skipped": False, "counts": dict(counts),
+                       "non_ok": dict(non_ok.most_common(40))})
 
 
 # ---------------------------------------------------------------- latency (keep-alive, /v1/systemone)

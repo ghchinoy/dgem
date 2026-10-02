@@ -74,6 +74,8 @@ from matrix import cases, datasets
 for lg in cases.SPOT_LANGS:
     datasets.path(datasets.MASSIVE, f"validation/{lg}.json.gz")
     datasets.path(datasets.MASSIVE, f"test/{lg}.json.gz")
+for f in ("validation/en.json.gz", "test/en.json.gz"):  # di_wide (Decision Index adapter track)
+    datasets.path(datasets.MASSIVE, f)
 PY
 cp "${REPO_ROOT}/deploy/bench-matrix/Dockerfile" "${CTX}/Dockerfile"
 gcloud builds submit "${CTX}" --project="${PROJECT}" --tag="${IMAGE}" --suppress-logs --quiet
