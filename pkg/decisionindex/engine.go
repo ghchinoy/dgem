@@ -130,6 +130,7 @@ type EngineOptions struct {
 	BracketSize       int     // Max options per Round-1 bracket for wide (>26) choices; <=1 means BracketSize
 	CatchAll          string  // Wide-option catch-all handling: "off" (default), "final", "both" or "verify"; see catchAllKeys
 	NoulMode          string  // How yes/no questions are read: "noul" (default) or "choice" (2-option choice; see noulAsChoice)
+	PromptLayout      string  // Server prompt layout: "" or "schema_first" (default, questions as the system prompt) or "document_first" (state first, then questions)
 }
 
 // DefaultEngineOptions returns production settings with Wide-Option Tournament + Multi-Slot Batching enabled (T*=1.0).
@@ -273,7 +274,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	for _, k := range wideKeys {
 		wideQs++
 		q := req.Questions[k]
-		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll)
+		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll, opts.PromptLayout)
 		if err != nil {
 			return nil, err
 		}
@@ -347,6 +348,9 @@ func evaluateStandardBatch(
 		"samples":      1,
 		"think":        0,
 		"questions":    questionsPayload,
+	}
+	if opts.PromptLayout == "document_first" {
+		schemaEnvelope["layout"] = "document_first"
 	}
 	schemaBytes, err := json.Marshal(schemaEnvelope)
 	if err != nil {
@@ -483,6 +487,7 @@ func evaluateWideQuestionTournament(
 	tempScale float64,
 	bracketSize int,
 	catchAllMode string,
+	layout string,
 ) (SystemOneAnswer, int, error) {
 	optKeys := sortedOptionKeys(qSpec.Criteria)
 	numOpts := len(optKeys)
@@ -511,7 +516,7 @@ func evaluateWideQuestionTournament(
 		}
 	}
 	if numOpts <= MaxOptionsPerSlot {
-		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale})
+		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale, PromptLayout: layout})
 		if err != nil {
 			return SystemOneAnswer{}, passes, err
 		}
@@ -553,7 +558,7 @@ func evaluateWideQuestionTournament(
 			end = len(round1Keys)
 		}
 		subKeys := round1Keys[i:end]
-		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0})
+		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
 		if err != nil {
 			return SystemOneAnswer{}, passesUsed + p, err
 		}
@@ -619,7 +624,7 @@ func evaluateWideQuestionTournament(
 		},
 	}
 
-	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0})
+	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
 	if err != nil {
 		return SystemOneAnswer{}, passesUsed + p, err
 	}
@@ -639,7 +644,7 @@ func evaluateWideQuestionTournament(
 		}
 		vBatch, p2, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey},
 			map[string]SystemOneQuestion{qKey: {Type: "choice", Instructions: FormatInstructions(qSpec.Instructions), Criteria: vCrit}},
-			EngineOptions{TemperatureScale: 1.0})
+			EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
 		if err != nil {
 			return SystemOneAnswer{}, passesUsed + p2, err
 		}

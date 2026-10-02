@@ -15,7 +15,7 @@ Answers take Jev's shapes, with this server's diagnostics alongside:
   score:  {"score", "legend", "probabilities", "confidence"}
 The request body may also carry the schema keys "instructions", "samples",
 "auto_max", "auto_threshold", "steps", "think", "ask", "chunk_rows",
-"chunk_prompt" and "sequential" as extensions. Images go ahead of the
+"chunk_prompt", "sequential" and "layout" as extensions. Images go ahead of the
 state, either as multipart/form-data with the JSON body in a part named
 "request" and each image as a file part, or as an "images" array of data
 URLs in the JSON body.
@@ -65,7 +65,9 @@ read, "sequential": true runs the chunks in order with the earlier answers
 prefilled, and "chunk_prompt": "shared" lists every question in each
 chunk's prompt. "think": N lets the model write up to N tokens in its
 thought channel, as an ordinary generation, and the read then runs with
-that thought in its prompt. With images the model writes the thought with
+that thought in its prompt. "layout": "document_first" sends the state
+first and the questions after it, both in the user turn, instead of the
+questions as the system prompt (the default, "schema_first"). With images the model writes the thought with
 the image in view and the server seeds it into the canvas ahead of the
 answer, so the canvas bounds it. The noise draws of a decision share one
 thought.
@@ -247,6 +249,9 @@ def parse_schema(value):
     if chunk_prompt not in ("shared", "own"):
         raise SchemaError('schema: chunk_prompt must be "shared" or "own"')
     sequential = bool(value.get("sequential", False))
+    layout = value.get("layout", "schema_first")
+    if layout not in LAYOUTS:
+        raise SchemaError('schema: layout must be "schema_first" or "document_first"')
     think = value.get("think", 0)
     if isinstance(think, bool) or not isinstance(think, int) or not 0 <= think <= 4096:
         raise SchemaError("schema: think must be a thought budget in tokens, 0 to 4096")
@@ -260,6 +265,7 @@ def parse_schema(value):
         "chunk_rows": chunk_rows,
         "chunk_prompt": chunk_prompt,
         "sequential": sequential,
+        "layout": layout,
         "format": "lines" if len(qs) <= 10 else "indexed",
     }
 
@@ -287,6 +293,36 @@ FORMATS = {
 }
 
 
+LAYOUTS = ("schema_first", "document_first")
+
+
+class SystemText(str):
+    """The question text of a read, carrying the schema's layout so every
+    place that builds the chat messages lays them out the same way."""
+
+    layout = "schema_first"
+
+
+def chat_messages(sys_text, state_content):
+    """The chat messages of a read. "schema_first" puts the questions in the
+    system prompt and the state in the user turn. "document_first" puts both
+    in the user turn, the state first, as <user_text> then <instructions>."""
+    if getattr(sys_text, "layout", "schema_first") != "document_first":
+        return [
+            {"role": "system", "content": str(sys_text)},
+            {"role": "user", "content": state_content},
+        ]
+    tail = "\n\n<instructions>\n" + str(sys_text) + "\n</instructions>"
+    if isinstance(state_content, str):
+        content = "<user_text>\n" + state_content + "\n</user_text>" + tail
+    else:
+        text = "\n".join(p["text"] for p in state_content if p.get("type") == "text")
+        content = [p for p in state_content if p.get("type") != "text"] + [
+            {"type": "text", "text": "<user_text>\n" + text + "\n</user_text>" + tail}
+        ]
+    return [{"role": "user", "content": content}]
+
+
 def system_text(schema, chunked=False):
     s = (
         "Answer a fixed set of questions about the state the user provides. "
@@ -310,6 +346,8 @@ def system_text(schema, chunked=False):
             " A reply may cover only some of the questions; answer every line "
             "that is present."
         )
+    s = SystemText(s)
+    s.layout = schema.get("layout", "schema_first")
     return s
 
 
@@ -503,10 +541,7 @@ def chat_prompt_ids(sys_text, state_text, thinking=False):
     """The prompt the chat endpoint would build, as token ids, ending after
     the model turn marker. Text states only. ``thinking`` turns the chat
     template's thinking marker on."""
-    messages = [
-        {"role": "system", "content": sys_text},
-        {"role": "user", "content": state_text},
-    ]
+    messages = chat_messages(sys_text, state_text)
     out = TOK.apply_chat_template(
         messages, tokenize=True, add_generation_prompt=True, enable_thinking=thinking
     )
@@ -551,10 +586,7 @@ def think_chat(sys_text, state_content, budget):
     Returns the thought's token ids and a diagnostics dict."""
     body = {
         "model": ARGS.model,
-        "messages": [
-            {"role": "system", "content": sys_text},
-            {"role": "user", "content": state_content},
-        ],
+        "messages": chat_messages(sys_text, state_content),
         "max_tokens": budget,
         "logprobs": True,
         "top_logprobs": 0,
@@ -587,10 +619,7 @@ def one_read(
 ):
     if prefix is not None:
         return one_read_continuation(schema, template, slots, prefix, seed)
-    messages = [
-        {"role": "system", "content": sys_text},
-        {"role": "user", "content": state_content},
-    ]
+    messages = chat_messages(sys_text, state_content)
     body = {
         "model": ARGS.model,
         "messages": messages,
@@ -1114,6 +1143,7 @@ JEV_EXTENSIONS = (
     "chunk_rows",
     "chunk_prompt",
     "sequential",
+    "layout",
 )
 
 
