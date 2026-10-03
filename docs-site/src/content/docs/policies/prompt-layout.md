@@ -64,10 +64,10 @@ the share of answers matching the gold label; differences are paired, item by it
 The gain is largest when a decision has **several questions** or **many options**. With the questions first, the
 model tends to settle on an answer shape before it has read the input. Single, simple questions barely change.
 
-On the public [Decision Index](/dgem/experiments/exp-12-decision-index/) leaderboard, the release with this default
-(together with yes/no descriptions now reaching the model) moved dgem from 40.77 to 45.34. Those scores come from the
-index's own scoring, not from a receipt in this repository. In the EXP-19 development session the same layout change
-moved CLINC150 from 0.790 to 0.870 and RAGTruth from 0.705 to 0.770 (`benchmarks/runs/20261002-w2-canary-t1/`).
+On the [Decision Index](/dgem/experiments/exp-12-decision-index/) (0.2.1, scored with the index's own kit and shown on
+our internal board; dgem is not on a public leaderboard), the release with this default, together with yes/no
+descriptions now reaching the model, moved dgem from 40.77 to 45.34. In the EXP-19 development session the same layout
+change moved CLINC150 from 0.790 to 0.870 and RAGTruth from 0.705 to 0.770 (`benchmarks/runs/20261002-w2-canary-t1/`).
 
 ## Trade-offs to know about
 
