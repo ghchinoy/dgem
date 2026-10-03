@@ -100,6 +100,8 @@ def contract(target, out):
 # ---------------------------------------------------------------- dgem CLI harnesses
 def dgem(target, args, out, dgem_bin, workers=4, timeout_s=3600):
     """Run `dgem <args...> -u <url> [-k token] --http-retries 3 [-w N] -o out`."""
+    if args[0] == "bench-vision":
+        ensure_vision_fixtures()
     cmd = [dgem_bin, *args, "-u", target.cli_url, "--http-retries", "3", "-o", out]
     if workers and args[0] not in ("bench-bbox",):
         cmd += ["-w", str(workers)]
@@ -117,6 +119,20 @@ def dgem(target, args, out, dgem_bin, workers=4, timeout_s=3600):
     for p in (log, out):  # tokens and endpoint URLs never land in a receipt or log
         redact_file(p, target, tok)
     return out, time.time() - t0
+
+
+def ensure_vision_fixtures():
+    """The vision suites read the seeded synthetic sweep (fixtures/bbox_sweep/, gitignored). Generate it when missing;
+    the scheduled job image ships it pre-generated (scripts/deploy_bench_matrix_job.sh)."""
+    first = os.path.join(REPO, "fixtures", "bbox_sweep", "geo-1x1-grid-00.png")
+    if os.path.exists(first):
+        return
+    try:
+        subprocess.run([sys.executable, os.path.join(REPO, "scripts", "generate_bbox_sweep.py")], cwd=REPO, check=True,
+                       stdout=subprocess.DEVNULL)
+    except Exception as e:
+        raise RuntimeError("vision suites need fixtures/bbox_sweep/: pip install -r scripts/requirements-vision.txt && "
+                           f"python3 scripts/generate_bbox_sweep.py ({e})")
 
 
 def redact_file(path, target, tok=None):

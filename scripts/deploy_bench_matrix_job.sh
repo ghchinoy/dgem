@@ -79,6 +79,13 @@ cp -R "${REPO_ROOT}"/benchmarks/{jevbench,intents,matrix} "${A}/benchmarks/"
 cp "${REPO_ROOT}/benchmarks/calibration_suite.jsonl" "${A}/benchmarks/"
 cp -R "${REPO_ROOT}/templates" "${A}/"
 cp -R "${REPO_ROOT}/fixtures/bbox" "${A}/fixtures/"
+# Vision suites (EXP-22): the seeded synthetic sweep, generated here so the job image needs no Pillow.
+if [[ ! -f "${REPO_ROOT}/fixtures/bbox_sweep/geo-1x1-grid-00.png" ]]; then
+  python3 "${REPO_ROOT}/scripts/generate_bbox_sweep.py" >/dev/null || {
+    echo "Error: fixtures/bbox_sweep/ missing; pip install -r scripts/requirements-vision.txt" >&2; exit 1; }
+fi
+cp -R "${REPO_ROOT}/fixtures/bbox_sweep" "${A}/fixtures/"
+cp "${REPO_ROOT}/benchmarks/bbox_sweep.jsonl" "${A}/benchmarks/"
 # Bake the verified datasets T0/T1 read (MASSIVE validation spot languages + their test label sets) into the image:
 # anonymous Hugging Face downloads from cloud egress get rate-limited.
 DGEM_MATRIX_CACHE="${A}/.cache" python3 - "${REPO_ROOT}" <<'PY'
