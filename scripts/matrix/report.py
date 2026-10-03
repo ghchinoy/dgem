@@ -17,7 +17,7 @@
 Two modes:
   baseline mode (a run has a baseline target): every other target is a candidate compared with the baseline
                 measured in the same session.
-  single-target mode: the target is compared with the reference ranges in matrix_v1.json ("reference").
+  single-target mode: the target is compared with the reference ranges in the matrix file ("reference").
 Verdicts: PASS, REVIEW (look before promoting), FAIL, INFO (reported, not gated).
 """
 import json

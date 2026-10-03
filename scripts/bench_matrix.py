@@ -39,7 +39,8 @@ locations/<R>/endpoints/<ID>/invoke), a Cloud Run URL (https://<service>-<hash>-
 work), or a self-hosted server (http://<GPU_HOST>:8080). Auth: see scripts/matrix/net.py (DGEM_MATRIX_TOKEN for an
 API key). The run directory never contains URLs or tokens: receipts are redacted to <kind:name>.
 
-Matrix definition: benchmarks/matrix/matrix_v1.json. Docs: docs/operate/regression-matrix.md.
+Matrix definition: benchmarks/matrix/matrix_v2.json (v1 is frozen; `report` on an older run uses the version it
+was recorded with). Docs: docs/operate/regression-matrix.md.
 """
 import argparse
 import datetime as dt
@@ -58,7 +59,8 @@ from matrix import runners  # noqa: E402
 from matrix.targets import CompetitorTarget, Target  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MATRIX = os.path.join(REPO, "benchmarks", "matrix", "matrix_v1.json")
+MATRIX = os.path.join(REPO, "benchmarks", "matrix", "matrix_v2.json")
+MATRIX_DIR = os.path.dirname(MATRIX)
 COMPETITOR_KINDS = ("systemone", "latency")
 
 
@@ -280,8 +282,21 @@ def write_report(run_dir, mx):
     return summary
 
 
+def run_matrix(run_dir, explicit):
+    """The matrix a run was recorded with (manifest matrix_version), unless --matrix is given explicitly."""
+    if explicit:
+        return explicit
+    try:
+        with open(os.path.join(run_dir, "manifest.json")) as f:
+            v = json.load(f)["matrix"]["matrix_version"]
+        p = os.path.join(MATRIX_DIR, f"matrix_{v}.json")
+        return p if os.path.exists(p) else MATRIX
+    except Exception:
+        return MATRIX
+
+
 def cmd_report(a):
-    s = write_report(os.path.abspath(a.run_dir), load_matrix(a.matrix))
+    s = write_report(os.path.abspath(a.run_dir), load_matrix(run_matrix(os.path.abspath(a.run_dir), a.matrix_explicit)))
     print(open(os.path.join(a.run_dir, "report.md")).read())
     return 1 if any(v == "FAIL" for v in s["overall"].values()) else 0
 
@@ -308,7 +323,7 @@ def cmd_list(a):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--matrix", default=MATRIX)
+    ap.add_argument("--matrix", default=None, help="matrix file (default: matrix_v2.json; for report, the run's own)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("--tier", required=True, help="a tier of the matrix file (v1: T0, T1, T2; v2 adds TC)")
@@ -339,6 +354,8 @@ def main():
     f.add_argument("--repo", nargs="*")
     sub.add_parser("list")
     a = ap.parse_args()
+    a.matrix_explicit = a.matrix
+    a.matrix = a.matrix or MATRIX
     sys.exit({"run": cmd_run, "report": cmd_report, "fetch": cmd_fetch, "list": cmd_list}[a.cmd](a))
 
 

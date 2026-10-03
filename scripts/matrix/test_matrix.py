@@ -29,7 +29,7 @@ from matrix import report as R  # noqa: E402
 from matrix import runners  # noqa: E402
 from matrix.targets import Target  # noqa: E402
 
-MATRIX = os.path.join(D.REPO, "benchmarks", "matrix", "matrix_v1.json")
+MATRIX = os.path.join(D.REPO, "benchmarks", "matrix", "matrix_v1.json")  # frozen v1; v2 tests derive the path
 
 
 def _rows(n, acc, seed, flip=0.0):
