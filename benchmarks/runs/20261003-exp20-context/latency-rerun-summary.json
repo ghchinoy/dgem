@@ -1,0 +1,232 @@
+{
+ "schema": "dgem.matrix.summary/v2",
+ "run_id": "20261003-exp20b-latency",
+ "created": "2026-10-03T13:53:06+00:00",
+ "git_commit": "a22657a5e15896b032bbcdc38a5768468de234ba",
+ "matrix_version": "v1",
+ "tier": "T1",
+ "baseline": "ctx8k",
+ "started": "2026-10-03T13:53:06+00:00",
+ "finished": "2026-10-03T13:56:01+00:00",
+ "targets": [
+  {
+   "name": "ctx8k",
+   "kind": "vertex",
+   "health": {}
+  },
+  {
+   "name": "ctx32k",
+   "kind": "vertex",
+   "health": {}
+  }
+ ],
+ "overall": {
+  "ctx32k": "PASS"
+ },
+ "noise_floor": {
+  "ctx8k": null,
+  "ctx32k": null
+ },
+ "gates": [
+  {
+   "gate": "coverage",
+   "target": "ctx32k",
+   "verdict": "PASS",
+   "detail": "no coverage loss"
+  },
+  {
+   "gate": "latency",
+   "target": "ctx32k",
+   "verdict": "PASS",
+   "detail": "within tolerance"
+  }
+ ],
+ "suites": {},
+ "order": {},
+ "latency": {
+  "ctx8k": {
+   "modes": {
+    "q1": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 128.68842,
+     "wall_p90": 133.00379,
+     "wall_p99": 139.60938,
+     "server_p50": 52.35887
+    },
+    "q5": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 132.60121,
+     "wall_p90": 136.80771,
+     "wall_p99": 156.05342,
+     "server_p50": 55.8691
+    },
+    "q10": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 118.75425,
+     "wall_p90": 140.99737,
+     "wall_p99": 191.89296,
+     "server_p50": 58.82907
+    },
+    "long_q1": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 108.26242,
+     "wall_p90": 113.83062,
+     "wall_p99": 134.41179,
+     "server_p50": 59.89671
+    },
+    "q5_s4": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 171.10542,
+     "wall_p90": 175.44062,
+     "wall_p99": 184.36562,
+     "server_p50": 93.13536
+    }
+   },
+   "sweep": {
+    "q1/w16": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 213.29375,
+     "wall_p90": 255.18108,
+     "wall_p99": 561.29787,
+     "server_p50": 106.44865,
+     "rps": 67.63305
+    },
+    "q1/w32": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 448.96721,
+     "wall_p90": 693.13533,
+     "wall_p99": 992.276,
+     "server_p50": 111.86051,
+     "rps": 61.30514
+    },
+    "q5/w16": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 226.34575,
+     "wall_p90": 235.81,
+     "wall_p99": 522.75071,
+     "server_p50": 112.97703,
+     "rps": 64.95436
+    },
+    "q5/w32": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 454.62496,
+     "wall_p90": 714.2725,
+     "wall_p99": 953.92912,
+     "server_p50": 112.66541,
+     "rps": 61.04956
+    }
+   }
+  },
+  "ctx32k": {
+   "modes": {
+    "q1": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 130.28288,
+     "wall_p90": 134.73617,
+     "wall_p99": 182.25879,
+     "server_p50": 53.5624
+    },
+    "q5": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 135.42921,
+     "wall_p90": 139.62958,
+     "wall_p99": 177.76879,
+     "server_p50": 57.24311
+    },
+    "q10": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 121.29379,
+     "wall_p90": 143.67179,
+     "wall_p99": 177.02487,
+     "server_p50": 60.95481
+    },
+    "long_q1": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 108.73912,
+     "wall_p90": 113.39408,
+     "wall_p99": 126.20154,
+     "server_p50": 61.55372
+    },
+    "q5_s4": {
+     "n": 100,
+     "ok": 100,
+     "errors": 0,
+     "wall_p50": 173.15137,
+     "wall_p90": 175.53737,
+     "wall_p99": 187.76929,
+     "server_p50": 93.94288
+    }
+   },
+   "sweep": {
+    "q1/w16": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 218.87525,
+     "wall_p90": 304.185,
+     "wall_p99": 549.11521,
+     "server_p50": 107.97286,
+     "rps": 64.33643
+    },
+    "q1/w32": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 428.73504,
+     "wall_p90": 744.30088,
+     "wall_p99": 1001.872,
+     "server_p50": 107.08785,
+     "rps": 61.86406
+    },
+    "q5/w16": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 219.05013,
+     "wall_p90": 229.15521,
+     "wall_p99": 527.64871,
+     "server_p50": 108.7327,
+     "rps": 66.85767
+    },
+    "q5/w32": {
+     "n": 256,
+     "ok": 256,
+     "errors": 0,
+     "wall_p50": 477.03404,
+     "wall_p90": 679.50096,
+     "wall_p99": 940.9615,
+     "server_p50": 113.4131,
+     "rps": 59.63094
+    }
+   }
+  }
+ },
+ "summary_only": {},
+ "di_probes": {}
+}

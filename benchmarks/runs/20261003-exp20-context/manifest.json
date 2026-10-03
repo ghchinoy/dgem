@@ -1,0 +1,869 @@
+{
+  "run_id": "20261003-exp20-context-t1",
+  "created": "2026-10-03T06:11:12+00:00",
+  "git_commit": "a22657a5e15896b032bbcdc38a5768468de234ba",
+  "notes": "EXP-20: MAX_MODEL_LEN 4096 vs 8192 vs 32768, v0.2.0 image, identical G4 canaries",
+  "receipts": [
+    {
+      "path": "health__ctx4k__r1.json",
+      "suite": "health",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "health",
+      "sha256": "ad122100398cbe0d6058e95a477deedafe4a60eb6289fdb4b77876a606ed419a",
+      "seconds": 0.3
+    },
+    {
+      "path": "health__ctx8k__r1.json",
+      "suite": "health",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "health",
+      "sha256": "0b64ea9f32f981b4db7429b10bd09ea3052ef05cc5c0765f6366cba7fef95c2d",
+      "seconds": 0.1
+    },
+    {
+      "path": "health__ctx32k__r1.json",
+      "suite": "health",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "health",
+      "sha256": "caa47cd3ae23f39f22b2a5251a31e409a11c169a7d4e51dbdd741b5df0285e43",
+      "seconds": 0.2
+    },
+    {
+      "path": "contract__ctx4k__r1.json",
+      "suite": "contract",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "contract",
+      "sha256": "1c4b481f72a46067da6c22e1816910e10f2198ae5a169b7721f23b3044120e33",
+      "seconds": 2.5
+    },
+    {
+      "path": "contract__ctx8k__r1.json",
+      "suite": "contract",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "contract",
+      "sha256": "8039dda07420302a43a21f45962862cfc025d5206e0ed07006e94aaf2fe4f305",
+      "seconds": 3.2
+    },
+    {
+      "path": "contract__ctx32k__r1.json",
+      "suite": "contract",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "contract",
+      "sha256": "0dcf2dd532b4a1a9174149ace20c01f921a7ceedce2b62a87e6bd953c5253fb8",
+      "seconds": 70.9
+    },
+    {
+      "path": "calibration__ctx4k__r1.json",
+      "suite": "calibration",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "11b836841b7a28256dee3fe2cfe0d5cbc34107cb79d961ed8c722e2483ab0885",
+      "seconds": 2.7
+    },
+    {
+      "path": "calibration__ctx8k__r1.json",
+      "suite": "calibration",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "0bc824753d947b8dd14345d6ace622ccfa08d8a6d95ba215703c8098e9d7524a",
+      "seconds": 2.8
+    },
+    {
+      "path": "calibration__ctx32k__r1.json",
+      "suite": "calibration",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "8ba773eb0a4f623e41f7efbd3b06dbadd9d36064fd346efa58e5150637df50b1",
+      "seconds": 3.8
+    },
+    {
+      "path": "massive_spot__ctx4k__r1.json",
+      "suite": "massive_spot",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "aad3141b8da5d0261e99e81d504e640b58f6f86dd1e0d09d24ccbf9d5bc567d5",
+      "seconds": 3.3
+    },
+    {
+      "path": "massive_spot__ctx8k__r1.json",
+      "suite": "massive_spot",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "12797a4e26199ccd7c7bfb6f14357c9706fc70f0aab5542ba899e995dcdc28d4",
+      "seconds": 3.0
+    },
+    {
+      "path": "massive_spot__ctx32k__r1.json",
+      "suite": "massive_spot",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "3f3d891e1ace2d58f2e31c30b000f866132120401acc8293df0bdfda6afa00c9",
+      "seconds": 3.3
+    },
+    {
+      "path": "jev_native__ctx4k__r1.json",
+      "suite": "jev_native",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "bd869eb092466c59c3d26dcbadbd1d7d5074fca173b31579c40af6355bef7552",
+      "seconds": 10.4
+    },
+    {
+      "path": "jev_native__ctx8k__r1.json",
+      "suite": "jev_native",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "5a03ebfb50d78356ca030b7f89551ea8a19387b9df0ad871d7e40c9aa505b54c",
+      "seconds": 10.6
+    },
+    {
+      "path": "jev_native__ctx32k__r1.json",
+      "suite": "jev_native",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "2c89b0ce33ebb7f6a7c4c04cb3295eb8b5a40034fb318e2583321ab7618d9617",
+      "seconds": 10.4
+    },
+    {
+      "path": "jev_systemone__ctx4k__r1.json",
+      "suite": "jev_systemone",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "4301418cf86fc51160c8262d2745efe08a19dd32f830d9e6469c2486455724a3",
+      "seconds": 74.7
+    },
+    {
+      "path": "jev_systemone__ctx8k__r1.json",
+      "suite": "jev_systemone",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "a6c8aff0015331e1580ca3e8971a47a4c8960e1ac98f11d35a09b98658be4e62",
+      "seconds": 75.7
+    },
+    {
+      "path": "jev_systemone__ctx32k__r1.json",
+      "suite": "jev_systemone",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "27879f0a7095e16b507f0cf90ae836dbf2ebe396863eceaaf5dcf8cf99003dac",
+      "seconds": 42.2
+    },
+    {
+      "path": "intents_banking77__ctx4k__r1.json",
+      "suite": "intents_banking77",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "613922407a08909266c57a3d060fb15fbe9da92d0be97ecd9477cab2bf9862a6",
+      "seconds": 3.9
+    },
+    {
+      "path": "intents_banking77__ctx8k__r1.json",
+      "suite": "intents_banking77",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "cde1fb60cf25638c9f5a14df6c377bb5ebb2c4a2c1a55c731dadb72d58859967",
+      "seconds": 4.1
+    },
+    {
+      "path": "intents_banking77__ctx32k__r1.json",
+      "suite": "intents_banking77",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "49405a258a06b54733a439fea6dadcddab0e34aebbf698497efcc8b9783d81b7",
+      "seconds": 3.8
+    },
+    {
+      "path": "intents_clinc150__ctx4k__r1.json",
+      "suite": "intents_clinc150",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "825ddf727246e6172de89c6a4c6c3bb68f3757f59759e116b93494e64aee6667",
+      "seconds": 1.5
+    },
+    {
+      "path": "intents_clinc150__ctx8k__r1.json",
+      "suite": "intents_clinc150",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "71c11bef0005fb577fc8b18c5e67c8784a0090ae862f832329a3346b17972c88",
+      "seconds": 1.4
+    },
+    {
+      "path": "intents_clinc150__ctx32k__r1.json",
+      "suite": "intents_clinc150",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "8d01d44b2510de03d8cee4af0d7c4f768eeab4de5c42eff48ca4ff73bc9ae4aa",
+      "seconds": 1.8
+    },
+    {
+      "path": "di_probes__ctx4k__r1.json",
+      "suite": "di_probes",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "adapter_probes",
+      "sha256": "7e71c048de93fc272eb779ae7f7674b3949796d721510e20de497a6f5e4af4be",
+      "seconds": 3.0
+    },
+    {
+      "path": "di_probes__ctx8k__r1.json",
+      "suite": "di_probes",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "adapter_probes",
+      "sha256": "4e3a3bad04f7d08d12b6d79952e499af3d98f9b373f03e1f48d48c53d5afc1a3",
+      "seconds": 6.2
+    },
+    {
+      "path": "di_probes__ctx32k__r1.json",
+      "suite": "di_probes",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "adapter_probes",
+      "sha256": "824973778813522730b4b0f1f3eebd03b94960ff1a4fece2bc7c2e9ecc74f4de",
+      "seconds": 5.2
+    },
+    {
+      "path": "di_wide__ctx4k__r1.json",
+      "suite": "di_wide",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "e53a5b684b0f3f0bb51ac18265de56422a4ba673672cd1ba7fb52aee3b9ddd0c",
+      "seconds": 5.9
+    },
+    {
+      "path": "di_wide__ctx8k__r1.json",
+      "suite": "di_wide",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "e96f249595597d10702864633b16336d5e768ce5797adc1d62e823262a25f862",
+      "seconds": 5.4
+    },
+    {
+      "path": "di_wide__ctx32k__r1.json",
+      "suite": "di_wide",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "af0cec3ca53c30f30f6fe5f7c4a10209b363ea5dd601da6047b9bf7a64ba5585",
+      "seconds": 5.6
+    },
+    {
+      "path": "di_catchall__ctx4k__r1.json",
+      "suite": "di_catchall",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "0c1dd87d100acf451cefe43104110fa779802ed112a3c1f884edfe8bca96643f",
+      "seconds": 10.4
+    },
+    {
+      "path": "di_catchall__ctx8k__r1.json",
+      "suite": "di_catchall",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "b8c197285cc968289762716427512a435b9aa5754d5d191a9bc82d9760a917df",
+      "seconds": 10.0
+    },
+    {
+      "path": "di_catchall__ctx32k__r1.json",
+      "suite": "di_catchall",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "cc097cb978b823c860f94b287ea862d721885ddcea8198d821613a1e1f73c37d",
+      "seconds": 10.0
+    },
+    {
+      "path": "rag_dev__ctx4k__r1.json",
+      "suite": "rag_dev",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "345948aa21a2a179b74888aa236ecb9dd2f94b850fb076b49f53818290c0bfeb",
+      "seconds": 7.3
+    },
+    {
+      "path": "rag_dev__ctx8k__r1.json",
+      "suite": "rag_dev",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "fb754f3832eed233acf46d40ee642144a71d74e55449eb8ec38443d5c3164656",
+      "seconds": 6.9
+    },
+    {
+      "path": "rag_dev__ctx32k__r1.json",
+      "suite": "rag_dev",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "fe945ef40c38c7a3c86430c442d99b0c5bbfcd799708951f956cbf990dda9ea9",
+      "seconds": 6.9
+    },
+    {
+      "path": "calibration__ctx32k__r2.json",
+      "suite": "calibration",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "dca99107ab2174cc113408d7ca4c248950a2125df0c100bedec163aa6eea7ea7",
+      "seconds": 2.7
+    },
+    {
+      "path": "calibration__ctx8k__r2.json",
+      "suite": "calibration",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "000f236e11fce6144d32df04e4bffe73f14a424f46607e7e950b097d6efac44f",
+      "seconds": 3.7
+    },
+    {
+      "path": "calibration__ctx4k__r2.json",
+      "suite": "calibration",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "1b79b489a53df50d6d5781d30fa436ea2027f42f93d957a04d09967cd527513d",
+      "seconds": 3.7
+    },
+    {
+      "path": "jev_native__ctx32k__r2.json",
+      "suite": "jev_native",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "01554f1c1126d453ca65d1f201b357e47404f50c33a399f36680ff9d70c1577c",
+      "seconds": 11.6
+    },
+    {
+      "path": "jev_native__ctx8k__r2.json",
+      "suite": "jev_native",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "40d0d49a10126f98683cdaa8458aba06e235f3d96ca9974d93efecc7bfeedd6d",
+      "seconds": 10.4
+    },
+    {
+      "path": "jev_native__ctx4k__r2.json",
+      "suite": "jev_native",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "bcc5b201f28289686b8e078137e7f5090673738e271c8d3263ad7428d4282ead",
+      "seconds": 10.3
+    },
+    {
+      "path": "jev_systemone__ctx32k__r2.json",
+      "suite": "jev_systemone",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "7581ba8429078c5db421a7c66b3396eb5b94618c882ee2dedde0b7bc0bf4b59c",
+      "seconds": 9.2
+    },
+    {
+      "path": "jev_systemone__ctx8k__r2.json",
+      "suite": "jev_systemone",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "a81700d2b7e949cbbf276c0f07f3288a4d0d15088c297fed18dfe6abee0b278b",
+      "seconds": 9.2
+    },
+    {
+      "path": "jev_systemone__ctx4k__r2.json",
+      "suite": "jev_systemone",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "42120beea1b6e60b39a9e4faa221be03053e7212e37dc21538195ea1b24d166e",
+      "seconds": 143.7
+    },
+    {
+      "path": "intents_banking77__ctx32k__r2.json",
+      "suite": "intents_banking77",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "1f4b7a331ca4d5b55a8acc5ccbcaa443988e946f9f2f07d61d1dd0107ea9358c",
+      "seconds": 3.6
+    },
+    {
+      "path": "intents_banking77__ctx8k__r2.json",
+      "suite": "intents_banking77",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "cab30513edbb93bec448c6ea84dd7e197a4e8f374d2db2895dc1da327d50d317",
+      "seconds": 3.5
+    },
+    {
+      "path": "intents_banking77__ctx4k__r2.json",
+      "suite": "intents_banking77",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "aeebd5a58dd5aca703cda20a8d0ec33dd9cdaec4f2123ab20676615ef308e479",
+      "seconds": 3.7
+    },
+    {
+      "path": "intents_clinc150__ctx32k__r2.json",
+      "suite": "intents_clinc150",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "8dd5fe5b3500fd296b1ab8b3dd256f625be6bba87b468c1839d14820df290809",
+      "seconds": 1.5
+    },
+    {
+      "path": "intents_clinc150__ctx8k__r2.json",
+      "suite": "intents_clinc150",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "1600358f8916774409d5d9b3bd9adc13beaf8d2893b5475b83d987e9b3d45444",
+      "seconds": 1.5
+    },
+    {
+      "path": "intents_clinc150__ctx4k__r2.json",
+      "suite": "intents_clinc150",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "780b9210eb5e8db2e16d35ff958046c0ba035f9e1eb06a4dcdb9c2cb867d5b07",
+      "seconds": 1.4
+    },
+    {
+      "path": "di_wide__ctx32k__r2.json",
+      "suite": "di_wide",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "9a2061d8a9dacc9dc47af3cce2339396a3dd7f6408dec1a238aa4c976c535b1d",
+      "seconds": 5.9
+    },
+    {
+      "path": "di_wide__ctx8k__r2.json",
+      "suite": "di_wide",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "ed6e9ecf9973031b09480dbb4f90291c6718a6acfc2492db538960c404b74f4b",
+      "seconds": 5.8
+    },
+    {
+      "path": "di_wide__ctx4k__r2.json",
+      "suite": "di_wide",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "988ff5135b9bef66de1bd9da68920f923ce7b4430eafdf3c6b9da52049088aee",
+      "seconds": 5.6
+    },
+    {
+      "path": "di_catchall__ctx32k__r2.json",
+      "suite": "di_catchall",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "8993bd077608c67673aba6438ce6d15d051cf05b659c5ea9be8eb936d6eeba49",
+      "seconds": 9.4
+    },
+    {
+      "path": "di_catchall__ctx8k__r2.json",
+      "suite": "di_catchall",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "2e7148ff2cb714a96a997c06810119b721f085306f267afa0d878c306b03f744",
+      "seconds": 9.9
+    },
+    {
+      "path": "di_catchall__ctx4k__r2.json",
+      "suite": "di_catchall",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "da157171852acbb88984434da207b9fb5e13093f08371a9cb2458f97879a1bc0",
+      "seconds": 9.9
+    },
+    {
+      "path": "rag_dev__ctx32k__r2.json",
+      "suite": "rag_dev",
+      "config": "ctx32k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "35053af685a2ecd690604b3059bcf07c0a70fe1c4221cc44fd1d5e75a3b9c76b",
+      "seconds": 6.8
+    },
+    {
+      "path": "rag_dev__ctx8k__r2.json",
+      "suite": "rag_dev",
+      "config": "ctx8k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "bbc52c4301c0a3f9f4089009abd8e1afadfde28a734713a61582ebab01a8544a",
+      "seconds": 7.0
+    },
+    {
+      "path": "rag_dev__ctx4k__r2.json",
+      "suite": "rag_dev",
+      "config": "ctx4k",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "22e1cad6693342f95bdbc4c89516e7be421ddfc8dd431af1b112e65482e6c187",
+      "seconds": 7.0
+    },
+    {
+      "path": "calibration__ctx4k__r3.json",
+      "suite": "calibration",
+      "config": "ctx4k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "a01e56c96410bd783bdd9c7d5ce50d98333e7b6b4f75a5266da536ad304ee2e4",
+      "seconds": 2.5
+    },
+    {
+      "path": "calibration__ctx8k__r3.json",
+      "suite": "calibration",
+      "config": "ctx8k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "78448a31f4e2892210ec1da5aa24be9474af857c23a948ab20a96b15ebf1182d",
+      "seconds": 2.6
+    },
+    {
+      "path": "calibration__ctx32k__r3.json",
+      "suite": "calibration",
+      "config": "ctx32k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "3ef07ab491ebe71e17c762eea252a0a7df4caf7042e0a4c0f4061e89577f2b9b",
+      "seconds": 2.9
+    },
+    {
+      "path": "jev_native__ctx4k__r3.json",
+      "suite": "jev_native",
+      "config": "ctx4k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "9358e2ca2d8f815c38cdc016f827c042881f14a7b6d386f99732b406ccf4a130",
+      "seconds": 11.6
+    },
+    {
+      "path": "jev_native__ctx8k__r3.json",
+      "suite": "jev_native",
+      "config": "ctx8k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "b1280e02993fd4394d88b6936651fb1289bde871f260f50c523531e8ef9b6951",
+      "seconds": 10.8
+    },
+    {
+      "path": "jev_native__ctx32k__r3.json",
+      "suite": "jev_native",
+      "config": "ctx32k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "cb4cb949fef38e4e224937cf0eb544d39b8c1b47c4aec1b26f7c0a8dc5b915b4",
+      "seconds": 10.6
+    },
+    {
+      "path": "jev_systemone__ctx4k__r3.json",
+      "suite": "jev_systemone",
+      "config": "ctx4k",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "9fc4b6111c83f21d9776aead48b4670164257b4c0883c9a823f9734ba168872a",
+      "seconds": 159.6
+    },
+    {
+      "path": "jev_systemone__ctx8k__r3.json",
+      "suite": "jev_systemone",
+      "config": "ctx8k",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "26a64be409d410ca3595685d4d7a740f8cdd805c60474fd3dbecff733cfde32c",
+      "seconds": 9.1
+    },
+    {
+      "path": "jev_systemone__ctx32k__r3.json",
+      "suite": "jev_systemone",
+      "config": "ctx32k",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "814452928b3179299be54967e1721095646113052242da8a8ffacd170e4d346d",
+      "seconds": 9.1
+    },
+    {
+      "path": "intents_banking77__ctx4k__r3.json",
+      "suite": "intents_banking77",
+      "config": "ctx4k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "0c02e287a1fb80e6448423df71a5d1c3ee90bad39fbc47b8b377776a13b43462",
+      "seconds": 3.6
+    },
+    {
+      "path": "intents_banking77__ctx8k__r3.json",
+      "suite": "intents_banking77",
+      "config": "ctx8k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "282e94a6c34b2c666cc243ba77b1c41308728a0e23751df1b619376bef6a3380",
+      "seconds": 3.6
+    },
+    {
+      "path": "intents_banking77__ctx32k__r3.json",
+      "suite": "intents_banking77",
+      "config": "ctx32k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "fc22993b77d851525e2c8e4ce6bf17cfc797ccc7d89ab46281bf6994af1be808",
+      "seconds": 3.6
+    },
+    {
+      "path": "intents_clinc150__ctx4k__r3.json",
+      "suite": "intents_clinc150",
+      "config": "ctx4k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "0ea89d88f007f7fa72011478f68e34430e1a65ff981da7cf67a55244570278f6",
+      "seconds": 1.5
+    },
+    {
+      "path": "intents_clinc150__ctx8k__r3.json",
+      "suite": "intents_clinc150",
+      "config": "ctx8k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "64e3e1b0c396a5257df8d1dc7c1ee1f00dca585626e75ca801fa856fa654fbb2",
+      "seconds": 1.4
+    },
+    {
+      "path": "intents_clinc150__ctx32k__r3.json",
+      "suite": "intents_clinc150",
+      "config": "ctx32k",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "fe0eb55056aa6c858955e046dd3797cfb9479a79dc0820b3b99d53c1b111e0f9",
+      "seconds": 1.5
+    },
+    {
+      "path": "di_wide__ctx4k__r3.json",
+      "suite": "di_wide",
+      "config": "ctx4k",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "cd368c85264695f643e73bbb9768e5b394d7c9649164aa239b88843a4462db3e",
+      "seconds": 6.3
+    },
+    {
+      "path": "di_wide__ctx8k__r3.json",
+      "suite": "di_wide",
+      "config": "ctx8k",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "d83d8533182635da9211bb7ded1dbcaa9235ab76b0a54a6309cbb76e5a0d9062",
+      "seconds": 5.7
+    },
+    {
+      "path": "di_wide__ctx32k__r3.json",
+      "suite": "di_wide",
+      "config": "ctx32k",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "e21e3685b3cdc3ea21c509e523bdb847bf4438f7c53bae5cd168e3c4933ecec4",
+      "seconds": 5.7
+    },
+    {
+      "path": "latency__ctx4k__r1.json",
+      "suite": "latency",
+      "config": "ctx4k",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "95648e1e87126dc654ee9d2e52af17dba29e7e8aed75386482fb6e87cc275aa7",
+      "seconds": 107.8
+    },
+    {
+      "path": "latency__ctx8k__r1.json",
+      "suite": "latency",
+      "config": "ctx8k",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "48f9e877235960aaff95adc9c0b8a0a5764ea22beb741070a0eec34ca5eb1b93",
+      "seconds": 1155.7
+    },
+    {
+      "path": "latency__ctx32k__r1.json",
+      "suite": "latency",
+      "config": "ctx32k",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "96bdbedc14c1c4c12236f88f70e438243f42c9ee18d0aca85d645e10001a885f",
+      "seconds": 7063.6
+    }
+  ],
+  "matrix": {
+    "matrix_version": "v1",
+    "tier": "T1",
+    "suites": [
+      "health",
+      "contract",
+      "calibration",
+      "massive_spot",
+      "jev_native",
+      "jev_systemone",
+      "intents_banking77",
+      "intents_clinc150",
+      "latency",
+      "di_probes",
+      "di_wide",
+      "di_catchall",
+      "rag_dev"
+    ],
+    "baseline": "ctx4k",
+    "targets": [
+      {
+        "name": "ctx4k",
+        "kind": "vertex",
+        "health": {
+          "version": "v0.2.0",
+          "revision": "027b68e",
+          "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+        }
+      },
+      {
+        "name": "ctx8k",
+        "kind": "vertex",
+        "health": {
+          "version": "v0.2.0",
+          "revision": "027b68e",
+          "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+        }
+      },
+      {
+        "name": "ctx32k",
+        "kind": "vertex",
+        "health": {
+          "version": "v0.2.0",
+          "revision": "027b68e",
+          "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+        }
+      }
+    ],
+    "started": "2026-10-03T06:11:12+00:00",
+    "finished": "2026-10-03T08:45:57+00:00"
+  }
+}

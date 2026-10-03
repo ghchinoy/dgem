@@ -102,6 +102,7 @@ Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
 | **`MODEL`** | `/mnt/gcs/dgemma` | Weights path. Baked weights at `/opt/dgemma/weights` are used automatically; a mounted path is used if it has `config.json`; otherwise weights are staged from `DGEM_WEIGHTS_URI` (a `gs://` URI) or downloaded from `MODEL_HF`. |
 | **`MODEL_HF`** | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | Hugging Face repo downloaded when no weights are baked, mounted or staged. |
 | **`DEFAULT_SAMPLES`**, **`MAX_INFLIGHT`** | `1`, `8` | Samples for schemas without `samples`; decisions processed at once (the rest queue). |
+| **`MAX_MODEL_LEN`** | `4096` (image); deploy scripts set `8192` on RTX PRO 6000 | Longest prompt plus answer, in tokens. Longer prompts are refused. At 8,192 short-prompt accuracy and latency match 4,096 (EXP-20); 32,768 answers far longer prompts but is still being validated under load. |
 | **`DEFAULT_LAYOUT`** | `document_first` | Prompt layout for requests without `layout`: `document_first` (the state, then the questions) or `schema_first` (the questions as the system prompt, the behaviour before v0.2.0). |
 | **`DISABLE_MM`** | `0` | `1` disables the vision tower (required on an L4 with 32 GiB host RAM). |
 

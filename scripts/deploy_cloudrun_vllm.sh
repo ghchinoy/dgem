@@ -101,7 +101,7 @@ if [[ "$GPU_TYPE" == "nvidia-rtx-pro-6000" ]]; then
   MEMORY="80Gi"
   COPY_SHM="${COPY_TO_SHM:-1}" # Stage sequentially into /tmp/dgemma (80Gi tmpfs) in ~55s instead of 429s FUSE random mmap
   CANVAS_LEN="128"
-  MAX_MODEL_LEN="4096"
+  MAX_MODEL_LEN="${MAX_MODEL_LEN:-8192}" # EXP-20: same short-prompt accuracy/latency as 4096, longer prompts answered
 else
   # Default: 1x NVIDIA L4 (24GB VRAM, 32GB host RAM)
   CPU="8"
