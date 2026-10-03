@@ -111,8 +111,7 @@ Thresholds live in `matrix_v1.json` (`thresholds`). Look at a REVIEW before prom
 
 Accuracy is computed over answered items, so the coverage gate is what catches an item that starts being refused, for
 example a prompt that a new prompt layout pushes past the served context length. Under v0.2.0 at a 4,096-token context
-one JevBench `long_policy` item is refused (`context`), so single-target runs review on coverage until the context is
-raised.
+one JevBench `long_policy` item is refused (`context`); deployments at 8,192 tokens (the default from EXP-20) answer it.
 
 ## Decision Index adapter track
 
@@ -168,7 +167,8 @@ reference is in [T1](../../benchmarks/runs/20261001-v013-reference-t1/report.md)
 | typed-decisions test, 2,000 decisions *(frozen)* | 2,000 | 2 | 0.723–0.728 (0.667) | 0.177 → 0.035 |
 
 Frozen sets store min..max of the two sessions ± 2 SE as their range. One JevBench chat item (`long_policy`) now
-exceeds the 4,096-token context by a few tokens with the new layout, so `jev_native` answers 230 of 231.
+exceeds a 4,096-token context by a few tokens with the new layout, so `jev_native` answers 230 of 231 there (231 at
+the 8,192-token default from EXP-20).
 
 **Noise floor** (answer agreement between identical repeated runs, same image; v0.2.0 production): calibration 0.99,
 JevBench 0.95–0.97, clinc150 0.98, banking77 0.96 (0.82–0.86 on v0.1.3), Decision Index suites 0.94–0.95.

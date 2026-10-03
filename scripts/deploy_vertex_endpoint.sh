@@ -67,8 +67,12 @@ MAX_REPLICAS="${VERTEX_MAX_REPLICAS:-$P_MAXREP}"
 # Engine settings are passed explicitly so Vertex and Cloud Run can run identical configurations.
 KV_CACHE_GB="${KV_CACHE_GB:-$P_KV}"
 MAX_SEQS="${MAX_SEQS:-$P_SEQS}"
-# Context length; 4096 in production. The Decision Index canary uses 32768 (long suite rows).
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
+# Context length (EXP-20): 8192 on G4 (same short-prompt accuracy and latency as 4096; prompts up to 8k answered
+# instead of refused). The Decision Index canary uses 32768. The L4 profile keeps 4096 (24 GB VRAM).
+if [ "${VERTEX_PROFILE}" = "l4" ]; then DEFAULT_CTX=4096; else DEFAULT_CTX=8192; fi
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-$DEFAULT_CTX}"
+# Container stdout/stderr to Cloud Logging. Dedicated endpoints default to off, which hides engine crashes.
+DISABLE_CONTAINER_LOGGING="${DISABLE_CONTAINER_LOGGING:-false}"
 CANVAS="${CANVAS:-128}"
 DEFAULT_SAMPLES="${DEFAULT_SAMPLES:-1}"
 MAX_INFLIGHT="${MAX_INFLIGHT:-8}"
@@ -192,6 +196,7 @@ DEPLOY_PAYLOAD=$(cat <<EOF
     "model": "${MODEL_RESOURCE}",
     "displayName": "${MODEL_DISPLAY_NAME}-deployment",
     "serviceAccount": "${SERVICE_ACCOUNT}",
+    "disableContainerLogging": ${DISABLE_CONTAINER_LOGGING},
     "dedicatedResources": {
       "machineSpec": {
         "machineType": "${MACHINE_TYPE}",

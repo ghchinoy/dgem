@@ -72,13 +72,14 @@ descriptions now reaching the model) moved dgem from 40.77 to 45.34.
 - **"None of these" options are chosen less often.** On CLINC150, in-scope requests answered "out of scope" fell from
   21% to 2.5%, but genuinely out-of-scope requests were recognised 82.5% of the time instead of 100% (40 items). If
   catching out-of-scope inputs matters more than classifying in-scope ones, compare both layouts on your data.
-- **A few more prompt tokens.** The tags add a handful of tokens. A prompt right at the server's context limit
-  (4,096 tokens on our default deployment) can tip over and be refused. One of 231 JevBench items did. The regression
-  matrix now reports refusals by reason, and a context-length experiment is under way.
-- **Some families are not yet explained.** On the Decision Index, ForecastBench (probability forecasts) and
-  PhishNChips (phishing yes/no) went down in the same release. That release also changed how yes/no descriptions
-  are sent, so the cause isn't attributed yet. We are testing both factors separately on development data and will
-  update this page.
+- **A few more prompt tokens.** The tags add a handful of tokens. A prompt right at the server's context limit can tip
+  over and be refused: one of 231 JevBench items did at 4,096 tokens. The deploy scripts now default to 8,192 tokens on
+  RTX PRO 6000 (EXP-20), and the regression matrix reports refusals by reason.
+- **Two Decision Index drops are not explained by the layout.** ForecastBench (probability forecasts) and
+  PhishNChips (phishing decisions) went down in the same release. On development stand-ins (EXP-21: 320 single
+  dataset-source and 182 market forecasting questions from non-index dates, 200 phishing emails) neither the layout
+  nor the yes/no descriptions changed the result beyond noise. ForecastBench's combination questions are still
+  untested.
 - **Calibration** improved on most sets (typed-decisions ECE 0.226 → 0.176, XNLI 0.263 → 0.229) and got slightly worse
   on MASSIVE (0.082 → 0.104). Fitting a temperature per policy on your own data matters more than the layout here; see
   [calibrate your policy](/dgem/confidence/calibrate-your-policy/).
