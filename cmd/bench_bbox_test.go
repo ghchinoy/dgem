@@ -340,3 +340,16 @@ func TestAbsentAnswerNeedsNoCoordinates(t *testing.T) {
 		t.Errorf("absent answer without coordinates: missing=%v", r.MissingSlots)
 	}
 }
+
+func TestFilterSchemaQuestions(t *testing.T) {
+	out, err := filterSchemaQuestions(testLocalizationSchema, map[string]string{"ymin": "05", "object_present": "yes"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !schemaHasQuestion(out, "ymin") || schemaHasQuestion(out, "xmax") || !schemaHasQuestion(out, "object_present") {
+		t.Errorf("filtered schema: %s", out)
+	}
+	if _, err := filterSchemaQuestions(testLocalizationSchema, map[string]string{"nope": "x"}); err == nil {
+		t.Error("empty filter accepted")
+	}
+}
