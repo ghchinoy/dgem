@@ -281,28 +281,28 @@ export class DgemAboutModal extends LitElement {
               </div>
               <div class="glossary-grid">
                 <div class="glossary-card">
-                  <strong>⚖️ IDC (Invariant Decision Calibration)</strong>
-                  The "Does-the-Order-Matter?" check: removes the model's first-choice habit and reads the options forward and reversed in the same GPU pass. CLI-only today (<code>--null-prior-debias</code>, <code>--dual-mirror</code>).
+                  <strong>⚖️ Hesitation-gating</strong>
+                  Like a triage nurse: answer clear cases straight away and hand hesitant ones to a larger model or a person. Set it with the cascade mode and threshold on the Decide and Batch Eval panels.
                 </div>
                 <div class="glossary-card">
                   <strong>🌡️ Hesitation (entropy)</strong>
-                  How torn the model is, from 0% (one clear answer) to 100% (a perfect tie). Under 16% is treated as clear; above that, consider handing off. Option order can hide hesitation, which IDC checks for.
+                  How torn the model is, from 0% (one clear answer) to 100% (a perfect tie). Under 16% is treated as clear; above that, consider handing off. Option order can occasionally hide hesitation, so dgem measures order effects on every release.
                 </div>
                 <div class="glossary-card">
                   <strong>🅰️ First-choice bias ("Box A")</strong>
-                  First-Choice Favoritism: like humans on a multiple-choice test, raw models naturally favor Option A when guessing.
+                  First-Choice Favoritism: like humans on a multiple-choice test, raw models naturally favor Option A when guessing. dgem measures this on every release rather than correcting it per request.
                 </div>
                 <div class="glossary-card">
-                  <strong>🥣 Zeroing the scale (null-prior)</strong>
-                  Zeroing a kitchen scale with the empty bowl first: divides out the Option-A habit measured on a blank input. Needs no labeled data.
+                  <strong>📝 The form is part of the question</strong>
+                  The model reads the whole answer form. Reusing the same letters for different options across questions, or naming a question "reverse", changes the answers. Use neutral question names.
                 </div>
                 <div class="glossary-card">
-                  <strong>🔄 Asking both ways (Mirror check)</strong>
-                  Reads <code>[A→D]</code> and <code>[D→A]</code> in the same pass (no second GPU call); a large gap means the answer depends on list order. It checks only the reversed order, so it can miss other flips.
+                  <strong>📄 Document first</strong>
+                  Show the input before the questions, like reading a letter before filling in a form. The default prompt layout since serving v0.2.0.
                 </div>
                 <div class="glossary-card">
                   <strong>🌦️ Calibration (Brier &amp; ECE)</strong>
-                  Weather-Forecaster Honesty: measures whether "90% confident" really means right about 9 times out of 10. Check it on your own labeled data.
+                  Weather-Forecaster Honesty: measures whether "90% confident" really means right about 9 times out of 10. Check it on your own labeled data; the right correction differs by domain.
                 </div>
               </div>
               <button class="glossary-btn" @click=${this.openGlossaryTab}>

@@ -3,7 +3,7 @@ title: "EXP-17: Separate-Pass Mirror (PROP-12)"
 description: "Reading the options reversed in a second, separate pass gives an order-disagreement signal that is statistically related to errors beyond hesitation, but the practical gain in error detection is small and not clearly larger than ordinary run-to-run disagreement."
 ---
 
-# EXP-17: Separate-Pass Mirror (`PROP-12`)
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](/dgem/confidence/overview/): order bias is monitored per release rather than corrected per request.
 
 **Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (image `dgemma:ab208dd`) ·
 **Run:** [`benchmarks/runs/20260926-prop12-separate-pass`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260926-prop12-separate-pass/manifest.json)

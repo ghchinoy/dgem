@@ -5,6 +5,8 @@ description: "Pre-registered follow-ups PROP-01, PROP-02 (offline), PROP-05, PRO
 
 # EXP-14: Same-Session IDC Re-run on Vertex AI
 
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
+
 **Date:** 2026-09-25 · **Backend:** Vertex AI Dedicated Endpoint `<legacy-l4-endpoint>` (1× L4) · **Stage 2:** `gemini-3.8-flash`
 **Runs:** [`benchmarks/runs/20260925-vertex-idc`](../../benchmarks/runs/20260925-vertex-idc/manifest.json),
 [`20260925-vertex-idc-mirrorfix`](../../benchmarks/runs/20260925-vertex-idc-mirrorfix/manifest.json),

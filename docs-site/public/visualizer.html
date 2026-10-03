@@ -1273,8 +1273,8 @@
             </svg>
             <p style="margin: 0.8rem 0 0 0; font-size: 0.82rem; color: var(--text-secondary);">
               <strong>Low hesitation isn't a guarantee.</strong> Models tend to favor whichever option is listed first, which can make a coin flip look certain.
-              <strong>IDC</strong> (Invariant Decision Calibration) is our name for a set of checks that make sure an answer reflects the question, not the order the options were listed in.
-              <a href="/dgem/confidence-beyond-shannon/">Read the plain-English guide →</a>
+              dgem re-asks benchmark questions in shuffled order on every release and reports the extra flips; correcting each request inside the pass did not help reliably in our tests.
+              <a href="/dgem/confidence/overview/">Read Confidence beyond Shannon: hesitation-gated decisions →</a>
             </p>
           </div>
         </div>
@@ -1398,7 +1398,7 @@
         </div>
       </section>
       <p style="margin: 1.2rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
-        The full walkthrough, including a live order-check (IDC) demo and a plain-English glossary, is built into Decision Studio:
+        The full walkthrough, including a hesitation-gating demo and a plain-English glossary, is built into Decision Studio:
         run <code>./bin/dgem serve --port 8090</code> and open the <strong>Concepts</strong> tab.
       </p>
     </main>

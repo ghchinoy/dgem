@@ -70,6 +70,7 @@ export default defineConfig({
     '/taxonomy-discovery/': '/dgem/policies/taxonomy-discovery/',
     '/applications/': '/dgem/policies/applications/',
     '/architecture/': '/dgem/confidence/architecture/',
+    '/confidence-beyond-shannon/': '/dgem/confidence/overview/',
   },
   integrations: [
     starlight({
@@ -276,9 +277,9 @@ export default defineConfig({
         {
           label: 'Confidence & Calibration',
           items: [
+            { label: 'Confidence Beyond Shannon', slug: 'confidence/overview' },
             { label: 'Confidence and Calibration', slug: 'confidence' },
             { label: 'Calibrate Your Policy', slug: 'confidence/calibrate-your-policy' },
-            { label: 'Confidence Beyond Shannon (IDC)', slug: 'confidence-beyond-shannon' },
             { label: 'The Journey to Decision Models', slug: 'decision-models-primer' },
             { label: 'Glossary & Mental Models', slug: 'glossary' },
             { label: 'Benchmark Report', slug: 'benchmarks' },

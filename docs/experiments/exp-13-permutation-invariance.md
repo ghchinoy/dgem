@@ -5,6 +5,8 @@ description: "Measuring content-free positional 'A'-bias, Cyclic Jensen-Shannon 
 
 # EXP-13: Permutation Sensitivity, Content-Free Null-Prior De-Biasing & O(1) Dual-Mirror Canvas Calibration
 
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
+
 > **Update (EXP-14, 2026-09-25):** A same-session re-run on the Vertex AI endpoint reproduced the slot-A habit but not every case below (e.g. `perm_08`). It also found that the production `--dual-mirror` path named the reversed slot `<id>__mirror_rev`, and that the word "mirror" in a slot id degraded both readings; `bench-permutation` (used here) names its slots `decision_fwd` / `decision_rev` and was not affected. See [EXP-14](exp-14-idc-rerun.md).
 
 ## 1. Motivation & Problem Statement
@@ -87,7 +89,7 @@ Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k
 
 | Hypothesis | Verdict | Evidence |
 | :--- | :--- | :--- |
-| **`H1`** Content-free Slot-`'A'` bias exists; subtracting it improves calibration | ✅ **Supported** (bias); ⚠️ **Mixed** (effect) | Bias is large (`88% / 78% / 49%`). Brier improves `-90.2%` on already-correct answers, but cyclic flip rate rises `12.5% → 25%`. On the 50-item calibration suite it is the best IDC component (see [IDC §6](../confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes)). |
+| **`H1`** Content-free Slot-`'A'` bias exists; subtracting it improves calibration | ✅ **Supported** (bias); ⚠️ **Mixed** (effect) | Bias is large (`88% / 78% / 49%`). Brier improves `-90.2%` on already-correct answers, but cyclic flip rate rises `12.5% → 25%`. On the 50-item calibration suite it is the best IDC component (see [IDC §6](../confidence/overview.md)). |
 | **`H2`** Single-pass entropy can miss order-sensitive items; cyclic JSD reveals them | ✅ **Supported** (n=4) | `perm_06` and `perm_08` have $\tilde{H} < 0.04$ with large cyclic JSD. |
 | **`H3`** Dual-Mirror is `O(1)`, cancels position bias, gives a live disagreement signal | ⚠️ **Partly** | `O(1)` latency ✅; live signal ✅ (`perm_08`); Brier **worse** (`0.0410`); "0% reversal flip" is by construction; misses `perm_06`. |
 | **`H4`** Entropy + Mirror gate catches every order-unstable ambiguity | ❌ **Not supported** | Catches `perm_07` and `perm_08`; misses `perm_06`. Also escalates 3 correct non-ambiguous items (`perm_10`, `perm_12`, `perm_16`). |

@@ -9,6 +9,11 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Docs: hesitation-gating replaces "IDC" as the product name.** New flagship page
+  `docs/confidence/overview.md` ("Confidence beyond Shannon: hesitation-gated decisions"); the old IDC page moves to
+  `docs/history/` (docs-only) with a site redirect. README, glossary, primer, landing page, Studio Concepts tab and
+  public explainers updated; option-order numbers in the regression matrix now come from the v0.2.0 reference.
+
 ## v0.2.1 (2026-10-03)
 
 Gateway, MCP, CLI and Studio release; serving images rebuilt for one additive diagnostics field (no behaviour change).

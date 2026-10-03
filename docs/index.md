@@ -26,7 +26,7 @@ For teams who need to know when a decision can be trusted.
 
 1. [Confidence and calibration](confidence/index.md): what we measure, what we recommend, and the caveats
 2. [Calibrate your policy](confidence/calibrate-your-policy.md) on your own labelled data
-3. [Confidence beyond Shannon (IDC)](confidence-beyond-shannon.md) · [The journey to decision models](decision-models-primer.md) ·
+3. [Confidence beyond Shannon](confidence/overview.md) · [The journey to decision models](decision-models-primer.md) ·
    [Glossary](glossary.md)
 4. [Benchmark report](benchmarks-report.md) · [Experiment ledger](experiments/README.md) ·
    [Proposed experiments](experiments/proposed.md)

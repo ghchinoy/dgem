@@ -9,10 +9,10 @@
 | Piece | What it does | Start here |
 | :--- | :--- | :--- |
 | **Decision engine** (`dgem decide`) | Compiles `.json.tmpl` *Policy-as-Template* files into one-pass multi-question readouts with per-option probabilities and Shannon entropy. | [The Journey to Decision Models](docs/decision-models-primer.md) · [Template Catalog](docs/policies/templates.md) |
-| **Confidence and calibration** | Per-answer probabilities and hesitation from one pass, calibration checks on labelled data, and research on option-order bias (Invariant Decision Calibration, IDC). | [Confidence and calibration](docs/confidence/index.md) · [IDC](docs/confidence-beyond-shannon.md) |
-| **Entropy-gated cascade** | Answers low-uncertainty decisions directly and escalates the rest to Vertex AI `gemini-3.8-flash` with the Stage-1 probabilities attached. | [EXP-05](docs/experiments/exp-05-roadmap-cascades-and-dags.md) |
+| **Hesitation-gated decisions** | A probability for every option and a hesitation score from one pass; hesitant answers handed off; per-domain calibration and noise-judged release checks. | [Confidence beyond Shannon](docs/confidence/overview.md) · [Confidence and calibration](docs/confidence/index.md) |
+| **Hesitation-gated cascade** | Answers low-hesitation decisions directly and hands the rest to Vertex AI `gemini-3.8-flash` with `dgem`'s probabilities attached. | [Authoring and cascades](docs/policies/authoring.md) · [EXP-18](docs/experiments/exp-18-mizan-judge-capability.md) |
 | **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/reference/studio-mcp-api.md) · [CLI reference](docs/reference/cli.md) |
-| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-18`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
+| **Benchmarks & research log** | 9 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-21`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
 | **Serving** | Vertex AI Dedicated Endpoint on RTX PRO 6000 (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [From laptop to production](docs/deploy/index.md) |
 
 ## Quick Start
@@ -54,20 +54,20 @@ Open **[http://localhost:8090](http://localhost:8090)** to inspect all 26+ templ
 
 ---
 
-## Confidence Beyond Shannon: Invariant Decision Calibration (IDC)
+## Confidence beyond Shannon: hesitation-gated decisions
 
-> **In one sentence:** IDC makes a `dgem` confidence score reflect *the question*, not *the position where each answer was listed*, and flags decisions whose answer depends on the list order. Plain-English guide with a worked example: **[`docs/confidence-beyond-shannon.md`](docs/confidence-beyond-shannon.md)**.
+> **In one sentence:** every `dgem` answer comes with a probability for every allowed option and a **hesitation** score; clear answers are returned in about 0.1 s and hesitant ones are handed to a larger model or a person. Full explanation with evidence: **[`docs/confidence/overview.md`](docs/confidence/overview.md)**.
 
-**The problem.** Per-question Shannon entropy ($H = -\sum p_k \ln p_k$) is a useful escalation signal: it rises when human annotators disagree. But DiffusionGemma, like other language models, has a strong **ballot-order ("Box A") habit**: on blank, content-free questions it puts $88.3\%$ / $78.3\%$ / $49.3\%$ of its probability on the first slot (2 / 3 / 4 options). On a borderline input that habit can make a toss-up look 99.9% certain, and the entropy gate waves it through.
+**Hesitation-gating.** Hesitation is Shannon entropy scaled to 0–100% by the number of options. On 231 JevBench items it separates wrong answers from right ones with an AUROC of about 0.85 ([EXP-17](docs/experiments/exp-17-separate-pass-mirror.md)). With a 35% threshold fixed in advance, a live hand-off to `gemini-3.8-flash` reached 81/100 on safety and 86/100 on faithfulness while handing off 8–32% of items, at a median 105 ms vs 3.1 s and about $0.02 vs $1.06–2.25 per 1,000 judgements at full utilization ([EXP-18](docs/experiments/exp-18-mizan-judge-capability.md)).
 
-**What IDC does.**
-1. **Null-Prior De-Biasing** (`--null-prior-debias`, no labeled data): divides out the measured slot habit. On the 50-item calibration suite it improved Brier from 0.175–0.193 (three same-session baselines) to 0.147; on the 231-item JevBench set it did **not** help (186 vs 187 correct, worse calibration). Suite-dependent, so validate before enabling.
-2. **Dual-Mirror Canvas** (`--dual-mirror`): adds a reversed-order copy of each choice question **to the same canvas**, so the forward and reversed readings come from **one forward pass**, and their gap (`Mirror TVD`) flags order-dependent answers. A research diagnostic: with lettered options the reversed slot lowers forward accuracy (letter collision, [EXP-15](docs/experiments/exp-15-letter-collision.md)); digit-labelled mirrors (`--mirror-mode reversed-digits`) stay within noise but add little error detection beyond hesitation ([EXP-15](docs/experiments/exp-15-letter-collision.md)–[EXP-17](docs/experiments/exp-17-separate-pass-mirror.md)). Not recommended in production.
-3. **Slot Temperature Scaling** (`EXP-11`): softens over-sharp scores. Needs labeled data. Fitted on held-out folds it cut ECE by 24–33% on 231 JevBench items ($T^* \approx 1.5$) but gave no reliable gain on the 50-item suite.
+**What keeps the probabilities trustworthy.**
+1. **The answer template is part of the prompt.** Shared option letters across questions make the model copy answers (JevBench 154 vs a baseline band of 182–189, [EXP-15](docs/experiments/exp-15-letter-collision.md)), and loaded question ids act as instructions ([EXP-16](docs/experiments/exp-16-slot-names.md)). Both are now template rules.
+2. **Prompt layout.** Putting the input before the questions (`document_first`, default since v0.2.0) gained 3–12 points on frozen held-out sets such as XNLI (0.662 → 0.699, n=4,500) and typed decisions (0.674 → 0.728, n=2,000), at the cost of lower out-of-scope recall ([prompt layout](docs/policies/prompt-layout.md)).
+3. **Order bias, measured and monitored.** The model favours the first option when unsure; every release measures the extra flips under shuffled order. In-pass corrections were tested and did not help reliably (EXP-13 to EXP-17), so order is tracked, not corrected.
+4. **Calibration by domain.** The best held-out temperature ranges from about 1.2 to 3.6 across suites, so fit one per policy ([calibrate your policy](docs/confidence/calibrate-your-policy.md)).
+5. **Results judged against measured noise.** The [regression matrix](docs/operate/regression-matrix.md) measures run-to-run agreement (94–99%) in every session and judges serving changes against it, with versioned receipts.
 
-**What's new.** Removing a content-free prior (*contextual calibration*, Zhao et al. 2021), permutation debiasing (e.g. PriDe, Zheng et al. 2023), and temperature scaling (Guo et al. 2017) are known techniques. The part specific to a diffusion decision model is **checking a reversed ballot on every request without a second forward pass**, which turns order sensitivity from an offline audit into a per-request signal.
-
-**Status.** A same-session re-run on 50 + 231 items ([EXP-14](docs/experiments/exp-14-idc-rerun.md), versioned receipts in `benchmarks/runs/`) and follow-ups (EXP-15–EXP-17) gave mixed results: the order-bias *problem* is real and reproducible, but the corrections are suite-dependent, and hesitation gating remains the recommended production signal. IDC is CLI-only today. See [IDC §6](docs/confidence-beyond-shannon.md#6-the-evidence-so-far-with-sample-sizes) for every number and [Proposed Experiments](docs/experiments/proposed.md) for what comes next.
+The earlier "Invariant Decision Calibration (IDC)" framing, centred on a same-pass reversed-order check, is kept for reference in [`docs/history/`](docs/history/idc-confidence-beyond-shannon.md); the experiments that retired it are EXP-14 to EXP-17.
 
 ---
 
@@ -76,15 +76,15 @@ Open **[http://localhost:8090](http://localhost:8090)** to inspect all 26+ templ
 | Result | Value | Sample | Receipt |
 | :--- | :--- | :---: | :--- |
 | Single-pass accuracy, 11 public datasets (`dgem bench-calibration`) | 88.0% (44/50) | 50 | `benchmarks/results_calibration_cloudrun.json` |
-| + Null-prior de-biasing (IDC), same session | 45/50, Brier 0.147 vs 0.175–0.193 (3 baselines) | 50 | `benchmarks/runs/20260925-vertex-idc/` |
 | + Entropy cascade to `gemini-3.8-flash` ($\tilde H \ge 0.16$, 34% escalated) | **98.0% (49/50)**, 56% lower cost than Gemini on every item | 50 | `results_calibration_cascade_normalized.json` |
 | JevBench v1.3.1: `dgem` single pass → entropy cascade (hesitation ≥ 16%, 39% escalated, offline) | 187–189 → **221** of 231 | 231 | `benchmarks/runs/20260925-vertex-idc/` |
-| JevBench v1.3.1: null-prior de-biasing | 186 of 231, Brier 0.293 vs 0.264 (no gain) | 231 | `benchmarks/runs/20260925-vertex-idc/` |
+| Live hesitation-gated hand-off, threshold fixed in advance (`EXP-18`) | 81/100 safety, 86/100 faithfulness at 8–32% handed off; p50 105 ms | 100 per suite | `docs/experiments/exp-18-mizan-judge-capability.md` |
+| `document_first` layout (v0.2.0), frozen held-out sets | XNLI 0.662 → 0.699; typed decisions 0.674 → 0.728 | 4,500; 2,000 | `benchmarks/runs/20261002-v020-release-t2/` |
 | Decision Index panel: bracket routing (> 26 options) + slot batching | 76.67 → 98.89, coverage 16/22 → 22/22 | 22 requests | `benchmarks/decision_index/` |
 | Listwise reranking of 10 passages in one pass (`EXP-10`) | 0.9265 nDCG@10, 0% ties | 30 queries | `results_rerank_cloudrun.json` |
 | Content-free Slot-A habit (`EXP-13B`) | 88.3% / 78.3% / 49.3% for K = 2 / 3 / 4 | probe | `results_permutation_cloudrun.json` |
 
-Answers are not deterministic (about 5–7% of items change between identical runs), so compare runs with the [regression matrix](docs/operate/regression-matrix.md), which measures that noise floor in every run. Cascade thresholds were chosen on the evaluation items; treat these as directional. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
+Answers are not deterministic (about 5–7% of items change between identical runs), so compare runs with the [regression matrix](docs/operate/regression-matrix.md), which measures that noise floor in every run. The offline cascade thresholds were chosen on the evaluation items; treat those as directional. Details and caveats: [Benchmark Report](docs/benchmarks-report.md), [Experiment Ledger](docs/experiments/README.md).
 
 ---
 
@@ -94,10 +94,10 @@ See **[Decision Studio, MCP and HTTP API](docs/reference/studio-mcp-api.md)** an
 
 | Interaction Surface | Command / Endpoint | Description |
 | :--- | :--- | :--- |
-| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, a plain-English **Concepts** tab (including an IDC walkthrough), and **OpenTelemetry Trace Waterfall** inspection. |
+| **1. 🖥️ Decision Studio Web App** | `./bin/dgem serve --port 8090` | Embedded **Lit WebComponents** web application featuring all **26+ `.json.tmpl` decision policies** (`core`, `calibration`, `multimodal`, `rerank`), topbar **Backend Target selector (`vertex_first` \| `vertex` \| `cloudrun`)**, **Stage 2 Gemini Cascade (`gemini-3.8-flash`)**, live **SigLIP 2D Bounding Box SVG overlays (`EXP-09`)**, a plain-English **Concepts** tab (including a hesitation-gating walkthrough), and **OpenTelemetry Trace Waterfall** inspection. |
 | **2. 🤖 Model Context Protocol (`MCP`)** | `./bin/dgem mcp` (`stdio`)<br>`POST /mcp` (`Streamable HTTP`) | Native MCP server exposing **6 tools** (`decide_policy`, `locate_bounding_boxes`, `decide_custom_questions`, `list_policy_templates`, `get_health_and_gpu_status`, `warmup_gpu`) with `backend` (`vertex_first` \| `vertex` \| `cloudrun`) and Stage 2 Gemini Cascade support (`cascade_mode`, `cascade_threshold`, `cascade_model`). |
 | **3. 🌐 HTTP Gateway REST API** | `POST /api/decide/{template}`<br>`POST /v1/systemone`, `GET /api/templates` | Execute any `.json.tmpl` decision policy or `/v1/systemone` schema with `X-DGem-Backend: vertex_first \| vertex \| cloudrun` (`X-DGem-Backend-Used` returned on every response) and optional Stage 2 `gemini-3.8-flash` cascade. |
-| **4. ⌨️ CLI & 9 Benchmark Harnesses** | `./bin/dgem decide --vertex-url ...`<br>`./bin/dgem bench-*` | Direct single-pass decisions (`--stats`, `--null-prior-debias`, `--dual-mirror`) and nine reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`, `bench-decision-index`, `bench-permutation`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-13`). |
+| **4. ⌨️ CLI & 9 Benchmark Harnesses** | `./bin/dgem decide --vertex-url ...`<br>`./bin/dgem bench-*` | Direct single-pass decisions (`--stats`, `--null-prior-debias`, `--dual-mirror`) and nine reproducible evaluation harnesses (`bench`, `bench-ecotone`, `bench-intents`, `bench-calibration`, `bench-bbox`, `bench-rerank`, `bench-jev`, `bench-decision-index`, `bench-permutation`) backed by [`docs/experiments/`](docs/experiments/README.md) (`EXP-01` – `EXP-21`). |
 
 ### Why a "Decision Model"?
 
@@ -113,7 +113,7 @@ A **zero-shot decision model** sits in between. `dgem` compiles a `.json.tmpl` t
 | **Inference Latency** | **~55 ms GPU / ~150 ms end to end** for a 3-question decision on RTX PRO 6000; ~1.4 s for a 12-slot rerank (measured on L4) | ~5 – 25 ms (single head) | **17,486.6 ms** (~17.5 s for 3-slot JSON + CoT) | **1.35 – 8.68 ms** (`1.54 ms` p50 over UDS) |
 | **Passes per Request** | **1 forward pass** for all questions (cost grows with canvas length) | One classifier per attribute | One token per step ($O(T_{\text{output}})$) | $O(N_{\text{chars}})$ graph traversal |
 | **Joint Slot Conditioning** | **Bidirectional (`slot_1 <-> slot_2`)** in a single pass | Independent heads | Left-to-right only | Local sliding window (1–3 tokens) |
-| **Uncertainty & Calibration** | **Per-option probabilities + entropy**; label-free order-bias correction (null-prior) and same-pass reversed-ballot check (IDC) | Often overconfident out-of-distribution | Sequence-level logprobs over formatting tokens | Static arc weights |
+| **Uncertainty & Calibration** | **Per-option probabilities + hesitation**; hesitation-gated hand-off; per-domain temperature; order bias monitored on every release | Often overconfident out-of-distribution | Sequence-level logprobs over formatting tokens | Static arc weights |
 | **Guardrail Examples (50-item suite)** | `AgentDrift` 7/7, prompt injection 4/4, RAG grounding 2/2 | Narrow single-task scope | High accuracy, 15–25× higher latency | **36.7%** on semiotic polysemy traps |
 
 ---
@@ -201,7 +201,7 @@ Attach local image paths (automatically base64 encoded) or remote URLs:
 
 ## Benchmark Suites & Empirical Calibration
 
-`dgem` includes nine benchmark harnesses (all tracked in [`docs/experiments/README.md`](docs/experiments/README.md)). Four of the most commonly used are below; the others are `bench-jev` (JevBench v1.3.1), `bench-decision-index` (Decision Index panel + `/v1/systemone`), `bench-permutation` (option-order sensitivity and IDC, `EXP-13`), `bench-rerank` (listwise reranking, `EXP-10`), and `bench-bbox` (bounding boxes, `EXP-09`).
+`dgem` includes nine benchmark harnesses (all tracked in [`docs/experiments/README.md`](docs/experiments/README.md)). Four of the most commonly used are below; the others are `bench-jev` (JevBench v1.3.1), `bench-decision-index` (Decision Index panel + `/v1/systemone`), `bench-permutation` (option-order sensitivity, `EXP-13`), `bench-rerank` (listwise reranking, `EXP-10`), and `bench-bbox` (bounding boxes, `EXP-09`).
 
 ### 1. Public Dataset Policy & Epistemic Calibration Suite (`dgem bench-calibration`)
 Evaluates 50 items across **11 public datasets** ([`benchmarks/calibration_suite.jsonl`](benchmarks/calibration_suite.jsonl)), testing declarative policy templates (`templates/calibration/*.json.tmpl`) across agent trajectory hijacking (`AgentDrift`), multilingual jailbreaks (`deepset/prompt-injections`), RAG fact grounding (`LLM-AggreFact`), retrieval relevance (`MS MARCO`), toxicity (`Jigsaw Civil Comments`), and human annotator disagreement (`ChaosNLI`):
@@ -256,7 +256,7 @@ Published at [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/) ([index
   [Operations runbook](docs/operate/runbook.md) · [Observability](docs/operate/observability.md)
 - **Confidence and calibration:** [Overview](docs/confidence/index.md) ·
   [Calibrate your policy](docs/confidence/calibrate-your-policy.md) ·
-  [Confidence beyond Shannon (IDC)](docs/confidence-beyond-shannon.md) ·
+  [Confidence beyond Shannon](docs/confidence/overview.md) ·
   [The journey to decision models](docs/decision-models-primer.md) · [Glossary](docs/glossary.md) ·
   [Benchmark report](docs/benchmarks-report.md) · [Experiment ledger](docs/experiments/README.md) ·
   [Proposed experiments](docs/experiments/proposed.md)
