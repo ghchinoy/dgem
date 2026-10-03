@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Score an EXP-23 bench-guided receipt.
+"""Score an EXP-24 bench-guided receipt.
 
 Boxes (positives): IoU, centre hit and Acc@0.5 per condition, overall and by set and size, with case-level
 bootstrap 95% intervals; end-to-end latency (dgem pass + Gemini for guided strategies, Gemini only for "full");

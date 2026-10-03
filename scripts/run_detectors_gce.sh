@@ -25,7 +25,7 @@
 #
 # Inputs: benchmarks/bbox_sweep.jsonl (+ fixtures/bbox_sweep, scripts/generate_bbox_sweep.py) and
 #         benchmarks/bbox_real.jsonl (+ fixtures/bbox_real, scripts/fetch_bbox_real.py fetch).
-# SAM_BOXES=<sam_boxes.jsonl> (EXP-23): instead of the detectors, refine those prompt boxes with SAM and score the masks
+# SAM_BOXES=<sam_boxes.jsonl> (EXP-24): instead of the detectors, refine those prompt boxes with SAM and score the masks
 # against benchmarks/bbox_real_masks.jsonl; writes sam_masks.jsonl into the run directory.
 # The VM needs internet access (Hugging Face model downloads) and a service account that can read and
 # write gs://$BUCKET (GCE_SA, default: the project's default compute service account).

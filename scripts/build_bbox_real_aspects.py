@@ -31,7 +31,7 @@ benchmarks/bbox_real_aspects.jsonl, one row per question set, with "aspects" gro
   python3 scripts/build_bbox_real_aspects.py build --project <PROJECT> [--model gemini-3.8-flash]
   python3 scripts/build_bbox_real_aspects.py sheet --n 40          # contact sheets for hand labelling
   python3 scripts/build_bbox_real_aspects.py handcheck <labels.json>  # agreement of Gemini with hand labels
-  python3 scripts/build_bbox_real_aspects.py masks     # RefCOCO segmentation polygons -> benchmarks/bbox_real_masks.jsonl (EXP-23)
+  python3 scripts/build_bbox_real_aspects.py masks     # RefCOCO segmentation polygons -> benchmarks/bbox_real_masks.jsonl (EXP-24)
 
 Needs scripts/requirements-vision.txt and `gcloud` (Application Default Credentials) for the Gemini calls.
 """

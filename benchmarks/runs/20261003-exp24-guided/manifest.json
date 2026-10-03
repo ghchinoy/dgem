@@ -1,12 +1,12 @@
 {
-  "run_id": "20261003-exp23-guided",
+  "run_id": "20261003-exp24-guided",
   "created": "2026-10-03T18:06:15+00:00",
   "git_commit": "06aeeb4ceda53b26d4160ed9abb67c30fc3ab10e",
   "git_dirty_paths": [
     "md/bench_bbox_test.go",
     "cmd/bench_guided.go"
   ],
-  "notes": "EXP-23 guided cascade: dgem presence + grid cell, then gemini-3.8-flash full/hint/crop/poly at default/medium/low thinking (MINIMAL is not supported by this model).",
+  "notes": "EXP-24 guided cascade: dgem presence + grid cell, then gemini-3.8-flash full/hint/crop/poly at default/medium/low thinking (MINIMAL is not supported by this model). (renumbered from EXP-23 on merge; the run was recorded as 20261003-exp23-guided)",
   "receipts": [
     {
       "suite": "guided",

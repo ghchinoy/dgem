@@ -26,7 +26,7 @@ scored on the workstation with `dgem bench-bbox --engine predictions --predictio
   pip install -r scripts/detectors/requirements.txt
   python3 scripts/detectors/run_detectors.py --manifest benchmarks/bbox_sweep.jsonl benchmarks/bbox_real.jsonl -o preds.jsonl
 
-EXP-23 masks from boxes: SAM refines each prompt box (any source) and the mask is scored against the COCO mask:
+EXP-24 masks from boxes: SAM refines each prompt box (any source) and the mask is scored against the COCO mask:
   python3 scripts/detectors/run_detectors.py --manifest benchmarks/bbox_real.jsonl --sam-boxes sam_boxes.jsonl \
       --gt-masks benchmarks/bbox_real_masks.jsonl -o sam_masks.jsonl
 """

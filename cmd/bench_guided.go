@@ -14,7 +14,7 @@
 
 package cmd
 
-// EXP-23: dgem-guided Gemini localization. For every item dgem first answers "is the target present?" and
+// EXP-24: dgem-guided Gemini localization. For every item dgem first answers "is the target present?" and
 // "which 3x3 cell holds it?" in one pass; Gemini 3.x then returns a box (or a polygon mask) under one of
 // several strategies and thinking levels:
 //
@@ -65,7 +65,7 @@ var (
 var benchGuidedCmd = &cobra.Command{
 	Use:     "bench-guided",
 	GroupID: "eval",
-	Short:   "EXP-23: Gemini 3.x boxes and masks guided by a fast dgem pass (skip, crop, hint; thinking levels)",
+	Short:   "EXP-24: Gemini 3.x boxes and masks guided by a fast dgem pass (skip, crop, hint; thinking levels)",
 	Long: `bench-guided runs dgem once per item (presence + 3x3 grid cell) and then Gemini 3.x under each condition
 "<strategy>@<thinking>" in --conditions, where strategy is full | hint | crop | poly and thinking is default | medium |
 low | high. Positive items run every condition; negative items (object_present false) run --neg-conditions, used to
