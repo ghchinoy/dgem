@@ -34,6 +34,10 @@ reported under its own name.
 
 Each step names its tool. Steps 1–4 happen before any scored run.
 
+Comparisons run on demand, when a new model appears: one owner per comparison works in its own git worktree from
+`origin/main`, reserves the EXP number in a small pull request at intake, and hands serving or matrix changes to the
+regression-matrix owner rather than editing them in the comparison branch.
+
 1. **Intake.** Create `benchmarks/competitors/<model>.json` from an existing profile: identity (code, weights and base
    model revisions, licence, architecture, size class), serving facts (command, `model` field, option and context
    limits), E0 numbers with sources, and the training-exposure map (step 4). Reserve the next free `EXP-XX` number (unused on `main` and in open pull requests) in the
