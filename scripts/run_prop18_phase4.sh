@@ -20,6 +20,8 @@
 #
 # Steps (STEPS="dgem blank gemini"): dgem xREPEAT; dgem on blank images (prompt prior); Gemini reference per MODELS.
 # Needs fixtures/bbox_sweep/ (python3 scripts/generate_bbox_sweep.py).
+# Real images: SUITE_FILE=benchmarks/bbox_real_aspects.jsonl TEMPLATE=templates/multimodal/vision_aspects_generic.json.tmpl
+# (ground truth from scripts/build_bbox_real_aspects.py; images from scripts/fetch_bbox_real.py fetch).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -28,6 +30,7 @@ ENDPOINT="${ENDPOINT:-${DGEM_VERTEX_URL:-}}"
 REPEAT="${REPEAT:-2}"
 MODELS="${MODELS:-gemini-3.8-flash}"
 SUITE="${SUITE_FILE:-benchmarks/bbox_sweep.jsonl}"
+TEMPLATE="${TEMPLATE:-templates/multimodal/vision_aspects.json.tmpl}"
 STEPS="${STEPS:-dgem blank gemini}"
 export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-}}"
 
@@ -42,16 +45,16 @@ if has dgem || has blank; then
 fi
 if has dgem; then
   DGEM_VERTEX_URL="$ENDPOINT" RECORD_VERTEX_STATE=1 $R exec --run "$RUN_ID" --suite vision --config "vertex_g4_x${REPEAT}" -- \
-    $D bench-vision -d "$SUITE" --vertex-url "$ENDPOINT" --gcp-auth --repeat "$REPEAT" -o {out}
+    $D bench-vision -d "$SUITE" -t "$TEMPLATE" --vertex-url "$ENDPOINT" --gcp-auth --repeat "$REPEAT" -o {out}
 fi
 if has blank; then
   DGEM_VERTEX_URL="$ENDPOINT" RECORD_VERTEX_STATE=1 $R exec --run "$RUN_ID" --suite vision --config "vertex_g4_blank" -- \
-    $D bench-vision -d "$SUITE" --vertex-url "$ENDPOINT" --gcp-auth --variant blank -o {out}
+    $D bench-vision -d "$SUITE" -t "$TEMPLATE" --vertex-url "$ENDPOINT" --gcp-auth --variant blank -o {out}
 fi
 if has gemini; then
   for M in $MODELS; do
     $R exec --run "$RUN_ID" --suite vision --config "reference_${M//[.-]/_}" -- \
-      $D bench-vision -d "$SUITE" --engine gemini --gemini-model "$M" -o {out}
+      $D bench-vision -d "$SUITE" -t "$TEMPLATE" --engine gemini --gemini-model "$M" -o {out}
   done
 fi
 if [[ -f scratch/leak-patterns.txt ]]; then
