@@ -39,6 +39,8 @@ type BatchPresetItem struct {
 	CustomTemplate string                 `json:"custom_template,omitempty"`
 	Variables      map[string]interface{} `json:"variables"`
 	ExpectedSlots  []BatchExpectedSlot    `json:"expected_slots"`
+	// ImageURL is an optional image (URL or data URI) for multimodal items.
+	ImageURL string `json:"image_url,omitempty"`
 }
 
 // BatchPresetSuite represents a named collection of benchmark items for real-time batch evaluation.

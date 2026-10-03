@@ -1451,6 +1451,7 @@ type DecideCustomToolInput struct {
 	Questions         []CustomQuestionSpec `json:"questions" jsonschema:"List of structured decision slots to evaluate simultaneously in 1 forward pass."`
 	Backend           string               `json:"backend,omitempty" jsonschema:"Optional inference backend selector: 'vertex_first' (default: Vertex AI primary with Cloud Run failover), 'vertex', 'cloudrun', or 'local' (Apple Silicon Metal diffgemma)."`
 	VertexURL         string               `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI Endpoint ID or /invoke/* URL override."`
+	Image             string               `json:"image,omitempty" jsonschema:"Optional image URL or base64 data URI; the questions are answered about it (and sent to Stage 2 when the cascade escalates)."`
 	CascadeMode       string               `json:"cascade_mode,omitempty" jsonschema:"Optional Stage-2 Vertex AI Gemini 3.x cascade mode: 'off' (default), 'entropy' (forward slots with Shannon entropy H >= cascade_threshold), or 'on_miss' (forward slots that miss expected_answers)."`
 	CascadeThreshold  float64              `json:"cascade_threshold,omitempty" jsonschema:"Shannon entropy threshold H in nats for Stage-2 Gemini escalation (default 0.35)."`
 	CascadeModel      string               `json:"cascade_model,omitempty" jsonschema:"Stage-2 Vertex AI Gemini 3.x model (default 'gemini-3.8-flash'; also supports 'gemini-3.7-flash', 'gemini-3.5-flash-lite')."`
@@ -1584,7 +1585,8 @@ func buildMCPServer() *mcp.Server {
 
 		var cascadeSummary *CascadeExecutionSummary
 		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
-			cascadeSummary = ExecuteStage2GeminiCascade(
+			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
+			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
 				ctx,
 				input.CascadeMode,
 				input.CascadeThreshold,
@@ -1593,7 +1595,9 @@ func buildMCPServer() *mcp.Server {
 				schemaContent,
 				stateContent,
 				resp,
+				imgs,
 			)
+			cascadeSpan.End()
 		}
 
 		if input.SuggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
@@ -1756,7 +1760,11 @@ func buildMCPServer() *mcp.Server {
 			return nil, GatewayDecideResponse{}, bErr
 		}
 		start := time.Now()
-		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaStr, stateStr, nil, targetURL)
+		var customImgs []string
+		if input.Image != "" {
+			customImgs = append(customImgs, input.Image)
+		}
+		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaStr, stateStr, customImgs, targetURL)
 		if err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
@@ -1765,7 +1773,8 @@ func buildMCPServer() *mcp.Server {
 
 		var cascadeSummary *CascadeExecutionSummary
 		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
-			cascadeSummary = ExecuteStage2GeminiCascade(
+			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
+			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
 				ctx,
 				input.CascadeMode,
 				input.CascadeThreshold,
@@ -1774,7 +1783,9 @@ func buildMCPServer() *mcp.Server {
 				schemaStr,
 				stateStr,
 				resp,
+				customImgs,
 			)
+			cascadeSpan.End()
 		}
 
 		if input.SuggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {

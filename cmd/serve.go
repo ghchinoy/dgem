@@ -1596,7 +1596,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		var cascadeSummary *CascadeExecutionSummary
 		if cascadeMode != "" && cascadeMode != "off" && cascadeMode != "none" {
 			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
-			cascadeSummary = ExecuteStage2GeminiCascade(
+			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
 				ctx,
 				cascadeMode,
 				cascadeThreshold,
@@ -1605,9 +1605,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 				schemaContent,
 				stateContent,
 				resp,
+				images,
 			)
 			if cascadeSummary != nil {
 				cascadeSpan.SetAttributes(
+					attribute.Int("dgem.cascade.image_count", cascadeSummary.ImageCount),
 					attribute.String("dgem.cascade.mode", cascadeSummary.Mode),
 					attribute.String("dgem.cascade.model", cascadeSummary.Model),
 					attribute.Bool("dgem.cascade.triggered", cascadeSummary.Triggered),

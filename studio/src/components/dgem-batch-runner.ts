@@ -33,6 +33,8 @@ export interface BatchPresetItem {
   custom_template?: string;
   variables: Record<string, any>;
   expected_slots: BatchExpectedSlot[];
+  /** Optional image (URL or data URI) for multimodal items; also sent to the Stage-2 cascade. */
+  image_url?: string;
 }
 
 export interface BatchPresetSuite {
@@ -1629,6 +1631,9 @@ export class DgemBatchRunner extends LitElement {
           }
           if (this.vertexUrl) {
             body.vertex_url = this.vertexUrl;
+          }
+          if (item.image_url) {
+            body.image_url = item.image_url;
           }
           if (item.custom_template) {
             body.custom_template = item.custom_template;
