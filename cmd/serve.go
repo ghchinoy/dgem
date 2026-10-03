@@ -135,6 +135,7 @@ type GatewayDecideRequest struct {
 	ExpectedAnswers   map[string]string      `json:"expected_answers,omitempty"`   // optional slot_id -> expected value for "on_miss" cascade
 	SuggestExpansions bool                   `json:"suggest_expansions,omitempty"` // dynamically inject 'other_unclassified' and propose new {"name", "description"} options
 	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
+	Layout            string                 `json:"layout,omitempty"`             // prompt layout: "document_first" | "schema_first"; empty = template or server default
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
@@ -1493,6 +1494,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		if expansionEntropy <= 0 {
 			expansionEntropy = 0.35
+		}
+
+		layout := payload.Layout
+		if layout == "" {
+			layout = r.Header.Get("X-DGem-Layout")
+		}
+		if layout == "" {
+			layout = r.URL.Query().Get("layout")
+		}
+		if schemaContent, err = ApplyPromptLayout(schemaContent, layout); err != nil {
+			rootSpan.SetStatus(codes.Error, err.Error())
+			rootSpan.End()
+			writeErr(http.StatusBadRequest, err.Error())
+			return
 		}
 
 		var injectedSlots map[string]bool

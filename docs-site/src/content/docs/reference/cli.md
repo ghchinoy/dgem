@@ -110,6 +110,8 @@ and the container serves the adapter on its port, in front of its own structured
 
 ## 4. HTTP Gateway Endpoints (`/api/decide`, `/v1/systemone`, `/v1/chat/completions`)
 
+`/api/decide` also accepts a prompt layout as JSON `"layout": "document_first" | "schema_first"`, header `X-DGem-Layout` or `?layout=`; the server reports the layout it used in `diagnostics.layout` ([Prompt layout](/dgem/policies/prompt-layout/)). `/v1/systemone` and `/v1/chat/completions` pass a `layout` key in the body or schema through unchanged.
+
 Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts backend selection via HTTP header `X-DGem-Backend: vertex_first | vertex | cloudrun | local`, query parameter `?backend=vertex_first`, or JSON body field `"backend": "vertex_first"`, and returns the **`X-DGem-Backend-Used: vertex | cloudrun | local`** response header (`"backend_target"` in JSON bodies).
 
 | Route | Method | Description |
@@ -130,6 +132,7 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 | :--- | :--- | :--- | :--- |
 | **`backend`** | `string` | `"vertex_first"` *(default)* \| `"vertex"` \| `"cloudrun"` \| `"local"` | Selects the execution target (`vertex_first` routes to warm Vertex AI Dedicated Endpoint with automatic Cloud Run failover; `local` is a `diffgemma` engine on your machine and is the default under `dgem mcp --local`). Only configured backends are accepted; any other value returns `backend "…" is not enabled` with the available list. The tool schema lists exactly the backends this server has (`enum`) and names its default, so agents see the right choices. Omit it to use the default. `locate_bounding_boxes` does not support `local`. |
 | **`vertex_url`** | `string` | `""` *(optional)* | Vertex AI Dedicated Endpoint ID or `/invoke/v1` URL override. Must be the configured endpoint or one listed in `--allowed-vertex-endpoints` on `dgem serve`; any other returns `vertex_url … is not allowed`. |
+| **`layout`** | `string` | `""` *(template or server default)* \| `"document_first"` \| `"schema_first"` | Decide tools only. Prompt layout; see [Prompt layout](/dgem/policies/prompt-layout/). |
 | **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`; `"on_miss"` escalates slots that disagree with `expected_answers`). |
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
 | **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
@@ -184,6 +187,7 @@ dgem decide [flags]
 * `-d`, `--data string`: Path to a JSON file containing variables.
 * `-f`, `--format string`: Output format: `table` (default) or `json`.
 * `-I`, `--image stringArray`: Attach local image file path or remote image URL (can be specified multiple times for video frame sequences).
+* `--layout document_first|schema_first`: Prompt layout for this decision. Empty uses the template's `layout`, or else the server default (`document_first` from serving v0.2.0). See [Prompt layout](/dgem/policies/prompt-layout/).
 * `--suggest-expansions`: Dynamically inject an `other_unclassified` catch-all option into `choice` slots (if absent) and propose new `{"name", "description"}` options when an item resolves to `other*` or exceeds `--expansion-entropy` (see [Unclassified Grouping & Taxonomy Discovery](/dgem/policies/taxonomy-discovery/)).
 * `--expansion-entropy float`: Shannon entropy threshold in nats on `choice` slots to trigger taxonomy expansion proposals (default: `0.35`).
 * `--dual-mirror`: Evaluate forward and reversed option orderings simultaneously on the same $O(1)$ diffusion canvas (`EXP-13C`).

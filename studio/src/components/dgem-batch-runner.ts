@@ -149,6 +149,8 @@ const DEFAULT_CUSTOM_DATASET_JSONL = [
 export class DgemBatchRunner extends LitElement {
   @property({ type: String, reflect: true }) resolvedTheme: 'light' | 'dark' = 'light';
   @property({ type: String }) backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' | 'local' = 'vertex_first';
+  /** Prompt layout override from the Studio ('' = policy or server default). */
+  @property({ type: String }) promptLayout = '';
   @property({ type: String }) vertexUrl = '';
 
   @state() private suites: BatchPresetSuite[] = [];
@@ -1622,6 +1624,9 @@ export class DgemBatchRunner extends LitElement {
             cascade_threshold: this.cascadeThreshold,
             expected_answers: expectedMap,
           };
+          if (this.promptLayout) {
+            body.layout = this.promptLayout;
+          }
           if (this.vertexUrl) {
             body.vertex_url = this.vertexUrl;
           }

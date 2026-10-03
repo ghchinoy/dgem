@@ -955,6 +955,7 @@ def decide(schema, state_content, seed):
     one = len(parts) == 1 and not skipped
     diagnostics = {
         "steps": schema["steps"],
+        "layout": schema["layout"],
         "stages": stages,
         "skipped": skipped,
         "chunks": chunks,
@@ -1118,6 +1119,7 @@ def decide_group(schema, sys_text, state_content, seed, prefix=None, lead=""):
         "answers": answers,
         "diagnostics": {
             "steps": schema["steps"],
+            "layout": schema["layout"],
             "samples": {
                 "n": n,
                 "tops": tops,

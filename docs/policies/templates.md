@@ -47,6 +47,12 @@ options were identical. In multi-question schemas, use neutral ids that describe
 `severity`, `decision_b`). Avoid ids that hint the answer should differ or be inverted (`mirror`, `reverse`,
 `opposite`, `alt`, `check_again`).
 
+### Prompt layout
+
+From serving v0.2.0 the model reads the `"state"` first and the questions after it (`document_first`). A template can
+pin the older order with `"layout": "schema_first"` next to `"questions"`, for example to keep a validated policy's
+prompt unchanged. See [Prompt layout](prompt-layout.md) for the measured effect and how to compare both.
+
 ### 3-Step Workflow to Create & Validate a New Template
 
 1. **Always pipe input variables through `| toJson`**: Write `"clause": {{ default "" .clause | toJson }}` inside `"state"` so quotes, newlines, and special characters in user text are automatically JSON-escaped.

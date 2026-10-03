@@ -181,6 +181,7 @@ type ThoughtDiagnostic struct {
 type Diagnostics struct {
 	Hole      string                        `json:"hole,omitempty"`
 	Steps     int                           `json:"steps"`
+	Layout    string                        `json:"layout,omitempty"` // prompt layout the server used (serving v0.2.0+)
 	Thought   *ThoughtDiagnostic            `json:"thought,omitempty"`
 	Timing    TimingStats                   `json:"timing"`
 	Samples   SampleStats                   `json:"samples"`
