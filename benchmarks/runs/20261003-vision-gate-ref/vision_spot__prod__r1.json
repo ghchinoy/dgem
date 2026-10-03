@@ -1,0 +1,5068 @@
+{
+  "timestamp": "2026-10-03T16:38:42Z",
+  "engine": "dgem",
+  "target_model": "diffgemma-26b-a4b-it-q4",
+  "server_version": "v0.2.0",
+  "dataset": "benchmarks/bbox_sweep.jsonl",
+  "template": "templates/multimodal/vision_aspects.json.tmpl",
+  "variant": "original",
+  "repeats": 1,
+  "git_commit": "d30ec61550",
+  "aspects": [
+    {
+      "aspect": "element_count",
+      "items": 40,
+      "options": 4,
+      "accuracy": {
+        "mean": 0.55,
+        "ci95_lo": 0.4,
+        "ci95_hi": 0.7,
+        "n": 40
+      },
+      "majority_label": "2",
+      "majority_accuracy": 0.425,
+      "lift_over_majority": {
+        "mean": 0.125,
+        "ci95_lo": -0.125,
+        "ci95_hi": 0.35,
+        "n": 40
+      },
+      "predicted_label_share": {
+        "1": 0.3,
+        "2": 0.2,
+        "3": 0.25,
+        "4": 0.25
+      },
+      "hesitation_error_auroc": 0.8131313131313131,
+      "wrong_answers": 18,
+      "accuracy_by_set": {
+        "geometry": 0.55
+      }
+    },
+    {
+      "aspect": "grid_cell",
+      "items": 40,
+      "options": 9,
+      "accuracy": {
+        "mean": 0.825,
+        "ci95_lo": 0.7,
+        "ci95_hi": 0.925,
+        "n": 40
+      },
+      "majority_label": "middle_center",
+      "majority_accuracy": 0.275,
+      "lift_over_majority": {
+        "mean": 0.55,
+        "ci95_lo": 0.4,
+        "ci95_hi": 0.7,
+        "n": 40
+      },
+      "predicted_label_share": {
+        "bottom_center": 0.15,
+        "bottom_left": 0.075,
+        "bottom_right": 0.075,
+        "middle_center": 0.35,
+        "middle_left": 0.1,
+        "middle_right": 0.025,
+        "top_center": 0.125,
+        "top_right": 0.1
+      },
+      "hesitation_error_auroc": 0.696969696969697,
+      "wrong_answers": 7,
+      "accuracy_by_set": {
+        "geometry": 0.825
+      }
+    },
+    {
+      "aspect": "present",
+      "items": 40,
+      "options": 2,
+      "accuracy": {
+        "mean": 1,
+        "ci95_lo": 1,
+        "ci95_hi": 1,
+        "n": 40
+      },
+      "majority_label": "yes",
+      "majority_accuracy": 1,
+      "lift_over_majority": {
+        "mean": 0,
+        "ci95_lo": 0,
+        "ci95_hi": 0,
+        "n": 40
+      },
+      "predicted_label_share": {
+        "yes": 1
+      },
+      "hesitation_error_auroc": -1,
+      "wrong_answers": 0,
+      "accuracy_by_set": {
+        "geometry": 1
+      }
+    },
+    {
+      "aspect": "relation",
+      "items": 21,
+      "options": 4,
+      "accuracy": {
+        "mean": 0.7619047619047619,
+        "ci95_lo": 0.5714285714285714,
+        "ci95_hi": 0.9047619047619048,
+        "n": 21
+      },
+      "majority_label": "above",
+      "majority_accuracy": 0.3333333333333333,
+      "lift_over_majority": {
+        "mean": 0.42857142857142855,
+        "ci95_lo": 0.23809523809523808,
+        "ci95_hi": 0.6666666666666666,
+        "n": 21
+      },
+      "predicted_label_share": {
+        "above": 0.47619047619047616,
+        "below": 0.3333333333333333,
+        "left_of": 0.14285714285714285,
+        "right_of": 0.047619047619047616
+      },
+      "hesitation_error_auroc": 0.575,
+      "wrong_answers": 5,
+      "accuracy_by_set": {
+        "geometry": 0.7619047619047619
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "geo-1x1-grid-00",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9996503752928909,
+          "h_norm": 0.002518785123458213,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9996503752928909,
+            "2": 0.00010054079592537296,
+            "3": 0.00007215210537802184,
+            "4": 0.00017693180580577827
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_left",
+          "predicted": "middle_left",
+          "correct": true,
+          "confidence": 0.9949700766354528,
+          "h_norm": 0.015066282590975966,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 8.691175003345084e-7,
+            "bottom_left": 0.00003375079009928195,
+            "bottom_right": 0.0000024663833222164826,
+            "middle_center": 0.004743635185387406,
+            "middle_left": 0.9949700766354527,
+            "middle_right": 0.00008498163921128829,
+            "top_center": 0.000004606435444705413,
+            "top_left": 0.00013778472695660083,
+            "top_right": 0.000021829086625382595
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9997335864340162,
+          "h_norm": 0.0035477089538040675,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00026641356598375727,
+            "yes": 0.9997335864340162
+          }
+        }
+      ],
+      "wall_time_ms": 470.759
+    },
+    {
+      "id": "geo-1x1-grid-01",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.9906078048091821,
+          "h_norm": 0.04345601633349206,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0001694678902898287,
+            "2": 0.990607804809182,
+            "3": 0.005538716223507938,
+            "4": 0.0036840110770201325
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_left",
+          "predicted": "bottom_left",
+          "correct": true,
+          "confidence": 0.9028024967542515,
+          "h_norm": 0.14558317138700172,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0970899445708685,
+            "bottom_left": 0.9028024967542514,
+            "bottom_right": 0.000002535321970188151,
+            "middle_center": 0.000057410327191304026,
+            "middle_left": 0.00001329868897458357,
+            "middle_right": 0.0000063398194769132605,
+            "top_center": 0.000007006566738557425,
+            "top_left": 0.00001396138378988614,
+            "top_right": 0.000007006566738557425
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999962584593446,
+          "h_norm": 0.00007285014796822144,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000003741540655379795,
+            "yes": 0.9999962584593446
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "left_of",
+          "correct": true,
+          "confidence": 0.9997000033187736,
+          "h_norm": 0.0020765574622353252,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.000031738815608790805,
+            "below": 0.000257862183939779,
+            "left_of": 0.9997000033187736,
+            "right_of": 0.000010395681677960637
+          }
+        }
+      ],
+      "wall_time_ms": 463.589
+    },
+    {
+      "id": "geo-1x1-grid-02",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9986850028319175,
+          "h_norm": 0.008250458421014671,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9986850028319175,
+            "2": 0.000516249768653088,
+            "3": 0.00028249763077635844,
+            "4": 0.000516249768653088
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_left",
+          "predicted": "bottom_center",
+          "correct": false,
+          "confidence": 0.9953296452304987,
+          "h_norm": 0.0144839353731768,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.9953296452304987,
+            "bottom_left": 0.004242060489701241,
+            "bottom_right": 0.000011032050636312336,
+            "middle_center": 0.0001951386753844927,
+            "middle_left": 0.00006252502785100396,
+            "middle_right": 0.00004345992949894575,
+            "top_center": 0.00003614749293618541,
+            "top_left": 0.00006840930823358425,
+            "top_right": 0.000011581795259471214
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999863014879752,
+          "h_norm": 0.0002410706124155711,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000013698512024825628,
+            "yes": 0.9999863014879752
+          }
+        }
+      ],
+      "wall_time_ms": 490.472
+    },
+    {
+      "id": "geo-1x1-grid-03",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.9595283188183897,
+          "h_norm": 0.12941140288743216,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00014847245248655983,
+            "2": 0.002357597447383847,
+            "3": 0.037965611281739885,
+            "4": 0.9595283188183897
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_right",
+          "predicted": "top_right",
+          "correct": true,
+          "confidence": 0.9996236183318565,
+          "h_norm": 0.001764340847758411,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000015106131458173823,
+            "bottom_left": 0.0000022685684693405535,
+            "bottom_right": 0.000003559241454014828,
+            "middle_center": 0.00002511911180226303,
+            "middle_left": 0.000032977728121931264,
+            "middle_right": 0.00003946119363056069,
+            "top_center": 0.00008677113211742235,
+            "top_left": 0.00018471407940203808,
+            "top_right": 0.9996236183318568
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9998944108752638,
+          "h_norm": 0.0015470781291395082,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00010558912473619814,
+            "yes": 0.9998944108752638
+          }
+        }
+      ],
+      "wall_time_ms": 470.755
+    },
+    {
+      "id": "geo-1x1-grid-04",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9999268723706316,
+          "h_norm": 0.0006063548596519007,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9999268723706315,
+            "2": 0.000011670672153564429,
+            "3": 0.00004122212697830278,
+            "4": 0.000020234830236539907
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9998901101434181,
+          "h_norm": 0.000580854321332311,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000016688256626448529,
+            "bottom_left": 8.255229683067063e-7,
+            "bottom_right": 7.082829351813389e-7,
+            "middle_center": 0.9998901101434181,
+            "middle_left": 0.00003139933821244385,
+            "middle_right": 0.00004068448120903971,
+            "top_center": 0.00002022732145709706,
+            "top_left": 0.00001177762704218243,
+            "top_right": 0.0000025984570949891733
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999782176669315,
+          "h_norm": 0.0003687566303481591,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000021782333068528333,
+            "yes": 0.9999782176669315
+          }
+        }
+      ],
+      "wall_time_ms": 363.838
+    },
+    {
+      "id": "geo-1x1-grid-05",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "small",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9994106788874877,
+          "h_norm": 0.004032757040164667,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9994106788874877,
+            "2": 0.0001406902243479602,
+            "3": 0.00016488434024073716,
+            "4": 0.00028374654792367554
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_left",
+          "predicted": "bottom_left",
+          "correct": true,
+          "confidence": 0.9459947734788224,
+          "h_norm": 0.09690137642161575,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.05364227158206033,
+            "bottom_left": 0.9459947734788222,
+            "bottom_right": 0.000032407521116695744,
+            "middle_center": 0.000014155272818028632,
+            "middle_left": 0.00004968307239417532,
+            "middle_right": 0.000007760163755617898,
+            "top_center": 0.00011402944522142829,
+            "top_left": 0.00011402944522142829,
+            "top_right": 0.0000308900185899558
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999775794382514,
+          "h_norm": 0.00037862716740159473,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00002242056174857869,
+            "yes": 0.9999775794382514
+          }
+        }
+      ],
+      "wall_time_ms": 364.53
+    },
+    {
+      "id": "geo-1x1-grid-06",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.8229048280295109,
+          "h_norm": 0.37312624373402653,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0002483192901759384,
+            "2": 0.013790985224999087,
+            "3": 0.8229048280295109,
+            "4": 0.16305586745531409
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_left",
+          "predicted": "middle_left",
+          "correct": true,
+          "confidence": 0.9609939837116346,
+          "h_norm": 0.07640588644244811,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000003021337307162214,
+            "bottom_left": 0.03848215979623318,
+            "bottom_right": 3.939846998573224e-7,
+            "middle_center": 0.00042383170087688214,
+            "middle_left": 0.9609939837116346,
+            "middle_right": 0.00000487591452497184,
+            "top_center": 0.000004386584570308015,
+            "top_left": 0.00008132882084188725,
+            "top_right": 0.000006018149311127408
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999986503591082,
+          "h_norm": 0.000028263757182718974,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0000013496408919123593,
+            "yes": 0.9999986503591082
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "left_of",
+          "correct": true,
+          "confidence": 0.9977139629261954,
+          "h_norm": 0.012255706101423151,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.0000895984188592676,
+            "below": 0.0020895660281064527,
+            "left_of": 0.9977139629261956,
+            "right_of": 0.0001068726268388035
+          }
+        }
+      ],
+      "wall_time_ms": 360.768
+    },
+    {
+      "id": "geo-1x1-grid-07",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "3",
+          "correct": true,
+          "confidence": 0.9701164791679999,
+          "h_norm": 0.0982578386271309,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00013614379441329171,
+            "2": 0.00016226234129412508,
+            "3": 0.9701164791679999,
+            "4": 0.029585114696292693
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9987142303631189,
+          "h_norm": 0.004759354237395359,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.00000759327605724994,
+            "bottom_left": 0.000003290010482330236,
+            "bottom_right": 0.0000012514653294780795,
+            "middle_center": 0.9987142303631189,
+            "middle_left": 0.00006924515767290034,
+            "middle_right": 0.00002358888492487906,
+            "top_center": 0.0011528330818712823,
+            "top_left": 0.000008363300689493332,
+            "top_right": 0.000019604459853506793
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999926233810619,
+          "h_norm": 0.00013640326328422057,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0000073766189381653,
+            "yes": 0.9999926233810619
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.995773548338917,
+          "h_norm": 0.021026326922012104,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.995773548338917,
+            "below": 0.003735889178636834,
+            "left_of": 0.0003297397906875543,
+            "right_of": 0.00016082269175868503
+          }
+        }
+      ],
+      "wall_time_ms": 337.577
+    },
+    {
+      "id": "geo-1x1-grid-08",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "3",
+          "correct": true,
+          "confidence": 0.9308378522961933,
+          "h_norm": 0.18216564289768516,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00003827859752827151,
+            "2": 0.00009844525144422023,
+            "3": 0.9308378522961933,
+            "4": 0.0690254238548343
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_center",
+          "predicted": "bottom_center",
+          "correct": true,
+          "confidence": 0.9983699663729066,
+          "h_norm": 0.0068115350350406705,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.9983699663729066,
+            "bottom_left": 0.00006406696210202331,
+            "bottom_right": 0.00038623636600608816,
+            "middle_center": 0.0005330534465756332,
+            "middle_left": 0.00011891018896708694,
+            "middle_right": 0.00021642199622427498,
+            "top_center": 0.00021642199622427498,
+            "top_left": 0.000030855708891971,
+            "top_right": 0.00006406696210202331
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999850757030142,
+          "h_norm": 0.00026079704206026543,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000014924296985824098,
+            "yes": 0.9999850757030141
+          }
+        }
+      ],
+      "wall_time_ms": 361.766
+    },
+    {
+      "id": "geo-1x1-grid-09",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9998360886274763,
+          "h_norm": 0.001274771322128497,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9998360886274765,
+            "2": 0.00007504538607551166,
+            "3": 0.0000444329932240326,
+            "4": 0.0000444329932240326
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9994323531188105,
+          "h_norm": 0.0024393986098222385,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0004198306501649899,
+            "bottom_left": 0.00001915601794000999,
+            "bottom_right": 0.000011287778448805671,
+            "middle_center": 0.9994323531188104,
+            "middle_left": 0.00001755723903112448,
+            "middle_right": 0.00007315530497158801,
+            "top_center": 0.000012340226092948046,
+            "top_left": 0.000013485476238727252,
+            "top_right": 8.341883013111158e-7
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999729804582206,
+          "h_norm": 0.0004490191974424412,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00002701954177942193,
+            "yes": 0.9999729804582205
+          }
+        }
+      ],
+      "wall_time_ms": 373.119
+    },
+    {
+      "id": "geo-1x1-grid-10",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9999698932709506,
+          "h_norm": 0.0002713834193902405,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9999698932709506,
+            "2": 0.000009310062182952969,
+            "3": 0.000008472503333271083,
+            "4": 0.000012324163533186642
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_center",
+          "predicted": "bottom_center",
+          "correct": true,
+          "confidence": 0.9993818572772547,
+          "h_norm": 0.0026280036946057608,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.9993818572772547,
+            "bottom_left": 0.0000019104286469287122,
+            "bottom_right": 0.0003390621877854811,
+            "middle_center": 0.00024215741746446556,
+            "middle_left": 0.0000027484237138622056,
+            "middle_right": 0.000015087181398012088,
+            "top_center": 0.000006861410777666996,
+            "top_left": 0.000009246263634015227,
+            "top_right": 0.0000010694093248615191
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999989086110749,
+          "h_norm": 0.00002318993830775007,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0000010913889251911796,
+            "yes": 0.9999989086110749
+          }
+        }
+      ],
+      "wall_time_ms": 369.665
+    },
+    {
+      "id": "geo-1x1-grid-11",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.8973603495800375,
+          "h_norm": 0.24849130764133656,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00001921799517926032,
+            "2": 0.09964880623274473,
+            "3": 0.8973603495800375,
+            "4": 0.0029716261920385346
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_center",
+          "predicted": "bottom_center",
+          "correct": true,
+          "confidence": 0.9998727047410951,
+          "h_norm": 0.0006717466625511433,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.999872704741095,
+            "bottom_left": 0.0000026443477519658043,
+            "bottom_right": 0.000042695115314505805,
+            "middle_center": 0.000042695115314505805,
+            "middle_left": 0.000016665966876210508,
+            "middle_right": 0.000008024554158973024,
+            "top_center": 0.000005123235292851009,
+            "top_left": 0.0000056641320991388086,
+            "top_right": 0.0000037827920967525614
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999848427737835,
+          "h_norm": 0.0002645287443311763,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000015157226216557325,
+            "yes": 0.9999848427737835
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "below",
+          "predicted": "below",
+          "correct": true,
+          "confidence": 0.999861456220033,
+          "h_norm": 0.0010507817646311169,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.0001112720089750115,
+            "below": 0.9998614562200332,
+            "left_of": 0.000011518629580313085,
+            "right_of": 0.0000157531414115951
+          }
+        }
+      ],
+      "wall_time_ms": 365.914
+    },
+    {
+      "id": "geo-1x1-grid-12",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.7080371346974815,
+          "h_norm": 0.5189631498821926,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0009335530626779374,
+            "2": 0.2548615059024458,
+            "3": 0.7080371346974815,
+            "4": 0.0361678063373947
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9989009811127239,
+          "h_norm": 0.004619675326644009,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000019397210033084482,
+            "bottom_left": 0.00000803366183206551,
+            "bottom_right": 0.0000026474045662918207,
+            "middle_center": 0.9989009811127239,
+            "middle_left": 0.0005839390555639145,
+            "middle_right": 0.00010028827445567231,
+            "top_center": 0.00015913532564219664,
+            "top_left": 0.00010841783286334998,
+            "top_right": 0.00011716012231957359
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999865440893575,
+          "h_norm": 0.0002371481233949924,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000013455910642524232,
+            "yes": 0.9999865440893575
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.9966048681097283,
+          "h_norm": 0.017798568250947038,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9966048681097283,
+            "below": 0.002764899179708759,
+            "left_of": 0.0004740259645169368,
+            "right_of": 0.0001562067460460887
+          }
+        }
+      ],
+      "wall_time_ms": 356.13
+    },
+    {
+      "id": "geo-1x1-grid-13",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "small",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.9922882975618806,
+          "h_norm": 0.03842735311530824,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.001460002248718198,
+            "2": 0.9922882975618805,
+            "3": 0.0032258329486202744,
+            "4": 0.003025867240780955
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_right",
+          "predicted": "bottom_right",
+          "correct": true,
+          "confidence": 0.8687946532948864,
+          "h_norm": 0.22581400288552378,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.10600114775462488,
+            "bottom_left": 0.0011819500692360453,
+            "bottom_right": 0.8687946532948864,
+            "middle_center": 0.0018358710748031368,
+            "middle_left": 0.008728699232849095,
+            "middle_right": 0.00346152303156217,
+            "top_center": 0.0051922895921888415,
+            "top_left": 0.0010967966494051444,
+            "top_right": 0.0037070693004442995
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.988844938193795,
+          "h_norm": 0.08835674537609418,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.011155061806205,
+            "yes": 0.988844938193795
+          }
+        }
+      ],
+      "wall_time_ms": 351.231
+    },
+    {
+      "id": "geo-1x1-grid-14",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.8711110204896828,
+          "h_norm": 0.28158408848148786,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00018094808378466096,
+            "2": 0.0007720679527805722,
+            "3": 0.12793596347375202,
+            "4": 0.8711110204896828
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.8748177672537839,
+          "h_norm": 0.17247975526196233,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000006358766417576442,
+            "bottom_left": 0.000017654870439763918,
+            "bottom_right": 0.000037355227623105014,
+            "middle_center": 0.8748177672537839,
+            "middle_left": 0.00007707264771747718,
+            "middle_right": 0.12497784691527222,
+            "top_center": 0.000031045514130402455,
+            "top_left": 0.000003853290485228827,
+            "top_right": 0.000031045514130402455
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999950915766531,
+          "h_norm": 0.0000936478109215316,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000004908423346953894,
+            "yes": 0.9999950915766531
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.9936885758986589,
+          "h_norm": 0.03163790324602674,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9936885758986589,
+            "below": 0.003854487276532569,
+            "left_of": 0.001844714116247331,
+            "right_of": 0.0006122227085612881
+          }
+        }
+      ],
+      "wall_time_ms": 346.696
+    },
+    {
+      "id": "geo-1x1-plain-00",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.8564975725996001,
+          "h_norm": 0.30685579402201046,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00025286941373567595,
+            "2": 0.0024176533694659354,
+            "3": 0.1408319046171983,
+            "4": 0.8564975725996001
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9975163191946592,
+          "h_norm": 0.008677012588267188,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.002083978384647153,
+            "bottom_left": 0.000017587298872411428,
+            "bottom_right": 0.0000024699659016830465,
+            "middle_center": 0.9975163191946591,
+            "middle_left": 0.0001139820575388646,
+            "middle_right": 0.00016965308250664163,
+            "top_center": 0.00004587109613747383,
+            "top_left": 0.000017587298872411428,
+            "top_right": 0.000032551620864238114
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999821170945381,
+          "h_norm": 0.00030783171123128817,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00001788290546195878,
+            "yes": 0.9999821170945381
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "below",
+          "predicted": "below",
+          "correct": true,
+          "confidence": 0.9976032243996076,
+          "h_norm": 0.01272642996112579,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.0021965575160642977,
+            "below": 0.9976032243996078,
+            "left_of": 0.0001611872207520882,
+            "right_of": 0.00003903086357588758
+          }
+        }
+      ],
+      "wall_time_ms": 348.757
+    },
+    {
+      "id": "geo-1x1-plain-01",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "False",
+        "set": "geometry",
+        "size": "large",
+        "type": "info_card"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.8620873077280606,
+          "h_norm": 0.30130512714308283,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0006213330449993074,
+            "2": 0.0025183315475361887,
+            "3": 0.13477302767940386,
+            "4": 0.8620873077280606
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_right",
+          "predicted": "bottom_right",
+          "correct": true,
+          "confidence": 0.9764433557010653,
+          "h_norm": 0.06092429826946814,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.01781157413486795,
+            "bottom_left": 0.00036926926939960357,
+            "bottom_right": 0.9764433557010653,
+            "middle_center": 0.0005929947944745214,
+            "middle_left": 0.0005929947944745214,
+            "middle_right": 0.0012649698553432154,
+            "top_center": 0.0024187461375034277,
+            "top_left": 0.00010609360829646976,
+            "top_right": 0.0004000017045749334
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.999422206074264,
+          "h_norm": 0.007048759736697463,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0005777939257360131,
+            "yes": 0.999422206074264
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "below",
+          "predicted": "below",
+          "correct": true,
+          "confidence": 0.6346404286294656,
+          "h_norm": 0.5776353549996168,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.328529480788883,
+            "below": 0.6346404286294656,
+            "left_of": 0.021765176456618462,
+            "right_of": 0.01506491412503292
+          }
+        }
+      ],
+      "wall_time_ms": 360.334
+    },
+    {
+      "id": "geo-1x1-plain-02",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.9943512591339179,
+          "h_norm": 0.02739321177868378,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00004559276566089521,
+            "2": 0.9943512591339179,
+            "3": 0.0011451247456737163,
+            "4": 0.004458023354747507
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_center",
+          "correct": true,
+          "confidence": 0.9991361559526037,
+          "h_norm": 0.0034641296787056397,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000015532124573700445,
+            "bottom_left": 9.793923773474953e-7,
+            "bottom_right": 7.172723741995829e-7,
+            "middle_center": 0.00005614713401911587,
+            "middle_left": 0.00006123564677432219,
+            "middle_right": 8.384836002017781e-7,
+            "top_center": 0.9991361559526037,
+            "top_left": 0.0006862257717746169,
+            "top_right": 0.00005614713401911587
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999920260970447,
+          "h_norm": 0.00014655213763656666,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000007973902955234529,
+            "yes": 0.9999920260970447
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.9961255874241588,
+          "h_norm": 0.018875799675628684,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9961255874241588,
+            "below": 0.0037118097819369682,
+            "left_of": 0.00006590825794621867,
+            "right_of": 0.00009669453595796759
+          }
+        }
+      ],
+      "wall_time_ms": 363.096
+    },
+    {
+      "id": "geo-1x1-plain-03",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9999105128515728,
+          "h_norm": 0.0007138521366599863,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9999105128515728,
+            "2": 0.0000112279339496491,
+            "3": 0.0000112279339496491,
+            "4": 0.0000670312805279215
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_center",
+          "correct": true,
+          "confidence": 0.9968827662965893,
+          "h_norm": 0.011045269225017345,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000053355865329882825,
+            "bottom_left": 0.0000016627991273341417,
+            "bottom_right": 0.000007773315433077514,
+            "middle_center": 0.0018862102570662395,
+            "middle_left": 0.00017273845300390183,
+            "middle_right": 0.000016191064421177632,
+            "top_center": 0.9968827662965893,
+            "top_left": 0.0008912545846912444,
+            "top_right": 0.00013606764313471814
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999986506522183,
+          "h_norm": 0.000028258041785238047,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0000013493477817924346,
+            "yes": 0.9999986506522183
+          }
+        }
+      ],
+      "wall_time_ms": 358.924
+    },
+    {
+      "id": "geo-1x1-plain-04",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.9971726836803845,
+          "h_norm": 0.014470304918872095,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.000022513536681439655,
+            "2": 0.000125861043010398,
+            "3": 0.9971726836803844,
+            "4": 0.0026789417399237024
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "middle_center",
+          "correct": false,
+          "confidence": 0.9938629945674815,
+          "h_norm": 0.02020912505701924,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0003044398769530977,
+            "bottom_left": 0.000026207278357201612,
+            "bottom_right": 0.000008885313894531905,
+            "middle_center": 0.9938629945674814,
+            "middle_left": 0.002179172570379149,
+            "middle_right": 0.0001514925740392935,
+            "top_center": 0.0031956672144863394,
+            "top_left": 0.00007928031310077283,
+            "top_right": 0.00019186029130811364
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999977873226321,
+          "h_norm": 0.0000447590753399826,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00000221267736789452,
+            "yes": 0.9999977873226321
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "below",
+          "correct": false,
+          "confidence": 0.9999937728703012,
+          "h_norm": 0.000060865273813301284,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.0000051238000909958415,
+            "below": 0.9999937728703012,
+            "left_of": 8.459347240025907e-7,
+            "right_of": 2.573948837235747e-7
+          }
+        }
+      ],
+      "wall_time_ms": 365.172
+    },
+    {
+      "id": "geo-1x1-plain-05",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "status_alert_badge"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.9726144910633983,
+          "h_norm": 0.0934067022771397,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00012074567309441775,
+            "2": 0.0006797916004703335,
+            "3": 0.026584971663037044,
+            "4": 0.9726144910633981
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.999595771615947,
+          "h_norm": 0.0017201251849452571,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000017948959156999723,
+            "bottom_left": 0.000004442289172111074,
+            "bottom_right": 7.420391296619627e-7,
+            "middle_center": 0.999595771615947,
+            "middle_left": 0.0003555431533086152,
+            "middle_right": 0.000019638150059992214,
+            "top_center": 0.00000273548156494129,
+            "top_left": 0.0000015097661528013518,
+            "top_right": 0.0000016685455079184878
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999991113395766,
+          "h_norm": 0.000019145796765638303,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 8.886604233061413e-7,
+            "yes": 0.9999991113395766
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.9968042950521789,
+          "h_norm": 0.0164810264281232,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9968042950521789,
+            "below": 0.0028549139906117564,
+            "left_of": 0.00023650919302213756,
+            "right_of": 0.00010428176418710319
+          }
+        }
+      ],
+      "wall_time_ms": 360.545
+    },
+    {
+      "id": "geo-1x1-plain-06",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "large",
+        "type": "search_input_field"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.5633638379127951,
+          "h_norm": 0.6070051980908151,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0006378701510117555,
+            "2": 0.3877940636826484,
+            "3": 0.5633638379127951,
+            "4": 0.048204228253544694
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_left",
+          "predicted": "bottom_left",
+          "correct": true,
+          "confidence": 0.6402824296183343,
+          "h_norm": 0.3657609621522104,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.3120802807376001,
+            "bottom_left": 0.6402824296183341,
+            "bottom_right": 0.00001595822445528869,
+            "middle_center": 0.04591075747563777,
+            "middle_left": 0.0009117974499142092,
+            "middle_right": 0.00013945644793044815,
+            "top_center": 0.00019904654161632945,
+            "top_left": 0.00015251999373173603,
+            "top_right": 0.00030775351077993074
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999878851532976,
+          "h_norm": 0.00021534807089452346,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000012114846702410203,
+            "yes": 0.9999878851532975
+          }
+        }
+      ],
+      "wall_time_ms": 359.937
+    },
+    {
+      "id": "geo-1x1-plain-07",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "status_alert_badge"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.9978566361317694,
+          "h_norm": 0.011365755838719953,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00006202628776115416,
+            "2": 0.000031335460166999026,
+            "3": 0.002050002120302387,
+            "4": 0.9978566361317693
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_right",
+          "predicted": "bottom_right",
+          "correct": true,
+          "confidence": 0.568687511566766,
+          "h_norm": 0.3145299406322757,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.43039923678183495,
+            "bottom_left": 0.00003269682193318994,
+            "bottom_right": 0.568687511566766,
+            "middle_center": 0.000522229468092938,
+            "middle_left": 0.000009818134019076183,
+            "middle_right": 0.0003285149237629146,
+            "top_center": 0.00000792737482010537,
+            "top_left": 0.000001709647497946535,
+            "top_right": 0.00001035528127288748
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999203518975149,
+          "h_norm": 0.0011993919481297075,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0000796481024850319,
+            "yes": 0.9999203518975148
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "below",
+          "predicted": "below",
+          "correct": true,
+          "confidence": 0.9999597213108209,
+          "h_norm": 0.00035374095216257357,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.000015690057892517302,
+            "below": 0.9999597213108209,
+            "left_of": 0.00000808879031390393,
+            "right_of": 0.000016499840972634154
+          }
+        }
+      ],
+      "wall_time_ms": 361.628
+    },
+    {
+      "id": "geo-1x1-plain-08",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.994610508939553,
+          "h_norm": 0.026725894491509705,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00003833892216517067,
+            "2": 0.9946105089395533,
+            "3": 0.001638273181935565,
+            "4": 0.0037128789563461335
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_right",
+          "predicted": "top_right",
+          "correct": true,
+          "confidence": 0.999922622772652,
+          "h_norm": 0.00041025974161955706,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 2.9196898955829336e-7,
+            "bottom_left": 3.2546933233122416e-7,
+            "bottom_right": 7.272664644546272e-7,
+            "middle_center": 0.0000016782950483008379,
+            "middle_left": 0.000007939360148304896,
+            "middle_right": 0.000001593890638290038,
+            "top_center": 0.00002371078062974395,
+            "top_left": 0.0000411101960971608,
+            "top_right": 0.999922622772652
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999976967772275,
+          "h_norm": 0.00004645740366016883,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000002303222772581455,
+            "yes": 0.9999976967772275
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "right_of",
+          "predicted": "above",
+          "correct": false,
+          "confidence": 0.9995537430431582,
+          "h_norm": 0.002919901413939961,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9995537430431585,
+            "below": 0.00040485947615738,
+            "left_of": 0.00003280661412538343,
+            "right_of": 0.000008590866558810437
+          }
+        }
+      ],
+      "wall_time_ms": 356.795
+    },
+    {
+      "id": "geo-1x1-plain-09",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "large",
+        "type": "info_card"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.8689762999055558,
+          "h_norm": 0.3373701352193816,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0005770938349262309,
+            "2": 0.09564935001041225,
+            "3": 0.868976299905556,
+            "4": 0.034797256249105596
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_center",
+          "predicted": "middle_center",
+          "correct": false,
+          "confidence": 0.593489925285384,
+          "h_norm": 0.4287192717177563,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.01644550653358969,
+            "bottom_left": 0.07747063257383241,
+            "bottom_right": 0.000002698406719841674,
+            "middle_center": 0.593489925285384,
+            "middle_left": 0.31224238903797685,
+            "middle_right": 0.00005717702368160242,
+            "top_center": 0.00009648995920662398,
+            "top_left": 0.00001054881273864052,
+            "top_right": 0.0001846323668702407
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999932201431494,
+          "h_norm": 0.00012619350204653442,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000006779856850503042,
+            "yes": 0.9999932201431496
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "left_of",
+          "correct": true,
+          "confidence": 0.9942395679205114,
+          "h_norm": 0.028899912283903414,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.001942091385081989,
+            "below": 0.0035645185334866256,
+            "left_of": 0.9942395679205113,
+            "right_of": 0.0002538221609200509
+          }
+        }
+      ],
+      "wall_time_ms": 361.369
+    },
+    {
+      "id": "geo-1x1-plain-10",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "2",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.9809519617720511,
+          "h_norm": 0.07216560549170463,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00038642382629242055,
+            "2": 0.000980619369000458,
+            "3": 0.017680995032656032,
+            "4": 0.9809519617720511
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_right",
+          "correct": false,
+          "confidence": 0.9981699546803107,
+          "h_norm": 0.006384108764863858,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000012785098202047056,
+            "bottom_left": 8.38668740283798e-7,
+            "bottom_right": 0.0000010362133804310095,
+            "middle_center": 0.000011167031900730502,
+            "middle_left": 0.00004167583329685223,
+            "middle_right": 0.00002392376893867773,
+            "top_center": 0.0016954110063182076,
+            "top_left": 0.000054714287293976015,
+            "top_right": 0.9981699546803107
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999899621936702,
+          "h_norm": 0.00018115112904416498,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000010037806329838428,
+            "yes": 0.9999899621936701
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "right_of",
+          "predicted": "right_of",
+          "correct": true,
+          "confidence": 0.9019891122236361,
+          "h_norm": 0.28710857297480874,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.06514115124725613,
+            "below": 0.02739505990661947,
+            "left_of": 0.005474676622488361,
+            "right_of": 0.9019891122236361
+          }
+        }
+      ],
+      "wall_time_ms": 365.672
+    },
+    {
+      "id": "geo-1x1-plain-11",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.9431084761713272,
+          "h_norm": 0.17419086757057312,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0005652846864154056,
+            "2": 0.9431084761713272,
+            "3": 0.04990566372205782,
+            "4": 0.006420575420199546
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_right",
+          "predicted": "bottom_center",
+          "correct": false,
+          "confidence": 0.6587503566054129,
+          "h_norm": 0.29318237516708123,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.6587503566054129,
+            "bottom_left": 0.0001285911403034968,
+            "bottom_right": 0.34101026339097573,
+            "middle_center": 0.00003363790551777436,
+            "middle_left": 0.000016344693892583835,
+            "middle_right": 0.000021193402235682803,
+            "top_center": 0.000019106769300216103,
+            "top_left": 0.0000032866722015926783,
+            "top_right": 0.000017219420160063502
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999927313808962,
+          "h_norm": 0.0001345608712859878,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000007268619103875279,
+            "yes": 0.9999927313808962
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "below",
+          "predicted": "below",
+          "correct": true,
+          "confidence": 0.9999621373492101,
+          "h_norm": 0.0003300803370628253,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.00002287395693441984,
+            "below": 0.9999621373492101,
+            "left_of": 0.000004114821497944656,
+            "right_of": 0.000010873872357564636
+          }
+        }
+      ],
+      "wall_time_ms": 355.369
+    },
+    {
+      "id": "geo-1x1-plain-12",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "user_avatar_icon"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9998955113701739,
+          "h_norm": 0.000841387575455552,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9998955113701739,
+            "2": 0.00003505114243983998,
+            "3": 0.000015997707241336624,
+            "4": 0.0000534397801449376
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_right",
+          "correct": false,
+          "confidence": 0.9926833989475715,
+          "h_norm": 0.01981722291327766,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 4.508641200329192e-7,
+            "bottom_left": 3.052963568848438e-7,
+            "bottom_right": 2.7292724388613744e-7,
+            "middle_center": 0.000001344510049772675,
+            "middle_left": 0.00000477261991102408,
+            "middle_right": 0.0000031461329310072133,
+            "top_center": 0.007278720080399226,
+            "top_left": 0.000027588621416704885,
+            "top_right": 0.9926833989475715
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999855740549244,
+          "h_norm": 0.0002527953461971161,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000014425945075644332,
+            "yes": 0.9999855740549244
+          }
+        }
+      ],
+      "wall_time_ms": 360.04
+    },
+    {
+      "id": "geo-1x1-plain-13",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "0",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9999006245281268,
+          "h_norm": 0.0008010505702669293,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9999006245281268,
+            "2": 0.000024231654638797417,
+            "3": 0.000016869620444423293,
+            "4": 0.000058274196789949656
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "bottom_center",
+          "predicted": "bottom_center",
+          "correct": true,
+          "confidence": 0.9997470038409787,
+          "h_norm": 0.0011652471832344583,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.9997470038409789,
+            "bottom_left": 0.00019211353209665596,
+            "bottom_right": 0.0000372426938833598,
+            "middle_center": 0.0000028334948744536754,
+            "middle_left": 0.0000012527595754102493,
+            "middle_right": 8.258248568524891e-7,
+            "top_center": 0.0000068986335599258474,
+            "top_left": 0.000011160135509690644,
+            "top_right": 6.690846648096059e-7
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999953078168565,
+          "h_norm": 0.00008982715832306941,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000004692183143466132,
+            "yes": 0.9999953078168565
+          }
+        }
+      ],
+      "wall_time_ms": 370.86
+    },
+    {
+      "id": "geo-1x1-plain-14",
+      "repeat": 0,
+      "tags": {
+        "aspect": "1x1",
+        "distractors": "1",
+        "grid": "False",
+        "set": "geometry",
+        "size": "medium",
+        "type": "status_alert_badge"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.9960169132057216,
+          "h_norm": 0.02077521943714753,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00011862989546125089,
+            "2": 0.9960169132057216,
+            "3": 0.002791918855686298,
+            "4": 0.0010725380431308934
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_left",
+          "predicted": "middle_left",
+          "correct": true,
+          "confidence": 0.9988523540747775,
+          "h_norm": 0.00426768551984899,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 5.545990020521259e-7,
+            "bottom_left": 0.000002722258867115123,
+            "bottom_right": 5.845879438330049e-7,
+            "middle_center": 0.000041863730916195185,
+            "middle_left": 0.9988523540747773,
+            "middle_right": 0.000002227983541645946,
+            "top_center": 0.000020354749308599264,
+            "top_left": 0.0010500539997210206,
+            "top_right": 0.000029284015922097743
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999867115724851,
+          "h_norm": 0.0002344365050489262,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000013288427514861349,
+            "yes": 0.9999867115724851
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.9717845778500135,
+          "h_norm": 0.09662058447528098,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9717845778500135,
+            "below": 0.02710121585202685,
+            "left_of": 0.0005132598919978181,
+            "right_of": 0.0006009464059618221
+          }
+        }
+      ],
+      "wall_time_ms": 364.272
+    },
+    {
+      "id": "geo-16x9-grid-00",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.7765036458960098,
+          "h_norm": 0.3895188606685754,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.000020413671668906504,
+            "2": 0.7765036458960101,
+            "3": 0.22207944158540546,
+            "4": 0.001396498846915678
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_center",
+          "correct": true,
+          "confidence": 0.9998313691449319,
+          "h_norm": 0.0008117067125663501,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 2.600869007899498e-7,
+            "bottom_left": 1.517225379876033e-7,
+            "bottom_right": 2.893973419711997e-7,
+            "middle_center": 0.00000802248346602237,
+            "middle_left": 0.000022145823415336477,
+            "middle_right": 9.155443159140088e-7,
+            "top_center": 0.9998313691449318,
+            "top_left": 0.0001240426681195047,
+            "top_right": 0.000012803128970681954
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999984218671253,
+          "h_norm": 0.0000326926697399,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0000015781328747489904,
+            "yes": 0.9999984218671252
+          }
+        }
+      ],
+      "wall_time_ms": 355.322
+    },
+    {
+      "id": "geo-16x9-grid-01",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9999752161094513,
+          "h_norm": 0.0002264296095848015,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9999752161094513,
+            "2": 0.000005751891878538361,
+            "3": 0.000007707282756441429,
+            "4": 0.000011324715913687155
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9998610854396319,
+          "h_norm": 0.0007191775950779998,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.00005289631689135974,
+            "bottom_left": 0.0000028672483995856227,
+            "bottom_right": 8.501791178652078e-7,
+            "middle_center": 0.9998610854396319,
+            "middle_left": 0.000007259720146777474,
+            "middle_right": 0.000048734646317083225,
+            "top_center": 0.000012438438064435633,
+            "top_left": 0.000011382107330957214,
+            "top_right": 0.000002485904099993176
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999836892032063,
+          "h_norm": 0.0002829351793155731,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000016310796793665916,
+            "yes": 0.9999836892032062
+          }
+        }
+      ],
+      "wall_time_ms": 357.537
+    },
+    {
+      "id": "geo-16x9-grid-02",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "large",
+        "type": "info_card"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9938929363736144,
+          "h_norm": 0.031617257967532855,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9938929363736146,
+            "2": 0.0017669869448331834,
+            "3": 0.0025730897367190917,
+            "4": 0.0017669869448331834
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_right",
+          "predicted": "middle_right",
+          "correct": true,
+          "confidence": 0.9981179444018817,
+          "h_norm": 0.007286782103971391,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000032009266398600754,
+            "bottom_left": 0.00005303338387953682,
+            "bottom_right": 0.0008117478369404753,
+            "middle_center": 0.0008117478369404753,
+            "middle_left": 0.00007366271243492757,
+            "middle_right": 0.9981179444018816,
+            "top_center": 0.000019043229347745877,
+            "top_left": 0.000032009266398600754,
+            "top_right": 0.00004880206577796704
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999512702842515,
+          "h_norm": 0.0007683457227339089,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000048729715748544445,
+            "yes": 0.9999512702842515
+          }
+        }
+      ],
+      "wall_time_ms": 361.026
+    },
+    {
+      "id": "geo-16x9-grid-03",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "search_input_field"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.9843971214798823,
+          "h_norm": 0.061632431352106,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00005678856803570624,
+            "2": 0.014160465016958697,
+            "3": 0.9843971214798822,
+            "4": 0.0013856249351233254
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.9991251402119371,
+          "h_norm": 0.0035591178560347107,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0006771726272255269,
+            "bottom_left": 0.000011973839190908447,
+            "bottom_right": 0.000014384730643566967,
+            "middle_center": 0.9991251402119371,
+            "middle_left": 0.00007591090064838467,
+            "middle_right": 0.00005412859392149259,
+            "top_center": 0.000024704855210567706,
+            "top_left": 0.00000906669651170905,
+            "top_right": 0.0000075175447107360185
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999907240929592,
+          "h_norm": 0.00016845760092571634,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00000927590704086095,
+            "yes": 0.9999907240929592
+          }
+        }
+      ],
+      "wall_time_ms": 359.809
+    },
+    {
+      "id": "geo-16x9-grid-04",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "primary_cta_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "2",
+          "correct": true,
+          "confidence": 0.5227190266072038,
+          "h_norm": 0.5194931449606958,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.0003311061149480142,
+            "2": 0.5227190266072038,
+            "3": 0.47248144539708387,
+            "4": 0.004468421880764303
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_left",
+          "predicted": "middle_left",
+          "correct": true,
+          "confidence": 0.7141060300793725,
+          "h_norm": 0.2764460641135655,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000008018653894138709,
+            "bottom_left": 0.000018273926888330688,
+            "bottom_right": 0.0000030938023680129673,
+            "middle_center": 0.28476672556628263,
+            "middle_left": 0.7141060300793725,
+            "middle_right": 0.00017819035915526342,
+            "top_center": 0.00017819035915526342,
+            "top_left": 0.00035681193626715274,
+            "top_right": 0.00038466531661665945
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9997283274959532,
+          "h_norm": 0.0036100773833498603,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.0002716725040467899,
+            "yes": 0.9997283274959532
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "below",
+          "correct": false,
+          "confidence": 0.8728391898591221,
+          "h_norm": 0.33648469667312225,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.047222198828625,
+            "below": 0.8728391898591221,
+            "left_of": 0.07969951091650707,
+            "right_of": 0.00023910039574581102
+          }
+        }
+      ],
+      "wall_time_ms": 364.833
+    },
+    {
+      "id": "geo-16x9-grid-05",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "0",
+        "grid": "True",
+        "set": "geometry",
+        "size": "large",
+        "type": "info_card"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "1",
+          "predicted": "1",
+          "correct": true,
+          "confidence": 0.9938918153180677,
+          "h_norm": 0.03161216976035769,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.9938918153180677,
+            "2": 0.0016881442268228913,
+            "3": 0.0026036954442512513,
+            "4": 0.0018163450108582273
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.999868761617058,
+          "h_norm": 0.0006833595455470639,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000022914767830102954,
+            "bottom_left": 6.635418434120729e-7,
+            "bottom_right": 4.578493171516952e-7,
+            "middle_center": 0.999868761617058,
+            "middle_left": 0.00004583360209326197,
+            "middle_right": 0.000013946900317909741,
+            "top_center": 0.00004583360209326197,
+            "top_left": 0.000013946900317909741,
+            "top_right": 0.000008264510176177272
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.999991488877229,
+          "h_norm": 0.00015562509691807478,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000008511122770979029,
+            "yes": 0.999991488877229
+          }
+        }
+      ],
+      "wall_time_ms": 354.644
+    },
+    {
+      "id": "geo-16x9-grid-06",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "large",
+        "type": "info_card"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.5007519837666446,
+          "h_norm": 0.7412991048045078,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00016641724404429522,
+            "2": 0.1929996527619266,
+            "3": 0.30608194622738444,
+            "4": 0.5007519837666448
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_center",
+          "correct": true,
+          "confidence": 0.9472804561341058,
+          "h_norm": 0.09700055149316884,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000011196713594633,
+            "bottom_left": 0.0000024508858854135554,
+            "bottom_right": 0.000004104128764601104,
+            "middle_center": 0.051596611908650565,
+            "middle_left": 0.0005615077145435888,
+            "middle_right": 0.00002805315713029175,
+            "top_center": 0.9472804561341058,
+            "top_left": 0.00011136253331777411,
+            "top_right": 0.0004042568240073633
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.999994256948444,
+          "h_norm": 0.00010827054610161001,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00000574305155604334,
+            "yes": 0.999994256948444
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "above",
+          "predicted": "above",
+          "correct": true,
+          "confidence": 0.9930951177340728,
+          "h_norm": 0.03227461481979733,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9930951177340728,
+            "below": 0.005897517839912967,
+            "left_of": 0.0003293054446128741,
+            "right_of": 0.0006780589814014406
+          }
+        }
+      ],
+      "wall_time_ms": 363.542
+    },
+    {
+      "id": "geo-16x9-grid-07",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "1",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "2",
+          "predicted": "3",
+          "correct": false,
+          "confidence": 0.9923262580245638,
+          "h_norm": 0.03635467895040519,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00004455302567162744,
+            "2": 0.002992302925493342,
+            "3": 0.9923262580245638,
+            "4": 0.0046368860242712775
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "middle_center",
+          "correct": false,
+          "confidence": 0.9973149712267587,
+          "h_norm": 0.009133161726868289,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.000008929974661230568,
+            "bottom_left": 0.000004793282471126233,
+            "bottom_right": 0.0000020734981106201897,
+            "middle_center": 0.9973149712267586,
+            "middle_left": 0.00011706185554150263,
+            "middle_right": 0.00009908757143853485,
+            "top_center": 0.002351496890678059,
+            "top_left": 0.000024650925463246052,
+            "top_right": 0.00007693477487707279
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9998936724726277,
+          "h_norm": 0.001556828045888295,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000106327527372296,
+            "yes": 0.9998936724726277
+          }
+        }
+      ],
+      "wall_time_ms": 373.928
+    },
+    {
+      "id": "geo-16x9-grid-08",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "2",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "search_input_field"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.9193384748361874,
+          "h_norm": 0.20537576556659842,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00011633817593237706,
+            "2": 0.0005825466633912187,
+            "3": 0.0799626403244891,
+            "4": 0.9193384748361874
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "middle_center",
+          "predicted": "middle_center",
+          "correct": true,
+          "confidence": 0.976083077754739,
+          "h_norm": 0.052542911168613954,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0000016348228087955202,
+            "bottom_left": 0.000006644335501610931,
+            "bottom_right": 2.205455901171458e-7,
+            "middle_center": 0.9760830777547389,
+            "middle_left": 0.02352493301741654,
+            "middle_right": 0.0001440582737205561,
+            "top_center": 0.00012370561419132795,
+            "top_left": 0.00003178016868792508,
+            "top_right": 0.00008394546734414487
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9999872766123047,
+          "h_norm": 0.00022526558777435473,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.000012723387695272285,
+            "yes": 0.9999872766123047
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "above",
+          "correct": false,
+          "confidence": 0.9219928983752778,
+          "h_norm": 0.2258620426039193,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9219928983752776,
+            "below": 0.06670428202750281,
+            "left_of": 0.007844165712917853,
+            "right_of": 0.0034586538843016284
+          }
+        }
+      ],
+      "wall_time_ms": 369.596
+    },
+    {
+      "id": "geo-16x9-grid-09",
+      "repeat": 0,
+      "tags": {
+        "aspect": "16x9",
+        "distractors": "2",
+        "grid": "True",
+        "set": "geometry",
+        "size": "medium",
+        "type": "secondary_cancel_button"
+      },
+      "answers": [
+        {
+          "aspect": "element_count",
+          "expected": "3",
+          "predicted": "4",
+          "correct": false,
+          "confidence": 0.9930390924413464,
+          "h_norm": 0.030533055364034896,
+          "has_distribution": true,
+          "probabilities": {
+            "1": 0.00004683362709645246,
+            "2": 0.00010224450023621143,
+            "3": 0.006811829431321052,
+            "4": 0.9930390924413464
+          }
+        },
+        {
+          "aspect": "grid_cell",
+          "expected": "top_center",
+          "predicted": "top_center",
+          "correct": true,
+          "confidence": 0.9884955222475219,
+          "h_norm": 0.035279201723332355,
+          "has_distribution": true,
+          "probabilities": {
+            "bottom_center": 0.0003566851700914726,
+            "bottom_left": 0.00032928062019070873,
+            "bottom_right": 0.000017132295725068817,
+            "middle_center": 0.0006172460609234992,
+            "middle_left": 0.0005287788694682407,
+            "middle_right": 0.00010309586339972262,
+            "top_center": 0.9884955222475219,
+            "top_left": 0.005555590929872617,
+            "top_right": 0.003996667942806716
+          }
+        },
+        {
+          "aspect": "present",
+          "expected": "yes",
+          "predicted": "yes",
+          "correct": true,
+          "confidence": 0.9998387862935285,
+          "h_norm": 0.0022636527114194686,
+          "has_distribution": true,
+          "probabilities": {
+            "no": 0.00016121370647153766,
+            "yes": 0.9998387862935285
+          }
+        },
+        {
+          "aspect": "relation",
+          "expected": "left_of",
+          "predicted": "above",
+          "correct": false,
+          "confidence": 0.9845437997793969,
+          "h_norm": 0.06397469883021724,
+          "has_distribution": true,
+          "probabilities": {
+            "above": 0.9845437997793969,
+            "below": 0.012789223465295187,
+            "left_of": 0.0010665123500802555,
+            "right_of": 0.0016004644052276965
+          }
+        }
+      ],
+      "wall_time_ms": 358.902
+    }
+  ],
+  "receipt_kind": "bench-vision",
+  "items": [
+    {
+      "id": "geo-1x1-grid-00#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9996503752928909,
+      "top_probabilities": {
+        "1": 0.9996503752928909,
+        "2": 0.00010054079592537296,
+        "3": 0.00007215210537802184,
+        "4": 0.00017693180580577827
+      },
+      "wall_time_ms": 470.759
+    },
+    {
+      "id": "geo-1x1-grid-00#grid_cell",
+      "expected": "middle_left",
+      "actual": "middle_left",
+      "accurate": true,
+      "confidence": 0.9949700766354528,
+      "top_probabilities": {
+        "bottom_center": 8.691175003345084e-7,
+        "bottom_left": 0.00003375079009928195,
+        "bottom_right": 0.0000024663833222164826,
+        "middle_center": 0.004743635185387406,
+        "middle_left": 0.9949700766354527,
+        "middle_right": 0.00008498163921128829,
+        "top_center": 0.000004606435444705413,
+        "top_left": 0.00013778472695660083,
+        "top_right": 0.000021829086625382595
+      },
+      "wall_time_ms": 470.759
+    },
+    {
+      "id": "geo-1x1-grid-00#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9997335864340162,
+      "top_probabilities": {
+        "no": 0.00026641356598375727,
+        "yes": 0.9997335864340162
+      },
+      "wall_time_ms": 470.759
+    },
+    {
+      "id": "geo-1x1-grid-01#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.9906078048091821,
+      "top_probabilities": {
+        "1": 0.0001694678902898287,
+        "2": 0.990607804809182,
+        "3": 0.005538716223507938,
+        "4": 0.0036840110770201325
+      },
+      "wall_time_ms": 463.589
+    },
+    {
+      "id": "geo-1x1-grid-01#grid_cell",
+      "expected": "bottom_left",
+      "actual": "bottom_left",
+      "accurate": true,
+      "confidence": 0.9028024967542515,
+      "top_probabilities": {
+        "bottom_center": 0.0970899445708685,
+        "bottom_left": 0.9028024967542514,
+        "bottom_right": 0.000002535321970188151,
+        "middle_center": 0.000057410327191304026,
+        "middle_left": 0.00001329868897458357,
+        "middle_right": 0.0000063398194769132605,
+        "top_center": 0.000007006566738557425,
+        "top_left": 0.00001396138378988614,
+        "top_right": 0.000007006566738557425
+      },
+      "wall_time_ms": 463.589
+    },
+    {
+      "id": "geo-1x1-grid-01#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999962584593446,
+      "top_probabilities": {
+        "no": 0.000003741540655379795,
+        "yes": 0.9999962584593446
+      },
+      "wall_time_ms": 463.589
+    },
+    {
+      "id": "geo-1x1-grid-01#relation",
+      "expected": "left_of",
+      "actual": "left_of",
+      "accurate": true,
+      "confidence": 0.9997000033187736,
+      "top_probabilities": {
+        "above": 0.000031738815608790805,
+        "below": 0.000257862183939779,
+        "left_of": 0.9997000033187736,
+        "right_of": 0.000010395681677960637
+      },
+      "wall_time_ms": 463.589
+    },
+    {
+      "id": "geo-1x1-grid-02#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9986850028319175,
+      "top_probabilities": {
+        "1": 0.9986850028319175,
+        "2": 0.000516249768653088,
+        "3": 0.00028249763077635844,
+        "4": 0.000516249768653088
+      },
+      "wall_time_ms": 490.472
+    },
+    {
+      "id": "geo-1x1-grid-02#grid_cell",
+      "expected": "middle_left",
+      "actual": "bottom_center",
+      "accurate": false,
+      "confidence": 0.9953296452304987,
+      "top_probabilities": {
+        "bottom_center": 0.9953296452304987,
+        "bottom_left": 0.004242060489701241,
+        "bottom_right": 0.000011032050636312336,
+        "middle_center": 0.0001951386753844927,
+        "middle_left": 0.00006252502785100396,
+        "middle_right": 0.00004345992949894575,
+        "top_center": 0.00003614749293618541,
+        "top_left": 0.00006840930823358425,
+        "top_right": 0.000011581795259471214
+      },
+      "wall_time_ms": 490.472
+    },
+    {
+      "id": "geo-1x1-grid-02#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999863014879752,
+      "top_probabilities": {
+        "no": 0.000013698512024825628,
+        "yes": 0.9999863014879752
+      },
+      "wall_time_ms": 490.472
+    },
+    {
+      "id": "geo-1x1-grid-03#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.9595283188183897,
+      "top_probabilities": {
+        "1": 0.00014847245248655983,
+        "2": 0.002357597447383847,
+        "3": 0.037965611281739885,
+        "4": 0.9595283188183897
+      },
+      "wall_time_ms": 470.755
+    },
+    {
+      "id": "geo-1x1-grid-03#grid_cell",
+      "expected": "top_right",
+      "actual": "top_right",
+      "accurate": true,
+      "confidence": 0.9996236183318565,
+      "top_probabilities": {
+        "bottom_center": 0.0000015106131458173823,
+        "bottom_left": 0.0000022685684693405535,
+        "bottom_right": 0.000003559241454014828,
+        "middle_center": 0.00002511911180226303,
+        "middle_left": 0.000032977728121931264,
+        "middle_right": 0.00003946119363056069,
+        "top_center": 0.00008677113211742235,
+        "top_left": 0.00018471407940203808,
+        "top_right": 0.9996236183318568
+      },
+      "wall_time_ms": 470.755
+    },
+    {
+      "id": "geo-1x1-grid-03#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9998944108752638,
+      "top_probabilities": {
+        "no": 0.00010558912473619814,
+        "yes": 0.9998944108752638
+      },
+      "wall_time_ms": 470.755
+    },
+    {
+      "id": "geo-1x1-grid-04#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9999268723706316,
+      "top_probabilities": {
+        "1": 0.9999268723706315,
+        "2": 0.000011670672153564429,
+        "3": 0.00004122212697830278,
+        "4": 0.000020234830236539907
+      },
+      "wall_time_ms": 363.838
+    },
+    {
+      "id": "geo-1x1-grid-04#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9998901101434181,
+      "top_probabilities": {
+        "bottom_center": 0.0000016688256626448529,
+        "bottom_left": 8.255229683067063e-7,
+        "bottom_right": 7.082829351813389e-7,
+        "middle_center": 0.9998901101434181,
+        "middle_left": 0.00003139933821244385,
+        "middle_right": 0.00004068448120903971,
+        "top_center": 0.00002022732145709706,
+        "top_left": 0.00001177762704218243,
+        "top_right": 0.0000025984570949891733
+      },
+      "wall_time_ms": 363.838
+    },
+    {
+      "id": "geo-1x1-grid-04#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999782176669315,
+      "top_probabilities": {
+        "no": 0.000021782333068528333,
+        "yes": 0.9999782176669315
+      },
+      "wall_time_ms": 363.838
+    },
+    {
+      "id": "geo-1x1-grid-05#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9994106788874877,
+      "top_probabilities": {
+        "1": 0.9994106788874877,
+        "2": 0.0001406902243479602,
+        "3": 0.00016488434024073716,
+        "4": 0.00028374654792367554
+      },
+      "wall_time_ms": 364.53
+    },
+    {
+      "id": "geo-1x1-grid-05#grid_cell",
+      "expected": "bottom_left",
+      "actual": "bottom_left",
+      "accurate": true,
+      "confidence": 0.9459947734788224,
+      "top_probabilities": {
+        "bottom_center": 0.05364227158206033,
+        "bottom_left": 0.9459947734788222,
+        "bottom_right": 0.000032407521116695744,
+        "middle_center": 0.000014155272818028632,
+        "middle_left": 0.00004968307239417532,
+        "middle_right": 0.000007760163755617898,
+        "top_center": 0.00011402944522142829,
+        "top_left": 0.00011402944522142829,
+        "top_right": 0.0000308900185899558
+      },
+      "wall_time_ms": 364.53
+    },
+    {
+      "id": "geo-1x1-grid-05#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999775794382514,
+      "top_probabilities": {
+        "no": 0.00002242056174857869,
+        "yes": 0.9999775794382514
+      },
+      "wall_time_ms": 364.53
+    },
+    {
+      "id": "geo-1x1-grid-06#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.8229048280295109,
+      "top_probabilities": {
+        "1": 0.0002483192901759384,
+        "2": 0.013790985224999087,
+        "3": 0.8229048280295109,
+        "4": 0.16305586745531409
+      },
+      "wall_time_ms": 360.768
+    },
+    {
+      "id": "geo-1x1-grid-06#grid_cell",
+      "expected": "middle_left",
+      "actual": "middle_left",
+      "accurate": true,
+      "confidence": 0.9609939837116346,
+      "top_probabilities": {
+        "bottom_center": 0.000003021337307162214,
+        "bottom_left": 0.03848215979623318,
+        "bottom_right": 3.939846998573224e-7,
+        "middle_center": 0.00042383170087688214,
+        "middle_left": 0.9609939837116346,
+        "middle_right": 0.00000487591452497184,
+        "top_center": 0.000004386584570308015,
+        "top_left": 0.00008132882084188725,
+        "top_right": 0.000006018149311127408
+      },
+      "wall_time_ms": 360.768
+    },
+    {
+      "id": "geo-1x1-grid-06#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999986503591082,
+      "top_probabilities": {
+        "no": 0.0000013496408919123593,
+        "yes": 0.9999986503591082
+      },
+      "wall_time_ms": 360.768
+    },
+    {
+      "id": "geo-1x1-grid-06#relation",
+      "expected": "left_of",
+      "actual": "left_of",
+      "accurate": true,
+      "confidence": 0.9977139629261954,
+      "top_probabilities": {
+        "above": 0.0000895984188592676,
+        "below": 0.0020895660281064527,
+        "left_of": 0.9977139629261956,
+        "right_of": 0.0001068726268388035
+      },
+      "wall_time_ms": 360.768
+    },
+    {
+      "id": "geo-1x1-grid-07#element_count",
+      "expected": "3",
+      "actual": "3",
+      "accurate": true,
+      "confidence": 0.9701164791679999,
+      "top_probabilities": {
+        "1": 0.00013614379441329171,
+        "2": 0.00016226234129412508,
+        "3": 0.9701164791679999,
+        "4": 0.029585114696292693
+      },
+      "wall_time_ms": 337.577
+    },
+    {
+      "id": "geo-1x1-grid-07#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9987142303631189,
+      "top_probabilities": {
+        "bottom_center": 0.00000759327605724994,
+        "bottom_left": 0.000003290010482330236,
+        "bottom_right": 0.0000012514653294780795,
+        "middle_center": 0.9987142303631189,
+        "middle_left": 0.00006924515767290034,
+        "middle_right": 0.00002358888492487906,
+        "top_center": 0.0011528330818712823,
+        "top_left": 0.000008363300689493332,
+        "top_right": 0.000019604459853506793
+      },
+      "wall_time_ms": 337.577
+    },
+    {
+      "id": "geo-1x1-grid-07#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999926233810619,
+      "top_probabilities": {
+        "no": 0.0000073766189381653,
+        "yes": 0.9999926233810619
+      },
+      "wall_time_ms": 337.577
+    },
+    {
+      "id": "geo-1x1-grid-07#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.995773548338917,
+      "top_probabilities": {
+        "above": 0.995773548338917,
+        "below": 0.003735889178636834,
+        "left_of": 0.0003297397906875543,
+        "right_of": 0.00016082269175868503
+      },
+      "wall_time_ms": 337.577
+    },
+    {
+      "id": "geo-1x1-grid-08#element_count",
+      "expected": "3",
+      "actual": "3",
+      "accurate": true,
+      "confidence": 0.9308378522961933,
+      "top_probabilities": {
+        "1": 0.00003827859752827151,
+        "2": 0.00009844525144422023,
+        "3": 0.9308378522961933,
+        "4": 0.0690254238548343
+      },
+      "wall_time_ms": 361.766
+    },
+    {
+      "id": "geo-1x1-grid-08#grid_cell",
+      "expected": "bottom_center",
+      "actual": "bottom_center",
+      "accurate": true,
+      "confidence": 0.9983699663729066,
+      "top_probabilities": {
+        "bottom_center": 0.9983699663729066,
+        "bottom_left": 0.00006406696210202331,
+        "bottom_right": 0.00038623636600608816,
+        "middle_center": 0.0005330534465756332,
+        "middle_left": 0.00011891018896708694,
+        "middle_right": 0.00021642199622427498,
+        "top_center": 0.00021642199622427498,
+        "top_left": 0.000030855708891971,
+        "top_right": 0.00006406696210202331
+      },
+      "wall_time_ms": 361.766
+    },
+    {
+      "id": "geo-1x1-grid-08#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999850757030142,
+      "top_probabilities": {
+        "no": 0.000014924296985824098,
+        "yes": 0.9999850757030141
+      },
+      "wall_time_ms": 361.766
+    },
+    {
+      "id": "geo-1x1-grid-09#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9998360886274763,
+      "top_probabilities": {
+        "1": 0.9998360886274765,
+        "2": 0.00007504538607551166,
+        "3": 0.0000444329932240326,
+        "4": 0.0000444329932240326
+      },
+      "wall_time_ms": 373.119
+    },
+    {
+      "id": "geo-1x1-grid-09#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9994323531188105,
+      "top_probabilities": {
+        "bottom_center": 0.0004198306501649899,
+        "bottom_left": 0.00001915601794000999,
+        "bottom_right": 0.000011287778448805671,
+        "middle_center": 0.9994323531188104,
+        "middle_left": 0.00001755723903112448,
+        "middle_right": 0.00007315530497158801,
+        "top_center": 0.000012340226092948046,
+        "top_left": 0.000013485476238727252,
+        "top_right": 8.341883013111158e-7
+      },
+      "wall_time_ms": 373.119
+    },
+    {
+      "id": "geo-1x1-grid-09#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999729804582206,
+      "top_probabilities": {
+        "no": 0.00002701954177942193,
+        "yes": 0.9999729804582205
+      },
+      "wall_time_ms": 373.119
+    },
+    {
+      "id": "geo-1x1-grid-10#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9999698932709506,
+      "top_probabilities": {
+        "1": 0.9999698932709506,
+        "2": 0.000009310062182952969,
+        "3": 0.000008472503333271083,
+        "4": 0.000012324163533186642
+      },
+      "wall_time_ms": 369.665
+    },
+    {
+      "id": "geo-1x1-grid-10#grid_cell",
+      "expected": "bottom_center",
+      "actual": "bottom_center",
+      "accurate": true,
+      "confidence": 0.9993818572772547,
+      "top_probabilities": {
+        "bottom_center": 0.9993818572772547,
+        "bottom_left": 0.0000019104286469287122,
+        "bottom_right": 0.0003390621877854811,
+        "middle_center": 0.00024215741746446556,
+        "middle_left": 0.0000027484237138622056,
+        "middle_right": 0.000015087181398012088,
+        "top_center": 0.000006861410777666996,
+        "top_left": 0.000009246263634015227,
+        "top_right": 0.0000010694093248615191
+      },
+      "wall_time_ms": 369.665
+    },
+    {
+      "id": "geo-1x1-grid-10#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999989086110749,
+      "top_probabilities": {
+        "no": 0.0000010913889251911796,
+        "yes": 0.9999989086110749
+      },
+      "wall_time_ms": 369.665
+    },
+    {
+      "id": "geo-1x1-grid-11#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.8973603495800375,
+      "top_probabilities": {
+        "1": 0.00001921799517926032,
+        "2": 0.09964880623274473,
+        "3": 0.8973603495800375,
+        "4": 0.0029716261920385346
+      },
+      "wall_time_ms": 365.914
+    },
+    {
+      "id": "geo-1x1-grid-11#grid_cell",
+      "expected": "bottom_center",
+      "actual": "bottom_center",
+      "accurate": true,
+      "confidence": 0.9998727047410951,
+      "top_probabilities": {
+        "bottom_center": 0.999872704741095,
+        "bottom_left": 0.0000026443477519658043,
+        "bottom_right": 0.000042695115314505805,
+        "middle_center": 0.000042695115314505805,
+        "middle_left": 0.000016665966876210508,
+        "middle_right": 0.000008024554158973024,
+        "top_center": 0.000005123235292851009,
+        "top_left": 0.0000056641320991388086,
+        "top_right": 0.0000037827920967525614
+      },
+      "wall_time_ms": 365.914
+    },
+    {
+      "id": "geo-1x1-grid-11#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999848427737835,
+      "top_probabilities": {
+        "no": 0.000015157226216557325,
+        "yes": 0.9999848427737835
+      },
+      "wall_time_ms": 365.914
+    },
+    {
+      "id": "geo-1x1-grid-11#relation",
+      "expected": "below",
+      "actual": "below",
+      "accurate": true,
+      "confidence": 0.999861456220033,
+      "top_probabilities": {
+        "above": 0.0001112720089750115,
+        "below": 0.9998614562200332,
+        "left_of": 0.000011518629580313085,
+        "right_of": 0.0000157531414115951
+      },
+      "wall_time_ms": 365.914
+    },
+    {
+      "id": "geo-1x1-grid-12#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.7080371346974815,
+      "top_probabilities": {
+        "1": 0.0009335530626779374,
+        "2": 0.2548615059024458,
+        "3": 0.7080371346974815,
+        "4": 0.0361678063373947
+      },
+      "wall_time_ms": 356.13
+    },
+    {
+      "id": "geo-1x1-grid-12#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9989009811127239,
+      "top_probabilities": {
+        "bottom_center": 0.000019397210033084482,
+        "bottom_left": 0.00000803366183206551,
+        "bottom_right": 0.0000026474045662918207,
+        "middle_center": 0.9989009811127239,
+        "middle_left": 0.0005839390555639145,
+        "middle_right": 0.00010028827445567231,
+        "top_center": 0.00015913532564219664,
+        "top_left": 0.00010841783286334998,
+        "top_right": 0.00011716012231957359
+      },
+      "wall_time_ms": 356.13
+    },
+    {
+      "id": "geo-1x1-grid-12#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999865440893575,
+      "top_probabilities": {
+        "no": 0.000013455910642524232,
+        "yes": 0.9999865440893575
+      },
+      "wall_time_ms": 356.13
+    },
+    {
+      "id": "geo-1x1-grid-12#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.9966048681097283,
+      "top_probabilities": {
+        "above": 0.9966048681097283,
+        "below": 0.002764899179708759,
+        "left_of": 0.0004740259645169368,
+        "right_of": 0.0001562067460460887
+      },
+      "wall_time_ms": 356.13
+    },
+    {
+      "id": "geo-1x1-grid-13#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.9922882975618806,
+      "top_probabilities": {
+        "1": 0.001460002248718198,
+        "2": 0.9922882975618805,
+        "3": 0.0032258329486202744,
+        "4": 0.003025867240780955
+      },
+      "wall_time_ms": 351.231
+    },
+    {
+      "id": "geo-1x1-grid-13#grid_cell",
+      "expected": "bottom_right",
+      "actual": "bottom_right",
+      "accurate": true,
+      "confidence": 0.8687946532948864,
+      "top_probabilities": {
+        "bottom_center": 0.10600114775462488,
+        "bottom_left": 0.0011819500692360453,
+        "bottom_right": 0.8687946532948864,
+        "middle_center": 0.0018358710748031368,
+        "middle_left": 0.008728699232849095,
+        "middle_right": 0.00346152303156217,
+        "top_center": 0.0051922895921888415,
+        "top_left": 0.0010967966494051444,
+        "top_right": 0.0037070693004442995
+      },
+      "wall_time_ms": 351.231
+    },
+    {
+      "id": "geo-1x1-grid-13#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.988844938193795,
+      "top_probabilities": {
+        "no": 0.011155061806205,
+        "yes": 0.988844938193795
+      },
+      "wall_time_ms": 351.231
+    },
+    {
+      "id": "geo-1x1-grid-14#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.8711110204896828,
+      "top_probabilities": {
+        "1": 0.00018094808378466096,
+        "2": 0.0007720679527805722,
+        "3": 0.12793596347375202,
+        "4": 0.8711110204896828
+      },
+      "wall_time_ms": 346.696
+    },
+    {
+      "id": "geo-1x1-grid-14#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.8748177672537839,
+      "top_probabilities": {
+        "bottom_center": 0.000006358766417576442,
+        "bottom_left": 0.000017654870439763918,
+        "bottom_right": 0.000037355227623105014,
+        "middle_center": 0.8748177672537839,
+        "middle_left": 0.00007707264771747718,
+        "middle_right": 0.12497784691527222,
+        "top_center": 0.000031045514130402455,
+        "top_left": 0.000003853290485228827,
+        "top_right": 0.000031045514130402455
+      },
+      "wall_time_ms": 346.696
+    },
+    {
+      "id": "geo-1x1-grid-14#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999950915766531,
+      "top_probabilities": {
+        "no": 0.000004908423346953894,
+        "yes": 0.9999950915766531
+      },
+      "wall_time_ms": 346.696
+    },
+    {
+      "id": "geo-1x1-grid-14#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.9936885758986589,
+      "top_probabilities": {
+        "above": 0.9936885758986589,
+        "below": 0.003854487276532569,
+        "left_of": 0.001844714116247331,
+        "right_of": 0.0006122227085612881
+      },
+      "wall_time_ms": 346.696
+    },
+    {
+      "id": "geo-1x1-plain-00#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.8564975725996001,
+      "top_probabilities": {
+        "1": 0.00025286941373567595,
+        "2": 0.0024176533694659354,
+        "3": 0.1408319046171983,
+        "4": 0.8564975725996001
+      },
+      "wall_time_ms": 348.757
+    },
+    {
+      "id": "geo-1x1-plain-00#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9975163191946592,
+      "top_probabilities": {
+        "bottom_center": 0.002083978384647153,
+        "bottom_left": 0.000017587298872411428,
+        "bottom_right": 0.0000024699659016830465,
+        "middle_center": 0.9975163191946591,
+        "middle_left": 0.0001139820575388646,
+        "middle_right": 0.00016965308250664163,
+        "top_center": 0.00004587109613747383,
+        "top_left": 0.000017587298872411428,
+        "top_right": 0.000032551620864238114
+      },
+      "wall_time_ms": 348.757
+    },
+    {
+      "id": "geo-1x1-plain-00#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999821170945381,
+      "top_probabilities": {
+        "no": 0.00001788290546195878,
+        "yes": 0.9999821170945381
+      },
+      "wall_time_ms": 348.757
+    },
+    {
+      "id": "geo-1x1-plain-00#relation",
+      "expected": "below",
+      "actual": "below",
+      "accurate": true,
+      "confidence": 0.9976032243996076,
+      "top_probabilities": {
+        "above": 0.0021965575160642977,
+        "below": 0.9976032243996078,
+        "left_of": 0.0001611872207520882,
+        "right_of": 0.00003903086357588758
+      },
+      "wall_time_ms": 348.757
+    },
+    {
+      "id": "geo-1x1-plain-01#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.8620873077280606,
+      "top_probabilities": {
+        "1": 0.0006213330449993074,
+        "2": 0.0025183315475361887,
+        "3": 0.13477302767940386,
+        "4": 0.8620873077280606
+      },
+      "wall_time_ms": 360.334
+    },
+    {
+      "id": "geo-1x1-plain-01#grid_cell",
+      "expected": "bottom_right",
+      "actual": "bottom_right",
+      "accurate": true,
+      "confidence": 0.9764433557010653,
+      "top_probabilities": {
+        "bottom_center": 0.01781157413486795,
+        "bottom_left": 0.00036926926939960357,
+        "bottom_right": 0.9764433557010653,
+        "middle_center": 0.0005929947944745214,
+        "middle_left": 0.0005929947944745214,
+        "middle_right": 0.0012649698553432154,
+        "top_center": 0.0024187461375034277,
+        "top_left": 0.00010609360829646976,
+        "top_right": 0.0004000017045749334
+      },
+      "wall_time_ms": 360.334
+    },
+    {
+      "id": "geo-1x1-plain-01#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.999422206074264,
+      "top_probabilities": {
+        "no": 0.0005777939257360131,
+        "yes": 0.999422206074264
+      },
+      "wall_time_ms": 360.334
+    },
+    {
+      "id": "geo-1x1-plain-01#relation",
+      "expected": "below",
+      "actual": "below",
+      "accurate": true,
+      "confidence": 0.6346404286294656,
+      "top_probabilities": {
+        "above": 0.328529480788883,
+        "below": 0.6346404286294656,
+        "left_of": 0.021765176456618462,
+        "right_of": 0.01506491412503292
+      },
+      "wall_time_ms": 360.334
+    },
+    {
+      "id": "geo-1x1-plain-02#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.9943512591339179,
+      "top_probabilities": {
+        "1": 0.00004559276566089521,
+        "2": 0.9943512591339179,
+        "3": 0.0011451247456737163,
+        "4": 0.004458023354747507
+      },
+      "wall_time_ms": 363.096
+    },
+    {
+      "id": "geo-1x1-plain-02#grid_cell",
+      "expected": "top_center",
+      "actual": "top_center",
+      "accurate": true,
+      "confidence": 0.9991361559526037,
+      "top_probabilities": {
+        "bottom_center": 0.0000015532124573700445,
+        "bottom_left": 9.793923773474953e-7,
+        "bottom_right": 7.172723741995829e-7,
+        "middle_center": 0.00005614713401911587,
+        "middle_left": 0.00006123564677432219,
+        "middle_right": 8.384836002017781e-7,
+        "top_center": 0.9991361559526037,
+        "top_left": 0.0006862257717746169,
+        "top_right": 0.00005614713401911587
+      },
+      "wall_time_ms": 363.096
+    },
+    {
+      "id": "geo-1x1-plain-02#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999920260970447,
+      "top_probabilities": {
+        "no": 0.000007973902955234529,
+        "yes": 0.9999920260970447
+      },
+      "wall_time_ms": 363.096
+    },
+    {
+      "id": "geo-1x1-plain-02#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.9961255874241588,
+      "top_probabilities": {
+        "above": 0.9961255874241588,
+        "below": 0.0037118097819369682,
+        "left_of": 0.00006590825794621867,
+        "right_of": 0.00009669453595796759
+      },
+      "wall_time_ms": 363.096
+    },
+    {
+      "id": "geo-1x1-plain-03#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9999105128515728,
+      "top_probabilities": {
+        "1": 0.9999105128515728,
+        "2": 0.0000112279339496491,
+        "3": 0.0000112279339496491,
+        "4": 0.0000670312805279215
+      },
+      "wall_time_ms": 358.924
+    },
+    {
+      "id": "geo-1x1-plain-03#grid_cell",
+      "expected": "top_center",
+      "actual": "top_center",
+      "accurate": true,
+      "confidence": 0.9968827662965893,
+      "top_probabilities": {
+        "bottom_center": 0.0000053355865329882825,
+        "bottom_left": 0.0000016627991273341417,
+        "bottom_right": 0.000007773315433077514,
+        "middle_center": 0.0018862102570662395,
+        "middle_left": 0.00017273845300390183,
+        "middle_right": 0.000016191064421177632,
+        "top_center": 0.9968827662965893,
+        "top_left": 0.0008912545846912444,
+        "top_right": 0.00013606764313471814
+      },
+      "wall_time_ms": 358.924
+    },
+    {
+      "id": "geo-1x1-plain-03#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999986506522183,
+      "top_probabilities": {
+        "no": 0.0000013493477817924346,
+        "yes": 0.9999986506522183
+      },
+      "wall_time_ms": 358.924
+    },
+    {
+      "id": "geo-1x1-plain-04#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.9971726836803845,
+      "top_probabilities": {
+        "1": 0.000022513536681439655,
+        "2": 0.000125861043010398,
+        "3": 0.9971726836803844,
+        "4": 0.0026789417399237024
+      },
+      "wall_time_ms": 365.172
+    },
+    {
+      "id": "geo-1x1-plain-04#grid_cell",
+      "expected": "top_center",
+      "actual": "middle_center",
+      "accurate": false,
+      "confidence": 0.9938629945674815,
+      "top_probabilities": {
+        "bottom_center": 0.0003044398769530977,
+        "bottom_left": 0.000026207278357201612,
+        "bottom_right": 0.000008885313894531905,
+        "middle_center": 0.9938629945674814,
+        "middle_left": 0.002179172570379149,
+        "middle_right": 0.0001514925740392935,
+        "top_center": 0.0031956672144863394,
+        "top_left": 0.00007928031310077283,
+        "top_right": 0.00019186029130811364
+      },
+      "wall_time_ms": 365.172
+    },
+    {
+      "id": "geo-1x1-plain-04#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999977873226321,
+      "top_probabilities": {
+        "no": 0.00000221267736789452,
+        "yes": 0.9999977873226321
+      },
+      "wall_time_ms": 365.172
+    },
+    {
+      "id": "geo-1x1-plain-04#relation",
+      "expected": "left_of",
+      "actual": "below",
+      "accurate": false,
+      "confidence": 0.9999937728703012,
+      "top_probabilities": {
+        "above": 0.0000051238000909958415,
+        "below": 0.9999937728703012,
+        "left_of": 8.459347240025907e-7,
+        "right_of": 2.573948837235747e-7
+      },
+      "wall_time_ms": 365.172
+    },
+    {
+      "id": "geo-1x1-plain-05#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.9726144910633983,
+      "top_probabilities": {
+        "1": 0.00012074567309441775,
+        "2": 0.0006797916004703335,
+        "3": 0.026584971663037044,
+        "4": 0.9726144910633981
+      },
+      "wall_time_ms": 360.545
+    },
+    {
+      "id": "geo-1x1-plain-05#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.999595771615947,
+      "top_probabilities": {
+        "bottom_center": 0.000017948959156999723,
+        "bottom_left": 0.000004442289172111074,
+        "bottom_right": 7.420391296619627e-7,
+        "middle_center": 0.999595771615947,
+        "middle_left": 0.0003555431533086152,
+        "middle_right": 0.000019638150059992214,
+        "top_center": 0.00000273548156494129,
+        "top_left": 0.0000015097661528013518,
+        "top_right": 0.0000016685455079184878
+      },
+      "wall_time_ms": 360.545
+    },
+    {
+      "id": "geo-1x1-plain-05#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999991113395766,
+      "top_probabilities": {
+        "no": 8.886604233061413e-7,
+        "yes": 0.9999991113395766
+      },
+      "wall_time_ms": 360.545
+    },
+    {
+      "id": "geo-1x1-plain-05#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.9968042950521789,
+      "top_probabilities": {
+        "above": 0.9968042950521789,
+        "below": 0.0028549139906117564,
+        "left_of": 0.00023650919302213756,
+        "right_of": 0.00010428176418710319
+      },
+      "wall_time_ms": 360.545
+    },
+    {
+      "id": "geo-1x1-plain-06#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.5633638379127951,
+      "top_probabilities": {
+        "1": 0.0006378701510117555,
+        "2": 0.3877940636826484,
+        "3": 0.5633638379127951,
+        "4": 0.048204228253544694
+      },
+      "wall_time_ms": 359.937
+    },
+    {
+      "id": "geo-1x1-plain-06#grid_cell",
+      "expected": "bottom_left",
+      "actual": "bottom_left",
+      "accurate": true,
+      "confidence": 0.6402824296183343,
+      "top_probabilities": {
+        "bottom_center": 0.3120802807376001,
+        "bottom_left": 0.6402824296183341,
+        "bottom_right": 0.00001595822445528869,
+        "middle_center": 0.04591075747563777,
+        "middle_left": 0.0009117974499142092,
+        "middle_right": 0.00013945644793044815,
+        "top_center": 0.00019904654161632945,
+        "top_left": 0.00015251999373173603,
+        "top_right": 0.00030775351077993074
+      },
+      "wall_time_ms": 359.937
+    },
+    {
+      "id": "geo-1x1-plain-06#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999878851532976,
+      "top_probabilities": {
+        "no": 0.000012114846702410203,
+        "yes": 0.9999878851532975
+      },
+      "wall_time_ms": 359.937
+    },
+    {
+      "id": "geo-1x1-plain-07#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.9978566361317694,
+      "top_probabilities": {
+        "1": 0.00006202628776115416,
+        "2": 0.000031335460166999026,
+        "3": 0.002050002120302387,
+        "4": 0.9978566361317693
+      },
+      "wall_time_ms": 361.628
+    },
+    {
+      "id": "geo-1x1-plain-07#grid_cell",
+      "expected": "bottom_right",
+      "actual": "bottom_right",
+      "accurate": true,
+      "confidence": 0.568687511566766,
+      "top_probabilities": {
+        "bottom_center": 0.43039923678183495,
+        "bottom_left": 0.00003269682193318994,
+        "bottom_right": 0.568687511566766,
+        "middle_center": 0.000522229468092938,
+        "middle_left": 0.000009818134019076183,
+        "middle_right": 0.0003285149237629146,
+        "top_center": 0.00000792737482010537,
+        "top_left": 0.000001709647497946535,
+        "top_right": 0.00001035528127288748
+      },
+      "wall_time_ms": 361.628
+    },
+    {
+      "id": "geo-1x1-plain-07#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999203518975149,
+      "top_probabilities": {
+        "no": 0.0000796481024850319,
+        "yes": 0.9999203518975148
+      },
+      "wall_time_ms": 361.628
+    },
+    {
+      "id": "geo-1x1-plain-07#relation",
+      "expected": "below",
+      "actual": "below",
+      "accurate": true,
+      "confidence": 0.9999597213108209,
+      "top_probabilities": {
+        "above": 0.000015690057892517302,
+        "below": 0.9999597213108209,
+        "left_of": 0.00000808879031390393,
+        "right_of": 0.000016499840972634154
+      },
+      "wall_time_ms": 361.628
+    },
+    {
+      "id": "geo-1x1-plain-08#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.994610508939553,
+      "top_probabilities": {
+        "1": 0.00003833892216517067,
+        "2": 0.9946105089395533,
+        "3": 0.001638273181935565,
+        "4": 0.0037128789563461335
+      },
+      "wall_time_ms": 356.795
+    },
+    {
+      "id": "geo-1x1-plain-08#grid_cell",
+      "expected": "top_right",
+      "actual": "top_right",
+      "accurate": true,
+      "confidence": 0.999922622772652,
+      "top_probabilities": {
+        "bottom_center": 2.9196898955829336e-7,
+        "bottom_left": 3.2546933233122416e-7,
+        "bottom_right": 7.272664644546272e-7,
+        "middle_center": 0.0000016782950483008379,
+        "middle_left": 0.000007939360148304896,
+        "middle_right": 0.000001593890638290038,
+        "top_center": 0.00002371078062974395,
+        "top_left": 0.0000411101960971608,
+        "top_right": 0.999922622772652
+      },
+      "wall_time_ms": 356.795
+    },
+    {
+      "id": "geo-1x1-plain-08#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999976967772275,
+      "top_probabilities": {
+        "no": 0.000002303222772581455,
+        "yes": 0.9999976967772275
+      },
+      "wall_time_ms": 356.795
+    },
+    {
+      "id": "geo-1x1-plain-08#relation",
+      "expected": "right_of",
+      "actual": "above",
+      "accurate": false,
+      "confidence": 0.9995537430431582,
+      "top_probabilities": {
+        "above": 0.9995537430431585,
+        "below": 0.00040485947615738,
+        "left_of": 0.00003280661412538343,
+        "right_of": 0.000008590866558810437
+      },
+      "wall_time_ms": 356.795
+    },
+    {
+      "id": "geo-1x1-plain-09#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.8689762999055558,
+      "top_probabilities": {
+        "1": 0.0005770938349262309,
+        "2": 0.09564935001041225,
+        "3": 0.868976299905556,
+        "4": 0.034797256249105596
+      },
+      "wall_time_ms": 361.369
+    },
+    {
+      "id": "geo-1x1-plain-09#grid_cell",
+      "expected": "bottom_center",
+      "actual": "middle_center",
+      "accurate": false,
+      "confidence": 0.593489925285384,
+      "top_probabilities": {
+        "bottom_center": 0.01644550653358969,
+        "bottom_left": 0.07747063257383241,
+        "bottom_right": 0.000002698406719841674,
+        "middle_center": 0.593489925285384,
+        "middle_left": 0.31224238903797685,
+        "middle_right": 0.00005717702368160242,
+        "top_center": 0.00009648995920662398,
+        "top_left": 0.00001054881273864052,
+        "top_right": 0.0001846323668702407
+      },
+      "wall_time_ms": 361.369
+    },
+    {
+      "id": "geo-1x1-plain-09#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999932201431494,
+      "top_probabilities": {
+        "no": 0.000006779856850503042,
+        "yes": 0.9999932201431496
+      },
+      "wall_time_ms": 361.369
+    },
+    {
+      "id": "geo-1x1-plain-09#relation",
+      "expected": "left_of",
+      "actual": "left_of",
+      "accurate": true,
+      "confidence": 0.9942395679205114,
+      "top_probabilities": {
+        "above": 0.001942091385081989,
+        "below": 0.0035645185334866256,
+        "left_of": 0.9942395679205113,
+        "right_of": 0.0002538221609200509
+      },
+      "wall_time_ms": 361.369
+    },
+    {
+      "id": "geo-1x1-plain-10#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.9809519617720511,
+      "top_probabilities": {
+        "1": 0.00038642382629242055,
+        "2": 0.000980619369000458,
+        "3": 0.017680995032656032,
+        "4": 0.9809519617720511
+      },
+      "wall_time_ms": 365.672
+    },
+    {
+      "id": "geo-1x1-plain-10#grid_cell",
+      "expected": "top_center",
+      "actual": "top_right",
+      "accurate": false,
+      "confidence": 0.9981699546803107,
+      "top_probabilities": {
+        "bottom_center": 0.0000012785098202047056,
+        "bottom_left": 8.38668740283798e-7,
+        "bottom_right": 0.0000010362133804310095,
+        "middle_center": 0.000011167031900730502,
+        "middle_left": 0.00004167583329685223,
+        "middle_right": 0.00002392376893867773,
+        "top_center": 0.0016954110063182076,
+        "top_left": 0.000054714287293976015,
+        "top_right": 0.9981699546803107
+      },
+      "wall_time_ms": 365.672
+    },
+    {
+      "id": "geo-1x1-plain-10#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999899621936702,
+      "top_probabilities": {
+        "no": 0.000010037806329838428,
+        "yes": 0.9999899621936701
+      },
+      "wall_time_ms": 365.672
+    },
+    {
+      "id": "geo-1x1-plain-10#relation",
+      "expected": "right_of",
+      "actual": "right_of",
+      "accurate": true,
+      "confidence": 0.9019891122236361,
+      "top_probabilities": {
+        "above": 0.06514115124725613,
+        "below": 0.02739505990661947,
+        "left_of": 0.005474676622488361,
+        "right_of": 0.9019891122236361
+      },
+      "wall_time_ms": 365.672
+    },
+    {
+      "id": "geo-1x1-plain-11#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.9431084761713272,
+      "top_probabilities": {
+        "1": 0.0005652846864154056,
+        "2": 0.9431084761713272,
+        "3": 0.04990566372205782,
+        "4": 0.006420575420199546
+      },
+      "wall_time_ms": 355.369
+    },
+    {
+      "id": "geo-1x1-plain-11#grid_cell",
+      "expected": "bottom_right",
+      "actual": "bottom_center",
+      "accurate": false,
+      "confidence": 0.6587503566054129,
+      "top_probabilities": {
+        "bottom_center": 0.6587503566054129,
+        "bottom_left": 0.0001285911403034968,
+        "bottom_right": 0.34101026339097573,
+        "middle_center": 0.00003363790551777436,
+        "middle_left": 0.000016344693892583835,
+        "middle_right": 0.000021193402235682803,
+        "top_center": 0.000019106769300216103,
+        "top_left": 0.0000032866722015926783,
+        "top_right": 0.000017219420160063502
+      },
+      "wall_time_ms": 355.369
+    },
+    {
+      "id": "geo-1x1-plain-11#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999927313808962,
+      "top_probabilities": {
+        "no": 0.000007268619103875279,
+        "yes": 0.9999927313808962
+      },
+      "wall_time_ms": 355.369
+    },
+    {
+      "id": "geo-1x1-plain-11#relation",
+      "expected": "below",
+      "actual": "below",
+      "accurate": true,
+      "confidence": 0.9999621373492101,
+      "top_probabilities": {
+        "above": 0.00002287395693441984,
+        "below": 0.9999621373492101,
+        "left_of": 0.000004114821497944656,
+        "right_of": 0.000010873872357564636
+      },
+      "wall_time_ms": 355.369
+    },
+    {
+      "id": "geo-1x1-plain-12#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9998955113701739,
+      "top_probabilities": {
+        "1": 0.9998955113701739,
+        "2": 0.00003505114243983998,
+        "3": 0.000015997707241336624,
+        "4": 0.0000534397801449376
+      },
+      "wall_time_ms": 360.04
+    },
+    {
+      "id": "geo-1x1-plain-12#grid_cell",
+      "expected": "top_center",
+      "actual": "top_right",
+      "accurate": false,
+      "confidence": 0.9926833989475715,
+      "top_probabilities": {
+        "bottom_center": 4.508641200329192e-7,
+        "bottom_left": 3.052963568848438e-7,
+        "bottom_right": 2.7292724388613744e-7,
+        "middle_center": 0.000001344510049772675,
+        "middle_left": 0.00000477261991102408,
+        "middle_right": 0.0000031461329310072133,
+        "top_center": 0.007278720080399226,
+        "top_left": 0.000027588621416704885,
+        "top_right": 0.9926833989475715
+      },
+      "wall_time_ms": 360.04
+    },
+    {
+      "id": "geo-1x1-plain-12#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999855740549244,
+      "top_probabilities": {
+        "no": 0.000014425945075644332,
+        "yes": 0.9999855740549244
+      },
+      "wall_time_ms": 360.04
+    },
+    {
+      "id": "geo-1x1-plain-13#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9999006245281268,
+      "top_probabilities": {
+        "1": 0.9999006245281268,
+        "2": 0.000024231654638797417,
+        "3": 0.000016869620444423293,
+        "4": 0.000058274196789949656
+      },
+      "wall_time_ms": 370.86
+    },
+    {
+      "id": "geo-1x1-plain-13#grid_cell",
+      "expected": "bottom_center",
+      "actual": "bottom_center",
+      "accurate": true,
+      "confidence": 0.9997470038409787,
+      "top_probabilities": {
+        "bottom_center": 0.9997470038409789,
+        "bottom_left": 0.00019211353209665596,
+        "bottom_right": 0.0000372426938833598,
+        "middle_center": 0.0000028334948744536754,
+        "middle_left": 0.0000012527595754102493,
+        "middle_right": 8.258248568524891e-7,
+        "top_center": 0.0000068986335599258474,
+        "top_left": 0.000011160135509690644,
+        "top_right": 6.690846648096059e-7
+      },
+      "wall_time_ms": 370.86
+    },
+    {
+      "id": "geo-1x1-plain-13#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999953078168565,
+      "top_probabilities": {
+        "no": 0.000004692183143466132,
+        "yes": 0.9999953078168565
+      },
+      "wall_time_ms": 370.86
+    },
+    {
+      "id": "geo-1x1-plain-14#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.9960169132057216,
+      "top_probabilities": {
+        "1": 0.00011862989546125089,
+        "2": 0.9960169132057216,
+        "3": 0.002791918855686298,
+        "4": 0.0010725380431308934
+      },
+      "wall_time_ms": 364.272
+    },
+    {
+      "id": "geo-1x1-plain-14#grid_cell",
+      "expected": "middle_left",
+      "actual": "middle_left",
+      "accurate": true,
+      "confidence": 0.9988523540747775,
+      "top_probabilities": {
+        "bottom_center": 5.545990020521259e-7,
+        "bottom_left": 0.000002722258867115123,
+        "bottom_right": 5.845879438330049e-7,
+        "middle_center": 0.000041863730916195185,
+        "middle_left": 0.9988523540747773,
+        "middle_right": 0.000002227983541645946,
+        "top_center": 0.000020354749308599264,
+        "top_left": 0.0010500539997210206,
+        "top_right": 0.000029284015922097743
+      },
+      "wall_time_ms": 364.272
+    },
+    {
+      "id": "geo-1x1-plain-14#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999867115724851,
+      "top_probabilities": {
+        "no": 0.000013288427514861349,
+        "yes": 0.9999867115724851
+      },
+      "wall_time_ms": 364.272
+    },
+    {
+      "id": "geo-1x1-plain-14#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.9717845778500135,
+      "top_probabilities": {
+        "above": 0.9717845778500135,
+        "below": 0.02710121585202685,
+        "left_of": 0.0005132598919978181,
+        "right_of": 0.0006009464059618221
+      },
+      "wall_time_ms": 364.272
+    },
+    {
+      "id": "geo-16x9-grid-00#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.7765036458960098,
+      "top_probabilities": {
+        "1": 0.000020413671668906504,
+        "2": 0.7765036458960101,
+        "3": 0.22207944158540546,
+        "4": 0.001396498846915678
+      },
+      "wall_time_ms": 355.322
+    },
+    {
+      "id": "geo-16x9-grid-00#grid_cell",
+      "expected": "top_center",
+      "actual": "top_center",
+      "accurate": true,
+      "confidence": 0.9998313691449319,
+      "top_probabilities": {
+        "bottom_center": 2.600869007899498e-7,
+        "bottom_left": 1.517225379876033e-7,
+        "bottom_right": 2.893973419711997e-7,
+        "middle_center": 0.00000802248346602237,
+        "middle_left": 0.000022145823415336477,
+        "middle_right": 9.155443159140088e-7,
+        "top_center": 0.9998313691449318,
+        "top_left": 0.0001240426681195047,
+        "top_right": 0.000012803128970681954
+      },
+      "wall_time_ms": 355.322
+    },
+    {
+      "id": "geo-16x9-grid-00#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999984218671253,
+      "top_probabilities": {
+        "no": 0.0000015781328747489904,
+        "yes": 0.9999984218671252
+      },
+      "wall_time_ms": 355.322
+    },
+    {
+      "id": "geo-16x9-grid-01#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9999752161094513,
+      "top_probabilities": {
+        "1": 0.9999752161094513,
+        "2": 0.000005751891878538361,
+        "3": 0.000007707282756441429,
+        "4": 0.000011324715913687155
+      },
+      "wall_time_ms": 357.537
+    },
+    {
+      "id": "geo-16x9-grid-01#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9998610854396319,
+      "top_probabilities": {
+        "bottom_center": 0.00005289631689135974,
+        "bottom_left": 0.0000028672483995856227,
+        "bottom_right": 8.501791178652078e-7,
+        "middle_center": 0.9998610854396319,
+        "middle_left": 0.000007259720146777474,
+        "middle_right": 0.000048734646317083225,
+        "top_center": 0.000012438438064435633,
+        "top_left": 0.000011382107330957214,
+        "top_right": 0.000002485904099993176
+      },
+      "wall_time_ms": 357.537
+    },
+    {
+      "id": "geo-16x9-grid-01#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999836892032063,
+      "top_probabilities": {
+        "no": 0.000016310796793665916,
+        "yes": 0.9999836892032062
+      },
+      "wall_time_ms": 357.537
+    },
+    {
+      "id": "geo-16x9-grid-02#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9938929363736144,
+      "top_probabilities": {
+        "1": 0.9938929363736146,
+        "2": 0.0017669869448331834,
+        "3": 0.0025730897367190917,
+        "4": 0.0017669869448331834
+      },
+      "wall_time_ms": 361.026
+    },
+    {
+      "id": "geo-16x9-grid-02#grid_cell",
+      "expected": "middle_right",
+      "actual": "middle_right",
+      "accurate": true,
+      "confidence": 0.9981179444018817,
+      "top_probabilities": {
+        "bottom_center": 0.000032009266398600754,
+        "bottom_left": 0.00005303338387953682,
+        "bottom_right": 0.0008117478369404753,
+        "middle_center": 0.0008117478369404753,
+        "middle_left": 0.00007366271243492757,
+        "middle_right": 0.9981179444018816,
+        "top_center": 0.000019043229347745877,
+        "top_left": 0.000032009266398600754,
+        "top_right": 0.00004880206577796704
+      },
+      "wall_time_ms": 361.026
+    },
+    {
+      "id": "geo-16x9-grid-02#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999512702842515,
+      "top_probabilities": {
+        "no": 0.000048729715748544445,
+        "yes": 0.9999512702842515
+      },
+      "wall_time_ms": 361.026
+    },
+    {
+      "id": "geo-16x9-grid-03#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.9843971214798823,
+      "top_probabilities": {
+        "1": 0.00005678856803570624,
+        "2": 0.014160465016958697,
+        "3": 0.9843971214798822,
+        "4": 0.0013856249351233254
+      },
+      "wall_time_ms": 359.809
+    },
+    {
+      "id": "geo-16x9-grid-03#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.9991251402119371,
+      "top_probabilities": {
+        "bottom_center": 0.0006771726272255269,
+        "bottom_left": 0.000011973839190908447,
+        "bottom_right": 0.000014384730643566967,
+        "middle_center": 0.9991251402119371,
+        "middle_left": 0.00007591090064838467,
+        "middle_right": 0.00005412859392149259,
+        "top_center": 0.000024704855210567706,
+        "top_left": 0.00000906669651170905,
+        "top_right": 0.0000075175447107360185
+      },
+      "wall_time_ms": 359.809
+    },
+    {
+      "id": "geo-16x9-grid-03#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999907240929592,
+      "top_probabilities": {
+        "no": 0.00000927590704086095,
+        "yes": 0.9999907240929592
+      },
+      "wall_time_ms": 359.809
+    },
+    {
+      "id": "geo-16x9-grid-04#element_count",
+      "expected": "2",
+      "actual": "2",
+      "accurate": true,
+      "confidence": 0.5227190266072038,
+      "top_probabilities": {
+        "1": 0.0003311061149480142,
+        "2": 0.5227190266072038,
+        "3": 0.47248144539708387,
+        "4": 0.004468421880764303
+      },
+      "wall_time_ms": 364.833
+    },
+    {
+      "id": "geo-16x9-grid-04#grid_cell",
+      "expected": "middle_left",
+      "actual": "middle_left",
+      "accurate": true,
+      "confidence": 0.7141060300793725,
+      "top_probabilities": {
+        "bottom_center": 0.000008018653894138709,
+        "bottom_left": 0.000018273926888330688,
+        "bottom_right": 0.0000030938023680129673,
+        "middle_center": 0.28476672556628263,
+        "middle_left": 0.7141060300793725,
+        "middle_right": 0.00017819035915526342,
+        "top_center": 0.00017819035915526342,
+        "top_left": 0.00035681193626715274,
+        "top_right": 0.00038466531661665945
+      },
+      "wall_time_ms": 364.833
+    },
+    {
+      "id": "geo-16x9-grid-04#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9997283274959532,
+      "top_probabilities": {
+        "no": 0.0002716725040467899,
+        "yes": 0.9997283274959532
+      },
+      "wall_time_ms": 364.833
+    },
+    {
+      "id": "geo-16x9-grid-04#relation",
+      "expected": "left_of",
+      "actual": "below",
+      "accurate": false,
+      "confidence": 0.8728391898591221,
+      "top_probabilities": {
+        "above": 0.047222198828625,
+        "below": 0.8728391898591221,
+        "left_of": 0.07969951091650707,
+        "right_of": 0.00023910039574581102
+      },
+      "wall_time_ms": 364.833
+    },
+    {
+      "id": "geo-16x9-grid-05#element_count",
+      "expected": "1",
+      "actual": "1",
+      "accurate": true,
+      "confidence": 0.9938918153180677,
+      "top_probabilities": {
+        "1": 0.9938918153180677,
+        "2": 0.0016881442268228913,
+        "3": 0.0026036954442512513,
+        "4": 0.0018163450108582273
+      },
+      "wall_time_ms": 354.644
+    },
+    {
+      "id": "geo-16x9-grid-05#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.999868761617058,
+      "top_probabilities": {
+        "bottom_center": 0.0000022914767830102954,
+        "bottom_left": 6.635418434120729e-7,
+        "bottom_right": 4.578493171516952e-7,
+        "middle_center": 0.999868761617058,
+        "middle_left": 0.00004583360209326197,
+        "middle_right": 0.000013946900317909741,
+        "top_center": 0.00004583360209326197,
+        "top_left": 0.000013946900317909741,
+        "top_right": 0.000008264510176177272
+      },
+      "wall_time_ms": 354.644
+    },
+    {
+      "id": "geo-16x9-grid-05#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.999991488877229,
+      "top_probabilities": {
+        "no": 0.000008511122770979029,
+        "yes": 0.999991488877229
+      },
+      "wall_time_ms": 354.644
+    },
+    {
+      "id": "geo-16x9-grid-06#element_count",
+      "expected": "2",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.5007519837666446,
+      "top_probabilities": {
+        "1": 0.00016641724404429522,
+        "2": 0.1929996527619266,
+        "3": 0.30608194622738444,
+        "4": 0.5007519837666448
+      },
+      "wall_time_ms": 363.542
+    },
+    {
+      "id": "geo-16x9-grid-06#grid_cell",
+      "expected": "top_center",
+      "actual": "top_center",
+      "accurate": true,
+      "confidence": 0.9472804561341058,
+      "top_probabilities": {
+        "bottom_center": 0.000011196713594633,
+        "bottom_left": 0.0000024508858854135554,
+        "bottom_right": 0.000004104128764601104,
+        "middle_center": 0.051596611908650565,
+        "middle_left": 0.0005615077145435888,
+        "middle_right": 0.00002805315713029175,
+        "top_center": 0.9472804561341058,
+        "top_left": 0.00011136253331777411,
+        "top_right": 0.0004042568240073633
+      },
+      "wall_time_ms": 363.542
+    },
+    {
+      "id": "geo-16x9-grid-06#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.999994256948444,
+      "top_probabilities": {
+        "no": 0.00000574305155604334,
+        "yes": 0.999994256948444
+      },
+      "wall_time_ms": 363.542
+    },
+    {
+      "id": "geo-16x9-grid-06#relation",
+      "expected": "above",
+      "actual": "above",
+      "accurate": true,
+      "confidence": 0.9930951177340728,
+      "top_probabilities": {
+        "above": 0.9930951177340728,
+        "below": 0.005897517839912967,
+        "left_of": 0.0003293054446128741,
+        "right_of": 0.0006780589814014406
+      },
+      "wall_time_ms": 363.542
+    },
+    {
+      "id": "geo-16x9-grid-07#element_count",
+      "expected": "2",
+      "actual": "3",
+      "accurate": false,
+      "confidence": 0.9923262580245638,
+      "top_probabilities": {
+        "1": 0.00004455302567162744,
+        "2": 0.002992302925493342,
+        "3": 0.9923262580245638,
+        "4": 0.0046368860242712775
+      },
+      "wall_time_ms": 373.928
+    },
+    {
+      "id": "geo-16x9-grid-07#grid_cell",
+      "expected": "top_center",
+      "actual": "middle_center",
+      "accurate": false,
+      "confidence": 0.9973149712267587,
+      "top_probabilities": {
+        "bottom_center": 0.000008929974661230568,
+        "bottom_left": 0.000004793282471126233,
+        "bottom_right": 0.0000020734981106201897,
+        "middle_center": 0.9973149712267586,
+        "middle_left": 0.00011706185554150263,
+        "middle_right": 0.00009908757143853485,
+        "top_center": 0.002351496890678059,
+        "top_left": 0.000024650925463246052,
+        "top_right": 0.00007693477487707279
+      },
+      "wall_time_ms": 373.928
+    },
+    {
+      "id": "geo-16x9-grid-07#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9998936724726277,
+      "top_probabilities": {
+        "no": 0.000106327527372296,
+        "yes": 0.9998936724726277
+      },
+      "wall_time_ms": 373.928
+    },
+    {
+      "id": "geo-16x9-grid-08#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.9193384748361874,
+      "top_probabilities": {
+        "1": 0.00011633817593237706,
+        "2": 0.0005825466633912187,
+        "3": 0.0799626403244891,
+        "4": 0.9193384748361874
+      },
+      "wall_time_ms": 369.596
+    },
+    {
+      "id": "geo-16x9-grid-08#grid_cell",
+      "expected": "middle_center",
+      "actual": "middle_center",
+      "accurate": true,
+      "confidence": 0.976083077754739,
+      "top_probabilities": {
+        "bottom_center": 0.0000016348228087955202,
+        "bottom_left": 0.000006644335501610931,
+        "bottom_right": 2.205455901171458e-7,
+        "middle_center": 0.9760830777547389,
+        "middle_left": 0.02352493301741654,
+        "middle_right": 0.0001440582737205561,
+        "top_center": 0.00012370561419132795,
+        "top_left": 0.00003178016868792508,
+        "top_right": 0.00008394546734414487
+      },
+      "wall_time_ms": 369.596
+    },
+    {
+      "id": "geo-16x9-grid-08#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9999872766123047,
+      "top_probabilities": {
+        "no": 0.000012723387695272285,
+        "yes": 0.9999872766123047
+      },
+      "wall_time_ms": 369.596
+    },
+    {
+      "id": "geo-16x9-grid-08#relation",
+      "expected": "left_of",
+      "actual": "above",
+      "accurate": false,
+      "confidence": 0.9219928983752778,
+      "top_probabilities": {
+        "above": 0.9219928983752776,
+        "below": 0.06670428202750281,
+        "left_of": 0.007844165712917853,
+        "right_of": 0.0034586538843016284
+      },
+      "wall_time_ms": 369.596
+    },
+    {
+      "id": "geo-16x9-grid-09#element_count",
+      "expected": "3",
+      "actual": "4",
+      "accurate": false,
+      "confidence": 0.9930390924413464,
+      "top_probabilities": {
+        "1": 0.00004683362709645246,
+        "2": 0.00010224450023621143,
+        "3": 0.006811829431321052,
+        "4": 0.9930390924413464
+      },
+      "wall_time_ms": 358.902
+    },
+    {
+      "id": "geo-16x9-grid-09#grid_cell",
+      "expected": "top_center",
+      "actual": "top_center",
+      "accurate": true,
+      "confidence": 0.9884955222475219,
+      "top_probabilities": {
+        "bottom_center": 0.0003566851700914726,
+        "bottom_left": 0.00032928062019070873,
+        "bottom_right": 0.000017132295725068817,
+        "middle_center": 0.0006172460609234992,
+        "middle_left": 0.0005287788694682407,
+        "middle_right": 0.00010309586339972262,
+        "top_center": 0.9884955222475219,
+        "top_left": 0.005555590929872617,
+        "top_right": 0.003996667942806716
+      },
+      "wall_time_ms": 358.902
+    },
+    {
+      "id": "geo-16x9-grid-09#present",
+      "expected": "yes",
+      "actual": "yes",
+      "accurate": true,
+      "confidence": 0.9998387862935285,
+      "top_probabilities": {
+        "no": 0.00016121370647153766,
+        "yes": 0.9998387862935285
+      },
+      "wall_time_ms": 358.902
+    },
+    {
+      "id": "geo-16x9-grid-09#relation",
+      "expected": "left_of",
+      "actual": "above",
+      "accurate": false,
+      "confidence": 0.9845437997793969,
+      "top_probabilities": {
+        "above": 0.9845437997793969,
+        "below": 0.012789223465295187,
+        "left_of": 0.0010665123500802555,
+        "right_of": 0.0016004644052276965
+      },
+      "wall_time_ms": 358.902
+    }
+  ]
+}

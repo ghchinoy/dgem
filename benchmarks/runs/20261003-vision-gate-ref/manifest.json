@@ -1,0 +1,71 @@
+{
+  "run_id": "20261003-vision-gate-ref",
+  "created": "2026-10-03T16:38:38+00:00",
+  "git_commit": "d30ec61550087002085413e6b49fadde820ebb33",
+  "notes": "",
+  "receipts": [
+    {
+      "path": "health__prod__r1.json",
+      "suite": "health",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "health",
+      "sha256": "801c6d0b079af75936df47f9dbe152cb26a7ea267156731c0ff77209e2c77e7c",
+      "seconds": 0.3
+    },
+    {
+      "path": "vision_spot__prod__r1.json",
+      "suite": "vision_spot",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "ce71eb4283c6835e500802f221810c839e5b7986440b7119ed9bf3c8ccce75a0",
+      "seconds": 3.8
+    },
+    {
+      "path": "vision__prod__r1.json",
+      "suite": "vision",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "83e7e04d1ea8d3d0c9994418015ad765e86a45849af94d98a6640d5f5683bc96",
+      "seconds": 18.9
+    },
+    {
+      "path": "vision__prod__r2.json",
+      "suite": "vision",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "4ce3e9944f8a6ebf46029f54af51736318f4edb055f611827a3baddc94da5ad7",
+      "seconds": 20.4
+    }
+  ],
+  "matrix": {
+    "matrix_version": "v1",
+    "tier": "T1",
+    "suites": [
+      "health",
+      "vision_spot",
+      "vision"
+    ],
+    "baseline": null,
+    "targets": [
+      {
+        "name": "prod",
+        "kind": "vertex",
+        "health": {
+          "version": "v0.2.0",
+          "revision": "027b68e",
+          "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+        }
+      }
+    ],
+    "started": "2026-10-03T16:38:38+00:00",
+    "finished": "2026-10-03T16:39:21+00:00"
+  }
+}

@@ -1,0 +1,354 @@
+{
+ "schema": "dgem.matrix.summary/v2",
+ "run_id": "20261003-vision-gate-ref",
+ "created": "2026-10-03T16:38:38+00:00",
+ "git_commit": "d30ec61550087002085413e6b49fadde820ebb33",
+ "matrix_version": "v1",
+ "tier": "T1",
+ "baseline": null,
+ "started": "2026-10-03T16:38:38+00:00",
+ "finished": "2026-10-03T16:39:21+00:00",
+ "targets": [
+  {
+   "name": "prod",
+   "kind": "vertex",
+   "health": {
+    "version": "v0.2.0",
+    "revision": "027b68e",
+    "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+   }
+  }
+ ],
+ "overall": {
+  "prod": "PASS"
+ },
+ "noise_floor": {
+  "prod": 0.9671746776084408
+ },
+ "gates": [
+  {
+   "gate": "health",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "ready"
+  },
+  {
+   "gate": "vision",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.755; reference 0.750\u20130.761 (v0.2.0)"
+  },
+  {
+   "gate": "vision_spot",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "acc 0.787; reference 0.787\u20130.801 (v0.2.0)"
+  },
+  {
+   "gate": "coverage",
+   "target": "prod",
+   "verdict": "PASS",
+   "detail": "no coverage loss"
+  }
+ ],
+ "suites": {
+  "vision": {
+   "prod": {
+    "runs": [
+     {
+      "n": 853,
+      "correct": 640,
+      "accuracy": 0.7502930832356389,
+      "ece10": 0.19318948380814627,
+      "auroc": 0.8183832159624413,
+      "mean_conf": 0.9396860861898234,
+      "macro_f1": 0.6556928731073113,
+      "case_exact": null,
+      "brier": 0.41186567148008135,
+      "nll": 1.020746414872577,
+      "wall_p50": 353.68,
+      "run": 1,
+      "answered": 230,
+      "attempted": 230,
+      "coverage": 1.0,
+      "refusals": {}
+     },
+     {
+      "n": 853,
+      "correct": 648,
+      "accuracy": 0.7596717467760844,
+      "ece10": 0.18518059198528572,
+      "auroc": 0.8007226738934056,
+      "mean_conf": 0.9444282675374591,
+      "macro_f1": 0.6675973289512915,
+      "case_exact": null,
+      "brier": 0.4137625763246718,
+      "nll": 1.046490250908048,
+      "wall_p50": 342.039,
+      "run": 2,
+      "answered": 230,
+      "attempted": 230,
+      "coverage": 1.0,
+      "refusals": {}
+     }
+    ],
+    "accuracy": 0.7549824150058617,
+    "accuracy_range": [
+     0.7502930832356389,
+     0.7596717467760844
+    ],
+    "coverage": 1.0,
+    "refusals": {},
+    "macro_f1": 0.6616451010293014,
+    "case_exact": null,
+    "ece10": 0.18918503789671598,
+    "brier": 0.4128141239023766,
+    "nll": 1.0336183328903124,
+    "auroc": 0.8095529449279235,
+    "soft_acc": null,
+    "score_mae": null,
+    "wall_p50": 347.8595,
+    "mean_conf": 0.9420571768636412,
+    "noise_within": 0.9671746776084408,
+    "heldout": {
+     "ece_raw": 0.19261931346550615,
+     "ece_heldout": 0.05124554274557732,
+     "nll_raw": 1.0207465288679267,
+     "nll_heldout": 0.615001799417175,
+     "temperatures": [
+      2.65,
+      2.75,
+      2.65,
+      2.75,
+      2.75
+     ],
+     "n": 853
+    },
+    "reliability": [
+     {
+      "lo": 0.0,
+      "hi": 0.1,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "count": 7,
+      "share": 0.004103165298944901,
+      "conf": 0.3485062958770873,
+      "acc": 0.5714285714285714
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "count": 11,
+      "share": 0.006447831184056272,
+      "conf": 0.4602101158307244,
+      "acc": 0.36363636363636365
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "count": 40,
+      "share": 0.023446658851113716,
+      "conf": 0.5589452804800457,
+      "acc": 0.425
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "count": 72,
+      "share": 0.04220398593200469,
+      "conf": 0.6485195085059589,
+      "acc": 0.5
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "count": 69,
+      "share": 0.04044548651817116,
+      "conf": 0.7490993909235497,
+      "acc": 0.4057971014492754
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "count": 105,
+      "share": 0.0615474794841735,
+      "conf": 0.8653636541713635,
+      "acc": 0.38095238095238093
+     },
+     {
+      "lo": 0.9,
+      "hi": 1.0,
+      "count": 1402,
+      "share": 0.8218053927315357,
+      "conf": 0.9900466696795616,
+      "acc": 0.8266761768901569
+     }
+    ]
+   }
+  },
+  "vision_spot": {
+   "prod": {
+    "runs": [
+     {
+      "n": 141,
+      "correct": 111,
+      "accuracy": 0.7872340425531915,
+      "ece10": 0.16868415662078204,
+      "auroc": 0.8204204204204204,
+      "mean_conf": 0.9549773937108986,
+      "macro_f1": 0.7805164035311094,
+      "case_exact": null,
+      "brier": 0.37342122866722766,
+      "nll": 1.0210949645210834,
+      "wall_p50": 361.369,
+      "run": 1,
+      "answered": 40,
+      "attempted": 40,
+      "coverage": 1.0,
+      "refusals": {}
+     }
+    ],
+    "accuracy": 0.7872340425531915,
+    "accuracy_range": [
+     0.7872340425531915,
+     0.7872340425531915
+    ],
+    "coverage": 1.0,
+    "refusals": {},
+    "macro_f1": 0.7805164035311094,
+    "case_exact": null,
+    "ece10": 0.16868415662078204,
+    "brier": 0.37342122866722766,
+    "nll": 1.0210949645210834,
+    "auroc": 0.8204204204204204,
+    "soft_acc": null,
+    "score_mae": null,
+    "wall_p50": 361.369,
+    "mean_conf": 0.9549773937108986,
+    "noise_within": null,
+    "heldout": {
+     "ece_raw": 0.16868415662078204,
+     "ece_heldout": 0.04555170640534406,
+     "nll_raw": 1.0210950464191202,
+     "nll_heldout": 0.5953919428463633,
+     "temperatures": [
+      2.8,
+      2.7,
+      2.5,
+      2.9,
+      2.75
+     ],
+     "n": 141
+    },
+    "reliability": [
+     {
+      "lo": 0.0,
+      "hi": 0.1,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "count": 0,
+      "share": 0.0,
+      "conf": null,
+      "acc": null
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "count": 5,
+      "share": 0.03546099290780142,
+      "conf": 0.5498024570277588,
+      "acc": 0.4
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "count": 3,
+      "share": 0.02127659574468085,
+      "conf": 0.6445577382844042,
+      "acc": 0.6666666666666666
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "count": 3,
+      "share": 0.02127659574468085,
+      "conf": 0.732882270224288,
+      "acc": 0.6666666666666666
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "count": 9,
+      "share": 0.06382978723404255,
+      "conf": 0.866154332082249,
+      "acc": 0.2222222222222222
+     },
+     {
+      "lo": 0.9,
+      "hi": 1.0,
+      "count": 121,
+      "share": 0.8581560283687943,
+      "conf": 0.9915296794531536,
+      "acc": 0.8512396694214877
+     }
+    ]
+   }
+  }
+ },
+ "order": {},
+ "latency": {},
+ "summary_only": {},
+ "di_probes": {}
+}

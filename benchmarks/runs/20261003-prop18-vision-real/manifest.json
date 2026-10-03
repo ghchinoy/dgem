@@ -1,0 +1,87 @@
+{
+  "run_id": "20261003-prop18-vision-real",
+  "created": "2026-10-03T16:35:41+00:00",
+  "git_commit": "d30ec61550087002085413e6b49fadde820ebb33",
+  "git_dirty_paths": [
+    "templates/multimodal/vision_aspects_generic.json.tmpl"
+  ],
+  "notes": "PROP-18 phase 4 pilot: bench-vision on benchmarks/bbox_real_aspects.jsonl: dgem x2, dgem blank-image prior, Gemini reference (gemini-3.8-flash).",
+  "receipts": [
+    {
+      "suite": "vision",
+      "config": "vertex_g4_x2",
+      "path": "vision__vertex_g4_x2.json",
+      "sha256": "3468b9d75d2e44486fd46b15b86580fd69376aa2d1f252142573f5cb3113ca17",
+      "recorded": "2026-10-03T16:36:52+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_real_aspects.jsonl -t templates/multimodal/vision_aspects_generic.json.tmpl --vertex-url <endpoint-id> --gcp-auth --repeat 2 -o /workspace/dgem/benchmarks/runs/20261003-prop18-vision-real/vision__vertex_g4_x2.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "5406145291902517248",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T16:36:50Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 864,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision",
+      "config": "vertex_g4_blank",
+      "path": "vision__vertex_g4_blank.json",
+      "sha256": "ed4adf88ee2ec3df839c15364e2f2ee9067f14080d670746253a1420221ee883",
+      "recorded": "2026-10-03T16:37:24+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_real_aspects.jsonl -t templates/multimodal/vision_aspects_generic.json.tmpl --vertex-url <endpoint-id> --gcp-auth --variant blank -o /workspace/dgem/benchmarks/runs/20261003-prop18-vision-real/vision__vertex_g4_blank.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "5406145291902517248",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T16:37:20Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 432,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision",
+      "config": "reference_gemini_3_8_flash",
+      "path": "vision__reference_gemini_3_8_flash.json",
+      "sha256": "366e28ef8c0e94f52f91908527abae3ce0bb2b35f9843dcec984d7c3a7b2860d",
+      "recorded": "2026-10-03T16:46:12+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_real_aspects.jsonl -t templates/multimodal/vision_aspects_generic.json.tmpl --engine gemini --gemini-model gemini-3.8-flash -o /workspace/dgem/benchmarks/runs/20261003-prop18-vision-real/vision__reference_gemini_3_8_flash.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:46:12Z",
+        "target_model": "gemini-3.8-flash",
+        "idc_config": null,
+        "n": 432,
+        "errors": 0
+      }
+    }
+  ]
+}
