@@ -42,6 +42,18 @@ def load_run(run_dir):
     with open(os.path.join(run_dir, "manifest.json")) as f:
         man = json.load(f)
     by = defaultdict(lambda: defaultdict(list))  # suite -> target -> [(entry, receipt)]
+    missing = [e["path"] for e in man["receipts"] if not os.path.exists(os.path.join(run_dir, e["path"]))]
+    if missing:
+        locked = set()
+        lock = os.path.join(run_dir, "receipts.lock.json")
+        if os.path.exists(lock):
+            with open(lock) as f:
+                locked = {x["path"] for x in json.load(f)["files"]}
+        stored = [m for m in missing if m in locked]
+        if stored:
+            raise SystemExit(f"{len(stored)} receipt(s) of {os.path.basename(run_dir)} are stored in the matrix bucket "
+                             f"(receipts.lock.json): run `scripts/bench_matrix.py fetch-receipts {run_dir}` first")
+        raise SystemExit(f"missing receipts in {run_dir}: {', '.join(missing[:5])}")
     for e in man["receipts"]:
         by[e["suite"]][e["config"]].append((e, M.load(os.path.join(run_dir, e["path"]))))
     for s in by.values():

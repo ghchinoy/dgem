@@ -37,6 +37,7 @@ type ReliabilityBin struct {
 type JevParitySummary struct {
 	ProtocolVersion        string             `json:"protocol_version"`
 	TemperatureApplied     float64            `json:"temperature_applied"`
+	TemperatureMethod      string             `json:"temperature_method,omitempty"` // kfold: cases carry their own held-out T; the T=1 columns are then held-out values
 	OptimalTemperature     float64            `json:"optimal_temperature"`
 	ChanceBaselinePct      float64            `json:"chance_baseline_pct"`
 	ChanceCorrectedAccPct  float64            `json:"chance_corrected_acc_pct"`
@@ -793,8 +794,13 @@ func printJevParityDashboard(report CalibrationReport) {
 		stylePass.Render(fmt.Sprintf("%.2f%%", jp.ChanceCorrectedAccPct)),
 		report.OverallAccuracyPct,
 	)
-	fmt.Printf("  • Temperature Scaling (T):    T = %.2f (Optimal Fitted T* = %.2f; Argmax Accuracy Invariant)\n",
-		jp.TemperatureApplied, jp.OptimalTemperature)
+	if jp.TemperatureMethod == "kfold" {
+		fmt.Printf("  • Temperature Scaling (T):    held-out 5-fold, per-case T in temperature_applied (in-sample T* = %.2f, not applied)\n",
+			jp.OptimalTemperature)
+	} else {
+		fmt.Printf("  • Temperature Scaling (T):    T = %.2f (Optimal Fitted T* = %.2f, in-sample; Argmax Accuracy Invariant)\n",
+			jp.TemperatureApplied, jp.OptimalTemperature)
+	}
 	fmt.Printf("  • Calibration Metrics:        10-Bin ECE = %.4f (Raw T=1.0: %.4f) | Multi-Class Brier = %.4f (Raw: %.4f)\n",
 		jp.ECE10Bin, jp.RawT1ECE10Bin, jp.BrierMean, jp.RawT1BrierMean)
 	endpointDesc := jp.EndpointKind
@@ -805,7 +811,11 @@ func printJevParityDashboard(report CalibrationReport) {
 		jp.P50LatencySec, jp.P50LatencySec*1000.0, jp.P95LatencySec, jp.P95LatencySec*1000.0, endpointDesc)
 	fmt.Printf("  • Unit Economics:             $%.4f per 1,000 decisions\n", jp.USDPer1kDecisions)
 	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
-	fmt.Printf("  %-34s %14s %14s %14s\n", "JEVBENCH 4 AXES (25% EACH)", "RAW (T=1.00)", fmt.Sprintf("SCALED (T=%.2f)", jp.TemperatureApplied), "OFFICIAL v1.4")
+	rawCol, scaledCol := "RAW (T=1.00)", fmt.Sprintf("SCALED (T=%.2f)", jp.TemperatureApplied)
+	if jp.TemperatureMethod == "kfold" {
+		rawCol, scaledCol = "HELD-OUT", "HELD-OUT"
+	}
+	fmt.Printf("  %-34s %14s %14s %14s\n", "JEVBENCH 4 AXES (25% EACH)", rawCol, scaledCol, "OFFICIAL v1.4")
 	fmt.Println(styleMuted.Render("  ----------------------------------------------------------------------------------------"))
 	intelV14Note := ""
 	if jp.V14PublicOnlyEstimate {

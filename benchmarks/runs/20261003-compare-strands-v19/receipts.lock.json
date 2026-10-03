@@ -1,0 +1,23 @@
+{
+ "schema": "dgem.receipts.lock/v1",
+ "run_id": "20261003-compare-strands-v19",
+ "location": "gs://<PROJECT>-dgem-matrix/receipts/20261003-compare-strands-v19/",
+ "note": "Receipts over ~2 MB live in the matrix bucket (AGENTS.md receipt policy). Restore with scripts/bench_matrix.py fetch-receipts <run_dir> (needs read access to the bucket; set DGEM_MATRIX_BUCKET=<PROJECT>-dgem-matrix).",
+ "files": [
+  {
+   "path": "massive__dgem__r1.json",
+   "bytes": 2852041,
+   "sha256": "251d93f10b6d6b1e3248af8d19ca57fd3457eeed4c70baa29ac7d763c02ab42f"
+  },
+  {
+   "path": "massive__dgem__r2.json",
+   "bytes": 2846597,
+   "sha256": "bb3ac588bd5ed7bd87e08ff75a871620293152c57b120b75cfbe67c40fda5c0a"
+  },
+  {
+   "path": "massive__strands__r1.json",
+   "bytes": 2949929,
+   "sha256": "0afd329601493eb3a33cce0995c11351dca0bf5bf0bdb245b9f7540bec29edc1"
+  }
+ ]
+}

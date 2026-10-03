@@ -41,31 +41,33 @@ import (
 )
 
 var (
-	jevDataset           string
-	jevLockPath          string
-	jevSync              bool
-	jevCheckUpstream     bool
-	jevGitRef            string
-	jevFromReceipt       string
-	jevCascadeFrom       string
-	jevCascadeThreshold  float64
-	jevNormalizeEntropy  bool
-	jevVertexModel       string
-	jevVertexProject     string
-	jevSweepThresholds   bool
-	jevTierFilter        string
-	jevFamilyFilter      string
-	jevTopicFilter       string
-	jevLimit             int
-	jevOffset            int
-	jevWorkers           int
-	jevSamples           string
-	jevTempScale         float64
-	jevAutoTemp          bool
-	jevFlipOptions       bool
-	jevMultiSlotEvidence bool
-	jevNullPriorDebias   bool
-	jevDualMirror        bool
+	jevDataset            string
+	jevLockPath           string
+	jevSync               bool
+	jevCheckUpstream      bool
+	jevGitRef             string
+	jevFromReceipt        string
+	jevCascadeFrom        string
+	jevCascadeThreshold   float64
+	jevNormalizeEntropy   bool
+	jevVertexModel        string
+	jevVertexProject      string
+	jevSweepThresholds    bool
+	jevTierFilter         string
+	jevFamilyFilter       string
+	jevTopicFilter        string
+	jevLimit              int
+	jevOffset             int
+	jevWorkers            int
+	jevSamples            string
+	jevTempScale          float64
+	jevAutoTemp           bool
+	jevAutoTempInSample   bool
+	jevFlipOptions        bool
+	jevFlattenScore       bool
+	jevMultiSlotEvidence  bool
+	jevNullPriorDebias    bool
+	jevDualMirror         bool
 	jevSlotID             string
 	jevPriorAlpha         float64
 	jevScoringMode        string
@@ -130,8 +132,10 @@ func init() {
 	benchJevCmd.Flags().IntVarP(&jevWorkers, "workers", "w", 1, "Number of concurrent evaluation workers")
 	benchJevCmd.Flags().StringVar(&jevSamples, "samples", "1", "DiffusionGemma samples policy ('1', '2', '4', or 'auto')")
 	benchJevCmd.Flags().Float64Var(&jevTempScale, "temperature-scale", 1.0, "Post-hoc slot logit temperature scaling factor T > 0")
-	benchJevCmd.Flags().BoolVar(&jevAutoTemp, "auto-temperature", false, "Automatically fit optimal temperature T* to maximize JevBench Calibration Score")
+	benchJevCmd.Flags().BoolVar(&jevAutoTemp, "auto-temperature", false, "Fit temperature T* by 5-fold cross-validation: each task is scaled by the T fitted on the other folds, so reported calibration is out of sample")
+	benchJevCmd.Flags().BoolVar(&jevAutoTempInSample, "auto-temperature-in-sample", false, "With --auto-temperature: fit one T on all tasks and apply it to all (optimistic; the behaviour before 2026-10-04)")
 	benchJevCmd.Flags().BoolVar(&jevFlipOptions, "flip-options", false, "Reverse option order to test Option-Order Permutation Invariance")
+	benchJevCmd.Flags().BoolVar(&jevFlattenScore, "flatten-score", false, "Pre-2026-10-04 behaviour: send ordinal score items as a choice over bare level indices (the rubric text was not sent). Only for comparing with old receipts")
 	benchJevCmd.Flags().BoolVar(&jevMultiSlotEvidence, "multi-slot-evidence", false, "Co-allocate a companion 'evidence_focus' slot on the diffusion canvas in the same forward pass")
 	benchJevCmd.Flags().BoolVar(&jevNullPriorDebias, "null-prior-debias", false, "IDC: divide out the content-free positional ('A') prior before scoring")
 	benchJevCmd.Flags().StringVar(&jevSlotID, "slot-id", "decision", "Question id used for the decision slot (PROP-16: slot names are visible to the model)")
@@ -251,6 +255,8 @@ type JevCaseResult struct {
 	Pass1LatencyMs     float64                    `json:"pass1_latency_ms,omitempty"`
 	Pass2LatencyMs     float64                    `json:"pass2_latency_ms,omitempty"`
 	TopProbabilities   map[string]float64         `json:"top_probabilities,omitempty"`
+	TemperatureApplied float64                    `json:"temperature_applied,omitempty"` // per-task T of a k-fold --auto-temperature report
+	ScoreReadout       string                     `json:"score_readout,omitempty"`       // score items: "ordinal" (levels sent as a score question) or "flattened" (--flatten-score)
 	IDC                *permutation.SlotIDCDetail `json:"idc,omitempty"`
 	GoldProbs          map[string]float64         `json:"gold_probs,omitempty"`
 	Error              string                     `json:"error,omitempty"`
@@ -274,6 +280,7 @@ type JevReport struct {
 	ParaphraseBothCorrect int                       `json:"paraphrase_both_correct"`
 	ParaphraseConsistPct  float64                   `json:"paraphrase_consistency_pct"`
 	TemperatureScale      float64                   `json:"temperature_scale"`
+	TemperatureFit        *TemperatureFit           `json:"temperature_fit,omitempty"`
 	MultiSlotEvidence     bool                      `json:"multi_slot_evidence,omitempty"`
 	FlippedOptions        bool                      `json:"flipped_options,omitempty"`
 	Cascade               *CascadeSummary           `json:"cascade,omitempty"`
@@ -394,11 +401,10 @@ func runBenchJev(cmd *cobra.Command, args []string) error {
 	close(jobs)
 	wg.Wait()
 
-	activeTemp := jevTempScale
-	if jevAutoTemp {
-		activeTemp = findOptimalJevTemperature(results)
-	}
+	results, activeTemp, tfit := applyJevTemperature(results)
 	report := buildJevReport(results, "live-evaluation", c.BaseURL, viper.GetString("model"), lock.CommitSHA, activeTemp, jevMultiSlotEvidence, jevFlipOptions)
+	report.TemperatureFit = tfit
+	stampTemperatureMethod(report.JevParity, tfit)
 	report.IDCConfig = idcConfigLabel(jevNullPriorDebias, jevDualMirror, jevPriorAlpha)
 	if jevSlotID != "decision" {
 		report.IDCConfig += "; slot_id=" + jevSlotID
@@ -972,43 +978,12 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 		}
 	}
 
-	type optItem struct {
-		Name        string
-		Description string
-	}
-	var opts []optItem
-	qType := "choice"
+	qType, opts, levels := buildJevQuestion(t, labels, jevFlattenScore)
 	qPrompt := t.Question.Instructions
-
-	critMap := extractJevCriteriaMap(t.Question.Criteria)
-	switch t.Question.Type {
-	case "noul":
-		qType = "choice"
-		for _, l := range labels {
-			desc := l
-			if l == "yes" {
-				if d, ok := critMap["true"]; ok && d != "" {
-					desc = d
-				} else if d, ok := critMap["yes"]; ok && d != "" {
-					desc = d
-				}
-			} else if l == "no" {
-				if d, ok := critMap["false"]; ok && d != "" {
-					desc = d
-				} else if d, ok := critMap["no"]; ok && d != "" {
-					desc = d
-				}
-			}
-			opts = append(opts, optItem{Name: l, Description: desc})
-		}
-	case "choice", "score":
-		qType = "choice"
-		for _, l := range labels {
-			desc := l
-			if d, ok := critMap[l]; ok && d != "" {
-				desc = d
-			}
-			opts = append(opts, optItem{Name: l, Description: desc})
+	if t.Question.Type == "score" {
+		res.ScoreReadout = "ordinal"
+		if levels == nil {
+			res.ScoreReadout = "flattened"
 		}
 	}
 
@@ -1026,6 +1001,7 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 		"QuestionType":        qType,
 		"QuestionPrompt":      qPrompt,
 		"Options":             opts,
+		"Levels":              levels,
 	}
 
 	tmplBytes, err := os.ReadFile("templates/jevbench_generic.json.tmpl")
@@ -1087,14 +1063,115 @@ func evaluateJevTaskLive(ctx context.Context, c *client.Client, t JevTask, sampl
 	}
 
 	res.Actual = firstNonEmpty(qa.Choice, qa.Label, qa.Level)
-	res.Accurate = strings.EqualFold(res.Actual, res.Expected)
 	res.Confidence = qa.Confidence
 	res.TopProbabilities = qa.Probabilities
+	if levels != nil {
+		// ordinal score: the server answers with level texts; map back to the task's index labels
+		res.Actual, res.TopProbabilities, res.Confidence = mapJevScoreAnswer(qa, levels, labels)
+	}
+	res.Accurate = strings.EqualFold(res.Actual, res.Expected)
 	res.Entropy = computeQuestionEntropy(qa, resp)
 	if vocab > 1 {
 		res.NormalizedEnt = res.Entropy / math.Log(float64(vocab))
 	}
 	return res
+}
+
+// jevOption is one option of a rendered JevBench question (templates/jevbench_generic.json.tmpl).
+type jevOption struct {
+	Name        string
+	Description string
+}
+
+// buildJevQuestion renders a JevBench task's question for the dgem schema. labels is t.Labels, possibly reversed by
+// --flip-options. Score items become a native "score" question whose levels are the rubric texts in label order
+// (labels are level indices into criteria), unless flatten is set: then they are sent the old way, as a choice over
+// bare index names whose descriptions are the indices themselves (criteria is a list of strings, which
+// extractJevCriteriaMap does not read), so the rubric never reaches the model. levels is nil unless ordinal.
+func buildJevQuestion(t JevTask, labels []string, flatten bool) (qType string, opts []jevOption, levels []string) {
+	critMap := extractJevCriteriaMap(t.Question.Criteria)
+	qType = "choice"
+	switch t.Question.Type {
+	case "noul":
+		for _, l := range labels {
+			desc := l
+			if l == "yes" {
+				if d, ok := critMap["true"]; ok && d != "" {
+					desc = d
+				} else if d, ok := critMap["yes"]; ok && d != "" {
+					desc = d
+				}
+			} else if l == "no" {
+				if d, ok := critMap["false"]; ok && d != "" {
+					desc = d
+				} else if d, ok := critMap["no"]; ok && d != "" {
+					desc = d
+				}
+			}
+			opts = append(opts, jevOption{Name: l, Description: desc})
+		}
+	case "score":
+		if crit, ok := t.Question.Criteria.([]interface{}); ok && !flatten {
+			texts := make([]string, 0, len(crit))
+			for _, c := range crit {
+				if s, ok := c.(string); ok {
+					texts = append(texts, s)
+				}
+			}
+			if len(texts) == len(crit) && len(texts) >= 2 {
+				for _, l := range labels {
+					i, err := strconv.Atoi(l)
+					if err != nil || i < 0 || i >= len(texts) {
+						levels = nil
+						break
+					}
+					levels = append(levels, texts[i])
+				}
+				if levels != nil {
+					return "score", nil, levels
+				}
+			}
+		}
+		fallthrough
+	case "choice":
+		for _, l := range labels {
+			desc := l
+			if d, ok := critMap[l]; ok && d != "" {
+				desc = d
+			}
+			opts = append(opts, jevOption{Name: l, Description: desc})
+		}
+	}
+	return qType, opts, levels
+}
+
+// mapJevScoreAnswer maps an ordinal score answer (level texts, or the server's digit labels "1".."n") back to the
+// task's index labels: levels[i] is the rubric text shown for labels[i]. Returns the argmax label, probabilities keyed
+// by label, and the top probability.
+func mapJevScoreAnswer(qa client.QuestionAnswer, levels, labels []string) (string, map[string]float64, float64) {
+	probs := make(map[string]float64, len(labels))
+	for i, lvl := range levels {
+		if p, ok := qa.Probabilities[lvl]; ok {
+			probs[labels[i]] = p
+		} else if p, ok := qa.Probabilities[strconv.Itoa(i+1)]; ok {
+			probs[labels[i]] = p
+		}
+	}
+	best, bestP := "", -1.0
+	for i := range levels {
+		if p, ok := probs[labels[i]]; ok && p > bestP {
+			best, bestP = labels[i], p
+		}
+	}
+	if best == "" { // no probabilities: fall back to the reported level
+		for i, lvl := range levels {
+			if lvl == qa.Level || strconv.Itoa(i+1) == qa.Label {
+				return labels[i], nil, qa.Confidence
+			}
+		}
+		return firstNonEmpty(qa.Level, qa.Label), nil, qa.Confidence
+	}
+	return best, probs, bestP
 }
 
 func firstNonEmpty(vals ...string) string {
@@ -1134,26 +1211,18 @@ func replayJevBenchReceipt(path string) error {
 		}
 	}
 
-	// If receipt was saved with a non-1.0 TemperatureScale, invert to T=1.0 first so replay is idempotent
-	if prev.TemperatureScale > 0 && math.Abs(prev.TemperatureScale-1.0) > 1e-6 {
-		invPrev := 1.0 / prev.TemperatureScale
-		for i := range filtered {
-			cc := CalibrationCaseResult{
-				VocabCardinality: filtered[i].VocabCardinality,
-				Confidence:       filtered[i].Confidence,
-				Entropy:          filtered[i].Entropy,
-				TopProbabilities: filtered[i].TopProbabilities,
-			}
-			filtered[i].TopProbabilities, filtered[i].Confidence, filtered[i].Entropy, filtered[i].NormalizedEnt = scaleCaseDistribution(cc, invPrev)
-		}
+	// Back to T = 1 first (per task when the receipt recorded a k-fold T, else the report-wide T), so replay is idempotent
+	for i := range filtered {
+		cc := unscaleTemperature(jevToCalCase(filtered[i]), filtered[i].TemperatureApplied, prev.TemperatureScale)
+		filtered[i].TopProbabilities, filtered[i].Confidence, filtered[i].Entropy, filtered[i].NormalizedEnt = cc.TopProbabilities, cc.Confidence, cc.Entropy, cc.NormalizedEntropy
+		filtered[i].TemperatureApplied = 0
 	}
 
-	activeTemp := jevTempScale
-	if jevAutoTemp {
-		activeTemp = findOptimalJevTemperature(filtered)
-	}
+	filtered, activeTemp, tfit := applyJevTemperature(filtered)
 
 	report := buildJevReportWithCascade(filtered, prev.Source, prev.TargetURL, prev.TargetModel, prev.LockCommitSHA, activeTemp, prev.MultiSlotEvidence, prev.FlippedOptions, prev.Cascade)
+	report.TemperatureFit = tfit
+	stampTemperatureMethod(report.JevParity, tfit)
 	if jevOutput != "" {
 		data, _ := json.MarshalIndent(report, "", "  ")
 		_ = os.WriteFile(jevOutput, data, 0644)
@@ -1216,6 +1285,57 @@ func computeJevExactGoldTVD(cases []JevCaseResult, temp float64) float64 {
 		return 0.0
 	}
 	return sum / float64(cnt)
+}
+
+func jevToCalCase(c JevCaseResult) CalibrationCaseResult {
+	return CalibrationCaseResult{ID: c.ID, VocabCardinality: c.VocabCardinality, Confidence: c.Confidence,
+		Entropy: c.Entropy, NormalizedEntropy: c.NormalizedEnt, TopProbabilities: c.TopProbabilities}
+}
+
+// applyJevTemperature is applyCalibrationTemperature for JevBench tasks (the objective is
+// findOptimalJevTemperature). Input tasks must be at T = 1. Returns tasks, the report-wide T and the fit record.
+func applyJevTemperature(cases []JevCaseResult) ([]JevCaseResult, float64, *TemperatureFit) {
+	eceAt := func(cs []JevCaseResult, t float64) float64 {
+		e, _ := compute10BinECE(enrichAndScaleCaseResults(toCalibrationCasesFromJev(cs), t))
+		return e
+	}
+	base := enrichAndScaleCaseResults(toCalibrationCasesFromJev(cases), 1.0)
+	fit := &TemperatureFit{InSampleTemperature: findOptimalJevTemperature(cases), ECERaw: eceAt(cases, 1.0), BrierRaw: meanBrier(base)}
+	switch {
+	case jevAutoTemp && !jevAutoTempInSample:
+		ids := make([]string, len(cases))
+		for i, c := range cases {
+			ids[i] = c.ID
+		}
+		perItem, foldT := heldOutTemperatures(ids, temperatureFolds, func(train []int) float64 {
+			sub := make([]JevCaseResult, len(train))
+			for j, i := range train {
+				sub[j] = cases[i]
+			}
+			return findOptimalJevTemperature(sub)
+		})
+		out := make([]JevCaseResult, len(cases))
+		for i, c := range cases {
+			out[i] = c
+			out[i].TopProbabilities, out[i].Confidence, out[i].Entropy, out[i].NormalizedEnt = scaleCaseDistribution(jevToCalCase(c), perItem[i])
+			out[i].TemperatureApplied = perItem[i]
+		}
+		fit.Method, fit.Folds, fit.FoldTemperatures = "kfold", temperatureFolds, foldT
+		fit.ECEApplied = eceAt(out, 1.0)
+		return out, 1.0, fit
+	case jevAutoTemp:
+		fit.Method = "in_sample"
+		fit.ECEApplied = eceAt(cases, fit.InSampleTemperature)
+		return cases, fit.InSampleTemperature, fit
+	default:
+		t := jevTempScale
+		if t <= 0 {
+			t = 1.0
+		}
+		fit.Method = "fixed"
+		fit.ECEApplied = eceAt(cases, t)
+		return cases, t, fit
+	}
 }
 
 func findOptimalJevTemperature(cases []JevCaseResult) float64 {
@@ -1787,16 +1907,15 @@ func runJevCascade(receiptPath string) error {
 		AccuracyGainPct:    casAcc - p1Acc,
 	}
 
-	activeTemp := jevTempScale
-	if jevAutoTemp {
-		activeTemp = findOptimalJevTemperature(results)
-	}
+	results, activeTemp, tfit := applyJevTemperature(results)
 
 	targetURL := fmt.Sprintf("cascade(%s -> vertexai://%s/global)", receiptPath, gcpProj)
 	targetModel := fmt.Sprintf("DiffusionGemma [%s<%.2f] -> %s [%s>=%.2f, prior-guided]",
 		gateName, jevCascadeThreshold, jevVertexModel, gateName, jevCascadeThreshold)
 
 	report := buildJevReportWithCascade(results, "phase-2b-entropy-cascade", targetURL, targetModel, prev.LockCommitSHA, activeTemp, false, false, cascadeSummary)
+	report.TemperatureFit = tfit
+	stampTemperatureMethod(report.JevParity, tfit)
 	if jevOutput != "" {
 		data, _ := json.MarshalIndent(report, "", "  ")
 		_ = os.WriteFile(jevOutput, data, 0644)

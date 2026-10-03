@@ -13,6 +13,16 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
   run on production v0.2.1; v1 is frozen and `report` on an older run uses the version it was recorded with. Network
   calls get a 20 s connect/TLS-handshake deadline separate from the read timeout (a wedged handshake hung a T2 run).
 
+- **`bench-jev` sends JevBench score items as ordinal `score` questions with their rubric levels.** Before, the 18
+  score items went out as a choice over bare level indices without the rubric text. `--flatten-score` reproduces the
+  old behaviour; receipts carry `score_readout`. Re-run tracked in #84.
+- **`--auto-temperature` fits by 5-fold cross-validation** in `bench-jev` and `bench-calibration`, with the same folds
+  as the matrix T-cal. Each item is scored with the T fitted on the other folds. Reports carry `temperature_fit` and
+  each case `temperature_applied`. `--auto-temperature-in-sample` keeps the old fit. Replays now return to T = 1
+  before refitting (the calibration replay used to scale twice). Re-scoring tracked in #85.
+- **`bench_matrix.py fetch-receipts`** restores receipts kept in the matrix bucket (`receipts.lock.json`).
+  `bench_matrix.py report` uses the run's own matrix version. Before, `report` on a v2 run silently dropped the
+  suites v1 does not list.
 - **Gateway and MCP image references are restricted** to data: URIs and http(s) URLs on public hosts. `dgem serve`
   previously accepted a local path in `image`/`images`, read it from the gateway's filesystem and sent it to the model
   (and, with #70, to the Stage-2 cascade). The CLI and stdio `dgem mcp` still accept local files.

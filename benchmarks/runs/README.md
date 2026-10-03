@@ -17,6 +17,10 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 2 MB each. Larger raw per-item outputs go to `gs://<PROJECT>-dgem-matrix/receipts/<run_id>/`, with a committed
 `receipts.lock.json` listing each file's path, size and SHA-256, so the run stays reproducible and verifiable. Runs
 committed before that date keep their raw receipts in place. `*.log` files are never committed.
+`scripts/bench_matrix.py fetch-receipts benchmarks/runs/<run_id>` restores the bucket copies (size and SHA-256
+checked against the lock file; `DGEM_MATRIX_BUCKET=<PROJECT>-dgem-matrix`); add a run-level `.gitignore` for them so
+they are not re-committed. `report` names the command when a receipt is missing, and judges a run against the matrix
+version recorded in its manifest unless `--matrix` is given.
 
 | Run | What it is |
 | :--- | :--- |
