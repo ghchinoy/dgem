@@ -1,0 +1,62 @@
+{
+  "run_id": "20261003-prop18-real",
+  "created": "2026-10-03T14:05:13+00:00",
+  "git_commit": "a22657a5e15896b032bbcdc38a5768468de234ba",
+  "git_dirty_paths": [
+    "md/bench_bbox.go",
+    "cmd/bench_bbox_analysis.go",
+    "cmd/bench_bbox_gemini.go",
+    "cmd/bench_bbox_judge.go",
+    "cmd/bench_bbox_test.go",
+    "cmd/bench_bbox_variants.go"
+  ],
+  "notes": "SUPERSEDED by 20261003-prop18-real-v2: this run used a manifest with 8 duplicated ScreenSpot ids (one screenshot, several instructions), which merged distinct targets in per-case aggregation. Kept for history.",
+  "receipts": [
+    {
+      "suite": "bbox_real",
+      "config": "vertex_g4_x2",
+      "path": "bbox_real__vertex_g4_x2.json",
+      "sha256": "d39a2c0954d950074c0491b43fe4aed0cad67be3a4b3b47666d7807b5e608d74",
+      "recorded": "2026-10-03T14:06:01+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_real.jsonl --vertex-url <endpoint-id> --gcp-auth --repeat 2 -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-real/bbox_real__vertex_g4_x2.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "1854494035767459840",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T14:05:59Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 456,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_real",
+      "config": "reference_gemini_3_8_flash",
+      "path": "bbox_real__reference_gemini_3_8_flash.json",
+      "sha256": "e8c52a4d70a33a44cb42d13316916f2904b86e3d73c52c6df90789c06751fe9a",
+      "recorded": "2026-10-03T14:09:11+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_real.jsonl --engine gemini --gemini-model gemini-3.8-flash -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-real/bbox_real__reference_gemini_3_8_flash.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T14:09:11Z",
+        "target_model": "gemini-3.8-flash",
+        "idc_config": null,
+        "n": 228,
+        "errors": 0
+      }
+    }
+  ]
+}

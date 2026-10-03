@@ -97,7 +97,7 @@ const PRESETS: PresetSample[] = [
     title: 'Multimodal SigLIP BBox Readout',
     badge: 'EXP-09 · Spatial BBox',
     template: 'bbox_localization',
-    description: 'Single-pass [0,1000] coordinate bin distribution with Softmax Expectation sub-bin smoothing.',
+    description: 'Single-pass [0,1000] box readout: argmax and probability-weighted (expectation) boxes. See EXP-09 for measured accuracy.',
     variables: {
       target: 'primary_cta_button',
       scene_context: 'UI viewport or camera frame',
@@ -151,7 +151,7 @@ const MCP_TOOLS: MCPToolSpec[] = [
     name: 'locate_bounding_boxes',
     badge: 'EXP-09 · Multimodal BBox',
     description:
-      'Runs single-pass SigLIP spatial localization in normalized [0,1000] coordinates, computing both Softmax Expectation and Discrete Argmax boxes plus per-edge occlusion entropy.',
+      'Runs single-pass SigLIP spatial localization in normalized [0,1000] coordinates, computing both Softmax Expectation and Discrete Argmax boxes plus per-edge entropy.',
     defaultArgs: {
       target: 'the red emergency stop button',
       mode: 'single',

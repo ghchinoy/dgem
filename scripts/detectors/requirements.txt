@@ -1,0 +1,6 @@
+# PROP-18 detector references (scripts/detectors/run_detectors.py); torch comes from the VM image
+transformers==4.56.2
+timm==1.0.19
+pillow==11.3.0
+numpy<2.4
+scipy==1.15.3

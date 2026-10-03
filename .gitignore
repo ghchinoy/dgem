@@ -58,3 +58,7 @@ target/
 .vscode/
 .idea/
 benchmarks/runs/*/.manifest.lock
+
+# PROP-18 synthetic sweep images: regenerate with scripts/generate_bbox_sweep.py (seeded)
+fixtures/bbox_sweep/
+fixtures/bbox_real/

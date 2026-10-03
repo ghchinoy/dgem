@@ -91,7 +91,7 @@ import JevParityDashboard from '../../components/JevParityDashboard.astro';
     Every answer carries a probability for each option and a hesitation score. Templates and prompt layout are designed not to distort them, option-order bias is measured on every release, and calibration is fitted per domain. [Read why dgem decisions can be trusted →](/dgem/confidence/overview/)
   </Card>
   <Card title="🔎 Listwise Reranking & Spatial Grounding" icon="magnifier">
-    Continuous Softmax Expectation ($\hat{r}_i = \sum g \cdot p_{i,g}$) scores **10 candidate RAG passages + 2 security gates in 1 pass (`EXP-10`, `0.9265 nDCG@10`, `0.0%` tie rate)** and regresses sub-bin 2D bounding boxes (`EXP-09`, `+30.2% mIoU`) with per-edge occlusion entropy.
+    Continuous Softmax Expectation ($\hat{r}_i = \sum g \cdot p_{i,g}$) scores **10 candidate RAG passages + 2 security gates in 1 pass (`EXP-10`, `0.9265 nDCG@10`, `0.0%` tie rate)** and reads 2D bounding boxes in one pass (`EXP-09`, mIoU `0.60` vs `0.33` for a fixed box on 11 synthetic targets; [re-baseline](/dgem/experiments/exp-09-spatial-grounding/)).
   </Card>
   <Card title="☁️ Vertex AI (/invoke/*), Cloud Run & Apple Metal" icon="seti:terraform">
     Run with **no cold start (~55 ms GPU per decision)** on **Vertex AI Dedicated Endpoints (`g4-standard-48` + RTX PRO 6000)**, scale-to-zero (`$0.00/hr` idle) on **Cloud Run GPU**, or offline on **Apple Silicon Metal**.
@@ -142,7 +142,7 @@ Measured with serving image `504638d`, 3-question decision, `samples: 1`, p50 ([
     ./bin/dgem decide -u "<CLOUD_RUN_URL>/v1" --gcp-auth \
       -t templates/multimodal/bbox_localization.json.tmpl \
       -I fixtures/bbox/bbox-t1-03-offgrid-card.png \
-      -v 'target_object=checkout_summary_card' --stats
+      -v 'target=checkout_summary_card' --stats
     ```
   </TabItem>
 

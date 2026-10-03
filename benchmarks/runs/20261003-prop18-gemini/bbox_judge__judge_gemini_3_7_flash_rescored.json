@@ -1,0 +1,9887 @@
+{
+  "timestamp": "2026-10-03T14:00:17Z",
+  "judge_model": "gemini-3.7-flash",
+  "dataset": "benchmarks/bbox_suite.jsonl",
+  "receipt": "benchmarks/runs/20261003-exp09-rebaseline/bbox__vertex_g4_all_x3.json",
+  "receipt_target_model": "diffgemma-26b-a4b-it-q4",
+  "tol": 2.5,
+  "off": 5,
+  "git_commit": "a22657a5e1",
+  "summaries": [
+    {
+      "source": "calibration",
+      "items": 225,
+      "errors": 0,
+      "edge_accuracy_3class": 0.96,
+      "edge_kappa_3class": 0.9035989717223649,
+      "confusion_truth_to_judge": {
+        "correct-\u003ecorrect": 652,
+        "correct-\u003etoo_far_out": 32,
+        "too_far_in-\u003ecorrect": 2,
+        "too_far_in-\u003etoo_far_in": 104,
+        "too_far_in-\u003etoo_far_out": 2,
+        "too_far_out-\u003etoo_far_out": 108
+      },
+      "edge_binary_n": 828,
+      "edge_recall_wrong": 0.9861111111111112,
+      "edge_specificity": 0.9532163742690059,
+      "edge_binary_kappa": 0.8679500168861872,
+      "direction_accuracy_on_flagged_wrong": 1,
+      "box_agreement_all_edges_within_tol": 0.9822222222222222,
+      "box_kappa_all_edges_within_tol": 0.7685185185185187,
+      "actual_all_edges_within_tol_rate": 0.04,
+      "box_agreement_iou75": 0.5333333333333333,
+      "box_kappa_iou75": 0.07797681770284506,
+      "judge_pass_rate": 0.04,
+      "actual_pass_rate_iou75": 0.5066666666666667,
+      "flag_rate_by_abs_error": {
+        "0-0.5": 0.04678362573099415,
+        "10+": 1,
+        "2.5-5": 1,
+        "5-10": 0.9736842105263158
+      },
+      "edges_by_abs_error": {
+        "0-0.5": 684,
+        "10+": 68,
+        "2.5-5": 72,
+        "5-10": 76
+      },
+      "judged_correct_rate_by_shift": {
+        "10": 0.027777777777777776,
+        "20": 0,
+        "5": 0,
+        "exact": 0.9444444444444444
+      },
+      "mean_latency_ms": 4029.08568
+    },
+    {
+      "source": "receipt",
+      "items": 27,
+      "errors": 0,
+      "edge_accuracy_3class": 0.7870370370370371,
+      "edge_kappa_3class": 0.6676923076923078,
+      "confusion_truth_to_judge": {
+        "correct-\u003ecorrect": 26,
+        "correct-\u003etoo_far_in": 12,
+        "correct-\u003etoo_far_out": 8,
+        "too_far_in-\u003ecorrect": 3,
+        "too_far_in-\u003etoo_far_in": 42,
+        "too_far_out-\u003etoo_far_out": 17
+      },
+      "edge_binary_n": 75,
+      "edge_recall_wrong": 0.896551724137931,
+      "edge_specificity": 0.5652173913043478,
+      "edge_binary_kappa": 0.41663848495096395,
+      "direction_accuracy_on_flagged_wrong": 1,
+      "box_agreement_all_edges_within_tol": 1,
+      "box_kappa_all_edges_within_tol": 1,
+      "actual_all_edges_within_tol_rate": 0,
+      "box_agreement_iou75": 0.8888888888888888,
+      "box_kappa_iou75": 0,
+      "judge_pass_rate": 0,
+      "actual_pass_rate_iou75": 0.1111111111111111,
+      "flag_rate_by_abs_error": {
+        "0-0.5": 0,
+        "0.5-1.5": 0.35,
+        "1.5-2.5": 1,
+        "10+": 0.8571428571428571,
+        "2.5-5": 1,
+        "5-10": 0.9090909090909091
+      },
+      "edges_by_abs_error": {
+        "0-0.5": 13,
+        "0.5-1.5": 20,
+        "1.5-2.5": 13,
+        "10+": 7,
+        "2.5-5": 33,
+        "5-10": 22
+      },
+      "mean_latency_ms": 4444.741999999999
+    }
+  ],
+  "items": [
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "exact",
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 3717.796
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        22.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6465.971
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        12.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3839.53
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        27.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3235.587
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        7.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6833.057
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        37.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4385.638
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        0,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.5882352941176471,
+      "edge_errors": [
+        -17.5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5505.103
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        37.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.8571428571428571,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4243.485
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        27.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3794.864
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        42.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4716.585
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        22.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.7777777777777778,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4110.13
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        52.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.42857142857142855,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5466.197
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        12.5,
+        42.5,
+        67.5
+      ],
+      "iou": 0.6363636363636364,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3413.933
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        37.5,
+        67.5
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2727.685
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        47.5,
+        67.5
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3321.489
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        32.5,
+        67.5
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4298.113
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        52.5,
+        67.5
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3257.14
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        22.5,
+        67.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3570.925
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        62.5,
+        67.5
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3649.115
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        62.5
+      ],
+      "iou": 0.8571428571428571,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3266.598
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        72.5
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3522.073
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        57.5
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3084.035
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        77.5
+      ],
+      "iou": 0.7777777777777778,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2458.968
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        47.5
+      ],
+      "iou": 0.42857142857142855,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3177.893
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        17.5,
+        32.5,
+        42.5,
+        87.5
+      ],
+      "iou": 0.6363636363636364,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5124.107
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "exact",
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 3524.947
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        17.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4210.595
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        7.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3731.156
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        22.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4353.227
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        2.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3779.413
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        25.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.13333333333333333,
+      "edge_errors": [
+        13,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3884.872
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        0,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.5454545454545454,
+      "edge_errors": [
+        -12.5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3822.66
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        67.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4208.234
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        57.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5113.858
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        72.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3787.015
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        52.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3015.968
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        82.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2952.833
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        42.5,
+        27.5,
+        87.5
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3458.377
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        22.5,
+        87.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4022.168
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        32.5,
+        87.5
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2865.691
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        17.5,
+        87.5
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3464.968
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        37.5,
+        87.5
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3825.896
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        14.5,
+        87.5
+      ],
+      "iou": 0.13333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        -13,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3192.564
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        47.5,
+        87.5
+      ],
+      "iou": 0.42857142857142855,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3170.026
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        82.5
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3193.016
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        92.5
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3306.308
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        77.5
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4168.014
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        97.5
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3284.219
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        67.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3022.616
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        12.5,
+        62.5,
+        27.5,
+        100
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        12.5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2544.41
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "exact",
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 2815.951
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        27.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.9090909090909091,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3095.826
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        17.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.9166666666666666,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3288.872
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        32.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.8181818181818182,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3312.324
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        12.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.8461538461538461,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3625.234
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        42.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.6363636363636364,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3229.618
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        2.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.7333333333333333,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4357.542
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        17.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3244.875
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        7.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3544.16
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        22.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3647.435
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        2.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3195.232
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        32.5,
+        77.5,
+        52.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2734.375
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        0,
+        77.5,
+        52.5
+      ],
+      "iou": 0.7619047619047619,
+      "edge_errors": [
+        0,
+        -12.5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3721.564
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        72.5,
+        52.5
+      ],
+      "iou": 0.9090909090909091,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2917.921
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        82.5,
+        52.5
+      ],
+      "iou": 0.9166666666666666,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3271.09
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        67.5,
+        52.5
+      ],
+      "iou": 0.8181818181818182,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3402.706
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        87.5,
+        52.5
+      ],
+      "iou": 0.8461538461538461,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6394.379
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        57.5,
+        52.5
+      ],
+      "iou": 0.6363636363636364,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3378.919
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        97.5,
+        52.5
+      ],
+      "iou": 0.7333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2960.405
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        47.5
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2552.011
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        57.5
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2864.089
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        42.5
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2922.918
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        62.5
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3167.244
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        32.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2656.51
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        22.5,
+        12.5,
+        77.5,
+        72.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3881.61
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "exact",
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 4067.321
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        25,
+        30,
+        45,
+        70
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2940.841
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        15,
+        30,
+        45,
+        70
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3886.657
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        30,
+        30,
+        45,
+        70
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3847.193
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        10,
+        30,
+        45,
+        70
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2413.897
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        40,
+        30,
+        45,
+        70
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5527.815
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        0,
+        30,
+        45,
+        70
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3380.932
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        35,
+        45,
+        70
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2641.187
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        25,
+        45,
+        70
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3211.943
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        40,
+        45,
+        70
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4177.423
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        20,
+        45,
+        70
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3641.654
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        50,
+        45,
+        70
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2842.856
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        10,
+        45,
+        70
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2789.454
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        40,
+        70
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3372.222
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        50,
+        70
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3409.895
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        35,
+        70
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3121.614
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        55,
+        70
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2589.105
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        25,
+        70
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3929.31
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        65,
+        70
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3093.172
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        65
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3459.328
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        75
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3782.02
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        60
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2773.652
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        80
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2743.919
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        50
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4597.983
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20,
+        30,
+        45,
+        90
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2967.493
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "exact",
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 3688.848
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        52.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3445.918
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        42.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3002.167
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        55.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        8,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2842.321
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        37.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4091.864
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        55.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        8,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2964.417
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        27.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2798.012
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        52.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3461.821
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        42.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4586.889
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        55.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        8,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2896.644
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        37.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3808.466
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        55.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        8,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3223.624
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        27.5,
+        57.5,
+        57.5
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3480.862
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        52.5,
+        57.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3392.614
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        62.5,
+        57.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3193.463
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        49.5,
+        57.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        -8,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4199.814
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        67.5,
+        57.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5581.793
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        49.5,
+        57.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        -8,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3717.77
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        77.5,
+        57.5
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3764.407
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        52.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3545.692
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        62.5
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3976.48
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        49.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -8
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3166.04
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        67.5
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3480.947
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        49.5
+      ],
+      "iou": 0.2,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -8
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2334.153
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t1-05-micro-pill",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        47.5,
+        47.5,
+        57.5,
+        77.5
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3265.434
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "exact",
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 3000.428
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        30,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3711.111
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        20,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.8571428571428571,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3730.04
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        35,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2535.071
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        15,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2705.432
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        45,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3103.946
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        5,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3366.356
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        25,
+        55,
+        65
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3289.525
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        15,
+        55,
+        65
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3279.026
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        30,
+        55,
+        65
+      ],
+      "iou": 0.7777777777777778,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3486.048
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        10,
+        55,
+        65
+      ],
+      "iou": 0.8181818181818182,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3345.401
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        40,
+        55,
+        65
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2767.564
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        0,
+        55,
+        65
+      ],
+      "iou": 0.6923076923076923,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3632.973
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        50,
+        65
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3513.364
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        60,
+        65
+      ],
+      "iou": 0.8571428571428571,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2890.228
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        45,
+        65
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3142.44
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        65,
+        65
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2663.065
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        35,
+        65
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2747.918
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        75,
+        65
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3244.891
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        60
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3128.367
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        70
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4980.338
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        55
+      ],
+      "iou": 0.7777777777777778,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3038.274
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        75
+      ],
+      "iou": 0.8181818181818182,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3091.641
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        45
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3327.629
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        85
+      ],
+      "iou": 0.6923076923076923,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3202.078
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "exact",
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 14693.847
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        30,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5643.184
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        20,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.8571428571428571,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5214.034
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        35,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7994.369
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        15,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3994.611
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        45,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 8617.866
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        5,
+        20,
+        55,
+        65
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 13719.188
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        25,
+        55,
+        65
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5401.537
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        15,
+        55,
+        65
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4489.674
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        30,
+        55,
+        65
+      ],
+      "iou": 0.7777777777777778,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3745.651
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        10,
+        55,
+        65
+      ],
+      "iou": 0.8181818181818182,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5810.739
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        40,
+        55,
+        65
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7626.071
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        0,
+        55,
+        65
+      ],
+      "iou": 0.6923076923076923,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 8420.956
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        50,
+        65
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4047.508
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        60,
+        65
+      ],
+      "iou": 0.8571428571428571,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5864.77
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        45,
+        65
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4969.977
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        65,
+        65
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7146.718
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        35,
+        65
+      ],
+      "iou": 0.3333333333333333,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4850.551
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        75,
+        65
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 8767.113
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        60
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4008.766
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        70
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4441.131
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        55
+      ],
+      "iou": 0.7777777777777778,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 3687.654
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        75
+      ],
+      "iou": 0.8181818181818182,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7312.615
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        45
+      ],
+      "iou": 0.5555555555555556,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5036.725
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        25,
+        20,
+        55,
+        85
+      ],
+      "iou": 0.6923076923076923,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3920.652
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "exact",
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 2699.398
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        35,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2810.555
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        25,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3956.505
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        40,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2883.38
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        20,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3070.405
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        50,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2808.43
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        10,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2955.654
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        30,
+        70,
+        75
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3198.526
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        20,
+        70,
+        75
+      ],
+      "iou": 0.9090909090909091,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3783.249
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        35,
+        70,
+        75
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2894.051
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        15,
+        70,
+        75
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3395.928
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        45,
+        70,
+        75
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3939.851
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        5,
+        70,
+        75
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2896.305
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        65,
+        75
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3202.629
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        75,
+        75
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3074.748
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        60,
+        75
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3147.937
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        80,
+        75
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2698.622
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        50,
+        75
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2739.658
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        90,
+        75
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3391.109
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        70
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3689.099
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        80
+      ],
+      "iou": 0.9090909090909091,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2941.136
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        65
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2645.952
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        85
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2579.899
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        55
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2838.777
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        95
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2558.512
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "exact",
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "iou": 1,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7007.042
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "top_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        35,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4755.22
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "top_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        25,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        -5,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7563.595
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "top_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        40,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4851.423
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "top_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        20,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        -10,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5253.433
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "top_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        50,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4548.852
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "top_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        10,
+        25,
+        70,
+        75
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        -20,
+        0,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4901.582
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "left_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        30,
+        70,
+        75
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4290.21
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "left_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        20,
+        70,
+        75
+      ],
+      "iou": 0.9090909090909091,
+      "edge_errors": [
+        0,
+        -5,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4859.529
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "left_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        35,
+        70,
+        75
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3526.559
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "left_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        15,
+        70,
+        75
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        -10,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3889.99
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "left_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        45,
+        70,
+        75
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4363.651
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "left_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        5,
+        70,
+        75
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        -20,
+        0,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4402.808
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "bottom_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        65,
+        75
+      ],
+      "iou": 0.875,
+      "edge_errors": [
+        0,
+        0,
+        -5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6491.44
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "bottom_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        75,
+        75
+      ],
+      "iou": 0.8888888888888888,
+      "edge_errors": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 7699.327
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "bottom_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        60,
+        75
+      ],
+      "iou": 0.75,
+      "edge_errors": [
+        0,
+        0,
+        -10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "correct"
+      ],
+      "judge_acceptable": true,
+      "latency_ms": 3550.176
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "bottom_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        80,
+        75
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        10,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5200.93
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "bottom_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        50,
+        75
+      ],
+      "iou": 0.5,
+      "edge_errors": [
+        0,
+        0,
+        -20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3972.16
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "bottom_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        90,
+        75
+      ],
+      "iou": 0.6666666666666666,
+      "edge_errors": [
+        0,
+        0,
+        20,
+        0
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "correct"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6023.753
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "right_in",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        70
+      ],
+      "iou": 0.9,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6278.384
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "right_out",
+      "shift": 5,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        80
+      ],
+      "iou": 0.9090909090909091,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        5
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 9033.488
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "right_in",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        65
+      ],
+      "iou": 0.8,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 6074.959
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "right_out",
+      "shift": 10,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        85
+      ],
+      "iou": 0.8333333333333334,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        10
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5748.703
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "right_in",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        55
+      ],
+      "iou": 0.6,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        -20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 11132.844
+    },
+    {
+      "source": "calibration",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "perturbation": "right_out",
+      "shift": 20,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        30,
+        25,
+        70,
+        95
+      ],
+      "iou": 0.7142857142857143,
+      "edge_errors": [
+        0,
+        0,
+        0,
+        20
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_out"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_out",
+        "too_far_out"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5583.62
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        19.246610280229834,
+        27.644199191430932,
+        43.30953415811899,
+        62.44867129337445
+      ],
+      "iou": 0.6853808695010605,
+      "edge_errors": [
+        1.7466102802298344,
+        -4.855800808569068,
+        0.8095341581189928,
+        -5.051328706625547
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5407.389
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        13.06949119184634,
+        59.376140633938235,
+        24.83351022380532,
+        82.0997702046905
+      ],
+      "iou": 0.5599819082321157,
+      "edge_errors": [
+        0.5694911918463408,
+        -3.1238593660617653,
+        -2.6664897761946804,
+        -5.4002297953094995
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4319.489
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        19.317707919091273,
+        14.916553255776751,
+        79.6531736298894,
+        45.48379910533203
+      ],
+      "iou": 0.7114406017641689,
+      "edge_errors": [
+        -3.182292080908727,
+        2.4165532557767513,
+        2.1531736298893946,
+        -7.016200894667968
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_in",
+        "too_far_out",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3878.261
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20.214366476197533,
+        29.753028901420468,
+        44.5486115072262,
+        64.54723638044811
+      ],
+      "iou": 0.8356587272555234,
+      "edge_errors": [
+        0.21436647619753302,
+        -0.24697109857953237,
+        -0.4513884927738019,
+        -5.452763619551888
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3570.33
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-05-micro-pill",
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        44.63377257433338,
+        44.216100536626335,
+        54.99115410292003,
+        53.020548320076415
+      ],
+      "iou": 0.27600408530503057,
+      "edge_errors": [
+        -2.8662274256666223,
+        -3.2838994633736647,
+        -2.508845897079972,
+        -4.479451679923585
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4118.79
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        24.387869486559257,
+        18.93757181918823,
+        47.733398925637026,
+        61.35943135603836
+      ],
+      "iou": 0.6715426096237719,
+      "edge_errors": [
+        -0.6121305134407429,
+        -1.0624281808117715,
+        -7.266601074362974,
+        -3.640568643961643
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4295.557
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        29.127285148595302,
+        17.6169288248839,
+        53.67732706756947,
+        52.705584916986744
+      ],
+      "iou": 0.570053899200956,
+      "edge_errors": [
+        4.127285148595302,
+        -2.3830711751161004,
+        -1.3226729324305282,
+        -12.294415083013256
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4524.53
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        29.15573819920035,
+        28.220709376695464,
+        70.65233547331431,
+        61.99396639322431
+      ],
+      "iou": 0.6588152438119124,
+      "edge_errors": [
+        -0.8442618007996501,
+        3.2207093766954635,
+        0.6523354733143094,
+        -13.006033606775688
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3969.098
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        29.695199845883934,
+        26.61125461159947,
+        59.71978330782146,
+        66.34593237358396
+      ],
+      "iou": 0.5868989996721988,
+      "edge_errors": [
+        -0.30480015411606587,
+        1.6112546115994704,
+        -10.280216692178541,
+        -8.654067626416037
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3678.465
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "repeat": 1,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        19.271080564467027,
+        27.23883817628581,
+        43.23263025576891,
+        62.433217367587645
+      ],
+      "iou": 0.6796865150486401,
+      "edge_errors": [
+        1.7710805644670273,
+        -5.26116182371419,
+        0.7326302557689104,
+        -5.066782632412355
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5280.371
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "repeat": 1,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        11.483283913379617,
+        58.18592752426551,
+        25.058090200067173,
+        81.8180410739237
+      ],
+      "iou": 0.5352951068536912,
+      "edge_errors": [
+        -1.0167160866203826,
+        -4.314072475734491,
+        -2.4419097999328265,
+        -5.681958926076305
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4816.617
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "repeat": 1,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        19.39704424586249,
+        15.087793121487206,
+        79.51527853246102,
+        44.102546235476105
+      ],
+      "iou": 0.6795011694941093,
+      "edge_errors": [
+        -3.1029557541375112,
+        2.5877931214872056,
+        2.015278532461025,
+        -8.397453764523895
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_in",
+        "too_far_out",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5320.468
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "repeat": 1,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20.033732032854616,
+        29.884556325068417,
+        44.47189743151947,
+        64.93119203305136
+      ],
+      "iou": 0.851252667532103,
+      "edge_errors": [
+        0.03373203285461557,
+        -0.11544367493158347,
+        -0.5281025684805272,
+        -5.06880796694864
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3637.806
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-05-micro-pill",
+      "repeat": 1,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        44.9028148075401,
+        44.27043735029246,
+        55.39012567316587,
+        53.27683758978523
+      ],
+      "iou": 0.3061669447419449,
+      "edge_errors": [
+        -2.5971851924598965,
+        -3.229562649707539,
+        -2.109874326834131,
+        -4.223162410214769
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3941.63
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "repeat": 1,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        24.62013330439403,
+        19.07743863114576,
+        48.311246940078114,
+        60.586794154017944
+      ],
+      "iou": 0.6820056658617817,
+      "edge_errors": [
+        -0.3798666956059691,
+        -0.9225613688542396,
+        -6.688753059921886,
+        -4.413205845982056
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5945.413
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "repeat": 1,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        28.727138197506797,
+        17.22862889032695,
+        53.738553450322904,
+        52.35604718902872
+      ],
+      "iou": 0.5701835119335331,
+      "edge_errors": [
+        3.7271381975067968,
+        -2.7713711096730513,
+        -1.2614465496770961,
+        -12.643952810971278
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4340.772
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "repeat": 1,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        29.36106646837119,
+        28.821055324044114,
+        71.00103006993196,
+        64.43343867753853
+      ],
+      "iou": 0.6920390834612146,
+      "edge_errors": [
+        -0.6389335316288083,
+        3.8210553240441136,
+        1.0010300699319572,
+        -10.566561322461467
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2990.076
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "repeat": 1,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        29.76495770324797,
+        28.483694649397044,
+        60.095379638604285,
+        67.42286758451914
+      ],
+      "iou": 0.5832754249600559,
+      "edge_errors": [
+        -0.23504229675203092,
+        3.4836946493970444,
+        -9.904620361395715,
+        -7.577132415480861
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4156.82
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-01-offgrid-cta",
+      "repeat": 2,
+      "gt_box": [
+        17.5,
+        32.5,
+        42.5,
+        67.5
+      ],
+      "box": [
+        19.364681829817386,
+        26.73466363797083,
+        42.455087572382055,
+        62.13801599933469
+      ],
+      "iou": 0.6788389571180661,
+      "edge_errors": [
+        1.8646818298173855,
+        -5.765336362029171,
+        -0.04491242761794467,
+        -5.361984000665309
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4232.524
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-02-offgrid-badge",
+      "repeat": 2,
+      "gt_box": [
+        12.5,
+        62.5,
+        27.5,
+        87.5
+      ],
+      "box": [
+        11.48328391337962,
+        58.18592752426552,
+        25.058090200067177,
+        81.81804107392368
+      ],
+      "iou": 0.5352951068536912,
+      "edge_errors": [
+        -1.0167160866203808,
+        -4.314072475734477,
+        -2.441909799932823,
+        -5.6819589260763195
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4305.757
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-03-offgrid-card",
+      "repeat": 2,
+      "gt_box": [
+        22.5,
+        12.5,
+        77.5,
+        52.5
+      ],
+      "box": [
+        19.39704424586249,
+        15.087793121487206,
+        79.51527853246102,
+        44.102546235476105
+      ],
+      "iou": 0.6795011694941093,
+      "edge_errors": [
+        -3.1029557541375112,
+        2.5877931214872056,
+        2.015278532461025,
+        -8.397453764523895
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_in",
+        "too_far_out",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4041.063
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-04-ongrid-control",
+      "repeat": 2,
+      "gt_box": [
+        20,
+        30,
+        45,
+        70
+      ],
+      "box": [
+        20.033732032854616,
+        29.884556325068417,
+        44.47189743151947,
+        64.93119203305136
+      ],
+      "iou": 0.851252667532103,
+      "edge_errors": [
+        0.03373203285461557,
+        -0.11544367493158347,
+        -0.5281025684805272,
+        -5.06880796694864
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "correct",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 2961.511
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t1-05-micro-pill",
+      "repeat": 2,
+      "gt_box": [
+        47.5,
+        47.5,
+        57.5,
+        57.5
+      ],
+      "box": [
+        44.90281480754012,
+        44.27043735029246,
+        55.39012567316588,
+        53.27683758978524
+      ],
+      "iou": 0.3061669447419459,
+      "edge_errors": [
+        -2.5971851924598823,
+        -3.229562649707539,
+        -2.1098743268341167,
+        -4.223162410214762
+      ],
+      "truth_edges": [
+        "too_far_out",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_out",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3933.114
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-01a-unoccluded-twin",
+      "repeat": 2,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        24.620133304394034,
+        19.07743863114576,
+        48.31124694007812,
+        60.58679415401796
+      ],
+      "iou": 0.6820056658617821,
+      "edge_errors": [
+        -0.37986669560596553,
+        -0.9225613688542396,
+        -6.688753059921879,
+        -4.413205845982041
+      ],
+      "truth_edges": [
+        "correct",
+        "correct",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 8471.709
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-01b-right-edge-occluded",
+      "repeat": 2,
+      "gt_box": [
+        25,
+        20,
+        55,
+        65
+      ],
+      "box": [
+        28.7271381975068,
+        17.22862889032695,
+        53.738553450322904,
+        52.35604718902872
+      ],
+      "iou": 0.5701835119335331,
+      "edge_errors": [
+        3.7271381975068003,
+        -2.7713711096730513,
+        -1.2614465496770961,
+        -12.643952810971278
+      ],
+      "truth_edges": [
+        "too_far_in",
+        "too_far_out",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "too_far_in",
+        "too_far_out",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 4846.857
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-02a-unoccluded-twin",
+      "repeat": 2,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        29.361066468371188,
+        28.82105532404411,
+        71.00103006993196,
+        64.43343867753853
+      ],
+      "iou": 0.6920390834612146,
+      "edge_errors": [
+        -0.6389335316288118,
+        3.82105532404411,
+        1.0010300699319572,
+        -10.566561322461467
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 3931.448
+    },
+    {
+      "source": "receipt",
+      "case_id": "bbox-t2-02b-bottom-edge-occluded",
+      "repeat": 2,
+      "gt_box": [
+        30,
+        25,
+        70,
+        75
+      ],
+      "box": [
+        29.764957703247973,
+        28.483694649397044,
+        60.09537963860429,
+        67.42286758451914
+      ],
+      "iou": 0.5832754249600561,
+      "edge_errors": [
+        -0.23504229675202737,
+        3.4836946493970444,
+        -9.904620361395708,
+        -7.577132415480861
+      ],
+      "truth_edges": [
+        "correct",
+        "too_far_in",
+        "too_far_in",
+        "too_far_in"
+      ],
+      "judge_edges": [
+        "correct",
+        "too_far_in",
+        "correct",
+        "too_far_in"
+      ],
+      "judge_acceptable": false,
+      "latency_ms": 5092.169
+    }
+  ]
+}

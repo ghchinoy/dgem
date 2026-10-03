@@ -1,0 +1,114 @@
+{
+  "run_id": "20261003-prop18-detectors",
+  "created": "2026-10-03T16:07:19+00:00",
+  "git_commit": "43df798239325f2acde81330f29fb1f5ca0284e0",
+  "git_dirty_paths": [
+    "md/bench_bbox.go",
+    "cmd/bench_bbox_analysis.go",
+    "cmd/bench_bbox_gemini.go",
+    "cmd/bench_bbox_judge.go",
+    "cmd/bench_bbox_test.go",
+    "cmd/bench_bbox_variants.go",
+    "cmd/bench_vision.go",
+    "templates/multimodal/vision_aspects.json.tmpl"
+  ],
+  "notes": "",
+  "receipts": [
+    {
+      "suite": "bbox_sweep",
+      "config": "owlv2",
+      "path": "bbox_sweep__owlv2.json",
+      "sha256": "be81ac6b783689bedfd127d20fbc7480a98fe84fe08cdf8888ac2123bb0f168d",
+      "recorded": "2026-10-03T16:07:19+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_sweep.jsonl --engine predictions --predictions benchmarks/runs/20261003-prop18-detectors/detector_preds.jsonl --pred-model owlv2 -o /workspace/dgem/benchmarks/runs/20261003-prop18-detectors/bbox_sweep__owlv2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:07:19Z",
+        "target_model": "owlv2",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_real",
+      "config": "owlv2",
+      "path": "bbox_real__owlv2.json",
+      "sha256": "d1d6153930a301c192ffc15cbca8e6e283c73915a755d7028f2b98c722c82780",
+      "recorded": "2026-10-03T16:07:19+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_real.jsonl --engine predictions --predictions benchmarks/runs/20261003-prop18-detectors/detector_preds.jsonl --pred-model owlv2 -o /workspace/dgem/benchmarks/runs/20261003-prop18-detectors/bbox_real__owlv2.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:07:19Z",
+        "target_model": "owlv2",
+        "idc_config": null,
+        "n": 228,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_sweep",
+      "config": "grounding_dino",
+      "path": "bbox_sweep__grounding_dino.json",
+      "sha256": "0e2dd054ded309d7cb005ccc23a92be2324493135cdc1068c488a195ce96e6bf",
+      "recorded": "2026-10-03T16:07:19+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_sweep.jsonl --engine predictions --predictions benchmarks/runs/20261003-prop18-detectors/detector_preds.jsonl --pred-model grounding_dino -o /workspace/dgem/benchmarks/runs/20261003-prop18-detectors/bbox_sweep__grounding_dino.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:07:19Z",
+        "target_model": "grounding_dino",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_real",
+      "config": "grounding_dino",
+      "path": "bbox_real__grounding_dino.json",
+      "sha256": "68a990067094a9ff533994161e91cefa0af0eaa1d6966ec4a01a6bcea6e1d335",
+      "recorded": "2026-10-03T16:07:19+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_real.jsonl --engine predictions --predictions benchmarks/runs/20261003-prop18-detectors/detector_preds.jsonl --pred-model grounding_dino -o /workspace/dgem/benchmarks/runs/20261003-prop18-detectors/bbox_real__grounding_dino.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:07:19Z",
+        "target_model": "grounding_dino",
+        "idc_config": null,
+        "n": 228,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_sweep",
+      "config": "gdino_sam",
+      "path": "bbox_sweep__gdino_sam.json",
+      "sha256": "a5bbdafa7b870e89ad6d7b73884efdb6180adac02fba343257291983d186f5be",
+      "recorded": "2026-10-03T16:07:19+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_sweep.jsonl --engine predictions --predictions benchmarks/runs/20261003-prop18-detectors/detector_preds.jsonl --pred-model gdino_sam -o /workspace/dgem/benchmarks/runs/20261003-prop18-detectors/bbox_sweep__gdino_sam.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:07:19Z",
+        "target_model": "gdino_sam",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_real",
+      "config": "gdino_sam",
+      "path": "bbox_real__gdino_sam.json",
+      "sha256": "a44de1fa0ea2ebc07c7e92db5513d3e0528aac2dc49c2f01edca857dd37dcaea",
+      "recorded": "2026-10-03T16:07:19+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_real.jsonl --engine predictions --predictions benchmarks/runs/20261003-prop18-detectors/detector_preds.jsonl --pred-model gdino_sam -o /workspace/dgem/benchmarks/runs/20261003-prop18-detectors/bbox_real__gdino_sam.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T16:07:19Z",
+        "target_model": "gdino_sam",
+        "idc_config": null,
+        "n": 228,
+        "errors": 0
+      }
+    }
+  ]
+}

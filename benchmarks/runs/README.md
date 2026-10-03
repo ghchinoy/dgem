@@ -29,6 +29,13 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 | `20260928-v010-verification` | Every suite once against v0.1.0 on Vertex G4, plus a rollback drill (README only, no manifest). |
 | `20261001-v013-reference-t1` | **Regression matrix v1, T1**, v0.1.3 against itself on Vertex G4: the measured noise floor and reference ranges. |
 | `20261001-v013-reference-t2` | **Regression matrix v1, T2**, v0.1.3 on Vertex G4: full matrix incl. the frozen multilingual, typed-decisions and option-order sets. |
+| `20261003-exp09-rebaseline` | EXP-09 re-baseline (PROP-18 phase 1): the 12-case bbox suite on Vertex G4 v0.2.0 with every probe variant ×3, the 2026-09-21 Cloud Run receipt re-analyzed, and a simulated self-check (`scripts/run_exp09_rebaseline.sh`). Write-up: [`exp-09-spatial-grounding.md`](../../docs/experiments/exp-09-spatial-grounding.md). |
+| `20261003-prop18-gemini` | PROP-18 phase 2 (EXP-22): Gemini 3.8/3.7-flash reference boxes on the EXP-09 fixtures (7 variants ×3) and Gemini judge validation (`bench-bbox-judge`; `_rescored` = box-level metric fixed). |
+| `20261003-prop18-sweep` | PROP-18 phase 3 (EXP-22): generated 230-item sweep (`scripts/generate_bbox_sweep.py`), dgem ×2 and Gemini 3.8. |
+| `20261003-prop18-real` | Superseded by `-real-v2` (duplicate ScreenSpot ids). |
+| `20261003-prop18-real-v2` | PROP-18 phase 3 (EXP-22): RefCOCO + ScreenSpot sample (`scripts/fetch_bbox_real.py`), dgem ×2 and Gemini 3.8. |
+| `20261003-prop18-detectors` | PROP-18 phase 3 (EXP-22): OWLv2, Grounding DINO, Grounding DINO + SAM on a deleted-after-use L4 VM (`scripts/run_detectors_gce.sh`); raw predictions + scored receipts. |
+| `20261003-prop18-vision` | PROP-18 phase 4 pilot (EXP-22): `bench-vision` multi-aspect questions on the sweep: dgem ×2, dgem blank-image prior, Gemini 3.8. |
 
 Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
 

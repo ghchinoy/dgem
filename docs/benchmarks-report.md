@@ -281,20 +281,25 @@ As detailed in [**`EXP-05`**](experiments/exp-05-roadmap-cascades-and-dags.md), 
 
 ---
 
-## 10. Single-Pass Spatial Grounding & Per-Edge Occlusion Entropy (`EXP-09`)
+## 10. Single-Pass Bounding Boxes (`EXP-09`, re-baselined 2026-10-03)
 
-Can a single-pass `dgemma` canvas (`reads=1`, `think=0`) predict multi-token continuous coordinates such as a 2D bounding box `[ymin, xmin, ymax, xmax]` without serial autoregressive token generation?
+Can one forward pass read a 2D box `[ymin, xmin, ymax, xmax]`? `EXP-09` (`dgem bench-bbox`) asks for four 21-label coordinate slots (0–100 in 5% steps) plus an `object_present` slot. The re-baseline ran on serving v0.2.0 on Vertex G4: 11 synthetic UI targets plus one absent target, ×3 repeats, with case-level bootstrap intervals and image-free baselines. Full write-up: [EXP-09](experiments/exp-09-spatial-grounding.md).
 
-In `EXP-09` (`dgem bench-bbox`), we factor the 2D box into **4 parallel 21-bin (`00..100`, `5%` step) `choice` slots** plus a `boolean` presence gate (`object_present`) and evaluate live `dgemma` on Google Cloud Run (`NVIDIA RTX Pro 6000`, `SigLIP` vision tower enabled via `DISABLE_MM=0`, receipt in `benchmarks/results_bbox_cloudrun.json`):
+| Question | Result (v0.2.0, Vertex G4, 11 boxes ×3) |
+| :--- | :--- |
+| Does it localize? | **Yes.** Expectation mIoU `0.599 [0.516, 0.680]`, Acc@0.5 `81.8%`. A fixed `[25,25,75,75]` box scores `0.331`, so the paired lift is `+0.27 [+0.11, +0.40]`. |
+| Absent targets | `object_present: no` on 30/30 blank images; no false positives on the absent fixture (3 runs). |
+| Does softmax expectation beat argmax? | **Not reliably.** On-grid cases `−0.03 [−0.06, −0.00]`; off-grid cases `+0.04 [−0.04, +0.14]`. Most edge error is localization, not rounding. |
+| Does edge entropy flag errors? | Promising: AUROC `0.82` for edges more than one step off (17 wrong of 156). |
+| Does occlusion raise edge entropy? | **No.** Against the unoccluded twins: `−0.03` (ymax) and `−0.06` (xmax). |
+| Is it stable? | Across repeats yes (97% edge agreement). Under flips and padding no: consistency IoU `0.34–0.53`, and `pad_bottom` mIoU falls to `0.31`. Reversed digit levels collapse it to `0.02`. |
 
-| Evaluation Dimension | Discrete Argmax (`[A–U]`) | Softmax Expectation ($E[c] = \sum_{i=0}^{20} 5i \cdot P_i$) | Empirical Finding (`EXP-09` Cloud Run `dgemma`) |
-| :--- | :---: | :---: | :--- |
-| **12-Case Synthetic SVG/PNG `mIoU`** | `0.2898` | **`0.3773`** | **`+8.75%` absolute (`+30.2%` relative) `mIoU` gain**; `Acc@0.5` jumps from `0.0%` $\rightarrow$ **`18.2%`**. |
-| **Off-Grid Card (`bbox-t1-03-offgrid-card`)** | `0.4985` | **`0.7109`** | **`+21.2%` `IoU` gain**, crossing the `Acc@0.5` threshold without extra tokens. |
-| **Narrow Real-World Stemware (`008.png`)** | `0.0000` (`[10,55,65,55]`) | **`0.5040` (`[7.6,49.9,50.7,55.2]`)** | **`+50.4%` `IoU` recovery**: Discrete `argmax` collapsed `xmin=55, xmax=55` (`0` width), whereas Softmax Expectation separated left-skewed `xmin=49.9` from right-skewed `xmax=55.2` (`GT: [8, 48, 46, 56]`). |
-| **Per-Edge Normalized Entropy ($\tilde{H}_{\text{edge}}$)** | `0.4970` (visible) | **`0.6810` (occluded)** | **`1.37×` empirical entropy spike** on occluded box edges (`2.86×` in offline simulation), flagging the exact obstructed boundary (`ymax` on `bbox-t2-02b`). |
-| **Absent Target Gate (`bbox-t3-03`)** | `1.0000` (`no`) | `1.0000` (`no`) | **100% presence gate accuracy** when requested UI elements are absent. |
-| **Coordinate Rulers vs. Un-Gridded Photos (`think=0`)** | `0.2898` vs `0.0739` | **`0.3773` vs `0.0951`** | Compositing a `00..100` border ruler onto input images gives `SigLIP` patches direct spatial anchors in `think=0` mode (`3.97×` higher `mIoU` than raw un-gridded photos). |
+The September Cloud Run figures that used to appear here are withdrawn:
+- `0.290 → 0.377` mIoU from softmax expectation, "+30%";
+- `1.37×` entropy on occluded edges;
+- `008.png` stemware and the coordinate-ruler comparison.
+
+Re-analyzed, that receipt did not beat a fixed box (lift `+0.05 [−0.10, +0.16]`). The stemware and ruler results have no committed receipt.
 
 ---
 

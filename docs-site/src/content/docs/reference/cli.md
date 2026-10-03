@@ -320,7 +320,14 @@ Runs the 49-case Text Normalization evaluation (`EXP-02` & `EXP-07`) comparing D
 
 
 ### `dgem bench-bbox`
-Runs the **Single-Pass Spatial Grounding, Softmax-Expectation Sub-Bin Regression & Per-Edge Occlusion Entropy (`EXP-09`)** suite (`benchmarks/bbox_suite.jsonl`, `fixtures/bbox/`) or any custom image directory (`--dir`). Compares discrete 21-bin `argmax` (`[A–U]`, `5%` step) against continuous Softmax Expectation ($E[c] = \sum_{i=0}^{20} 5i \cdot P_i$) and computes per-edge normalized Shannon entropy ($\tilde{H}_{\text{edge}} = H / \ln 21$).
+Runs the **single-pass bounding-box suite (`EXP-09`)** (`benchmarks/bbox_suite.jsonl`, `fixtures/bbox/`) or any custom image directory (`--dir`). For each image it reads `[ymin, xmin, ymax, xmax]` in one pass and reports:
+- argmax and softmax-expectation boxes, with mIoU and Acc@0.5/0.75 and case-level bootstrap 95% intervals;
+- image-free baselines (a fixed centre box, the leave-one-out mean box and, with `--variants blank`, the model's own box on a blank image) and the model's paired lift over each;
+- the edge error split into rounding (quantization) and localization, plus signed bias per edge;
+- whether per-edge entropy predicts wrong edges (AUROC);
+- paired occlusion deltas and run-to-run stability.
+
+A slot the model does not return counts as a failure. See [EXP-09](/dgem/experiments/exp-09-spatial-grounding/).
 
 ```bash
 dgem bench-bbox [flags]
@@ -328,16 +335,27 @@ dgem bench-bbox [flags]
 
 #### Key Flags
 * `-d`, `--dataset string`: Path to the bounding-box JSONL suite (default: `benchmarks/bbox_suite.jsonl`).
-* `--dir string`: Custom directory containing `.png`/`.jpg`/`.svg` images (and optional `manifest.jsonl` or `index.txt`) for ad-hoc spatial grounding runs.
+* `--dir string`: Custom directory containing `.png`/`.jpg`/`.webp` images (and optional `manifest.jsonl` or `index.txt`) for ad-hoc runs.
 * `--target string`: Default target object description when running `--dir` without a manifest.
-* `--annotate`: Emit annotated visual overlay `.svg` files (`annotated_<name>.svg`) showing Ground Truth (green), Discrete Argmax (dashed orange), and Softmax Expectation $E[\text{box}]$ (solid cyan) boxes.
-* `--simulate`: Run offline mathematical verification using synthetic slot probability distributions without a live GPU endpoint.
-* `-o`, `--output string`: Output JSON receipt path (default: `benchmarks/results_bbox.json`).
+* `--repeat int`: Run every case N times to measure run-to-run stability (default 1).
+* `--variants string`: Probe variants, comma-separated or `all`:
+  * `reversed`: the coordinate options in reverse order.
+  * `digits9`, `digits9_reversed`: 9-level digit labels, forward or descending.
+  * `hflip`, `vflip`: the image mirrored.
+  * `pad_right`, `pad_left`, `pad_bottom`: the canvas extended by 50%.
+  * `blank`: a blank image of the same size.
+
+  Image transforms report consistency with the original box mapped through the same transform.
+* `-w`, `--workers int`: Concurrent requests (default 4). `--samples int`: noise draws per request (default 1).
+* `--from-receipt string`: Re-analyze an existing receipt (adds baselines, intervals and the error split) without calling a server.
+* `--engine dgem|gemini|predictions`: who produces the boxes. `gemini` asks a Gemini 3.x model (`--gemini-model`, default `gemini-3.8-flash`). `predictions` scores an offline JSONL of detector boxes (`--predictions <file> --pred-model <model> [--pred-threshold <score>]`), for example from `scripts/detectors/run_detectors.py`. All engines use the same scoring, baselines and variants.
+* `--annotate`: Write `annotated_<name>.svg` overlays with the argmax (dashed) and expectation (solid) boxes.
+* `--simulate`: Offline harness check with synthetic slot distributions (no GPU).
+* `-o`, `--output string`: Output JSON receipt path.
 
 ```bash
-# 1. The 12-case EXP-09 suite (needs the vision tower)
-./bin/dgem bench-bbox -u "<CLOUD_RUN_URL>/v1" --gcp-auth --annotate \
-  -o benchmarks/results_bbox_cloudrun.json
+# 1. Re-baseline: every probe variant, 3 repeats (or ./scripts/run_exp09_rebaseline.sh)
+./bin/dgem bench-bbox --vertex-url <ENDPOINT_ID> --gcp-auth --variants all --repeat 3 -o receipt.json
 
 # 2. Run a custom directory of images + index.txt prompts
 ./bin/dgem bench-bbox -u "<CLOUD_RUN_URL>/v1" --gcp-auth \
@@ -353,6 +371,31 @@ Runs the 231-item JevBench suite ([EXP-11](/dgem/experiments/exp-11-jevbench-par
 
 ```bash
 ./bin/dgem bench-jev --vertex-url <ENDPOINT_ID> --gcp-auth --http-retries 3 -w 4 -o jevbench.json
+```
+
+### `dgem bench-bbox-judge`
+Validates a Gemini 3.x model as a **visual judge** of bounding boxes ([EXP-22](/dgem/experiments/exp-22-image-readouts/)). It draws each proposed box on the image and asks the judge to grade every edge (`correct`, `too_far_in` or `too_far_out`) and the box overall. Verdicts are scored against ground truth:
+- `--calibrate`: ground-truth boxes with one edge shifted in or out by known amounts (`--shifts 5,10,20`), plus the exact boxes.
+- `--receipt <bench-bbox receipt>`: the boxes a localizer actually produced.
+
+It reports three-class edge accuracy and κ, recall and specificity for wrong edges (`--tol`, `--off`), how often each error size is flagged (the judge's resolution), and box-level agreement. `--rescore <judge receipt>` recomputes the summaries without new Gemini calls.
+
+```bash
+./bin/dgem bench-bbox-judge --calibrate --receipt receipt.json --judge-model gemini-3.8-flash -o judge.json
+```
+
+### `dgem bench-vision`
+Scores **multi-aspect image decisions** ([EXP-22](/dgem/experiments/exp-22-image-readouts/)). One template (default `templates/multimodal/vision_aspects.json.tmpl`) asks several questions about each image in one pass: presence, 3×3 grid cell, element count, spatial relation, image quality and occlusion. The manifest (default `benchmarks/bbox_sweep.jsonl`) carries ground-truth `aspects` per item. Per aspect it reports:
+- accuracy with a bootstrap interval;
+- the majority-class baseline and the paired lift over it;
+- the predicted-label shares;
+- hesitation→error AUROC.
+
+`--engine gemini` puts the same questions to Gemini 3.x. `--variant blank` measures the prompt prior. `--repeat N` measures run-to-run stability.
+
+```bash
+./bin/dgem bench-vision --vertex-url <ENDPOINT_ID> --gcp-auth --repeat 2 -o vision.json
+./bin/dgem bench-vision --engine gemini --gemini-model gemini-3.8-flash -o vision_gemini.json
 ```
 
 ### `dgem bench-rerank`
