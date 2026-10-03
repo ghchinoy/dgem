@@ -31,7 +31,10 @@ endpoint yet, `bench-ecotone` needs its sidecar, and `bench-permutation` is cove
 [`benchmarks/matrix/matrix_v2.json`](../../benchmarks/matrix/matrix_v2.json) is v1 plus the image suites and suites that
 any decision model can answer. **v1 is frozen as of 2026-10-03** and kept only to reproduce older runs; tier changes go
 to a new matrix version, never into an existing file. v2 is the default, scheduled jobs included, with reference ranges
-from a T2 run on production v0.2.1. Suites marked `"accuracy": true` are scored per item. New in v2:
+from a T2 run on production v0.2.1
+([report](../../benchmarks/runs/20261003-v2-reference-v021-t2/report.md)) combined with the v0.2.0 sessions (same server
+logic). That run also re-measured `gate_mixed_noul`: 33–37 of 51 cases still get the same label for both answers
+(gold 7; issue #68). Suites marked `"accuracy": true` are scored per item. New in v2:
 
 | Suite | n | What it adds |
 | :--- | :--- | :--- |

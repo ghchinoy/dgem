@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Regression matrix v2 is the default** (`scripts/bench_matrix.py`, scheduled jobs), with reference ranges from a T2
+  run on production v0.2.1; v1 is frozen and `report` on an older run uses the version it was recorded with. Network
+  calls get a 20 s connect/TLS-handshake deadline separate from the read timeout (a wedged handshake hung a T2 run).
+
 - **Gateway and MCP image references are restricted** to data: URIs and http(s) URLs on public hosts. `dgem serve`
   previously accepted a local path in `image`/`images`, read it from the gateway's filesystem and sent it to the model
   (and, with #70, to the Stage-2 cascade). The CLI and stdio `dgem mcp` still accept local files.

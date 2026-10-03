@@ -353,21 +353,31 @@
   "reference_slack_items_frac": 0.02
  },
  "reference": {
-  "image": "v0.2.0",
+  "image": "v0.2.1",
   "hardware": "Vertex G4 (g4-standard-48, 1x RTX PRO 6000), samples=1",
   "runs": [
+   "benchmarks/runs/20261003-v2-reference-v021-t2",
    "benchmarks/runs/20261002-v020-reference-t2",
    "benchmarks/runs/20261002-v020-release-t2"
   ],
-  "note": "Accuracy ranges = min..max of per-run accuracy over two T2 sessions with the v0.2.0 server: production Vertex G4 (image 658ad8ee, 2026-10-02) and the release-gate canary (e37012a, same server code). Frozen sets have one run per session: min..max of the two values +/- 2 standard errors. Used in single-target mode; a REVIEW is within reference_slack below the range. Previous (v0.1.3) reference: benchmarks/runs/20261001-v013-reference-{t1,t2}. coverage = the highest answered share in the v0.1.3 and v0.2.0 reference runs (every suite answered every item under v0.1.3; jev_native lost one long_policy item to the 4,096-token context under v0.2.0's layout, so v0.2.0 at 4k reviews on coverage until the context is raised). v2 adds suites without reference ranges yet (INFO verdicts until a v2 reference run is recorded).",
+  "note": "matrix v2 reference, production Vertex G4 v0.2.1 (fcad9df8, MAX_MODEL_LEN 8192), T2 on 2026-10-03. Suites with an established range of 4+ runs (v0.2.0 sessions, same server logic) take the union of that range and this session's per-run accuracies; new or small suites take this session's min..max widened to mean +/- 2 standard errors, united with any previous range (vision_spot: a 3-run range was too narrow for 141 answers). coverage = lowest answered share this session (jev_native answers 231/231 at 8k). Previous references: v0.2.0 (matrix_v1), v0.1.3 (benchmarks/runs/20261001-v013-reference-*). gate_mixed_noul's range reflects the known coupling defect (issue #68); a fix shows as a gain.",
   "suites": {
    "calibration": {
     "accuracy": [
      0.86,
      0.9
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 50,
+    "coverage": 1.0
+   },
+   "massive_spot": {
+    "accuracy": [
+     0.9208,
+     1.0
+    ],
+    "runs": 3,
+    "n": 100,
     "coverage": 1.0
    },
    "jev_native": {
@@ -375,8 +385,8 @@
      0.8,
      0.8174
     ],
-    "runs": 6,
-    "n": 230,
+    "runs": 9,
+    "n": 231,
     "coverage": 1.0
    },
    "jev_systemone": {
@@ -384,7 +394,7 @@
      0.8268,
      0.8571
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 231,
     "coverage": 1.0
    },
@@ -393,7 +403,7 @@
      0.7667,
      0.8333
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 30,
     "coverage": 1.0
    },
@@ -402,25 +412,16 @@
      0.9667,
      1.0
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 30,
-    "coverage": 1.0
-   },
-   "massive_spot": {
-    "accuracy": [
-     0.9208,
-     0.9992
-    ],
-    "runs": 2,
-    "n": 100,
     "coverage": 1.0
    },
    "massive": {
     "accuracy": [
      0.8133,
-     0.8365
+     0.8394
     ],
-    "runs": 2,
+    "runs": 3,
     "n": 5100,
     "coverage": 1.0
    },
@@ -429,16 +430,16 @@
      0.6834,
      0.7128
     ],
-    "runs": 2,
+    "runs": 3,
     "n": 4500,
     "coverage": 1.0
    },
    "typed": {
     "accuracy": [
-     0.703,
+     0.6999,
      0.7475
     ],
-    "runs": 2,
+    "runs": 3,
     "n": 2000,
     "coverage": 1.0
    },
@@ -447,16 +448,16 @@
      0.85,
      0.89
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 100,
     "coverage": 1.0
    },
    "di_catchall": {
     "accuracy": [
-     0.85,
-     0.88
+     0.84,
+     0.89
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 100,
     "coverage": 1.0
    },
@@ -465,29 +466,54 @@
      0.7576,
      0.7727
     ],
-    "runs": 6,
+    "runs": 9,
     "n": 198,
+    "coverage": 1.0
+   },
+   "calib_systemone": {
+    "accuracy": [
+     0.7793,
+     0.9674
+    ],
+    "runs": 3,
+    "n": 50,
+    "coverage": 1.0
+   },
+   "intents_systemone": {
+    "accuracy": [
+     0.786,
+     0.9584
+    ],
+    "runs": 3,
+    "n": 60,
+    "coverage": 1.0
+   },
+   "gate_mixed_noul": {
+    "accuracy": [
+     0.4976,
+     0.692
+    ],
+    "runs": 3,
+    "n": 102,
     "coverage": 1.0
    },
    "vision_spot": {
     "accuracy": [
-     0.7872,
-     0.8014
+     0.7025,
+     0.8436
     ],
-    "runs": 3,
+    "runs": 4,
     "n": 141,
-    "coverage": 1.0,
-    "note": "first 40 sweep items; same sessions"
+    "coverage": 1.0
    },
    "vision": {
     "accuracy": [
-     0.7503,
+     0.7479,
      0.7608
     ],
-    "runs": 4,
+    "runs": 6,
     "n": 853,
-    "coverage": 1.0,
-    "note": "per-answer accuracy over 230 sweep items x their aspects; 4 runs on production Vertex G4 v0.2.0, 2026-10-03 (EXP-22 phase 4 x2 + runs/20261003-vision-gate-ref x2)"
+    "coverage": 1.0
    }
   }
  },
