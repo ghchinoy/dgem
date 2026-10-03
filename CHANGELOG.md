@@ -9,6 +9,18 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.2.2 (2026-10-04)
+
+Gateway, MCP, CLI and Studio release. **Serving images are unchanged**: still v0.2.1 (`dgem@sha256:fcad9df8…`).
+
+- **Security: gateway and MCP image references** are restricted to data: URIs and http(s) URLs on public hosts (details
+  below).
+- **Images** (EXP-22, EXP-24; guide `docs/policies/images.md`): the Stage-2 Gemini cascade now receives the request's
+  images on `/api/decide`, MCP `decide_policy` and `decide_custom_questions` (which gains an `image` input) and Studio
+  batch items; Stage-2 calls with images time out after 90 s. New harnesses: `bench-vision` (several categorical image
+  questions in one pass, with `--cascade-threshold`), `bench-guided` (dgem-guided Gemini boxes and SAM masks) and
+  `bench-bbox-judge`; `bench-bbox` scoring fixes (EXP-09 re-baseline). The README and docs no longer claim spatial
+  grounding as a dgem strength.
 - **Regression matrix v2 is the default** (`scripts/bench_matrix.py`, scheduled jobs), with reference ranges from a T2
   run on production v0.2.1; v1 is frozen and `report` on an older run uses the version it was recorded with. Network
   calls get a 20 s connect/TLS-handshake deadline separate from the read timeout (a wedged handshake hung a T2 run).
@@ -26,7 +38,7 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 - **Gateway and MCP image references are restricted** to data: URIs and http(s) URLs on public hosts. `dgem serve`
   previously accepted a local path in `image`/`images`, read it from the gateway's filesystem and sent it to the model
   (and, with #70, to the Stage-2 cascade). The CLI and stdio `dgem mcp` still accept local files.
-- **Model comparison process and matrix v2 (opt-in).** `docs/operate/model-comparison.md` defines evidence levels,
+- **Model comparison process.** `docs/operate/model-comparison.md` defines evidence levels,
   the protocol, the report template and where findings go. `scripts/bench_matrix.py --competitor name=url#profile=...`
   runs another decision model on the `/v1/systemone` suites without verdicts; `benchmarks/matrix/matrix_v2.json` adds
   `calib_systemone`, `intents_systemone`, `gate_mixed_noul` and tier TC; `scripts/compare/` adds preflight, exposure
