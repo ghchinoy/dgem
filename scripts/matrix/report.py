@@ -109,6 +109,17 @@ def _noise_table(rows, acc_suites, names, noise):
     return out + [""]
 
 
+LEGACY_ACCURACY = ("calibration", "jev_native", "jev_systemone", "intents_banking77", "intents_clinc150", "massive_spot",
+                   "di_wide", "di_catchall", "rag_dev", "massive", "xnli", "typed")
+
+
+def accuracy_suites(matrix):
+    """Suites scored per item (accuracy, calibration, coverage, noise floor), in matrix order: those marked
+    `"accuracy": true` in the matrix file. Matrix files without the flag fall back to the v1 list."""
+    flagged = [s for s, spec in (matrix.get("suites") or {}).items() if spec.get("accuracy")]
+    return flagged or list(LEGACY_ACCURACY)
+
+
 def build(run_dir, matrix):
     man, by = load_run(run_dir)
     mx = man["matrix"]
@@ -148,8 +159,7 @@ def build(run_dir, matrix):
                       (f"status differs: {', '.join(diffs)}" if diffs else "") or "all cases as expected"))
 
     # ---------------- per-item accuracy suites
-    acc_suites = [s for s in ("calibration", "jev_native", "jev_systemone", "intents_banking77", "intents_clinc150",
-                              "massive_spot", "di_wide", "di_catchall", "rag_dev", "massive", "xnli", "typed") if s in by]
+    acc_suites = [s for s in accuracy_suites(matrix) if s in by]
     rows = {s: {n: [M.rows(r) for _, r in lst] for n, lst in by[s].items()} for s in acc_suites}
     noise = {}
     for n in names:
