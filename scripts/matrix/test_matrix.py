@@ -378,6 +378,18 @@ class TestReport(unittest.TestCase):
         with self.assertRaises(SystemExit):
             Target("bad", "http://h#layout=sideways")
 
+    def test_compare_summary_fields(self):
+        run = os.path.join(D.REPO, "benchmarks", "runs", "20261003-compare-strands-v19")
+        s = json.load(open(os.path.join(run, "summary.json")))
+        c = s["competitors"]["strands"]
+        self.assertEqual(set(c["by_exposure"]) - set(("train", "calib", "near", "unseen", "unknown")), set())
+        for v in c["by_exposure"].values():
+            self.assertTrue({"n", "accuracy", "ref_accuracy"} <= set(v))
+        self.assertIn("confident_share", c["jev_systemone"])
+        self.assertEqual(s["reproduction"]["published_match"]["same_prediction"], 229)
+        self.assertEqual(s["tier"], "TC")
+        self.assertTrue(any(t.get("role") == "competitor" and t.get("evidence_level") for t in s["targets"]))
+
     def test_matrix_v2_successor(self):
         v1 = json.load(open(MATRIX))
         v2 = json.load(open(MATRIX.replace("matrix_v1", "matrix_v2")))

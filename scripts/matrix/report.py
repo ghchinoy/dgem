@@ -120,6 +120,27 @@ def accuracy_suites(matrix):
     return flagged or list(LEGACY_ACCURACY)
 
 
+def _reproduction(run_dir):
+    """Evidence level E1 (docs/operate/model-comparison.md): a competitor's own published harness run against our
+    deployment, from `reproduction.json` (or the older `jevbench_official.json`) in the run directory."""
+    for name in ("reproduction.json", "jevbench_official.json"):
+        p = os.path.join(run_dir, name)
+        if not os.path.exists(p):
+            continue
+        with open(p) as f:
+            d = json.load(f)
+        if name == "reproduction.json":
+            return d
+        runs = {k: {"accuracy": v.get("accuracy"), "n_correct": v.get("n_correct"), "brier": v.get("brier_mean"),
+                    "ece": (v.get("ece") or {}).get("ece")} for k, v in (d.get("runs") or {}).items()}
+        vs = d.get("strands_vs_published_w4096") or {}
+        return {"benchmark": "jevbench", "harness": d.get("harness"), "runs": runs,
+                "published_match": {"n": vs.get("n"), "same_prediction": vs.get("same_prediction"),
+                                    "correct_published": vs.get("published_correct"),
+                                    "correct_reproduced": vs.get("ours_correct")} if vs else None}
+    return None
+
+
 def build(run_dir, matrix):
     man, by = load_run(run_dir)
     mx = man["matrix"]
@@ -265,6 +286,7 @@ def build(run_dir, matrix):
 
     # ---------------- competitors (model comparison; docs/operate/model-comparison.md)
     comp_summ = {}
+    confident = {}  # (suite, target) -> confident_share / confident_accuracy at confidence >= 0.9 (first run)
     if comps:
         ref_t = base or next((n for n in names if n not in comps), None)
         L += [f"## Competitors (informational, no verdicts; paired against `{ref_t}`, first run of each)", "",
@@ -279,8 +301,10 @@ def build(run_dir, matrix):
                 rr = rows[s][n]
                 ss = suite_summ.get(s, {}).get(n) or {}
                 hi = [r for r in rr[0] if r["confidence"] >= 0.9]
-                share = f"{len(hi) / len(rr[0]):.2f} / {_f(sum(r['accurate'] for r in hi) / len(hi) if hi else None)}"
+                conf_share, conf_acc = len(hi) / len(rr[0]), (sum(r["accurate"] for r in hi) / len(hi) if hi else None)
+                share = f"{conf_share:.2f} / {_f(conf_acc)}"
                 pair = "| — | — | — |"
+                confident[(s, n)] = {"confident_share": conf_share, "confident_accuracy": conf_acc}
                 if n != ref_t and rows[s].get(ref_t) and rows[s][ref_t][0]:
                     mc = M.mcnemar([(rr[0], rows[s][ref_t][0])])
                     pair = f"| {mc['b_only']} | {mc['a_only']} | {mc['p']:.2g} |"
@@ -292,6 +316,32 @@ def build(run_dir, matrix):
                          f"{_f(ss.get('accuracy'))} | {_f(ss.get('ece10'))} | {_f(ss.get('brier'))} | {_f(ss.get('auroc'))} | "
                          f"{share} {pair}")
         L.append("")
+        for n in comps:
+            for s in list(comp_summ.get(n, {})):
+                if isinstance(comp_summ[n][s], dict) and (s, n) in confident:
+                    c, r = confident[(s, n)], confident.get((s, ref_t), {})
+                    comp_summ[n][s].update(c)
+                    comp_summ[n][s].update({"ref_confident_share": r.get("confident_share"),
+                                            "ref_confident_accuracy": r.get("confident_accuracy")})
+        # Accuracy by the competitor's training exposure (profile exposure map), pooled over the per-item suites of
+        # this run, first run of each side, same items on both sides (scripts/compare/exposure.py).
+        prof_by = {t["name"]: t.get("profile") for t in mx["targets"]}
+        for n in comps:
+            if not prof_by.get(n):
+                continue
+            try:
+                from compare import exposure as EX
+                from matrix.targets import load_profile
+                prof = load_profile(prof_by[n])
+            except Exception:
+                continue
+            pool = {k: [dict(r, suite=s) for s in acc_suites for r in (rows[s].get(k) or [[]])[0]] for k in (ref_t, n)}
+            comp_summ.setdefault(n, {})["by_exposure"] = {
+                tg: {"n": cnt, "accuracy": acc[n], "ref_accuracy": acc[ref_t]} for tg, cnt, acc in EX.split(prof, pool, n)}
+            comp_summ[n]["by_exposure_definition"] = (
+                "every per-item matrix suite in this run (\"accuracy\": true; study-only suites such as intents26_systemone "
+                "are not matrix suites and are excluded), first run of each side, tagged with the competitor profile's "
+                "exposure map; items present on both sides only")
         if "gate_mixed_noul" in rows:
             from . import compare_cases
             L += ["Cross-slot coupling on `gate_mixed_noul` (cases whose two yes/no answers are the same label; gold 7 of 51):", ""]
@@ -501,6 +551,7 @@ def build(run_dir, matrix):
                             **{k: t[k] for k in ("evidence_level", "org") if t.get(k)},
                             "health": t.get("health") or {}} for t in mx["targets"]],
                "competitors": comp_summ,
+               **({"reproduction": _reproduction(run_dir)} if _reproduction(run_dir) else {}),
                "overall": {n: overall.get(n, "PASS") for n in cands}, "noise_floor": noise,
                "gates": [{"gate": g, "target": n, "verdict": v, "detail": d} for g, n, v, d in gates],
                "suites": suite_summ,

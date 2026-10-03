@@ -128,6 +128,12 @@ column instead of opening a second one.
   targets too, so it is excluded the same way.
 - **Competitor targets are self-describing.** `targets[]` entries for competitors carry `profile`, `model`,
   `evidence_level` and `org`, copied from the profile when the run starts.
+- **Paired results in `summary.json` `competitors.<target>`:** per suite accuracy, paired counts and McNemar p, plus
+  `confident_share` / `confident_accuracy` (answers at confidence ≥ 0.9, first run) for the competitor and the
+  baseline (`ref_*`); `by_exposure` gives accuracy by training exposure on the same items. **Canonical definition:**
+  every per-item matrix suite of the run, so study-only suites outside the matrix file are excluded. A competitor's
+  own published harness run (evidence level E1) goes in `reproduction.json` in the run directory and appears in
+  `summary.json` as `reproduction`.
 - **Profiles are a stable schema, `dgem.competitor/v1`.** Fields readers rely on: `schema`, `name`, `org`, `id`,
   `evidence_level`, `identity.{code,weights,base_model}.repo`, `identity.size_class`, `identity.architecture`,
   `serving.{model_field,max_choice_options,context_tokens,deterministic,concurrency_safe,concurrency_note}`,
