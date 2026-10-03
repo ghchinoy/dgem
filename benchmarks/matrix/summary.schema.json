@@ -40,7 +40,8 @@
    "enum": [
     "T0",
     "T1",
-    "T2"
+    "T2",
+    "TC"
    ]
   },
   "baseline": {
@@ -84,6 +85,30 @@
      "health": {
       "type": "object",
       "description": "version, revision, vllm_commit reported by /health"
+     },
+     "role": {
+      "enum": [
+       "dgem",
+       "competitor"
+      ],
+      "description": "competitor targets (--competitor) are informational and never gated"
+     },
+     "profile": {
+      "type": "string",
+      "description": "benchmarks/competitors/<profile>.json"
+     },
+     "evidence_level": {
+      "enum": [
+       "E0",
+       "E1",
+       "E2",
+       "E3"
+      ],
+      "description": "competitor evidence level (docs/operate/model-comparison.md), copied from the profile"
+     },
+     "org": {
+      "type": "string",
+      "description": "competitor organisation, copied from the profile"
      }
     }
    }
@@ -164,6 +189,10 @@
   "di_probes": {
    "type": "object",
    "description": "target -> Decision Index adapter probe results: name, status, ok, notes, keys, prob_sum, top_p, marker, wall_ms"
+  },
+  "competitors": {
+   "type": "object",
+   "description": "per competitor target: per suite paired comparison with the baseline (accuracy, ref_accuracy, only_ref, only_competitor, mcnemar_p) and gate_coupling counts"
   }
  },
  "$defs": {

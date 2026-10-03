@@ -22,14 +22,22 @@ A target may carry request options after "#", for an A/B of an opt-in serving op
   --target docfirst=<url>#layout=document_first
 They are added to every /v1/systemone and chat schema body, and the local adapter gets the matching flag
 (layout -> --prompt-layout). `dgem decide` suites (templates) do not get them.
+
+A competitor (another decision model with the Jev /v1/systemone contract) is a CompetitorTarget:
+  --competitor strands=<url>#profile=strands-decider-2b
+It runs only the /v1/systemone suites (and latency), directly (never through the dgem adapter), never gets dgem-only
+body fields, and is excluded from every verdict gate. The profile (benchmarks/competitors/<profile>.json) supplies the
+`model` field, the option limit, and the training-exposure map used by the comparison report.
 """
 import json
+import os
 
 from . import net
 
 
 class Target:
     OPTIONS = {"layout": ("schema_first", "document_first")}
+    role = "dgem"
 
     def __init__(self, name, url):
         url, _, frag = url.partition("#")
@@ -75,4 +83,51 @@ class Target:
         return st, b, h
 
     def redacted(self):
-        return {"name": self.name, "kind": self.kind, **({"options": self.options} if self.options else {})}
+        return {"name": self.name, "kind": self.kind, "role": self.role,
+                **({"options": self.options} if self.options else {})}
+
+
+COMPETITORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "benchmarks", "competitors")
+
+
+def load_profile(name):
+    path = os.path.join(COMPETITORS, f"{name}.json")
+    if not os.path.exists(path):
+        raise SystemExit(f"competitor profile {name!r} not found ({os.path.relpath(path)})")
+    with open(path) as f:
+        return json.load(f)
+
+
+class CompetitorTarget(Target):
+    """Another decision model behind /v1/systemone. Options after "#": profile=<name>, model=<id>, max_options=<N>."""
+    role = "competitor"
+
+    def __init__(self, name, url):
+        url, _, frag = url.partition("#")
+        opts = dict(kv.split("=", 1) for kv in frag.split("&") if kv)
+        unknown = set(opts) - {"profile", "model", "max_options"}
+        if unknown:
+            raise SystemExit(f"competitor {name}: unknown option(s) {sorted(unknown)} (known: profile, model, max_options)")
+        self.profile_name = opts.get("profile")
+        self.profile = load_profile(self.profile_name) if self.profile_name else {}
+        serving = self.profile.get("serving", {})
+        self.model = opts.get("model") or serving.get("model_field")
+        self.max_options = int(opts.get("max_options") or serving.get("max_choice_options") or 255)
+        super().__init__(name, url)  # no dgem request options for a competitor
+        self.options = {}
+
+    def systemone(self, body, timeout=300):
+        b = {k: v for k, v in body.items() if k not in ("samples", "seed", "layout")}
+        if self.model:
+            b["model"] = self.model
+        return net.request(self.base + "/v1/systemone", b, timeout=timeout)
+
+    def chat(self, schema, state, timeout=300):
+        raise RuntimeError("competitor targets only speak /v1/systemone")
+
+    def redacted(self):
+        return {"name": self.name, "kind": self.kind, "role": self.role,
+                **({"profile": self.profile_name} if self.profile_name else {}),
+                **({"model": self.model} if self.model else {}),
+                **({"evidence_level": self.profile["evidence_level"]} if self.profile.get("evidence_level") else {}),
+                **({"org": self.profile["org"]} if self.profile.get("org") else {})}

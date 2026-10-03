@@ -24,13 +24,26 @@ what a tier contains means a new matrix version, never an edit to a past run.
 
 Excluded from v1 (and why) is listed under `excluded` in the matrix file: `bench-rerank` cannot target a Vertex
 endpoint yet, `bench-ecotone` needs its sidecar, and `bench-permutation` is covered by the option-order suite.
+### Matrix v2: the successor to v1
 
-The image suites (`vision_spot`: 40 synthetic images × six questions; `vision`: the 230-image seeded sweep, scored per
-answer and gated like the text suites; [EXP-22](../experiments/exp-22-image-readouts.md)) are part of matrix **v2**, in
-T1 and T2 (not T0 until more reference runs give a stable range). They read the seeded synthetic sweep
-`fixtures/bbox_sweep/` (gitignored). The runner generates it on first use (`pip install -r
-scripts/requirements-vision.txt`); the scheduled job image ships it pre-generated. Their reference ranges come from four
-runs on production v0.2.0 (2026-10-03).
+[`benchmarks/matrix/matrix_v2.json`](../../benchmarks/matrix/matrix_v2.json) is v1 plus the image suites and suites that
+any decision model can answer. **v1 is frozen as of 2026-10-03** and kept only to reproduce older runs; tier changes go
+to a new matrix version, never into an existing file. v2 becomes the default (scheduled jobs included) once its
+reference run on the current production image is recorded; until then pass `--matrix benchmarks/matrix/matrix_v2.json`
+and the new suites report INFO. Suites marked `"accuracy": true` are scored per item. New in v2:
+
+| Suite | n | What it adds |
+| :--- | :--- | :--- |
+| `calib_systemone` | 50 | The calibration suite as `/v1/systemone` bodies (the v1 `calibration` suite uses dgem's own CLI path) |
+| `intents_systemone` | 60 | banking77 (30 options) and clinc150 slices with every option; dgem through the adapter, competitors directly |
+| `gate_mixed_noul` | 51 × 2 | Two yes/no questions per request whose answers usually have opposite polarity; the report counts **cross-slot coupling** (both answers the same label), which caught a dgem defect in [EXP-23](../experiments/exp-23-strands-decider.md) |
+| `gate_mixed_noul_single` | 102 | The same questions one per request (TC only), to separate difficulty from coupling |
+| `vision_spot`, `vision` | 40 / 230 images | Image decisions ([EXP-22](../experiments/exp-22-image-readouts.md)): six questions per image in one pass, scored per answer. T1/T2 only (not T0 until more reference runs give a stable range). They read the seeded sweep `fixtures/bbox_sweep/` (gitignored), which the runner generates on first use (`pip install -r scripts/requirements-vision.txt`) and the job image ships; reference ranges from four v0.2.0 runs |
+
+T1 and T2 gain `calib_systemone`, `intents_systemone`, `gate_mixed_noul` and the image suites. **TC** (model comparison) runs health, JevBench via `/v1/systemone`, the four suites
+above, the multilingual spot check and latency, 3 runs each, against a dgem baseline plus `--competitor` targets.
+Competitors run only `/v1/systemone` suites and latency and never get verdicts; the report adds a Competitors section
+with paired tests. The process around it is [Comparing dgem with Another Decision Model](model-comparison.md).
 
 ## Run it
 
@@ -225,6 +238,7 @@ execution for 7 days + 8 h ([Monitoring and alerts](monitoring.md#alerts-what-th
 
 ## Related
 
+- [Comparing dgem with Another Decision Model](model-comparison.md): competitor targets, evidence levels and the report template.
 - [Operations runbook: promote a new serving image](runbook.md#promote-a-new-serving-image) (uses T1)
 - [Evaluate dgem on your own GPU](../deploy/evaluate.md) (uses T0 and T1 in single-target mode)
 - [Versioned benchmark runs](../../benchmarks/runs/README.md)

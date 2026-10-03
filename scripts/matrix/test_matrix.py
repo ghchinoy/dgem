@@ -378,6 +378,18 @@ class TestReport(unittest.TestCase):
         with self.assertRaises(SystemExit):
             Target("bad", "http://h#layout=sideways")
 
+    def test_matrix_v2_successor(self):
+        v1 = json.load(open(MATRIX))
+        v2 = json.load(open(MATRIX.replace("matrix_v1", "matrix_v2")))
+        self.assertTrue(set(v1["suites"]) <= set(v2["suites"]))
+        for t in ("T0", "T1", "T2"):
+            self.assertTrue(set(v1["tiers"][t]) <= set(v2["tiers"][t]), t)
+        self.assertNotIn("vision_spot", v2["tiers"]["T0"])
+        for s in ("vision", "vision_spot", "calib_systemone", "gate_mixed_noul"):
+            self.assertTrue(v2["suites"][s].get("accuracy"), s)
+        for s, spec in v1["suites"].items():
+            self.assertEqual(bool(spec.get("accuracy")), bool(v2["suites"][s].get("accuracy")), s)
+
     def test_matrix_definition(self):
         mx = json.load(open(MATRIX))
         for tier, suites in mx["tiers"].items():

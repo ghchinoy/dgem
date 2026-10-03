@@ -63,7 +63,7 @@ jobs:
           python3 scripts/docs_link_check.py
 
       - name: Regression matrix unit tests (offline)
-        run: python3 -m unittest scripts/matrix/test_matrix.py
+        run: python3 -m unittest scripts/matrix/test_matrix.py scripts/compare/test_compare.py
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

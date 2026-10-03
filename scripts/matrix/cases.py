@@ -412,3 +412,11 @@ SUITES = {
     "typed": typed,
     "order": order_cases,
 }
+
+
+def _register_compare_suites():
+    from . import compare_cases
+    SUITES.update(compare_cases.SUITES)
+
+
+_register_compare_suites()

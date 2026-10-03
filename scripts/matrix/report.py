@@ -127,7 +127,8 @@ def build(run_dir, matrix):
     ref = (matrix.get("reference") or {}).get("suites", {})
     names = [t["name"] for t in mx["targets"]]
     base = mx.get("baseline")
-    cands = [n for n in names if n != base] if base else names
+    comps = [t["name"] for t in mx["targets"] if t.get("role") == "competitor"]  # informational, never gated
+    cands = [n for n in names if n != base and n not in comps]
     gates = []  # (gate, target, verdict, detail)
     L = [f"# Regression matrix report: {man['run_id']}", "",
          f"- Matrix **{mx['matrix_version']}**, tier **{mx['tier']}**, started {mx.get('started')}, finished {mx.get('finished')}",
@@ -136,7 +137,8 @@ def build(run_dir, matrix):
          "", "| target | kind | version | revision | vLLM commit |", "|---|---|---|---|---|"]
     for t in mx["targets"]:
         h = t.get("health") or {}
-        L.append(f"| {t['name']}{' (baseline)' if t['name'] == base else ''} | {t['kind']} | {h.get('version', '—')} | "
+        tag = " (baseline)" if t["name"] == base else f" (competitor: {t.get('profile') or t.get('model') or '—'})" if t["name"] in comps else ""
+        L.append(f"| {t['name']}{tag} | {t['kind']} | {h.get('version', '—')} | "
                  f"{h.get('revision', '—')} | {str(h.get('vllm_commit', '—'))[:10]} |")
     L.append("")
 
@@ -260,6 +262,46 @@ def build(run_dir, matrix):
         else:
             gates.append(("coverage", n, "PASS" if not info else "INFO",
                           "no coverage loss" + ("; unanswered: " + "; ".join(info) if info else "")))
+
+    # ---------------- competitors (model comparison; docs/operate/model-comparison.md)
+    comp_summ = {}
+    if comps:
+        ref_t = base or next((n for n in names if n not in comps), None)
+        L += [f"## Competitors (informational, no verdicts; paired against `{ref_t}`, first run of each)", "",
+              "Accuracy is the mean over runs; the paired columns use run 1 of each side. ≥0.9 = share of answers with "
+              "confidence ≥ 0.9 and the accuracy of those answers (an \"act automatically\" threshold).", "",
+              "| suite | target | runs: correct / n | mean accuracy | ECE10 | Brier | AUROC | ≥0.9: share / accuracy | "
+              f"only {ref_t} right | only competitor right | McNemar p |", "|---|---|---|---|---|---|---|---|---|---|---|"]
+        for s in acc_suites:
+            for n in [ref_t] + comps:
+                if n not in rows[s] or not rows[s][n] or not rows[s][n][0]:
+                    continue
+                rr = rows[s][n]
+                ss = suite_summ.get(s, {}).get(n) or {}
+                hi = [r for r in rr[0] if r["confidence"] >= 0.9]
+                share = f"{len(hi) / len(rr[0]):.2f} / {_f(sum(r['accurate'] for r in hi) / len(hi) if hi else None)}"
+                pair = "| — | — | — |"
+                if n != ref_t and rows[s].get(ref_t) and rows[s][ref_t][0]:
+                    mc = M.mcnemar([(rr[0], rows[s][ref_t][0])])
+                    pair = f"| {mc['b_only']} | {mc['a_only']} | {mc['p']:.2g} |"
+                    comp_summ.setdefault(n, {})[s] = {"accuracy": ss.get("accuracy"), "ref_accuracy":
+                                                      (suite_summ.get(s, {}).get(ref_t) or {}).get("accuracy"),
+                                                      "ref": ref_t, "only_ref": mc["b_only"], "only_competitor": mc["a_only"],
+                                                      "mcnemar_p": mc["p"]}
+                L.append(f"| {s} | {n} | {', '.join(str(x['correct']) for x in ss.get('runs', []))} / {len(rr[0])} | "
+                         f"{_f(ss.get('accuracy'))} | {_f(ss.get('ece10'))} | {_f(ss.get('brier'))} | {_f(ss.get('auroc'))} | "
+                         f"{share} {pair}")
+        L.append("")
+        if "gate_mixed_noul" in rows:
+            from . import compare_cases
+            L += ["Cross-slot coupling on `gate_mixed_noul` (cases whose two yes/no answers are the same label; gold 7 of 51):", ""]
+            for n, rr in rows["gate_mixed_noul"].items():
+                c = [compare_cases.coupling(r)["equal"] for r in rr]
+                L.append(f"- {n}: {', '.join(map(str, c))} of 51")
+                for cn in comps:
+                    if cn == n:
+                        comp_summ.setdefault(n, {})["gate_coupling"] = c
+            L.append("")
 
     # ---------------- noise floor
     if any(len(rows[s].get(n, [])) > 1 for s in acc_suites for n in names):
@@ -445,7 +487,8 @@ def build(run_dir, matrix):
             overall[n] = v
     head = ["## Verdicts", "", "| gate | target | verdict | detail |", "|---|---|---|---|"]
     head += [f"| {g} | {n} | **{v}** | {d} |" for g, n, v, d in gates]
-    head += ["", "Overall: " + ", ".join(f"**{n}: {overall.get(n, 'PASS')}**" for n in cands), ""]
+    head += ["", ("Overall: " + ", ".join(f"**{n}: {overall.get(n, 'PASS')}**" for n in cands)) if cands else
+             "Overall: no dgem candidate in this run (comparison run: the baseline is measured, competitors are informational)", ""]
     i = L.index("## Suites")
     L = L[:i] + head + L[i:]
     lat_summ = {n: {"modes": lst[0][1].get("modes"), "sweep": lst[0][1].get("sweep")}
@@ -453,7 +496,11 @@ def build(run_dir, matrix):
     summary = {"schema": SUMMARY_SCHEMA, "run_id": man["run_id"], "created": man.get("created"),
                "git_commit": man.get("git_commit"), "matrix_version": mx["matrix_version"], "tier": mx["tier"],
                "baseline": base, "started": mx.get("started"), "finished": mx.get("finished"),
-               "targets": [{"name": t["name"], "kind": t.get("kind"), "health": t.get("health") or {}} for t in mx["targets"]],
+               "targets": [{"name": t["name"], "kind": t.get("kind"), "role": t.get("role", "dgem"),
+                            **({"profile": t["profile"]} if t.get("profile") else {}),
+                            **{k: t[k] for k in ("evidence_level", "org") if t.get(k)},
+                            "health": t.get("health") or {}} for t in mx["targets"]],
+               "competitors": comp_summ,
                "overall": {n: overall.get(n, "PASS") for n in cands}, "noise_floor": noise,
                "gates": [{"gate": g, "target": n, "verdict": v, "detail": d} for g, n, v, d in gates],
                "suites": suite_summ,

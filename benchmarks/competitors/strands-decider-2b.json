@@ -1,0 +1,130 @@
+{
+ "schema": "dgem.competitor/v1",
+ "name": "Strands Decider 2B",
+ "org": "Amazon · Strands Agents",
+ "id": "strands-decider-2b",
+ "first_seen": "2026-10-01",
+ "evidence_level": "E2",
+ "identity": {
+  "code": {
+   "repo": "https://github.com/strands-labs/strands-decider",
+   "commit": "890947e",
+   "license": "Apache-2.0"
+  },
+  "weights": {
+   "repo": "https://huggingface.co/StrandsAgents/strands-decider-2B-hobson-v19",
+   "revision": "bb282d786bc251fd4e3068de3ada9ddbb38127cd"
+  },
+  "base_model": {
+   "repo": "Qwen/Qwen3.5-2B-Base",
+   "revision": "b1485b2fa6dfa1287294f269f5fb618e03d52d7c",
+   "note": "the loader requests main without a revision; this is the revision in v19's provenance.json"
+  },
+  "architecture": "Qwen3.5-2B torso (1.9B dense, hybrid Gated DeltaNet), LM head removed, rank-16 LoRA + ~1M-parameter pointer head; per-type temperatures shipped in the checkpoint",
+  "size_class": "1.9B dense"
+ },
+ "serving": {
+  "command": "strands-decider serve <checkpoint> --host 0.0.0.0 --port 8080 --device cuda",
+  "model_field": "strands-decider-2B-hobson-v19",
+  "max_choice_options": 255,
+  "max_score_levels": 10,
+  "context_tokens": 4096,
+  "server_latency_field": "latency_ms",
+  "concurrency_safe": false,
+  "concurrency_note": "The stock server runs FastAPI sync handlers on a thread pool over one shared engine; concurrent requests changed answers (one item moved by 0.82 probability). Serialize evaluate() (a lock) before measuring; the lock changes no numerics.",
+  "deterministic": true
+ },
+ "self_reported": [
+  {
+   "metric": "JevBench public accuracy (231)",
+   "value": 0.723,
+   "n": 231,
+   "note": "167/231 at a 3072-token window; 168 at the 4096 default",
+   "source": "https://github.com/strands-labs/strands-decider/blob/main/evaluation/README.md"
+  },
+  {
+   "metric": "JevBench Brier (multiclass)",
+   "value": 0.342,
+   "n": 231,
+   "source": "https://github.com/strands-labs/strands-decider/blob/main/evaluation/README.md"
+  },
+  {
+   "metric": "JevBench ECE",
+   "value": 0.052,
+   "n": 231,
+   "source": "https://github.com/strands-labs/strands-decider/blob/main/evaluation/README.md"
+  },
+  {
+   "metric": "latency per JevBench question, RTX 3090, p50 / p95 (ms)",
+   "value": [
+    115,
+    299
+   ],
+   "source": "https://github.com/strands-labs/strands-decider/blob/main/evaluation/results.md"
+  }
+ ],
+ "reproduced": {
+  "harness": "fstandhartinger/jevbench @ 1bcc55eb6c8cffde2306b3db03ede39b61c6152a, typesafe adapter",
+  "published_per_task": "eval/jevbench-w4096/results.jsonl in the weights repo",
+  "matching_predictions": 229,
+  "n": 231,
+  "correct_ours": 169,
+  "correct_published": 167,
+  "date": "2026-10-03"
+ },
+ "exposure_source": "https://github.com/strands-labs/strands-decider/blob/main/data/sources.md",
+ "exposure_note": "Strands trains on each dataset's train split; matrix items come from test/validation splits, so overlap is task-level.",
+ "exposure": {
+  "jev_systemone": {
+   "*": "unseen"
+  },
+  "gate_mixed_noul": {
+   "*": "unseen"
+  },
+  "gate_mixed_noul_single": {
+   "*": "unseen"
+  },
+  "intents_systemone": {
+   "*": "train"
+  },
+  "calib_systemone": {
+   "*": "unseen",
+   "civil-comments-toxicity-check": "train",
+   "civil-comments-toxicity-rate": "train",
+   "boolq-passage-answer-check": "train",
+   "banking77-intent-select": "train",
+   "clinc-oos-intent-select": "train",
+   "yelp-review-stars-rate": "train",
+   "sst5-sentiment-rate": "train",
+   "chaos-nli-entailment-select": "near",
+   "anli-entailment-select": "near",
+   "go-emotions-emotion-select": "near",
+   "grounding-claim-support-check": "near"
+  },
+  "massive_spot": {
+   "*": "near"
+  },
+  "massive": {
+   "*": "near",
+   "en": "calib"
+  },
+  "xnli": {
+   "*": "near"
+  },
+  "typed": {
+   "*": "unseen"
+  },
+  "order_massive_en": {
+   "*": "calib"
+  },
+  "order_emotion": {
+   "*": "calib"
+  },
+  "order_xnli_en": {
+   "*": "near"
+  },
+  "order_jev_choice": {
+   "*": "unseen"
+  }
+ }
+}
