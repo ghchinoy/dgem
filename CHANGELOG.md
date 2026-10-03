@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Gateway and MCP image references are restricted** to data: URIs and http(s) URLs on public hosts. `dgem serve`
+  previously accepted a local path in `image`/`images`, read it from the gateway's filesystem and sent it to the model
+  (and, with #70, to the Stage-2 cascade). The CLI and stdio `dgem mcp` still accept local files.
+
 - **Docs: hesitation-gating replaces "IDC" as the product name.** New flagship page
   `docs/confidence/overview.md` ("Confidence beyond Shannon: hesitation-gated decisions"); the old IDC page moves to
   `docs/history/` (docs-only) with a site redirect. README, glossary, primer, landing page, Studio Concepts tab and

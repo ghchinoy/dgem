@@ -896,6 +896,7 @@ func executeDecideWithWarmup(ctx context.Context, schemaContent, stateContent st
 
 func runServe(cmd *cobra.Command, args []string) error {
 	defaultRetriesForLongRunning()
+	allowLocalImagePaths = false // image references now come from network requests
 	if envPort := os.Getenv("PORT"); envPort != "" && !cmd.Flags().Changed("port") {
 		if p, err := fmt.Sscanf(envPort, "%d", &servePort); err == nil && p == 1 {
 			// parsed from PORT
@@ -1526,6 +1527,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 			images = append(images, payload.ImageURL)
 		}
 		images = append(images, payload.Images...)
+		if err := checkRequestImages(ctx, images); err != nil {
+			rootSpan.SetStatus(codes.Error, err.Error())
+			rootSpan.End()
+			writeErr(http.StatusBadRequest, err.Error())
+			return
+		}
 
 		backendTarget, targetUpstreamURL, backendErr := resolveBackendTarget(r, payload.Backend, payload.VertexURL)
 		if backendErr != nil {

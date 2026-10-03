@@ -239,7 +239,7 @@ escalated):
 - **The Stage-1 hint costs accuracy at low thresholds.** At 0.35 nats, escalated answers were 0.945 correct, close to
   Gemini alone on the same answers (0.957). At 0.10, they were 0.860 against 0.946, and Gemini kept dgem's answer 68%
   of the time. The Stage-2 prompt includes dgem's candidate and distribution, which anchors Gemini when dgem is only
-  mildly unsure. EXP-23 tests hint against no hint.
+  mildly unsure. A follow-up experiment tests hint against no hint.
 
 The user-facing summary is in [What dgem Can Do With Images](/dgem/policies/images/).
 
@@ -259,10 +259,10 @@ The user-facing summary is in [What dgem Can Do With Images](/dgem/policies/imag
   truth. Re-check it on each new image domain with `bench-bbox-judge --calibrate`.
 - **Done in the follow-up:**
   - `bench-vision` on real images (section 5);
-  - the regression-matrix image gate (`vision_spot` in T0, `vision` ×2 in T1, with reference ranges from four v0.2.0
-    runs);
+  - the regression-matrix image gate (`vision_spot` and `vision` ×2 in matrix v2, tiers T1/T2, with reference ranges
+    from four v0.2.0 runs);
   - the live cascade with images (section 6).
-- **Next:** EXP-23, Gemini guided by dgem for boxes and masks (skip absent targets, crop to the grid cell, hint or no
+- **Next:** a follow-up experiment (next free EXP number), Gemini guided by dgem for boxes and masks (skip absent targets, crop to the grid cell, hint or no
   hint, thinking level).
 
 ## Files

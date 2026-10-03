@@ -1571,6 +1571,9 @@ func buildMCPServer() *mcp.Server {
 		if input.Image != "" {
 			imgs = append(imgs, input.Image)
 		}
+		if err := checkRequestImages(ctx, imgs); err != nil {
+			return nil, GatewayDecideResponse{}, err
+		}
 		backendTarget, targetURL, bErr := resolveBackendTargetFromParams(ctx, input.Backend, input.VertexURL)
 		if bErr != nil {
 			return nil, GatewayDecideResponse{}, bErr
@@ -1647,6 +1650,9 @@ func buildMCPServer() *mcp.Server {
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input LocateBBoxToolInput) (*mcp.CallToolResult, LocateBBoxToolOutput, error) {
 		if strings.TrimSpace(input.Image) == "" {
 			return nil, LocateBBoxToolOutput{}, fmt.Errorf("'image' URL or data URI is required")
+		}
+		if err := checkRequestImages(ctx, []string{input.Image}); err != nil {
+			return nil, LocateBBoxToolOutput{}, err
 		}
 		target := strings.TrimSpace(input.Target)
 		if target == "" {
@@ -1763,6 +1769,9 @@ func buildMCPServer() *mcp.Server {
 		var customImgs []string
 		if input.Image != "" {
 			customImgs = append(customImgs, input.Image)
+		}
+		if err := checkRequestImages(ctx, customImgs); err != nil {
+			return nil, GatewayDecideResponse{}, err
 		}
 		resp, stats, attempts, err := executeDecideWithWarmup(ctx, schemaStr, stateStr, customImgs, targetURL)
 		if err != nil {

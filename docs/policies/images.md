@@ -73,7 +73,7 @@ Guidance:
   0.43 s to 7.4 s.
 - **Keep the threshold at the default 0.35 nats.** At 0.10, Gemini kept dgem's (wrong) answer more often: escalated
   answers were 0.86 correct, against 0.95 when Gemini answered alone. dgem's answer is passed to Gemini as a hint,
-  and the hint can anchor it. EXP-23 tests this directly.
+  and the hint can anchor it. A follow-up experiment tests this directly.
 
 ## Boxes, masks and screenshots: use something else
 

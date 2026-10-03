@@ -15,17 +15,20 @@ what a tier contains means a new matrix version, never an edit to a past run.
 
 | Tier | When | Suites | Size (per target, RTX PRO 6000) |
 | :--- | :--- | :--- | :--- |
-| **T0 smoke** | Every deploy or configuration change; daily on production | `/health`, API contract (incl. multilingual cases with known answers), calibration suite ×1, multilingual spot check (MASSIVE **validation**, ru/th/hi/ja/es × 20), image spot check (`vision_spot`: 40 synthetic images × six questions, [EXP-22](/dgem/experiments/exp-22-image-readouts/)) | ~200 requests, under 1 minute |
-| **T1 gate** | Serving-image, prompt-path or server changes; release validation; weekly on production | T0 + image decisions ×2 (`vision`: the 230-image seeded synthetic sweep, every question scored per answer and gated like the text suites), calibration ×3, JevBench ×3 through `bench-jev` (chat/completions) and ×3 through `/v1/systemone`, intents slices ×3 (banking77, clinc150), the [Decision Index adapter track](#decision-index-adapter-track) (probes + wide-option MASSIVE ×3), latency (5 modes × 100, sweep at 16 and 32 workers) | ~3,500 requests, ~12 minutes |
+| **T0 smoke** | Every deploy or configuration change; daily on production | `/health`, API contract (incl. multilingual cases with known answers), calibration suite ×1, multilingual spot check (MASSIVE **validation**, ru/th/hi/ja/es × 20) | ~200 requests, under 1 minute |
+| **T1 gate** | Serving-image, prompt-path or server changes; release validation; weekly on production | T0 + calibration ×3, JevBench ×3 through `bench-jev` (chat/completions) and ×3 through `/v1/systemone`, intents slices ×3 (banking77, clinc150), the [Decision Index adapter track](#decision-index-adapter-track) (probes + wide-option MASSIVE ×3), latency (5 modes × 100, sweep at 16 and 32 workers) | ~3,500 requests, ~12 minutes |
 | **T2 full** | Release candidates, vLLM or model changes; never automatic; needs `--confirm` | T1 + MASSIVE test (51 languages × 100), XNLI test (15 × 300), typed-decisions test (2,000 decisions), option order (739 cases × 4 orderings), bounding boxes, Decision Index panel, and the Decision Index kit's compatibility pass when configured | ~17,000 requests, ~25 minutes |
 | **T-cal** | Calibration or threshold changes | Every report computes ECE and NLL with a 5-fold **held-out** temperature from the saved receipts; no extra requests | — |
 
 Excluded from v1 (and why) is listed under `excluded` in the matrix file: `bench-rerank` cannot target a Vertex
 endpoint yet, `bench-ecotone` needs its sidecar, and `bench-permutation` is covered by the option-order suite.
 
-The image suites (`vision_spot`, `vision`) read the seeded synthetic sweep `fixtures/bbox_sweep/` (gitignored). The
-runner generates it on first use (`pip install -r scripts/requirements-vision.txt`); the scheduled job image ships it
-pre-generated. Their reference ranges come from four runs on production v0.2.0 (2026-10-03).
+The image suites (`vision_spot`: 40 synthetic images × six questions; `vision`: the 230-image seeded sweep, scored per
+answer and gated like the text suites; [EXP-22](/dgem/experiments/exp-22-image-readouts/)) are part of matrix **v2**, in
+T1 and T2 (not T0 until more reference runs give a stable range). They read the seeded synthetic sweep
+`fixtures/bbox_sweep/` (gitignored). The runner generates it on first use (`pip install -r
+scripts/requirements-vision.txt`); the scheduled job image ships it pre-generated. Their reference ranges come from four
+runs on production v0.2.0 (2026-10-03).
 
 ## Run it
 
