@@ -25,6 +25,10 @@ scored on the workstation with `dgem bench-bbox --engine predictions --predictio
 
   pip install -r scripts/detectors/requirements.txt
   python3 scripts/detectors/run_detectors.py --manifest benchmarks/bbox_sweep.jsonl benchmarks/bbox_real.jsonl -o preds.jsonl
+
+EXP-23 masks from boxes: SAM refines each prompt box (any source) and the mask is scored against the COCO mask:
+  python3 scripts/detectors/run_detectors.py --manifest benchmarks/bbox_real.jsonl --sam-boxes sam_boxes.jsonl \
+      --gt-masks benchmarks/bbox_real_masks.jsonl -o sam_masks.jsonl
 """
 
 import argparse
@@ -118,12 +122,58 @@ class Sam:
         return [float(xs.min()), float(ys.min()), float(xs.max() + 1), float(ys.max() + 1)]
 
 
+def sam_from_boxes(args):
+    from PIL import ImageDraw
+    paths = {}
+    for m in args.manifest:
+        for l in open(m):
+            if l.strip():
+                r = json.loads(l)
+                paths[r["id"]] = r["image_path"]
+    gt = {json.loads(l)["id"]: json.loads(l) for l in open(args.gt_masks)}
+    sam = Sam()
+    rows = [json.loads(l) for l in open(args.sam_boxes) if l.strip()]
+    print(f"{len(rows)} SAM box prompts on {DEV}", file=sys.stderr)
+    cache = {}
+    with open(args.output, "w") as f:
+        for n, r in enumerate(rows):
+            g = gt[r["id"]]
+            w, h = g["width"], g["height"]
+            if r["id"] not in cache:
+                img = Image.open(paths[r["id"]]).convert("RGB")
+                gm = Image.new("L", (w, h), 0)
+                d = ImageDraw.Draw(gm)
+                for poly in g["polygons"]:
+                    if len(poly) >= 6:
+                        d.polygon(poly, fill=1)
+                cache = {r["id"]: (img, np.asarray(gm, dtype=bool))}
+            img, gmask = cache[r["id"]]
+            b = r["box_pct"]
+            box = [b[1] / 100 * w, b[0] / 100 * h, b[3] / 100 * w, b[2] / 100 * h]
+            t0 = time.time()
+            with torch.no_grad():
+                inputs = sam.p(img, input_boxes=[[box]], return_tensors="pt").to(DEV)
+                out = sam.m(**inputs, multimask_output=False)
+                pm = sam.p.image_processor.post_process_masks(
+                    out.pred_masks.cpu(), inputs["original_sizes"].cpu(), inputs["reshaped_input_sizes"].cpu())[0][0][0].numpy()
+            u = (pm | gmask).sum()
+            f.write(json.dumps({"id": r["id"], "source": r["source"], "mask_iou": float((pm & gmask).sum() / u) if u else 0.0,
+                                "latency_ms": round((time.time() - t0) * 1e3, 1)}) + "\n")
+            if n % 50 == 0:
+                print(f"  {n}/{len(rows)}", file=sys.stderr, flush=True)
+    print("done", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--manifest", nargs="+", required=True)
     ap.add_argument("-o", "--output", required=True)
     ap.add_argument("--models", default="owlv2,grounding_dino,gdino_sam")
+    ap.add_argument("--sam-boxes", default="", help="JSONL of {id, source, box_pct}: refine each with SAM and score the mask")
+    ap.add_argument("--gt-masks", default="benchmarks/bbox_real_masks.jsonl")
     args = ap.parse_args()
+    if args.sam_boxes:
+        return sam_from_boxes(args)
     want = set(args.models.split(","))
 
     items = []

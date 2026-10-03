@@ -25,6 +25,8 @@
 #
 # Inputs: benchmarks/bbox_sweep.jsonl (+ fixtures/bbox_sweep, scripts/generate_bbox_sweep.py) and
 #         benchmarks/bbox_real.jsonl (+ fixtures/bbox_real, scripts/fetch_bbox_real.py fetch).
+# SAM_BOXES=<sam_boxes.jsonl> (EXP-23): instead of the detectors, refine those prompt boxes with SAM and score the masks
+# against benchmarks/bbox_real_masks.jsonl; writes sam_masks.jsonl into the run directory.
 # The VM needs internet access (Hugging Face model downloads) and a service account that can read and
 # write gs://$BUCKET (GCE_SA, default: the project's default compute service account).
 set -euo pipefail
@@ -37,6 +39,7 @@ MACHINE="${GCE_MACHINE_TYPE:-g2-standard-8}"
 ACCEL="${GCE_ACCELERATOR:-type=nvidia-l4,count=1}"
 IMAGE_FAMILY="${IMAGE_FAMILY:-pytorch-2-9-cu129-ubuntu-2204-nvidia-580}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%d)-prop18-detectors}"
+if [[ -n "${SAM_BOXES:-}" ]]; then MANIFESTS="${MANIFESTS:-benchmarks/bbox_real.jsonl}"; fi
 MANIFESTS="${MANIFESTS:-benchmarks/bbox_sweep.jsonl benchmarks/bbox_real.jsonl}"
 NAME="dgem-detectors-$(date -u +%H%M%S)"
 PREFIX="prop18-detectors/${RUN_ID}-${NAME}"
@@ -64,6 +67,10 @@ python3 - "$TMP/files.txt" $MANIFESTS <<'EOF'
 import json, sys
 out, mans = sys.argv[1], sys.argv[2:]
 paths = list(mans) + ["scripts/detectors/run_detectors.py", "scripts/detectors/requirements.txt"]
+import os
+for extra in (os.environ.get("SAM_BOXES", ""), "benchmarks/bbox_real_masks.jsonl"):
+    if extra and os.path.exists(extra):
+        paths.append(extra)
 for m in mans:
     paths += [json.loads(l)["image_path"] for l in open(m) if l.strip()]
 open(out, "w").write("\n".join(paths) + "\n")
@@ -89,7 +96,7 @@ tar -xzf bundle.tgz || exit 1
 PY=\$(command -v python3)
 [ -x /opt/conda/bin/python ] && PY=/opt/conda/bin/python
 \$PY -m pip install -q -r scripts/detectors/requirements.txt < /dev/null
-\$PY scripts/detectors/run_detectors.py --manifest $MANIFESTS -o preds.jsonl > run.log 2>&1
+\$PY scripts/detectors/run_detectors.py --manifest $MANIFESTS -o preds.jsonl ${SAM_BOXES:+--sam-boxes $SAM_BOXES} > run.log 2>&1
 rc=\$?
 \$PY -c "import torch, transformers; print('torch', torch.__version__, 'transformers', transformers.__version__)" >> run.log 2>&1
 nvidia-smi --query-gpu=name,driver_version --format=csv >> run.log 2>&1
@@ -128,6 +135,12 @@ mv "$OUT/preds.jsonl" "$OUT/detector_preds.jsonl"
 mv "$OUT/run.log" "$OUT/detector_run.log"
 echo "==> Detector run exit code $rc; $(wc -l < "$OUT/detector_preds.jsonl") prediction rows"
 
+if [[ -n "${SAM_BOXES:-}" ]]; then
+  mv "$OUT/detector_preds.jsonl" "$OUT/sam_masks.jsonl"
+  mv "$OUT/detector_run.log" "$OUT/sam_run.log"; mv "$OUT/detector_startup.log" "$OUT/sam_startup.log" 2>/dev/null || true
+  echo "Done: $OUT/sam_masks.jsonl"
+  exit 0
+fi
 go build -o bin/dgem .
 for M in owlv2 grounding_dino gdino_sam; do
   for S in $MANIFESTS; do
