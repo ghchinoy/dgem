@@ -35,6 +35,9 @@ def rows(receipt):
     d = receipt
     if d.get("kind") == "systemone":
         return [r for r in d["cases"] if r.get("status") == 200]
+    if d.get("receipt_kind") == "bench-vision":  # one row per (image, aspect); ids are "<case>#<aspect>"
+        return [_row(c["id"], c["expected"], c["actual"], c["accurate"], c.get("confidence"), c.get("top_probabilities"),
+                     c.get("wall_time_ms")) for c in d.get("items") or []]
     out = []
     if isinstance(d.get("results"), list) and d["results"] and "intent_accurate" in d["results"][0]:
         for c in d["results"]:

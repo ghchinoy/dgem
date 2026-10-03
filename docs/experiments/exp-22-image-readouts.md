@@ -181,6 +181,70 @@ replaced with Gemini's answer for that item:
 | image_quality | 0.600 | 0.680 | 0.740 | 0.740 | 0.720 | 0.720 |
 | present | 0.957 | 0.978 | 0.974 | 0.974 | 0.970 | 0.974 |
 
+### 5. Multi-aspect questions on real images
+
+`bench-vision` on RefCOCO and ScreenSpot (`templates/multimodal/vision_aspects_generic.json.tmpl`): dgem ×2, dgem on
+blank images, and Gemini 3.8 ×1. Run:
+[`20261003-prop18-vision-real`](../../benchmarks/runs/20261003-prop18-vision-real/manifest.json).
+
+**Ground truth** (`scripts/build_bbox_real_aspects.py`, `benchmarks/bbox_real_aspects.jsonl`):
+- *Grid cell and relation* come from the annotated boxes. The relation is to another annotated target in the same
+  image.
+- *Presence* is scored on 228 positives plus 204 negatives. A negative is the same image queried with another item's
+  text, kept only when Gemini confirmed it is absent. This flatters Gemini's own presence score.
+- *Occlusion* ("hidden or cut off by the border") comes from a Gemini judge looking at the box overlay. It agreed with
+  blind hand labels on 38 of 40 items (κ 0.89, `benchmarks/bbox_real_aspects_handcheck.json`).
+
+| Aspect | Photos: dgem / Gemini | Screenshots: dgem / Gemini | dgem hesitation AUROC (all) |
+| :--- | :---: | :---: | :---: |
+| present | 0.937 / 0.973 | 0.864 / 0.981 | 0.87 |
+| relation | 0.875 / 0.981 | 0.447 / 0.848 | 0.87 |
+| grid cell | 0.671 / 0.875 | 0.426 / 0.880 | 0.74 |
+| occluded | 0.396 / 0.867 | 0.995 / 1.000 (almost all "no") | 0.60 |
+
+- **Blank images** fall to the majority-class baseline or below on every aspect.
+- **Latency:** median 0.51 s for dgem (these are larger images), 6.5 s for Gemini.
+- **Photos:** presence and relation are reliable.
+- **Screenshots:** dgem's location answers are not reliable, consistent with its ScreenSpot boxes.
+
+### 6. Live hesitation cascade, with the image
+
+Stage 2 now receives the image (`ExecuteStage2GeminiCascadeWithImages`). This is the path that `POST /api/decide`,
+both MCP decide tools and Studio batch items with `image_url` use.
+
+Measured with `dgem bench-vision --cascade-threshold` on the 230 synthetic scenes. Run:
+[`20261003-prop18-cascade`](../../benchmarks/runs/20261003-prop18-cascade/manifest.json),
+reproduce with `scripts/run_prop18_cascade.sh`.
+
+| Config | Requests that called Gemini | Slots escalated | End-to-end p50 / p90 | Accuracy dgem → cascade |
+| :--- | :---: | :---: | :---: | :---: |
+| six questions, 0.35 nats | 69% | 18% | 7.4 s / 35.8 s | 0.754 → 0.825 |
+| scored questions only, 0.35 nats | **46%** | 19% | **0.43 s** / 17.4 s | 0.762 → **0.846** |
+| six questions, 0.10 nats | 90% | 29% | 9.4 s / 35.0 s | 0.753 → 0.858 |
+| scored questions only, 0.10 nats | 76% | 37% | 6.1 s / 29.2 s | 0.760 → 0.875 |
+| Gemini 3.8 only (phase 4) | 100% | — | 10.4 s | 0.944 |
+
+dgem's own part took a median 0.16 s. Per aspect (scored questions only, 0.35 nats; dgem → cascade, with the share
+escalated):
+
+| Aspect | dgem → cascade | Escalated |
+| :--- | :---: | :---: |
+| element_count | 0.69 → 0.83 | 32% |
+| grid_cell | 0.68 → 0.81 | 23% |
+| image_quality | 0.62 → 0.76 | 18% |
+| present | 0.97 → 0.98 | 4% |
+| relation | 0.85 → 0.85 | 19% |
+| occluded | 0.40 → 0.50 | 15% |
+
+- **Gemini is called per request.** One unsure slot sends the whole request to Gemini, so asking only the questions
+  you need is the main latency lever.
+- **The Stage-1 hint costs accuracy at low thresholds.** At 0.35 nats, escalated answers were 0.945 correct, close to
+  Gemini alone on the same answers (0.957). At 0.10, they were 0.860 against 0.946, and Gemini kept dgem's answer 68%
+  of the time. The Stage-2 prompt includes dgem's candidate and distribution, which anchors Gemini when dgem is only
+  mildly unsure. A follow-up experiment tests hint against no hint.
+
+The user-facing summary is in [What dgem Can Do With Images](../policies/images.md).
+
 ## Decision
 
 - **Boxes:** do not position DiffusionGemma as a localizer.
@@ -195,10 +259,13 @@ replaced with Gemini's answer for that item:
   - Do not use dgem alone for "is X present?" when distractors are present, or for "is X occluded?".
 - **Validation tooling:** keep the Gemini judge (validated here) as the default labeller for image sets without ground
   truth. Re-check it on each new image domain with `bench-bbox-judge --calibrate`.
-- **Next** (PROP-18 continues):
-  - run `bench-vision` on real images (labels from the Gemini judge or reference, checked on a hand-labelled slice);
-  - add a small image gate to the regression matrix (sweep grid cell + presence, ×2);
-  - test the hesitation cascade live through `POST /api/decide` instead of offline.
+- **Done in the follow-up:**
+  - `bench-vision` on real images (section 5);
+  - the regression-matrix image gate (`vision_spot` and `vision` ×2 in matrix v2, tiers T1/T2, with reference ranges
+    from four v0.2.0 runs);
+  - the live cascade with images (section 6).
+- **Next:** a follow-up experiment (next free EXP number), Gemini guided by dgem for boxes and masks (skip absent targets, crop to the grid cell, hint or no
+  hint, thinking level).
 
 ## Files
 

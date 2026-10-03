@@ -48,6 +48,9 @@ var (
 	visionWorkers  int
 	visionLimit    int
 	visionVariant  string
+	visionCascadeT float64
+	visionCascadeM string
+	visionOnlyGT   bool
 )
 
 var benchVisionCmd = &cobra.Command{
@@ -76,6 +79,9 @@ func init() {
 	f.IntVarP(&visionWorkers, "workers", "w", 8, "Concurrent requests")
 	f.IntVarP(&visionLimit, "limit", "n", 0, "Limit items (0 = all)")
 	f.StringVar(&visionVariant, "variant", "original", "original or blank (a blank image of the same size)")
+	f.Float64Var(&visionCascadeT, "cascade-threshold", 0, "Live Stage-2 cascade (engine dgem): send slots with entropy >= this many nats, with the image, to Gemini (0 = off)")
+	f.BoolVar(&visionOnlyGT, "only-scored", false, "Ask only the questions the item has ground truth for (a caller asking just what it needs)")
+	f.StringVar(&visionCascadeM, "cascade-model", DefaultCascadeGeminiModel, "Gemini 3.x model for --cascade-threshold")
 	RootCmd.AddCommand(benchVisionCmd)
 }
 
@@ -90,13 +96,31 @@ type visionItem struct {
 
 // VisionAnswer is one scored aspect of one run.
 type VisionAnswer struct {
-	Aspect     string  `json:"aspect"`
-	Expected   string  `json:"expected"`
-	Predicted  string  `json:"predicted"`
-	Correct    bool    `json:"correct"`
+	Aspect    string `json:"aspect"`
+	Expected  string `json:"expected"`
+	Predicted string `json:"predicted"`
+	Correct   bool   `json:"correct"`
+	// Live cascade (--cascade-threshold): dgem's own answer and whether Gemini replaced it.
+	Stage1     string  `json:"stage1,omitempty"`
+	Stage1OK   *bool   `json:"stage1_correct,omitempty"`
+	Escalated  bool    `json:"escalated,omitempty"`
 	Confidence float64 `json:"confidence,omitempty"`
 	HNorm      float64 `json:"h_norm,omitempty"`
 	HasDist    bool    `json:"has_distribution,omitempty"`
+	// Probabilities over the aspect's labels (dgem only), for Brier/ECE in the regression matrix.
+	Probabilities map[string]float64 `json:"probabilities,omitempty"`
+}
+
+// VisionItemRow is one (case, aspect, repeat) answer in the flat shape the regression matrix reads
+// (scripts/matrix/metrics.py rows()).
+type VisionItemRow struct {
+	ID               string             `json:"id"`
+	Expected         string             `json:"expected"`
+	Actual           string             `json:"actual"`
+	Accurate         bool               `json:"accurate"`
+	Confidence       float64            `json:"confidence"`
+	TopProbabilities map[string]float64 `json:"top_probabilities,omitempty"`
+	WallTimeMs       float64            `json:"wall_time_ms"`
 }
 
 type VisionCaseResult struct {
@@ -106,6 +130,12 @@ type VisionCaseResult struct {
 	Answers    []VisionAnswer    `json:"answers"`
 	Error      string            `json:"error,omitempty"`
 	WallTimeMs float64           `json:"wall_time_ms"`
+	// Live cascade timing: dgem's part, Gemini's part (0 when nothing escalated) and slots escalated.
+	Stage1Ms       float64 `json:"stage1_ms,omitempty"`
+	CascadeMs      float64 `json:"cascade_ms,omitempty"`
+	EscalatedSlots int     `json:"escalated_slots,omitempty"`
+	TotalSlots     int     `json:"total_slots,omitempty"`
+	CascadeError   string  `json:"cascade_error,omitempty"`
 }
 
 type VisionAspectSummary struct {
@@ -135,6 +165,9 @@ type VisionReport struct {
 	GitCommit     string                `json:"git_commit,omitempty"`
 	Aspects       []VisionAspectSummary `json:"aspects"`
 	Cases         []VisionCaseResult    `json:"cases"`
+	// ReceiptKind and Items let generic tooling (the regression matrix) score the receipt per answer.
+	ReceiptKind string          `json:"receipt_kind"`
+	Items       []VisionItemRow `json:"items"`
 }
 
 type visionQuestion struct {
@@ -294,6 +327,9 @@ func runBenchVision(cmd *cobra.Command, args []string) error {
 				if err == nil {
 					schemaJSON, stateJSON, err = template.ParseStructuredPayload(rendered, vars)
 				}
+				if err == nil && visionOnlyGT {
+					schemaJSON, err = filterSchemaQuestions(schemaJSON, it.Aspects)
+				}
 				img := it.ImagePath
 				if err == nil {
 					img, err = materializeImageVariant(it.ImagePath, visionVariant, variantDir)
@@ -318,6 +354,24 @@ func runBenchVision(cmd *cobra.Command, args []string) error {
 						}
 					} else {
 						resp, _, derr := c.Decide(ctx, schemaJSON, stateJSON, img)
+						var stage1 map[string]client.QuestionAnswer
+						var cas *CascadeExecutionSummary
+						if derr == nil && visionCascadeT > 0 {
+							res.Stage1Ms = float64(time.Since(start).Microseconds()) / 1000
+							stage1 = map[string]client.QuestionAnswer{}
+							for k, v := range resp.Answers {
+								stage1[k] = v
+							}
+							t1 := time.Now()
+							cas = ExecuteStage2GeminiCascadeWithImages(ctx, "entropy", visionCascadeT, visionCascadeM, nil,
+								schemaJSON, stateJSON, resp, []string{img})
+							if cas != nil {
+								res.EscalatedSlots, res.TotalSlots, res.CascadeError = cas.EscalatedCount, cas.TotalSlots, cas.Error
+								if cas.Triggered {
+									res.CascadeMs = float64(time.Since(t1).Microseconds()) / 1000
+								}
+							}
+						}
 						if derr != nil {
 							res.Error = derr.Error()
 						} else {
@@ -328,8 +382,24 @@ func runBenchVision(cmd *cobra.Command, args []string) error {
 									continue
 								}
 								label, conf, h, has := dgemVisionAnswer(qa, nOpt[a])
-								res.Answers = append(res.Answers, VisionAnswer{Aspect: a, Expected: want, Predicted: label,
-									Correct: label == want, Confidence: conf, HNorm: h, HasDist: has})
+								var probs map[string]float64
+								if has {
+									probs = map[string]float64{}
+									for k, v := range qa.Probabilities {
+										probs[normalizeYesNo(k)] = v
+									}
+								}
+								va := VisionAnswer{Aspect: a, Expected: want, Predicted: label,
+									Correct: label == want, Confidence: conf, HNorm: h, HasDist: has, Probabilities: probs}
+								if stage1 != nil {
+									s1, _, h1, _ := dgemVisionAnswer(stage1[a], nOpt[a])
+									ok1 := s1 == want
+									va.Stage1, va.Stage1OK, va.HNorm = s1, &ok1, h1
+									if cas != nil {
+										va.Escalated = cas.Slots[a].Escalated && cas.Slots[a].Stage2Value != ""
+									}
+								}
+								res.Answers = append(res.Answers, va)
 							}
 						}
 					}
@@ -368,6 +438,20 @@ func runBenchVision(cmd *cobra.Command, args []string) error {
 		}
 	}
 	rep.Aspects = summarizeVision(results, qs)
+	rep.ReceiptKind = "bench-vision"
+	for _, r := range results {
+		if r.Error != "" {
+			continue
+		}
+		for _, a := range r.Answers {
+			conf := a.Confidence
+			if conf == 0 {
+				conf = 1 // engines without distributions
+			}
+			rep.Items = append(rep.Items, VisionItemRow{ID: r.ID + "#" + a.Aspect, Expected: a.Expected, Actual: a.Predicted,
+				Accurate: a.Correct, Confidence: conf, TopProbabilities: a.Probabilities, WallTimeMs: r.WallTimeMs})
+		}
+	}
 	if visionOutput != "" {
 		b, _ := json.MarshalIndent(rep, "", "  ")
 		if err := os.WriteFile(visionOutput, b, 0o644); err != nil {
@@ -401,8 +485,78 @@ func runBenchVision(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%-14s %5d %3d  %-24s %-26s %-24s %-8.3f %s\n", a.Aspect, a.Items, a.Options, fmtStat(a.Accuracy),
 			fmt.Sprintf("%.3f (%s)", a.MajorityAccuracy, a.MajorityLabel), fmtStat(a.Lift), a.HesitationAUROC, strings.Join(ts, ", "))
 	}
+	if visionCascadeT > 0 {
+		printVisionCascade(results, visionCascadeT, visionCascadeM)
+	}
 	fmt.Println()
 	return nil
+}
+
+// printVisionCascade reports the live cascade: per aspect, dgem-only vs cascaded accuracy and the share escalated;
+// overall, the share of requests that called Gemini and the latency distribution.
+func printVisionCascade(results []VisionCaseResult, thr float64, model string) {
+	type agg struct{ n, s1, fin, esc int }
+	per := map[string]*agg{}
+	var total, withGemini []float64
+	var s1ms []float64
+	reqs, called, errs, slots, escSlots := 0, 0, 0, 0, 0
+	for _, r := range results {
+		if r.Error != "" {
+			continue
+		}
+		reqs++
+		slots += r.TotalSlots
+		escSlots += r.EscalatedSlots
+		if r.CascadeError != "" {
+			errs++
+		}
+		total = append(total, r.WallTimeMs)
+		s1ms = append(s1ms, r.Stage1Ms)
+		if r.CascadeMs > 0 {
+			called++
+			withGemini = append(withGemini, r.WallTimeMs)
+		}
+		for _, a := range r.Answers {
+			g := per[a.Aspect]
+			if g == nil {
+				g = &agg{}
+				per[a.Aspect] = g
+			}
+			g.n++
+			if a.Stage1OK != nil && *a.Stage1OK {
+				g.s1++
+			}
+			if a.Correct {
+				g.fin++
+			}
+			if a.Escalated {
+				g.esc++
+			}
+		}
+	}
+	pct := func(v []float64, q float64) float64 {
+		if len(v) == 0 {
+			return 0
+		}
+		c := append([]float64(nil), v...)
+		sort.Float64s(c)
+		return c[int(q*float64(len(c)-1))]
+	}
+	fmt.Printf("\nLive cascade: entropy >= %.2f nats -> %s (with the image)\n", thr, model)
+	fmt.Printf("%-14s %6s %10s %10s %10s\n", "ASPECT", "N", "DGEM ONLY", "CASCADED", "ESCALATED")
+	names := make([]string, 0, len(per))
+	for k := range per {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	for _, k := range names {
+		g := per[k]
+		fmt.Printf("%-14s %6d %10.3f %10.3f %9.0f%%\n", k, g.n, float64(g.s1)/float64(g.n), float64(g.fin)/float64(g.n), 100*float64(g.esc)/float64(g.n))
+	}
+	fmt.Printf("requests %d: Gemini called on %d (%.0f%%), %d cascade errors; slots escalated %d/%d (%.0f%%)\n",
+		reqs, called, 100*float64(called)/float64(max(1, reqs)), errs, escSlots, slots, 100*float64(escSlots)/float64(max(1, slots)))
+	fmt.Printf("latency ms: dgem p50 %.0f | end-to-end p50 %.0f p90 %.0f | requests that called Gemini p50 %.0f p90 %.0f\n",
+		pct(s1ms, 0.5), pct(total, 0.5), pct(total, 0.9), pct(withGemini, 0.5), pct(withGemini, 0.9))
 }
 
 func summarizeVision(results []VisionCaseResult, nOptions map[string]int) []VisionAspectSummary {
@@ -505,4 +659,27 @@ func summarizeVision(results []VisionCaseResult, nOptions map[string]int) []Visi
 		out = append(out, s)
 	}
 	return out
+}
+
+// filterSchemaQuestions keeps only the questions whose id is a key of keep.
+func filterSchemaQuestions(schemaJSON string, keep map[string]string) (string, error) {
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(schemaJSON), &m); err != nil {
+		return "", err
+	}
+	qs, _ := m["questions"].([]interface{})
+	var out []interface{}
+	for _, q := range qs {
+		if qm, ok := q.(map[string]interface{}); ok {
+			if id, _ := qm["id"].(string); keep[id] != "" {
+				out = append(out, q)
+			}
+		}
+	}
+	if len(out) == 0 {
+		return "", fmt.Errorf("no scored questions in the schema")
+	}
+	m["questions"] = out
+	b, err := json.Marshal(m)
+	return string(b), err
 }

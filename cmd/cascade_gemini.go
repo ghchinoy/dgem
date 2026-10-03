@@ -16,9 +16,12 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"os"
 	"sort"
 	"strconv"
@@ -59,6 +62,8 @@ type CascadeExecutionSummary struct {
 	LatencyMs      int64                           `json:"latency_ms"`
 	Error          string                          `json:"error,omitempty"`
 	Slots          map[string]CascadeSlotTelemetry `json:"slots,omitempty"`
+	// ImageCount is how many images were sent to Stage 2 with the escalated slots.
+	ImageCount int `json:"image_count,omitempty"`
 }
 
 var (
@@ -223,6 +228,24 @@ func ExecuteStage2GeminiCascade(
 	schemaContent string,
 	stateContent string,
 	resp *client.StructuredDecisionResponse,
+) *CascadeExecutionSummary {
+	return ExecuteStage2GeminiCascadeWithImages(ctx, cascadeMode, cascadeThreshold, requestedModel, expectedAnswers,
+		schemaContent, stateContent, resp, nil)
+}
+
+// ExecuteStage2GeminiCascadeWithImages is ExecuteStage2GeminiCascade for multimodal decisions: the images Stage 1
+// saw (local paths, data: URIs or http(s) URLs) are sent to Stage 2 too, so Gemini resolves image questions from
+// the image rather than from Stage 1's distribution alone (EXP-22).
+func ExecuteStage2GeminiCascadeWithImages(
+	ctx context.Context,
+	cascadeMode string,
+	cascadeThreshold float64,
+	requestedModel string,
+	expectedAnswers map[string]string,
+	schemaContent string,
+	stateContent string,
+	resp *client.StructuredDecisionResponse,
+	images []string,
 ) *CascadeExecutionSummary {
 	mode := strings.ToLower(strings.TrimSpace(cascadeMode))
 	if mode == "" || mode == "off" || mode == "none" || mode == "false" || resp == nil {
@@ -424,6 +447,19 @@ func ExecuteStage2GeminiCascade(
 		model, globalInstr, stateContent, strings.Join(priorLines, "\n"),
 	)
 
+	imgParts, imgErr := cascadeImageParts(ctx, images)
+	if imgErr != nil {
+		summary.Error = fmt.Sprintf("Stage-2 image: %v", imgErr)
+		return summary
+	}
+	summary.ImageCount = len(imgParts)
+	parts := append(imgParts, genai.NewPartFromText(prompt))
+	contents := []*genai.Content{{Role: "user", Parts: parts}}
+	callTimeout := 25 * time.Second
+	if len(imgParts) > 0 {
+		callTimeout = 90 * time.Second // image reasoning: median ~10 s, long tail in EXP-22
+	}
+
 	temp := float32(0.0)
 	cfg := &genai.GenerateContentConfig{
 		Temperature:      &temp,
@@ -443,8 +479,8 @@ func ExecuteStage2GeminiCascade(
 	var genResp *genai.GenerateContentResponse
 	var genErr error
 	for _, cand := range candidateModels {
-		callCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
-		genResp, genErr = genaiClient.Models.GenerateContent(callCtx, cand, genai.Text(prompt), cfg)
+		callCtx, cancel := context.WithTimeout(ctx, callTimeout)
+		genResp, genErr = genaiClient.Models.GenerateContent(callCtx, cand, contents, cfg)
 		cancel()
 		if genErr == nil && genResp != nil {
 			break
@@ -535,4 +571,62 @@ func generateContentWithRetry(ctx context.Context, c *genai.Client, model, promp
 		}
 	}
 	return nil, lastErr
+}
+
+// cascadeImageParts turns image references (local path, data: URI, http(s) URL) into inline Gemini parts.
+func cascadeImageParts(ctx context.Context, images []string) ([]*genai.Part, error) {
+	var parts []*genai.Part
+	for _, ref := range images {
+		ref = strings.TrimSpace(ref)
+		if ref == "" {
+			continue
+		}
+		var data []byte
+		mime := ""
+		switch {
+		case strings.HasPrefix(ref, "data:"):
+			comma := strings.Index(ref, ",")
+			if comma < 0 {
+				return nil, fmt.Errorf("malformed data URI")
+			}
+			meta := ref[5:comma]
+			mime = strings.SplitN(meta, ";", 2)[0]
+			raw := ref[comma+1:]
+			if strings.Contains(meta, ";base64") {
+				b, err := base64.StdEncoding.DecodeString(raw)
+				if err != nil {
+					return nil, fmt.Errorf("data URI: %w", err)
+				}
+				data = b
+			} else {
+				data = []byte(raw)
+			}
+		case strings.HasPrefix(ref, "http://") || strings.HasPrefix(ref, "https://"):
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, ref, nil)
+			if err != nil {
+				return nil, err
+			}
+			hr, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+			if err != nil {
+				return nil, err
+			}
+			data, err = io.ReadAll(io.LimitReader(hr.Body, 20<<20))
+			hr.Body.Close()
+			if err != nil {
+				return nil, err
+			}
+			mime = strings.SplitN(hr.Header.Get("Content-Type"), ";", 2)[0]
+		default:
+			b, err := os.ReadFile(ref)
+			if err != nil {
+				return nil, err
+			}
+			data = b
+		}
+		if mime == "" || !strings.HasPrefix(mime, "image/") {
+			mime = http.DetectContentType(data)
+		}
+		parts = append(parts, genai.NewPartFromBytes(data, mime))
+	}
+	return parts, nil
 }

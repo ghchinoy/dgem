@@ -326,6 +326,17 @@ class TestLockAndRedaction(unittest.TestCase):
         self.assertEqual(Target("x", "http://h:8080/v1").cli_url, "http://h:8080/v1")
 
 
+class TestVisionRows(unittest.TestCase):
+    def test_bench_vision_receipt_rows(self):
+        rec = {"receipt_kind": "bench-vision", "items": [
+            {"id": "a#grid_cell", "expected": "top_left", "actual": "top_left", "accurate": True, "confidence": 0.9,
+             "top_probabilities": {"top_left": 0.9, "middle_center": 0.1}, "wall_time_ms": 300},
+            {"id": "a#present", "expected": "yes", "actual": "no", "accurate": False, "confidence": 0.6, "wall_time_ms": 300}]}
+        rs = M.rows(rec)
+        self.assertEqual([r["id"] for r in rs], ["a#grid_cell", "a#present"])
+        self.assertEqual(M.summary(rs)["accuracy"], 0.5)
+
+
 class TestReport(unittest.TestCase):
     def test_same_model_passes(self):
         with tempfile.TemporaryDirectory() as tmp:

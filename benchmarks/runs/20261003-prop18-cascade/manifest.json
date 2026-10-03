@@ -1,0 +1,137 @@
+{
+  "run_id": "20261003-prop18-cascade",
+  "created": "2026-10-03T16:44:05+00:00",
+  "git_commit": "d30ec61550087002085413e6b49fadde820ebb33",
+  "git_dirty_paths": [
+    "md/batch_presets.go",
+    "cmd/bench_bbox_test.go",
+    "cmd/bench_vision.go",
+    "cmd/cascade_gemini.go",
+    "cmd/mcp.go",
+    "cmd/serve.go",
+    "templates/multimodal/vision_aspects_generic.json.tmpl"
+  ],
+  "notes": "PROP-18 live image cascade on benchmarks/bbox_sweep.jsonl: thresholds 0.35 0.1 nats -> gemini-3.8-flash with the image; all questions and --only-scored.",
+  "receipts": [
+    {
+      "suite": "vision_cascade",
+      "config": "all_t0p35",
+      "path": "vision_cascade__all_t0p35.json",
+      "sha256": "2576cfe94513fc15174af88985fa4cbe6d9a12c0601e676d793da137e3b66566",
+      "recorded": "2026-10-03T16:50:50+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl -t templates/multimodal/vision_aspects.json.tmpl --vertex-url <endpoint-id> --gcp-auth --cascade-threshold 0.35 --cascade-model gemini-3.8-flash -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-cascade/vision_cascade__all_t0p35.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "5406145291902517248",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T16:50:48Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision_cascade",
+      "config": "scored_t0p35",
+      "path": "vision_cascade__scored_t0p35.json",
+      "sha256": "202842cde405f7f0e8b53c250c3c4ff9b76cdbbb84785eeabcb9f518a359d05e",
+      "recorded": "2026-10-03T16:54:33+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl -t templates/multimodal/vision_aspects.json.tmpl --vertex-url <endpoint-id> --gcp-auth --only-scored --cascade-threshold 0.35 --cascade-model gemini-3.8-flash -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-cascade/vision_cascade__scored_t0p35.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "5406145291902517248",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T16:54:31Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision_cascade",
+      "config": "all_t0p1",
+      "path": "vision_cascade__all_t0p1.json",
+      "sha256": "7f8b0853ace24d96962233fd99ef16475c3abf41b8934f96225291859abd51bf",
+      "recorded": "2026-10-03T17:18:40+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl -t templates/multimodal/vision_aspects.json.tmpl --vertex-url <endpoint-id> --gcp-auth --cascade-threshold 0.1 --cascade-model gemini-3.8-flash -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-cascade/vision_cascade__all_t0p1.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "5406145291902517248",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T17:18:37Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision_cascade",
+      "config": "scored_t0p1",
+      "path": "vision_cascade__scored_t0p1.json",
+      "sha256": "70c10cbf1539121b0dd3db6730890815838781ff7fc637d68222ea4fdceb4b2a",
+      "recorded": "2026-10-03T17:23:49+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl -t templates/multimodal/vision_aspects.json.tmpl --vertex-url <endpoint-id> --gcp-auth --only-scored --cascade-threshold 0.1 --cascade-model gemini-3.8-flash -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-cascade/vision_cascade__scored_t0p1.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "5406145291902517248",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T17:23:47Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    }
+  ]
+}

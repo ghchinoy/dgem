@@ -36,6 +36,9 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 | `20261003-prop18-real-v2` | PROP-18 phase 3 (EXP-22): RefCOCO + ScreenSpot sample (`scripts/fetch_bbox_real.py`), dgem ×2 and Gemini 3.8. |
 | `20261003-prop18-detectors` | PROP-18 phase 3 (EXP-22): OWLv2, Grounding DINO, Grounding DINO + SAM on a deleted-after-use L4 VM (`scripts/run_detectors_gce.sh`); raw predictions + scored receipts. |
 | `20261003-prop18-vision` | PROP-18 phase 4 pilot (EXP-22): `bench-vision` multi-aspect questions on the sweep: dgem ×2, dgem blank-image prior, Gemini 3.8. |
+| `20261003-prop18-vision-real` | PROP-18 (EXP-22 §5): `bench-vision` on RefCOCO + ScreenSpot (`benchmarks/bbox_real_aspects.jsonl`): dgem ×2, blank prior, Gemini 3.8. |
+| `20261003-prop18-cascade` | PROP-18 (EXP-22 §6): live Stage-2 cascade with the image, thresholds 0.35 / 0.10 nats, six vs scored questions (`scripts/run_prop18_cascade.sh`). |
+| `20261003-vision-gate-ref` | Regression matrix T1 `health` + `vision_spot` + `vision` on production v0.2.0: the first image-gate run (part of the vision reference ranges). |
 
 Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
 

@@ -25,6 +25,13 @@ what a tier contains means a new matrix version, never an edit to a past run.
 Excluded from v1 (and why) is listed under `excluded` in the matrix file: `bench-rerank` cannot target a Vertex
 endpoint yet, `bench-ecotone` needs its sidecar, and `bench-permutation` is covered by the option-order suite.
 
+The image suites (`vision_spot`: 40 synthetic images × six questions; `vision`: the 230-image seeded sweep, scored per
+answer and gated like the text suites; [EXP-22](../experiments/exp-22-image-readouts.md)) are part of matrix **v2**, in
+T1 and T2 (not T0 until more reference runs give a stable range). They read the seeded synthetic sweep
+`fixtures/bbox_sweep/` (gitignored). The runner generates it on first use (`pip install -r
+scripts/requirements-vision.txt`); the scheduled job image ships it pre-generated. Their reference ranges come from four
+runs on production v0.2.0 (2026-10-03).
+
 ## Run it
 
 ```bash
