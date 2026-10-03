@@ -15,7 +15,8 @@ Answers take Jev's shapes, with this server's diagnostics alongside:
   score:  {"score", "legend", "probabilities", "confidence"}
 The request body may also carry the schema keys "instructions", "samples",
 "auto_max", "auto_threshold", "steps", "think", "ask", "chunk_rows",
-"chunk_prompt", "sequential" and "layout" as extensions. Images go ahead of the
+"chunk_prompt", "sequential", "layout" and "isolate" ("noul", "none" or "all") as
+extensions. Images go ahead of the
 state, either as multipart/form-data with the JSON body in a part named
 "request" and each image as a file part, or as an "images" array of data
 URLs in the JSON body.
@@ -51,7 +52,8 @@ A question may also declare:
                              its prompt
   "ask_if": {id: [answers]}  asked only when that question's answer is
                              among them (a skipped answer is null)
-  "alone": true              a read of its own
+  "alone": true              a read of its own (default: yes/no questions in requests of 2-8
+                             questions, see DEFAULT_ISOLATE; "alone": false keeps one in the joint read)
 Questions run in stages by these dependencies. Each stage is one joint
 read. Later stages continue the earlier answers, prefilled for a text
 state and restated for an image.
@@ -107,6 +109,14 @@ MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
 # The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
 # the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
 DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
+# Which questions get a read of their own when the request does not say ("alone"): "noul" (yes/no questions, the
+# default from v0.3.0), "none" (one joint read, the behaviour before v0.3.0) or "all". Read jointly, a yes/no question
+# after another one tended to copy its answer in agent/tool-call states (PROP-19); its own read, run in parallel within
+# the request, fixed that at about +60 ms. Applies to requests with at most ISOLATE_MAX_QUESTIONS questions.
+DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "noul")
+ISOLATE_MAX_QUESTIONS = int(os.environ.get("ISOLATE_MAX_QUESTIONS", "8"))
+if DEFAULT_ISOLATE not in ("noul", "none", "all"):
+    raise SystemExit("DEFAULT_ISOLATE must be noul, none or all")
 INFLIGHT_WAIT_S = float(os.environ.get("INFLIGHT_WAIT_S", "30.0"))
 _INFLIGHT = threading.BoundedSemaphore(MAX_INFLIGHT) if MAX_INFLIGHT > 0 else None
 _upstream_ready = False  # when set, POST routes need "Authorization: Bearer <key>"
@@ -205,9 +215,19 @@ def parse_schema(value):
                 "labels": labels,
                 "depends_on": list(dict.fromkeys(list(deps) + list(ask_if))),
                 "ask_if": ask_if,
-                "alone": bool(q.get("alone", False)),
+                "alone": q.get("alone"),
             }
         )
+    isolate = value.get("isolate", DEFAULT_ISOLATE)
+    if isolate not in ("noul", "none", "all"):
+        raise SchemaError('schema: isolate must be "noul", "none" or "all"')
+    if len(qs) < 2 or len(qs) > ISOLATE_MAX_QUESTIONS:
+        isolate = "none"
+    for q in qs:
+        if q["alone"] is None:
+            q["alone"] = isolate == "all" or (isolate == "noul" and q["type"] == "noul")
+        else:
+            q["alone"] = bool(q["alone"])
     by_id = {q["id"]: q for q in qs}
     for q in qs:
         for dep in q["depends_on"]:
@@ -956,6 +976,7 @@ def decide(schema, state_content, seed):
     diagnostics = {
         "steps": schema["steps"],
         "layout": schema["layout"],
+        "isolated": [q["id"] for q in schema["questions"] if q.get("alone")],
         "stages": stages,
         "skipped": skipped,
         "chunks": chunks,
@@ -1152,6 +1173,7 @@ JEV_EXTENSIONS = (
     "chunk_prompt",
     "sequential",
     "layout",
+    "isolate",
 )
 
 

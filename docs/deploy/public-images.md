@@ -103,6 +103,7 @@ Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
 | **`MODEL_HF`** | `nvidia/diffusiongemma-26B-A4B-it-NVFP4` | Hugging Face repo downloaded when no weights are baked, mounted or staged. |
 | **`DEFAULT_SAMPLES`**, **`MAX_INFLIGHT`** | `1`, `8` | Samples for schemas without `samples`; decisions processed at once (the rest queue). |
 | **`MAX_MODEL_LEN`** | `4096` (image); deploy scripts set `8192` on RTX PRO 6000 | Longest prompt plus answer, in tokens. Longer prompts are refused. At 8,192 short-prompt accuracy and latency match 4,096 (EXP-20); 32,768 answers far longer prompts but is still being validated under load. |
+| **`DEFAULT_ISOLATE`**, **`ISOLATE_MAX_QUESTIONS`** | `noul`, `8` | Which questions get a read of their own when a request doesn't say: `noul` (yes/no questions, in requests of 2–8 questions; from v0.3.0), `none` (one joint read, the behaviour before v0.3.0) or `all`. A request can set `"isolate"`, and a question `"alone": true/false`. See [one read per yes/no question](../policies/prompt-layout.md#yesno-questions-get-their-own-read). |
 | **`DEFAULT_LAYOUT`** | `document_first` | Prompt layout for requests without `layout`: `document_first` (the state, then the questions) or `schema_first` (the questions as the system prompt, the behaviour before v0.2.0). |
 | **`DISABLE_MM`** | `0` | `1` disables the vision tower (required on an L4 with 32 GiB host RAM). |
 

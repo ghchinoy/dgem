@@ -360,7 +360,7 @@ class _KeepAlive:
 
     def call(self, payload):
         if self.competitor is not None:
-            body = {k: v for k, v in payload.items() if k not in ("samples", "seed", "layout")}
+            body = {k: v for k, v in payload.items() if k not in ("samples", "seed", "layout", "isolate")}
             if self.competitor.model:
                 body["model"] = self.competitor.model
             data = json.dumps(body).encode()

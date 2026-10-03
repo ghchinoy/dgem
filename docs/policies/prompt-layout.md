@@ -115,6 +115,22 @@ Leaving the field empty uses the template's own `layout`, or else the server's d
 server used in `diagnostics.layout`; the Studio shows it next to the menu. Servers older than v0.2.0 ignore the field
 and always use `schema_first`.
 
+## Yes/no questions get their own read
+
+From serving v0.3.0, in a request with 2 to 8 questions, each yes/no question is read on its own, in parallel with the
+rest of the request and with a prompt that lists only that question. The other questions still share one read.
+
+**Why:** read together, a yes/no question that follows another one tended to copy its answer. On a development suite
+of 120 rule-labelled cases ([PROP-19](../experiments/proposed.md#prop-19-cross-slot-coupling-on-mixed-polarity-yesno-questions)),
+an action question ("should the assistant ask before booking?") paired with a fact question scored 0.61 in one joint
+read and 0.89 with its own read; in agent and tool-call settings, 0.34 against 0.98. On multi-question decisions
+(typed-decisions train, 200 × 5) accuracy did not drop (+1.5 points), latency rose by about 60 ms, and throughput at 16
+concurrent requests did not fall.
+
+**Controls:** `"isolate": "none"` on a request restores one joint read (`"all"` isolates every question);
+`"alone": false` on a question keeps it in the joint read; `DEFAULT_ISOLATE` sets the deployment default. Responses list
+the isolated questions in `diagnostics.isolated`.
+
 ## How to compare both on your own data
 
 Run the same labelled rows twice and compare accuracy, agreement and hesitation:
