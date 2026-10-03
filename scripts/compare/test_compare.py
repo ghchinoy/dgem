@@ -133,6 +133,46 @@ class TestReports(unittest.TestCase):
             self.assertIn("By training exposure of strands", cmp)
 
 
+class TestRunReceipts(unittest.TestCase):
+    """receipts.lock.json (bucket-stored receipts) and judging a run with the matrix version it was made with."""
+
+    def setUp(self):
+        sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
+        import bench_matrix
+        self.bm = bench_matrix
+
+    def test_report_uses_run_matrix_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "manifest.json"), "w") as f:
+                json.dump({"matrix": {"matrix_version": "v2"}, "receipts": []}, f)
+            load = lambda p: self.bm.load_matrix(p)["version"]
+            self.assertEqual(load(self.bm.run_matrix(tmp, None)), "v2")
+            v1 = os.path.join(self.bm.MATRIX_DIR, "matrix_v1.json")
+            self.assertEqual(load(self.bm.run_matrix(tmp, v1)), "v1")  # an explicit --matrix wins
+            with open(os.path.join(tmp, "manifest.json"), "w") as f:
+                json.dump({"matrix": {"matrix_version": "v1"}, "receipts": []}, f)
+            self.assertEqual(load(self.bm.run_matrix(tmp, None)), "v1")
+
+    def test_fetch_verifies_and_report_explains(self):
+        import hashlib
+        data = json.dumps({"kind": "systemone", "cases": _rows("jev_systemone", 5, 0.8, 1)}).encode()
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "manifest.json"), "w") as f:
+                json.dump({"run_id": "t", "receipts": [{"path": "big.json", "suite": "jev_systemone", "config": "dgem"}],
+                           "matrix": {"matrix_version": "v2", "tier": "TC", "targets": [{"name": "dgem", "kind": "vertex"}]}}, f)
+            with open(os.path.join(tmp, "receipts.lock.json"), "w") as f:
+                json.dump({"run_id": "t", "files": [{"path": "big.json", "bytes": len(data),
+                                                     "sha256": hashlib.sha256(data).hexdigest()}]}, f)
+            with self.assertRaises(SystemExit) as cm:
+                R.load_run(tmp)
+            self.assertIn("fetch-receipts", str(cm.exception))
+            with self.assertRaises(SystemExit):
+                self.bm.fetch_receipts(tmp, download=lambda name: data + b" ")
+            self.assertEqual(self.bm.fetch_receipts(tmp, download=lambda name: data), 1)
+            self.assertEqual(self.bm.fetch_receipts(tmp, download=lambda name: b""), 0)  # present and verified
+            R.load_run(tmp)
+
+
 class _Stub(http.server.BaseHTTPRequestHandler):
     """A /v1/systemone server; with `interfere`, overlapping requests corrupt answers (the bug preflight catches)."""
     interfere = False

@@ -366,8 +366,10 @@ dgem bench-bbox [flags]
 
 ### `dgem bench-jev`
 Runs the 231-item JevBench suite ([EXP-11](/dgem/experiments/exp-11-jevbench-parity/)): `--scoring v1.3.1|v1.4|both`,
-`--compare-leaderboard`, `--from-receipt <file> --auto-temperature` (offline temperature calibration),
-`--sync --ref <tag>` / `--check-upstream` (dataset provenance).
+`--compare-leaderboard`, `--from-receipt <file> --auto-temperature` (offline temperature calibration, fitted by
+5-fold cross-validation; `--auto-temperature-in-sample` for the old in-sample fit), `--sync --ref <tag>` /
+`--check-upstream` (dataset provenance). Score items are sent as ordinal `score` questions with their rubric levels;
+`--flatten-score` reproduces receipts made before 2026-10-04, which sent them as a choice over bare level indices.
 
 ```bash
 ./bin/dgem bench-jev --vertex-url <ENDPOINT_ID> --gcp-auth --http-retries 3 -w 4 -o jevbench.json

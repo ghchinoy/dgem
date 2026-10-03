@@ -32,6 +32,7 @@
 
   scripts/bench_matrix.py report benchmarks/runs/<run_id>      # (re)build report.md + summary.json
   scripts/bench_matrix.py fetch                                # download + verify the pinned T2 datasets
+  scripts/bench_matrix.py fetch-receipts benchmarks/runs/<id>  # restore receipts kept in the bucket (receipts.lock.json)
   scripts/bench_matrix.py list                                 # tiers and suites
 
 Target URLs: a Vertex dedicated invoke base (https://<ID>.<REGION>-<NUM>.prediction.vertexai.goog/v1/projects/<P>/
@@ -105,10 +106,10 @@ def find_dgem(arg):
 
 
 def cmd_run(a):
-    mx = load_matrix(a.matrix)
+    mx = load_matrix(a.matrix or MATRIX)
     tier = a.tier
     if tier not in mx["tiers"]:
-        raise SystemExit(f"tier {tier} is not in {os.path.basename(a.matrix)} (tiers: {', '.join(mx['tiers'])})")
+        raise SystemExit(f"tier {tier} is not in {os.path.basename(a.matrix or MATRIX)} (tiers: {', '.join(mx['tiers'])})")
     if tier in mx.get("confirm_required", []) and not a.confirm:
         raise SystemExit(f"{tier} sends ~25k requests per target to shared GPUs; re-run with --confirm")
     suites = [s for s in mx["tiers"][tier] if not a.only or s in a.only]
@@ -311,8 +312,48 @@ def cmd_fetch(a):
     return 1 if bad else 0
 
 
+def fetch_receipts(run_dir, bucket=None, download=None):
+    """Download the receipts listed in <run_dir>/receipts.lock.json from gs://<bucket>/receipts/<run_id>/ and verify
+    size and SHA-256. Files already present and matching are skipped. -> number of files written."""
+    with open(os.path.join(run_dir, "receipts.lock.json")) as f:
+        lock = json.load(f)
+    bucket = bucket or os.environ.get("DGEM_MATRIX_BUCKET")
+    if not bucket and download is None:
+        raise SystemExit("set DGEM_MATRIX_BUCKET=<PROJECT>-dgem-matrix (or pass --bucket)")
+    run_id = lock.get("run_id") or os.path.basename(os.path.normpath(run_dir))
+    if download is None:
+        import urllib.parse
+        import urllib.request
+        from matrix import net
+
+        def download(name):
+            tok = os.environ.get("DGEM_MATRIX_TOKEN") or net._mint("access", None)
+            url = (f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/"
+                   + urllib.parse.quote(f"receipts/{run_id}/{name}", safe="") + "?alt=media")
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {tok}"})
+            return urllib.request.urlopen(req, timeout=300).read()
+    wrote = 0
+    for fe in lock["files"]:
+        dst = os.path.join(run_dir, fe["path"])
+        if os.path.exists(dst) and sha(dst) == fe["sha256"]:
+            continue
+        data = download(fe["path"])
+        if len(data) != fe["bytes"] or hashlib.sha256(data).hexdigest() != fe["sha256"]:
+            raise SystemExit(f"{fe['path']}: size or SHA-256 does not match receipts.lock.json")
+        with open(dst, "wb") as f:
+            f.write(data)
+        wrote += 1
+    return wrote
+
+
+def cmd_fetch_receipts(a):
+    n = fetch_receipts(os.path.abspath(a.run_dir), a.bucket)
+    print(f"{n} receipt(s) restored and verified in {a.run_dir}")
+    return 0
+
+
 def cmd_list(a):
-    mx = load_matrix(a.matrix)
+    mx = load_matrix(a.matrix or MATRIX)
     for t, ss in mx["tiers"].items():
         print(f"{t}{' (needs --confirm)' if t in mx.get('confirm_required', []) else ''}: {', '.join(ss)}")
     print()
@@ -352,11 +393,15 @@ def main():
     p.add_argument("run_dir")
     f = sub.add_parser("fetch")
     f.add_argument("--repo", nargs="*")
+    fr = sub.add_parser("fetch-receipts", help="restore receipts listed in receipts.lock.json from the matrix bucket")
+    fr.add_argument("run_dir")
+    fr.add_argument("--bucket", help="bucket name (default $DGEM_MATRIX_BUCKET)")
     sub.add_parser("list")
     a = ap.parse_args()
     a.matrix_explicit = a.matrix
     a.matrix = a.matrix or MATRIX
-    sys.exit({"run": cmd_run, "report": cmd_report, "fetch": cmd_fetch, "list": cmd_list}[a.cmd](a))
+    sys.exit({"run": cmd_run, "report": cmd_report, "fetch": cmd_fetch, "fetch-receipts": cmd_fetch_receipts,
+              "list": cmd_list}[a.cmd](a))
 
 
 if __name__ == "__main__":

@@ -65,6 +65,7 @@ scripts/bench_matrix.py run --tier T0 --target gpu=http://<GPU_HOST>:8080
 # Full matrix (reads parquet for some sets)
 pip install -r scripts/requirements-matrix.txt
 scripts/bench_matrix.py fetch                # download and verify the pinned datasets once
+scripts/bench_matrix.py fetch-receipts benchmarks/runs/<run_id>   # restore receipts kept in the bucket (receipts.lock.json)
 scripts/bench_matrix.py run --tier T2 --confirm --target prod=<PRODUCTION_URL>
 ```
 

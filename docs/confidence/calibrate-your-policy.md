@@ -76,7 +76,10 @@ with 34% escalated ([EXP-14](../experiments/exp-14-idc-rerun.md)). Your escalati
 ## 5. Temperature scaling (optional)
 
 A temperature $T$ rescales probabilities after the fact ($T > 1$ softens overconfident answers). Fit it on data you
-did not use to choose it, otherwise the improvement is illusory. For the built-in suites:
+did not use to choose it, otherwise the improvement is illusory. For the built-in suites, `--auto-temperature` does
+exactly that: it fits $T$ by 5-fold cross-validation and scores each item with the $T$ fitted on the other folds (the
+same folds as the regression matrix). The report's `temperature_fit` block lists the fold temperatures and raw vs
+held-out ECE; `--auto-temperature-in-sample` reproduces the older, optimistic in-sample fit.
 
 ```bash
 ./bin/dgem bench-calibration --from-receipt <receipt.json> --auto-temperature

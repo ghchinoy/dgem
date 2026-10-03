@@ -7,6 +7,18 @@ import JevParityDashboard from '../../../components/JevParityDashboard.astro';
 
 # `EXP-11`: `JevBench v1.3.1` Results, Slot Temperature Calibration & Cascade Gains
 
+> **Note (2026-10-04): two corrections to this page's figures; the text below is unchanged.**
+>
+> - **Temperature fitted in-sample.** The `-56.2%` ECE (`0.0745 → 0.0326`, $T^* = 1.35$) was fitted and scored on the
+>   same 50 items. Replaying the same receipt with the fit cross-validated (`--auto-temperature`, now 5-fold by
+>   default) gives ECE `0.097` against `0.075` raw, so no gain on 50 items. On JevBench (231 items), held-out
+>   temperature does help ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)).
+> - **Score items were not ordinal.** `bench-jev` sent JevBench's 18 `score` items as a choice over bare level indices,
+>   without the rubric text. It now sends them as ordinal `score` questions; `--flatten-score` reproduces the old
+>   behaviour.
+>
+> Re-runs are tracked in [#84](https://github.com/ghchinoy/dgem/issues/84) (ordinal score items) and [#85](https://github.com/ghchinoy/dgem/issues/85) (k-fold temperature).
+
 > **TL;DR — Headline Results First**:
 > 1. **Zero-Cost Calibration Breakthrough (`-56.2%` ECE in `0 ms`)**: Applying post-hoc Slot Temperature Scaling ($p_k(T^*) = p_k^{1/T^*} / \sum p_j^{1/T^*}$) to `DiffusionGemma`'s restricted-softmax logits cuts 10-bin Expected Calibration Error (`ECE`) on Cloud Run L4 by **56.2%** (`0.0745` $\rightarrow$ **`0.0326`** at $T^* = 1.35$), lifting the `JevBench` Calibration axis from `82.67` to **`88.18` (`+5.51 pts`)** and the 4-Axis Composite Score to **`76.79`** with **100% identical `argmax` accuracy**.
 > 2. **Surpassing `#1 Hopper` (`75.4`) on the 231-Task `JevBench` Public Split (`75.70`)**: On `JevBench`'s 231 public tasks, `djev` (`DiffusionGemma`) already beat `#1 Hopper` on **Intelligence (`82.7` vs. `76.4`)** and **Speed (`91.4` at `239 ms` p50 vs. `86.8`)**, losing `#1` solely due to unscaled `T=1.0` logit sharpness. Calibrating with $T^* = 1.25$ lifts the public split Composite Score from `75.17` to **`75.70`**.
@@ -139,6 +151,8 @@ Upstream JevBench v1.4 introduced an updated evaluation methodology:
 
 ```bash
 # 1. Replay dgem EXP-04 Cloud Run receipt with JevBench v1.3.1 4-Axis Scorecard & Optimal Temperature T*=1.35
+#    (the figures on this page are in-sample; since 2026-10-04 --auto-temperature fits by 5-fold cross-validation,
+#    see the note at the top. Add --auto-temperature-in-sample to reproduce the numbers here.)
 ./bin/dgem bench-calibration --from-receipt benchmarks/results_calibration_cloudrun.json --auto-temperature
 
 # 2. Replay dgem EXP-05 Normalized Entropy Cascade receipt (98.0% raw / 97.17% chance-corrected accuracy)

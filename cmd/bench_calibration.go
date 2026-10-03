@@ -54,6 +54,7 @@ var (
 	calFromReceipt      string
 	calTempScale        float64
 	calAutoTemp         bool
+	calAutoTempInSample bool
 	calUSDPer1k         float64
 	calDualMirror       bool
 	calNullPriorDebias  bool
@@ -122,7 +123,8 @@ func init() {
 	benchCalibrationCmd.Flags().IntVar(&calCascadeSelfThink, "cascade-self-think", 0, "Escalate high-entropy cases (H >= threshold) to DiffusionGemma with think=N tokens on the same endpoint (intra-model self-cascade)")
 	benchCalibrationCmd.Flags().StringVar(&calFromReceipt, "from-receipt", "", "Recompute JevBench v1.3.1 4-Axis telemetry, ECE, Brier, and Temperature Scaling offline from a saved JSON receipt")
 	benchCalibrationCmd.Flags().Float64Var(&calTempScale, "temperature-scale", 1.0, "Post-hoc slot logit temperature scaling factor T > 0 (e.g. 1.45)")
-	benchCalibrationCmd.Flags().BoolVar(&calAutoTemp, "auto-temperature", false, "Automatically fit optimal temperature T* in [0.50, 3.50] to maximize JevBench Calibration Score")
+	benchCalibrationCmd.Flags().BoolVar(&calAutoTemp, "auto-temperature", false, "Fit temperature T* in [0.50, 3.50] by 5-fold cross-validation: each case is scaled by the T fitted on the other folds, so reported calibration is out of sample")
+	benchCalibrationCmd.Flags().BoolVar(&calAutoTempInSample, "auto-temperature-in-sample", false, "With --auto-temperature: fit one T on all cases and apply it to all (optimistic; the behaviour before 2026-10-04)")
 	benchCalibrationCmd.Flags().Float64Var(&calUSDPer1k, "usd-per-1k", 0.0, "Override estimated cost in USD per 1,000 decisions (0 = auto from model tariff)")
 	benchCalibrationCmd.Flags().BoolVar(&calDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
 	benchCalibrationCmd.Flags().BoolVar(&calNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
@@ -147,6 +149,7 @@ type CalibrationCase struct {
 // CalibrationCaseResult holds the evaluated decision and uncertainty telemetry for one item.
 type CalibrationCaseResult struct {
 	ID                     string                     `json:"id"`
+	TemperatureApplied     float64                    `json:"temperature_applied,omitempty"` // per-case T of a k-fold --auto-temperature report
 	Metric                 string                     `json:"metric"`
 	Category               string                     `json:"category"`
 	Tier                   string                     `json:"tier"`
@@ -236,6 +239,7 @@ type CalibrationReport struct {
 	AvgWallTimeMs         float64                   `json:"avg_wall_time_ms"`
 	TotalElapsedSec       float64                   `json:"total_elapsed_sec"`
 	TemperatureScale      float64                   `json:"temperature_scale,omitempty"`
+	TemperatureFit        *TemperatureFit           `json:"temperature_fit,omitempty"`
 	JevParity             *JevParitySummary         `json:"jev_parity,omitempty"`
 	Cascade               *CascadeSummary           `json:"cascade,omitempty"`
 	Categories            []CalibrationGroupSummary `json:"categories"`
@@ -253,12 +257,14 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 		if err := json.Unmarshal(raw, &prevReport); err != nil {
 			return fmt.Errorf("failed to parse --from-receipt %q: %w", calFromReceipt, err)
 		}
-		activeTemp := calTempScale
-		if calAutoTemp {
-			activeTemp = findOptimalTemperature(prevReport.Cases)
+		raw1 := make([]CalibrationCaseResult, len(prevReport.Cases))
+		for i, c := range prevReport.Cases { // back to T = 1 so a replay never scales twice
+			raw1[i] = unscaleTemperature(c, c.TemperatureApplied, prevReport.TemperatureScale)
+			raw1[i].TemperatureApplied = 0
 		}
+		scaledIn, activeTemp, tfit := applyCalibrationTemperature(raw1, calAutoTemp, calAutoTempInSample, calTempScale)
 		report := buildCalibrationReportWithJevParity(
-			prevReport.Cases,
+			scaledIn,
 			prevReport.TotalElapsedSec,
 			prevReport.TargetURL,
 			prevReport.TargetModel,
@@ -270,6 +276,8 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 		if prevReport.Timestamp != "" {
 			report.Timestamp = prevReport.Timestamp
 		}
+		report.TemperatureFit = tfit
+		stampTemperatureMethod(report.JevParity, tfit)
 		if calOutput != "" {
 			data, err := json.MarshalIndent(report, "", "  ")
 			if err != nil {
@@ -294,8 +302,7 @@ func runBenchCalibration(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Source Receipt:  %s\n", styleID.Render(calFromReceipt))
 		fmt.Printf("  Target Endpoint: %s\n", styleID.Render(report.TargetURL))
 		fmt.Printf("  Target Model:    %s\n", styleID.Render(report.TargetModel))
-		fmt.Printf("  Temperature (T): %.2f (AutoFit=%v, Optimal T*=%.2f)\n",
-			activeTemp, calAutoTemp, report.JevParity.OptimalTemperature)
+		fmt.Printf("  Temperature (T): %s\n", describeTemperatureFit(tfit, activeTemp))
 		printCalibrationSummary(report, calOutput)
 		return nil
 	}
@@ -1098,12 +1105,9 @@ func formatTier1PriorBlock(pass1Prior *CalibrationCaseResult, threshold float64,
 }
 
 func buildCalibrationReport(results []CalibrationCaseResult, totalElapsedSec float64) CalibrationReport {
-	activeTemp := calTempScale
-	if calAutoTemp {
-		activeTemp = findOptimalTemperature(results)
-	}
-	return buildCalibrationReportWithJevParity(
-		results,
+	scaledIn, activeTemp, tfit := applyCalibrationTemperature(results, calAutoTemp, calAutoTempInSample, calTempScale)
+	report := buildCalibrationReportWithJevParity(
+		scaledIn,
 		totalElapsedSec,
 		viper.GetString("url"),
 		viper.GetString("model"),
@@ -1112,6 +1116,9 @@ func buildCalibrationReport(results []CalibrationCaseResult, totalElapsedSec flo
 		activeTemp,
 		calUSDPer1k,
 	)
+	report.TemperatureFit = tfit
+	stampTemperatureMethod(report.JevParity, tfit)
+	return report
 }
 
 func buildCalibrationReportWithJevParity(

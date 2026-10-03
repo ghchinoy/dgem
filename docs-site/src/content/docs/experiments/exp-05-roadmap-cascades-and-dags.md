@@ -73,11 +73,11 @@ flowchart LR
 ## `EXP-06` — Decision Models vs. Discriminative Encoder Heads (`DeBERTa-v3` / `Llama-Guard`)
 
 ### 1. Motivation
-Why use a 9B masked diffusion model (`dgemma`) for classification instead of a traditional discriminative encoder (`DeBERTa-v3-large` 435M, `ModernBERT-large` 395M) or a dedicated safety classifier (`Llama-Guard-3-8B`, `ShieldGemma-9B`)?
+Why use a 26B-A4B mixture-of-experts masked diffusion model (`dgemma`, 3.8B active parameters) for classification instead of a traditional discriminative encoder (`DeBERTa-v3-large` 435M, `ModernBERT-large` 395M) or a dedicated safety classifier (`Llama-Guard-3-8B`, `ShieldGemma-9B`)?
 
 ### 2. Comparative Hypotheses
 
-| Dimension | Fine-Tuned Encoder (`DeBERTa-v3-large`) | Safety Classifier (`Llama-Guard-3-8B`) | Zero-Shot Decision Model (`dgemma` 9B) |
+| Dimension | Fine-Tuned Encoder (`DeBERTa-v3-large`) | Safety Classifier (`Llama-Guard-3-8B`) | Zero-Shot Decision Model (`dgemma` 26B-A4B) |
 | :--- | :--- | :--- | :--- |
 | **New Policy Onboarding Time** | Hours/Days (collect labeled data + fine-tune classification head) | Fixed safety taxonomy (`S1`–`S14`); brittle to custom business logic | **0 seconds** (edit `.json.tmpl` natural-language question & `options`) |
 | **Joint Multi-Slot Readout** | Requires $K$ separate classification heads trained jointly | Single binary `safe`/`unsafe` + category tag | **$K$ heterogeneous `choice` & `score` slots in 1 pass** |

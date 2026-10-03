@@ -103,14 +103,15 @@
   "jev_native": {
    "kind": "dgem",
    "args": [
-    "bench-jev"
+    "bench-jev",
+    "--flatten-score"
    ],
    "runs": {
     "T1": 3,
     "T2": 3
    },
    "n": 231,
-   "description": "JevBench via dgem bench-jev (chat/completions)",
+   "description": "JevBench via dgem bench-jev (chat/completions) (--flatten-score keeps the score items as the reference measured them; ordinal score readout is a v3 change)",
    "accuracy": true
   },
   "jev_systemone": {

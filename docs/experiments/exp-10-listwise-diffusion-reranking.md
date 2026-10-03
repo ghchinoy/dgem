@@ -101,7 +101,7 @@ Before running an external API shootout against Cohere Rerank v3.5/v4 and Voyage
 
 ## 5. Live Cloud Run GPU (`1× NVIDIA L4`) Empirical Results (`benchmarks/results_rerank_cloudrun.json`)
 
-We deployed `DiffusionGemma 26B-A4B-it` (`dgemma`) to **Serverless Cloud Run GPU (`1× NVIDIA L4` 24GB VRAM)** in `us-central1` (`https://dgemma-lihc3g7fva-uc.a.run.app/v1`), executed all 30 live 12-slot listwise decisions (`300` query-passage pairs) via `./bin/dgem decide`, saved the telemetry receipt to `benchmarks/results_rerank_cloudrun.json`, and immediately tore down the Cloud Run service (`make cloudrun-teardown`).
+We deployed `DiffusionGemma 26B-A4B-it` (`dgemma`) to **Serverless Cloud Run GPU (`1× NVIDIA L4` 24GB VRAM)** in `us-central1` (`<CLOUD_RUN_URL>/v1`), executed all 30 live 12-slot listwise decisions (`300` query-passage pairs) via `./bin/dgem decide`, saved the telemetry receipt to `benchmarks/results_rerank_cloudrun.json`, and immediately tore down the Cloud Run service (`make cloudrun-teardown`).
 
 ### 5.1 Reproduction Commands
 
