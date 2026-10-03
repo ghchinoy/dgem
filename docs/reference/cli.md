@@ -100,9 +100,9 @@ and the container serves the adapter on its port, in front of its own structured
 | **`--max-slots`** | — | `8` | Maximum questions per forward pass before batching. |
 | **`--bracket-size`** | — | `20` | Maximum options per round-1 tournament bracket. |
 | **`--api-key`** | `SYSTEMONE_API_KEY`, then `API_KEY` | `""` (open) | If set, requests must send `Authorization: Bearer <key>`. |
-| **`--null-prior-debias`** | — | `false` | Divide out the positional option-`A` prior (validate on your data first). |
-| **`--prior-alpha`** | — | `0.50` | Exponent for null-prior de-biasing. |
-| **`--dual-mirror`** | — | `false` | Also read a reversed option ordering (research diagnostic). |
+| **`--null-prior-debias`** | — | `false` | Research only (EXP-13–EXP-17): divide out the positional option-`A` prior. Not recommended in production; see [hesitation-gating](../confidence/overview.md). |
+| **`--prior-alpha`** | — | `0.50` | Research only: exponent for null-prior de-biasing. |
+| **`--dual-mirror`** | — | `false` | Research only: also read a reversed option ordering. Not recommended in production. |
 | **`--naive-limits`** | — | `false` | Reproduce the naive 26-option / 10-question rejections (benchmark ablation only). |
 | **`--prompt-layout`** | — | `document_first` | How the upstream prompt is laid out: `document_first` (the state, then the questions, both in the user turn) or `schema_first` (the questions as the system prompt, the layout before v0.2.0). Serving images from v0.2.0 default to `document_first` themselves (`DEFAULT_LAYOUT`); older ones ignore the field. On dev suites `document_first` raised CLINC150-validation accuracy 0.79 → 0.87 and RAGTruth-train accuracy 0.705 → 0.77, with JevBench unchanged; out-of-scope recall fell 1.00 → 0.825. |
 | **`--catch-all`** | — | `off` | Wide-option catch-all handling (`off`, `final`, `both`, `verify`). `final` keeps "none of the listed"-style options out of round-1 brackets and adds them to the final. Opt-in: it trades out-of-scope recall for in-scope accuracy. |
@@ -192,8 +192,8 @@ dgem decide [flags]
 * `--layout document_first|schema_first`: Prompt layout for this decision. Empty uses the template's `layout`, or else the server default (`document_first` from serving v0.2.0). See [Prompt layout](../policies/prompt-layout.md).
 * `--suggest-expansions`: Dynamically inject an `other_unclassified` catch-all option into `choice` slots (if absent) and propose new `{"name", "description"}` options when an item resolves to `other*` or exceeds `--expansion-entropy` (see [Unclassified Grouping & Taxonomy Discovery](../policies/taxonomy-discovery.md)).
 * `--expansion-entropy float`: Shannon entropy threshold in nats on `choice` slots to trigger taxonomy expansion proposals (default: `0.35`).
-* `--dual-mirror`: Evaluate forward and reversed option orderings simultaneously on the same $O(1)$ diffusion canvas (`EXP-13C`).
-* `--null-prior-debias`: Divide out content-free positional `'A'`-bias in logit space (`EXP-13B`).
+* `--dual-mirror` (research only): read a reversed copy of each choice question in the same pass (`EXP-13C`). It lowered accuracy with lettered options and added little over hesitation (`EXP-15`–`EXP-17`); not recommended in production.
+* `--null-prior-debias` (research only): divide out the content-free option-`A` habit (`EXP-13B`). Helped one suite and hurt another (`EXP-14`); not recommended in production.
 * `--schema string`: Path to a raw JSON schema file (skips template engine).
 * `--state string`: Raw JSON state string or file path.
 
