@@ -1,0 +1,42 @@
+{
+  "run_id": "20261003-exp23-guided",
+  "created": "2026-10-03T18:06:15+00:00",
+  "git_commit": "06aeeb4ceda53b26d4160ed9abb67c30fc3ab10e",
+  "git_dirty_paths": [
+    "md/bench_bbox_test.go",
+    "cmd/bench_guided.go"
+  ],
+  "notes": "EXP-23 guided cascade: dgem presence + grid cell, then gemini-3.8-flash full/hint/crop/poly at default/medium/low thinking (MINIMAL is not supported by this model).",
+  "receipts": [
+    {
+      "suite": "guided",
+      "config": "gemini_3_8_flash",
+      "path": "guided__gemini_3_8_flash.json",
+      "sha256": "d57a583503769ef7055d1dbf0324ceca7667733b4b003d0bca7e9fd3e966fc8b",
+      "recorded": "2026-10-03T18:18:24+00:00",
+      "command": "./bin/dgem bench-guided -d benchmarks/bbox_real_aspects.jsonl --vertex-url <endpoint-id> --gcp-auth --gemini-model gemini-3.8-flash -w 12 -o /workspace/dgem/benchmarks/runs/20261003-exp23-guided/guided__gemini_3_8_flash.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "1570204309289697280",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:fcad9df8537225d7fff7e58d67d6ddc3a43589cf8e9472af09f470de2051ad08"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T18:18:22Z",
+        "target_model": null,
+        "idc_config": null,
+        "n": 0,
+        "errors": 0
+      }
+    }
+  ]
+}
