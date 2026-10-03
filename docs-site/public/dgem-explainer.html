@@ -212,7 +212,7 @@
 
 <section id="learned">
   <div class="sec-head"><span class="num">04</span><h2>What we learned trying to correct the probabilities</h2></div>
-  <p>DiffusionGemma, like other language models, favours the first option when it is unsure: on a blank 2-option question it puts 88% on option A. We tested ways to fix that at request time (collectively, <em>Invariant Decision Calibration</em>):</p>
+  <p>DiffusionGemma, like other language models, favours the first option when it is unsure: on a blank 2-option question it puts 88% on option A. We tested ways to fix that at request time (at the time called <em>Invariant Decision Calibration</em>; dgem now gates on hesitation and monitors order instead):</p>
   <div class="tscroll"><table class="t">
     <thead><tr><th>Technique</th><th>Finding</th><th>Status</th></tr></thead>
     <tbody>

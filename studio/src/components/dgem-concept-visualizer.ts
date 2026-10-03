@@ -36,9 +36,9 @@ const SCRIPT_CUES: Record<number, ScriptCue> = {
     hint: '👉 Presenter Action: Point to the Shared Input Ticket at top, click "▶ Run Live Race", then click "⚡ Step 2: Flip Early Token" to show left-to-right drift.',
   },
   3: {
-    title: '🎙️ Part 3 — When to trust an answer (hesitation + IDC)',
-    text: '"How do we know when to trust a fast zero-shot decision? Raw confidence alone can be tricked by First-Choice Favoritism (Option A bias): on a borderline question it can make a coin flip look certain. With Invariant Decision Calibration (IDC), dgem zeroes the scale against a blank input and reads the options both forward [A→C] and backward [C→A] in the same forward pass. Click Step 4 (Order trap) and switch the order check on and off to see, in this illustration, how it flags a falsely confident guess. Early measured results are promising but small, and the mirror does not catch every order flip."',
-    hint: '👉 Presenter Action: Click Steps 1 → 4, switch "With order check (IDC)" on and off, or open the Glossary to explain terms.',
+    title: '🎙️ Part 3 — When to trust an answer (hesitation-gating)',
+    text: '"How do we know when to trust a fast zero-shot decision? Every answer comes with a hesitation score: clear answers are returned at once, hesitant ones are handed to Gemini or a person. In a live test with the threshold fixed in advance, that reached 81 of 100 on safety and 86 of 100 on faithfulness while handing off 8–32% of items. One known weakness is First-Choice Favoritism: on a borderline question it can make a coin flip look certain. Step 4 shows what re-asking with the options shuffled reveals. We tried correcting this inside the pass and it did not help reliably, so dgem measures these flips on every release instead."',
+    hint: '👉 Presenter Action: Click Steps 1 → 4, switch "Show shuffled-order test" on and off in Step 4, or open the Glossary to explain terms.',
   },
   4: {
     title: '🎙️ Part 4 — Built-in guardrails',
@@ -118,10 +118,10 @@ export class DgemConceptVisualizer extends LitElement {
   @state() private isPerturbed = false;
   private raceInterval: number | null = null;
 
-  // Scene 3: IDC & Shannon Entropy State
+  // Scene 3: Hesitation-gating & order-monitoring state
   @state() private activeEntropyPreset: 1 | 2 | 3 | 4 = 2;
   @state() private conflictVal = 46;
-  @state() private idcCalibrated = true;
+  @state() private showOrderTest = false;
 
   // Scene 4: Safety Gate State
   @state() private isAttackDoc = true;
@@ -1185,34 +1185,27 @@ export class DgemConceptVisualizer extends LitElement {
     let pTech = 0.755;
     let pBill = 0.232;
     let pAcct = 0.013;
-    let mirrorTVD = 0.01;
+    let orderGap = 0.01;
 
     if (isFramingTrap) {
-      if (!this.idcCalibrated) {
-        // Illustrative: raw single-slot readout inflated by first-option bias (97.5% -> hesitation ~12% -> false "Clear")
-        pTech = 0.975;
-        pBill = 0.02;
-        pAcct = 0.005;
-        mirrorTVD = 0.88;
-      } else {
-        // IDC Calibrated: Null-Prior Tare removes Box A bias + Mirror [C->A] ballot exposes 0.88 Cross-Stem TVD
-        pTech = 0.51;
-        pBill = 0.45;
-        pAcct = 0.04;
-        mirrorTVD = 0.88;
-      }
+      // Illustrative: the served reading is inflated by first-option bias (97.5% -> hesitation ~12% -> "Clear").
+      // The served probabilities never change; the shuffled-order test (an offline release check) only reveals the flip.
+      pTech = 0.975;
+      pBill = 0.02;
+      pAcct = 0.005;
+      orderGap = 0.88;
     } else if (t <= 0.5) {
       const k = t / 0.5;
       pTech = 0.985 - k * (0.985 - 0.72);
       pBill = 0.01 + k * (0.265 - 0.01);
       pAcct = 1.0 - pTech - pBill;
-      mirrorTVD = Number((0.01 + k * 0.26).toFixed(2));
+      orderGap = Number((0.01 + k * 0.26).toFixed(2));
     } else {
       const k = (t - 0.5) / 0.5;
       pTech = 0.72 - k * (0.72 - 0.3333);
       pBill = 0.265 + k * (0.3333 - 0.265);
       pAcct = 1.0 - pTech - pBill;
-      mirrorTVD = Number((0.27 + k * 0.15).toFixed(2));
+      orderGap = Number((0.27 + k * 0.15).toFixed(2));
     }
 
     const probs = [pTech, pBill, pAcct];
@@ -1222,13 +1215,13 @@ export class DgemConceptVisualizer extends LitElement {
     }
     const hes = hesitation(H, 3);
     const pctNeedle = Math.min(100, Math.max(0, hes.normalized * 100));
-    const tvdTriggered = this.idcCalibrated && mirrorTVD >= 0.25;
-    const isLowEntropy = hes.band === 'clear' && !tvdTriggered;
+    const isLowEntropy = hes.band === 'clear';
+    const orderFlipShown = isFramingTrap && this.showOrderTest;
 
     return html`
       ${this.renderIntro(
-        'how dgem decides whether to answer directly or hand off, using a hesitation score plus an order check (IDC). Tickets and numbers are illustrative.',
-        'click Steps 1 → 4, then switch the order check off and on in Step 4.'
+        'how dgem decides whether to answer directly or hand off using a hesitation score, and why option order is monitored rather than corrected. Tickets and numbers are illustrative.',
+        'click Steps 1 → 4, then switch the shuffled-order test on and off in Step 4.'
       )}
       <div class="grid-2">
         <div class="card">
@@ -1248,45 +1241,45 @@ export class DgemConceptVisualizer extends LitElement {
             </div>
           </div>
 
-          <!-- IDC Calibration Lens Toggle Bar -->
+          <!-- Shuffled-order test toggle (illustrates the offline release check) -->
           <div
-            style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; border-radius: 9px; background: var(--viz-bg-elevated); border: 1px solid ${this.idcCalibrated ? 'var(--viz-brand-border)' : 'var(--viz-border-strong)'};"
+            style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; border-radius: 9px; background: var(--viz-bg-elevated); border: 1px solid ${this.showOrderTest ? 'var(--viz-brand-border)' : 'var(--viz-border-strong)'};"
           >
             <div style="font-size: 0.77rem;">
-              <strong style="color: var(--viz-brand-bright);">⚖️ Order check (IDC):</strong>
+              <strong style="color: var(--viz-brand-bright);">🔀 Shuffled-order test:</strong>
               <span style="color: var(--viz-text-secondary); margin-left: 0.25rem;">
-                ${this.idcCalibrated
-                  ? 'ON — removes the first-option habit and compares the answer with the list reversed, in the same pass'
-                  : 'OFF — a single reading, which can be fooled by where options are listed'}
+                ${this.showOrderTest
+                  ? 'SHOWN — the same question re-asked with the options in a different order, as dgem does on every release'
+                  : 'HIDDEN — the single reading dgem serves for each request'}
               </span>
             </div>
             <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
               <button
-                class="action-btn ${!this.idcCalibrated ? 'active-rose' : ''}"
+                class="action-btn ${!this.showOrderTest ? 'active-cue' : ''}"
                 style="font-size: 0.72rem; padding: 0.28rem 0.6rem;"
-                @click=${() => (this.idcCalibrated = false)}
+                @click=${() => (this.showOrderTest = false)}
               >
-                Without order check
+                As served
               </button>
               <button
-                class="action-btn ${this.idcCalibrated ? 'active-cue' : ''}"
+                class="action-btn ${this.showOrderTest ? 'active-rose' : ''}"
                 style="font-size: 0.72rem; padding: 0.28rem 0.6rem;"
-                @click=${() => (this.idcCalibrated = true)}
+                @click=${() => (this.showOrderTest = true)}
               >
-                ⚖️ With order check (IDC)
+                🔀 Show shuffled-order test
               </button>
             </div>
           </div>
 
           <div style="font-size: 0.8rem; color: var(--viz-text-secondary); margin: -0.2rem 0 0.6rem 0;">
-            <strong>IDC</strong> (Invariant Decision Calibration) is our name for a set of checks that make sure an answer reflects
-            the question, not the order the options were listed in.
+            <strong>Hesitation-gating</strong>: answer when the model is clearly sure, hand off when it hesitates. Option order
+            is a known weak spot, so it is measured on every release.
           </div>
           <div style="font-size: 0.72rem; color: var(--viz-text-muted); margin: 0 0 0.7rem 0;">
-            ℹ️ <strong>Illustrative simulation:</strong> the tickets, probabilities and TVD gate below are made up to
-            show the mechanism. In real tests the first-option habit is consistent, but the fixes are mixed: the same-pass
-            order check lowered accuracy on a 231-item test and is research-only for now. See <em>Confidence Beyond
-            Shannon (IDC)</em> and EXP-14 in the docs. Live Studio runs do not apply IDC.
+            ℹ️ <strong>Illustrative simulation:</strong> the tickets and probabilities below are made up to show the
+            mechanism. In real tests the first-option habit is consistent; corrections inside the pass (removing the habit,
+            reading a reversed copy) did not help reliably (EXP-13 to EXP-17), so live requests are not corrected and the
+            regression matrix tracks order flips per release. See <em>Confidence beyond Shannon</em> in the docs.
           </div>
 
           <div class="preset-row" style="grid-template-columns: repeat(4, 1fr);">
@@ -1324,7 +1317,7 @@ export class DgemConceptVisualizer extends LitElement {
               <div class="mono" style="font-size: 0.66rem; opacity: 0.8;">STEP 4: ORDER TRAP</div>
               <div style="margin-top: 0.15rem; font-size: 0.78rem;">Looks sure, but isn't</div>
               <div class="mono" style="font-size: 0.69rem; margin-top: 0.15rem;">
-                ${this.idcCalibrated ? 'Caught by order check' : 'Falsely "Clear" (~12%)'}
+                ${this.showOrderTest ? 'Shuffled order disagrees' : 'Looks "Clear" (~12%)'}
               </div>
             </button>
           </div>
@@ -1332,7 +1325,7 @@ export class DgemConceptVisualizer extends LitElement {
           <div style="background: var(--viz-bg-elevated); padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid var(--viz-border-strong);">
             <label style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">
               <span>${isFramingTrap ? 'Step 4: the answer depends on the option order' : 'Or drag to mix in more conflicting signals:'}</span>
-              <span class="mono">${isFramingTrap ? `Forward vs. reversed gap = ${Math.round(mirrorTVD * 100)}%` : `${this.conflictVal}% conflict`}</span>
+              <span class="mono">${isFramingTrap ? (this.showOrderTest ? `Served vs. shuffled gap = ${Math.round(orderGap * 100)}%` : 'single reading') : `${this.conflictVal}% conflict`}</span>
             </label>
             <input
               type="range"
@@ -1358,7 +1351,7 @@ export class DgemConceptVisualizer extends LitElement {
           <div style="margin-top: 0.95rem;">
             <div class="prob-row" style="font-size: 0.83rem; margin-bottom: 0.4rem;">
               <span class="prob-label" style="width: 115px; font-weight: 600;">
-                A: Technical ${!this.idcCalibrated && isFramingTrap ? html`<span class="pill pill-rose" style="font-size:0.62rem;padding:0.05rem 0.3rem;">+Bias</span>` : ''}
+                A: Technical ${isFramingTrap ? html`<span class="pill pill-rose" style="font-size:0.62rem;padding:0.05rem 0.3rem;">+Bias</span>` : ''}
               </span>
               <div class="prob-track" style="height: 11px;"><div class="prob-fill" style="width: ${(pTech * 100).toFixed(1)}%;"></div></div>
               <span style="width: 52px; text-align: right;">${(pTech * 100).toFixed(1)}%</span>
@@ -1379,13 +1372,13 @@ export class DgemConceptVisualizer extends LitElement {
             <div class="gauge-header-row" style="flex-wrap: wrap; gap: 0.35rem;">
               <span><strong>0%</strong> (one clear answer)</span>
               <span class="formula-pill" title=${hes.tooltip}>
-                Hesitation ${hes.pct}% · ${hes.label}${this.idcCalibrated ? ` · order gap ${Math.round(mirrorTVD * 100)}%` : ''}
+                Hesitation ${hes.pct}% · ${hes.label}${orderFlipShown ? ` · shuffled gap ${Math.round(orderGap * 100)}%` : ''}
               </span>
               <span><strong>100%</strong> (a perfect tie)</span>
             </div>
             <div class="entropy-meter-track">
               <div class="threshold-marker" style="left: 16%;">
-                <span class="threshold-label">Hand off at 16% hesitation (or a 25% order gap)</span>
+                <span class="threshold-label">Hand off at 16% hesitation</span>
               </div>
               <div class="entropy-needle" style="left: ${pctNeedle}%;"></div>
             </div>
@@ -1416,35 +1409,37 @@ export class DgemConceptVisualizer extends LitElement {
                 ? 'var(--viz-emerald)'
                 : 'var(--viz-amber)'};"
             >
-              ${isFramingTrap && !this.idcCalibrated
-                ? `❌ Looks clear, but isn't: the first-option habit hides the doubt (hesitation ${hes.pct}%)`
-                : isFramingTrap && this.idcCalibrated
-                  ? `🛡️ Caught by the order check: the reversed list gives a different answer → hand off`
+              ${isFramingTrap && !this.showOrderTest
+                ? `⚠️ Looks clear: hesitation ${hes.pct}% is below 16%, so this one is answered directly`
+                : orderFlipShown
+                  ? `🔀 The shuffled order gives a different answer: an order flip`
                   : isLowEntropy
                     ? `✅ Answer now: hesitation ${hes.pct}% is below 16%`
                     : `⚠️ Hand off: hesitation ${hes.pct}% is 16% or more`}
             </div>
             <p style="margin: 0.35rem 0 0 0; font-size: 0.82rem; color: var(--viz-text-secondary);">
-              ${isFramingTrap && !this.idcCalibrated
-                ? html`Without the order check, the model's habit of favoring <strong>option A</strong> pushes <code>Technical</code> to <code>97.5%</code>, so a guess that depends on the list order slips through. <strong>Switch on "With order check (IDC)"</strong> to see it caught in the same pass. (The check only compares against the reversed order, so it can miss other order effects; in our tests it caught one such case and missed another.)`
-                : isLowEntropy
-                  ? html`One answer clearly stands out${this.idcCalibrated ? ', and the reversed list agrees' : ''}. The ticket is routed immediately.`
+              ${isFramingTrap && !this.showOrderTest
+                ? html`The model's habit of favoring <strong>option A</strong> pushes <code>Technical</code> to <code>97.5%</code>. This is the rare case hesitation cannot see. <strong>Switch on "Show shuffled-order test"</strong> to see what re-asking reveals.`
+                : orderFlipShown
+                  ? html`Catching this per request would need a second reading, and the in-pass corrections we tested did not improve decisions reliably. So dgem <strong>monitors</strong> instead: every release re-asks benchmark questions in shuffled order and reports the extra flips (a few percent of items), and a policy where order matters can list options neutrally and be checked on its own labelled data.`
+                  : isLowEntropy
+                  ? html`One answer clearly stands out. The ticket is routed immediately.`
                   : html`Confident answers (like <code>urgent = yes</code>) are kept, and the uncertain one (<code>department</code>) is handed to <strong>Gemini</strong> along with dgem's odds (<code>Technical ${(pTech * 100).toFixed(0)}%, Billing ${(pBill * 100).toFixed(0)}%</code>) as a hint.`}
             </p>
           </div>
 
-          <!-- 3 Plain-English Pillars of IDC Mini-Summary -->
+          <!-- 3 Plain-English pillars of hesitation-gating -->
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.85rem;">
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-brand-bright);">1. Zero the scale</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-brand-bright);">1. Gate on hesitation</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
-                Divides out <strong>Option-A favoritism</strong> measured on a blank prompt. Needs no labeled data.
+                Clear answers return at once; hesitant ones go to <strong>Gemini or a person</strong> with dgem's odds attached.
               </div>
             </div>
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-emerald);">2. Ask both ways</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--viz-emerald);">2. Monitor order</div>
               <div style="font-size: 0.71rem; color: var(--viz-text-secondary); margin-top: 0.15rem;">
-                Reads the options forward and reversed in the <strong>same pass</strong> (no extra cost) and flags answers that change.
+                Every release re-asks questions in <strong>shuffled order</strong> and reports the extra flips.
               </div>
             </div>
             <div style="background: var(--viz-bg-elevated); border: 1px solid var(--viz-border-strong); border-radius: 8px; padding: 0.55rem 0.65rem;">
@@ -1460,18 +1455,18 @@ export class DgemConceptVisualizer extends LitElement {
               <rect x="16" y="64" width="180" height="88" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
               <text x="106" y="91" text-anchor="middle" fill="#f8fafc" font-family="Inter" font-weight="700" font-size="11.5">Step 1: dgem answers</text>
               <text x="106" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="10.5">one pass, all questions</text>
-              <text x="106" y="127" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• zero the first-option habit</text>
-              <text x="106" y="142" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• compare with list reversed</text>
+              <text x="106" y="127" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• odds for every option</text>
+              <text x="106" y="142" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5">• a hesitation score</text>
 
               <path d="M 196 92 C 255 92, 265 42, 335 42" fill="none" stroke="#10b981" stroke-width="${isLowEntropy ? '4' : '2'}" opacity="${isLowEntropy ? '1' : '0.4'}" />
               <rect x="335" y="14" width="248" height="58" rx="8" fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="2" opacity="${isLowEntropy ? '1' : '0.5'}" />
               <text x="459" y="36" text-anchor="middle" fill="#10b981" font-family="Inter" font-weight="700" font-size="11.5">Clear → answer now</text>
-              <text x="459" y="54" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">hesitation &lt; 16% and lists agree</text>
+              <text x="459" y="54" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">hesitation &lt; 16%</text>
 
               <path d="M 196 125 C 255 125, 265 168, 335 168" fill="none" stroke="#f59e0b" stroke-width="${isLowEntropy ? '2' : '4'}" opacity="${isLowEntropy ? '0.35' : '1'}" />
               <rect x="335" y="135" width="248" height="66" rx="8" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="2" opacity="${isLowEntropy ? '0.45' : '1'}" />
               <text x="459" y="157" text-anchor="middle" fill="#f59e0b" font-family="Inter" font-weight="700" font-size="11.5">Unsure → hand off to Gemini</text>
-              <text x="459" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">hesitation ≥ 16% or lists disagree</text>
+              <text x="459" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9.8">hesitation ≥ 16%</text>
               <text x="459" y="190" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-weight="700" font-size="9.8">In tests: 88% → 98% accuracy (50 items)</text>
             </svg>
           `}
@@ -1673,14 +1668,14 @@ export class DgemConceptVisualizer extends LitElement {
         impact: 'In a 50-item test, answering clear items directly and handing off the rest reached 98% accuracy at 56% lower cost than sending everything to Gemini.',
       },
       {
-        id: 'idc',
+        id: 'hgate',
         badge: '⚖️ Trust',
-        title: 'IDC (Invariant Decision Calibration)',
-        humanName: 'The "Does-the-Order-Matter?" Check',
-        jargon: 'Invariant Decision Calibration: Null-Prior De-Biasing + Dual-Mirror Canvas (Mirror TVD) + optional Temperature Scaling (EXP-13)',
+        title: 'Hesitation-gating',
+        humanName: 'Answer when sure, hand off when hesitant',
+        jargon: 'Escalate when normalized entropy H / ln(K) ≥ threshold; forward the option probabilities to the Stage-2 model',
         analogy:
-          'Imagine interviewing a witness. If they give a confident answer, you check two things: (1) Are they just agreeing with the first suggestion you offered? and (2) Do they give the same answer if you list the choices in reverse order? IDC does both checks inside one GPU pass.',
-        impact: 'The problem it targets is real: the first-option habit reproduced in every test. The fixes are mixed so far: de-biasing helped on a 50-item test but not on a 231-item one, and the same-pass order check currently lowers accuracy, so it is used for research only.',
+          'Like a triage nurse who treats clear cases and refers the rest with notes. dgem answers when its hesitation is low and passes hesitant decisions, with its odds, to Gemini or a person.',
+        impact: 'Hesitation separates wrong answers from right ones with an AUROC of about 0.85 on 231 JevBench items. A live 35% gate reached 81/100 on safety and 86/100 on faithfulness while handing off 8–32% of items (EXP-18).',
       },
       {
         id: 'entropy',
@@ -1689,7 +1684,7 @@ export class DgemConceptVisualizer extends LitElement {
         humanName: 'How torn the model is, from 0% to 100%',
         jargon: 'Shannon entropy H = -∑ pₖ ln(pₖ) in nats; hesitation = normalized entropy H / ln(K)',
         analogy:
-          'If the model puts nearly all its weight on one answer, hesitation is near 0% (clear). If it splits evenly between options, hesitation is 100% (a toss-up). The Studio treats under 16% as clear, 16–50% as somewhat unsure, and above 50% as very unsure. Low hesitation is a good sign but not a guarantee: see IDC.',
+          'If the model puts nearly all its weight on one answer, hesitation is near 0% (clear). If it splits evenly between options, hesitation is 100% (a toss-up). The Studio treats under 16% as clear, 16–50% as somewhat unsure, and above 50% as very unsure. Low hesitation is a good sign but not a guarantee: option order can occasionally hide doubt.',
         impact: 'On a 50-item public suite, escalating only high-entropy items to Gemini (28–34% of items) raised accuracy from 88% to 94–98%.',
       },
       {
@@ -1700,27 +1695,26 @@ export class DgemConceptVisualizer extends LitElement {
         jargon: 'Content-Free Label-Token Positional Prior p₀(k) where P(slot = "A" | ∅) ≫ 1/K',
         analogy:
           'Like voters who tick the first name on a ballot, language models lean toward the first option. Given a blank question with meaningless options, DiffusionGemma still picks Option A 88% of the time (2 options), 78% (3) or 49% (4). On borderline questions this can make Option A look artificially confident.',
-        impact: 'Explains why the order of options in a template can change the answer on borderline cases, and why dgem checks for it.',
+        impact: 'Explains why the order of options in a template can change the answer on borderline cases. dgem measures these flips on every release rather than correcting each request, because the corrections we tested did not help reliably.',
       },
       {
-        id: 'tare',
-        badge: '🥣 Trust',
-        title: 'Zeroing the scale (null-prior de-biasing)',
-        humanName: 'Zeroing the Kitchen Scale Before Weighing Your Data',
-        jargon: 'Contextual Calibration via Null-Context Prior Division: p̃ₖ = (pₖ / p₀(k)^α) / Z',
+        id: 'template',
+        badge: '📝 Trust',
+        title: 'The form is part of the question',
+        humanName: 'Answer templates change answers',
+        jargon: 'Letter collision across slots (EXP-15) and slot-id leakage (EXP-16)',
         analogy:
-          'Before you weigh 200g of flour on a kitchen scale, you place the empty mixing bowl on the scale and press "TARE" (Zero) so you don’t weigh the bowl. dgem weighs the policy template on a blank input first (measuring the "bowl weight" of Option A, B, C) and subtracts it before scoring your real ticket.',
-        impact: 'Improved calibration on a 50-item test with no labeled data, but not on a 231-item test, so check it on your own data. It removes the average first-choice habit, not every order effect.',
+          'The model reads the whole answer form, labels and question names included. If two questions use letters A, B, C for different options, it tends to copy the letter; if a question is named "reverse", it tries to answer differently.',
+        impact: 'A second question with shared letters cost 28 of 231 JevBench items; a loaded question name cost 19. Templates now use neutral, descriptive question names.',
       },
       {
-        id: 'framing',
-        badge: '🔄 Trust',
-        title: 'Asking both ways (Mirror check)',
-        humanName: 'Listing the options forward and backward at the same time',
-        jargon: 'O(1) Dual-Mirror Canvas Slot Readout & Cross-Stem Total Variation Distance (TVD_cross = ½ ∑ |p_fwd - p_rev|)',
-        analogy:
-          'In an autoregressive LLM, asking a question twice takes 2× the time and cost. Because DiffusionGemma fills every slot on the canvas at once, dgem can place a Forward slot [A, B, C] and a Reversed slot [C, B, A] side by side without a second forward pass. If the two readings disagree a lot (the "order gap", or TVD, is large), the confidence depends on how the list was printed.',
-        impact: 'A promising idea that needs more work: in a 231-item test the extra reversed slot lowered accuracy, because the two blanks influence each other. It only tests the reversed order and does not check rewording. Research use only (CLI).',
+        id: 'layout',
+        badge: '📄 Trust',
+        title: 'Document first',
+        humanName: 'Read the input before the questions',
+        jargon: 'Prompt layout document_first (default from serving v0.2.0) vs schema_first',
+        analogy: 'Like reading a letter before filling in the form about it, rather than reading the form first.',
+        impact: 'Gained 3–12 points on frozen held-out sets (for example XNLI 0.662 → 0.699, n=4,500), with lower recall on out-of-scope items.',
       },
       {
         id: 'brier',

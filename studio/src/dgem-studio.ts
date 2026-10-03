@@ -2743,8 +2743,8 @@ export class DgemStudio extends LitElement {
                 <strong>Gemini</strong> (<code>gemini-3.8-flash</code>). At the default setting, 72% of items are
                 answered directly and accuracy rises from <strong>88% to 94%</strong> (47 of 50). For reference,
                 dgem alone got 44 of 50 and Gemini alone 49 of 50, so small changes here are one or two items.
-                The threshold is shown in <em>nats</em>, the raw unit of entropy; this simulator does not
-                include the IDC order check (see <em>Confidence Beyond Shannon (IDC)</em> in the docs).
+                The threshold is shown in <em>nats</em>, the raw unit of entropy (see <em>Confidence beyond
+                Shannon: hesitation-gated decisions</em> in the docs).
               </p>
             </div>
 
