@@ -5,7 +5,9 @@ description: "Register of experiments we intend to run, each with a motivation, 
 
 The [Experiment Ledger](/dgem/experiments/) records experiments we have **run**. This page records experiments we **intend to run**, written down *before* any results exist, so that the hypothesis, the metric, and the pass/fail line can't quietly move after the data comes in.
 
-**Lifecycle:** `Proposed` → `Ready` (dependencies met, design reviewed) → `Running` → `Done`. When an entry starts running, give it the next free `EXP-XX` number, add it to the ledger, and link it back here. Keep the `PROP-XX` entry, but mark it `Done → EXP-XX` and note any change to the design along with the reason for it.
+> **Naming note (2026-10-03):** entries written before this date say "IDC" for the in-pass order corrections (null-prior, dual-mirror). Those corrections are retired; the production approach is [hesitation-gating](/dgem/confidence/overview/), with order bias monitored per release.
+
+**Lifecycle:** `Proposed` → `Ready` (dependencies met, design reviewed) → `Running` → `Done` (or `Closed` / `Parked` when superseded). When an entry starts running, give it the next free `EXP-XX` number, add it to the ledger, and link it back here. Keep the `PROP-XX` entry, but mark it `Done → EXP-XX` and note any change to the design along with the reason for it.
 
 ---
 
@@ -30,18 +32,18 @@ The [Experiment Ledger](/dgem/experiments/) records experiments we have **run**.
 | [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | **P0** | Done → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (noise floor: ±1–2 items, Brier ±0.02) |
 | [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | **P0** | Done → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (met on 231 JevBench items, not on 50) |
 | [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Partly → EXP-14 (entropy gates); mirror gate moves to `PROP-13` |
-| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | Replaced by `PROP-12` |
+| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | **Closed**: replaced by `PROP-12` (done → [EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/)) |
 | [`PROP-04`](#prop-04-order-sensitivity-on-real-chaosnli) | Order sensitivity on real `ChaosNLI` | Do entropy / Mirror TVD / cyclic JSD track real human disagreement? | — | P1 | Proposed |
-| [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | P1 | Done → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (50/50 beats 70/30; neither beats single slot) |
-| [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | P1 | Proposed |
+| [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | P1 | **Closed** → [EXP-14](/dgem/experiments/exp-14-idc-rerun/) (50/50 beats 70/30; neither beats single slot); mirror not used in production |
+| [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | P1 | **Closed**: in-pass order corrections retired after EXP-13–EXP-17; order bias is monitored per release instead ([overview §4.3](/dgem/confidence/overview/#43-order-bias-measured-and-monitored)) |
 | [`PROP-07`](#prop-07-wording-invariance) | Wording invariance | How often does rephrasing an option change the decision? | — | P2 | Proposed |
 | [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed? | — | P2 | Proposed |
 | [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate (label-shift) adaptation | Can unlabeled target traffic correct for different class frequencies? | — | P2 | Proposed |
 | [`PROP-11`](#prop-11-letter-collision-in-the-mirror) | Letter collision in the mirror | Is the mirror's damage caused by shared letters rather than by a second slot? | — | **P0** | Done → [EXP-15](/dgem/experiments/exp-15-letter-collision/) (supported) |
 | [`PROP-12`](#prop-12-separate-pass-mirror) | Separate-pass mirror (replaces `PROP-03`) | Does a mirror read in its own pass give a clean order signal? | `PROP-11` | P1 | Done → [EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/) (supported, small effect) |
 | [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | P1 | Closed: not worth it after [EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/) |
-| [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | P1 | Proposed |
-| [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Proposed |
+| [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | P1 | Parked (research only): production monitors order rather than correcting it ([overview §4.3](/dgem/confidence/overview/#43-order-bias-measured-and-monitored)) |
+| [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Parked (research only, depends on `PROP-14`); see [overview §4.3](/dgem/confidence/overview/#43-order-bias-measured-and-monitored) |
 | [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | P1 | Done → [EXP-16](/dgem/experiments/exp-16-slot-names/) (single slot: no; second slot: yes) |
 | [`PROP-17`](#prop-17-calibrated-agent-context-pre-compiler-internal-pilot) | Calibrated agent context pre-compiler (internal pilot) | Can one multi-slot pass decide which context blocks an agent turn needs, dropping little that matters? | — | P2 | Running (internal pilot) |
 
