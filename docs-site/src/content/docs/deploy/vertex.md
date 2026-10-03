@@ -80,7 +80,7 @@ export GCP_PROJECT=<PROJECT> GCP_PROJECT_NUMBER=<PROJECT_NUMBER>
 ./bin/dgem decide --vertex-url <ENDPOINT_ID> --gcp-auth -t templates/support_triage.json.tmpl \
   -v ticket="Charged twice" --stats
 ./bin/dgem decide --vertex-url <ENDPOINT_ID> --gcp-auth -t templates/multimodal/bbox_localization.json.tmpl \
-  -I fixtures/bbox/bbox-t1-03-offgrid-card.png -v target_object=checkout_summary_card
+  -I fixtures/bbox/bbox-t1-03-offgrid-card.png -v target=checkout_summary_card
 ```
 
 ## 4. Size it

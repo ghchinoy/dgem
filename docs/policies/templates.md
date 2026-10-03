@@ -791,26 +791,29 @@ While autoregressive Vision-Language Models (`PaliGemma`, `Qwen2.5-VL`, `Gemini`
 * **`templates/multimodal/bbox_multi_object_set.json.tmpl`**: Multi-instance set localization (`matched_count` + `obj1_*` + `obj2_*`).
 
 ### Key Design Principles (`EXP-09`)
-1. **Continuous Softmax Expectation (`DFL` Sub-Bin Interpolation)**:
-   Because `structured_server.py` enforces a maximum of 26 options (`[A–Z]`) per `choice` slot, discrete `argmax` over 21 bins (`00, 05, ..., 100`) has a `5%` quantization step and can collapse narrow objects onto the same bin (e.g., `xmin=55, xmax=55` $\rightarrow$ `0.000 IoU` on narrow stemware in `008.png`). Computing the **continuous expected value** over all 21 bin probabilities:
-   $$\hat{c}_m = \sum_{k=0}^{20} (5k) \cdot P(\text{slot}_m = \text{bin}_k)$$
-   improves live Cloud Run `dgemma` `mIoU` from **`0.2898` to `0.3773` (`+30.2%` relative gain)** on `EXP-09` (`+21.2%` on `bbox-t1-03-offgrid-card`) and recovers **`0.5040 IoU` (`+50.4%` gain)** from a `0.0000` `argmax` box on `008.png`.
+1. **Argmax and Softmax Expectation Boxes**:
+   `structured_server.py` allows at most 26 options (`[A–Z]`) per `choice` slot, so each coordinate is 21 labels (`00, 05, ..., 100`). `bench-bbox` reports both the argmax box and the probability-weighted (expectation) box
+   $$\hat{c}_m = \sum_{k=0}^{20} (5k) \cdot P(\text{slot}_m = \text{bin}_k).$$
+   In the [EXP-09 re-baseline](../experiments/exp-09-spatial-grounding.md) (v0.2.0, Vertex G4) the two are close: mIoU `0.599` vs `0.588`. The expectation does not help on boxes whose edges sit on a label (`−0.03`), and its gain off-grid is not significant. Use whichever suits the consumer. Do not expect sub-bin precision.
+   Keep coordinate labels in ascending order: reversed 9-level `score` coordinates collapse localization (mIoU `0.02`).
 2. **Flat `level 0` Canvas (`reads=1`) vs. `depends_on` (`reads=2`)**:
    In `structured_server.py`, adding `depends_on: ["object_present"]` splits questions into `level 0` and `level 1`, requiring 2 sequential forward passes (`reads=2`). Keeping all 5 slots in `level 0` without `depends_on` executes the entire bounding box + presence gate in **1 forward pass (`~415–650 ms`)**, while client-side gating zeros the box whenever `object_present == false`.
-3. **Per-Edge Occlusion Entropy ($\tilde{H}_{\text{edge}} = H / \ln 21$)**:
-   Each of the 4 box boundaries returns its own independent 21-bin Shannon entropy, spiking **`1.37×` higher on occluded edges** (`0.6810` vs. `0.4970` on visible edges) to flag which specific boundary (`ymin`, `xmin`, `ymax`, or `xmax`) is obstructed.
+3. **Per-Edge Entropy ($\tilde{H}_{\text{edge}} = H / \ln K$)**:
+   Each box edge has its own distribution. In the re-baseline, edge entropy ranked edges more than one step off above the rest with AUROC `0.82` (17 wrong edges), so it is a reasonable "check this edge" flag. It did **not** rise on occluded edges compared with their unoccluded twins. Do not use it as an occlusion detector.
+4. **Validate Before Trusting Coordinates on New Inputs**:
+   Boxes moved under flips and padding (consistency IoU `0.34–0.53`). Run `dgem bench-bbox --variants all --repeat 3` on images like yours, and compare against the image-free baselines it reports.
 
 ```bash
 # Single image localization with SigLIP vision readout
 ./bin/dgem decide -u "${URL}/v1" --gcp-auth \
   -t templates/multimodal/bbox_localization.json.tmpl \
   -I fixtures/bbox/bbox-t1-03-offgrid-card.png \
-  -v 'target_object=checkout_summary_card' \
+  -v 'target=checkout_summary_card' \
   --stats
 
-# Full 12-case EXP-09 spatial benchmark + annotated SVG overlays
-./bin/dgem bench-bbox -u "${URL}/v1" --gcp-auth --annotate \
-  -o benchmarks/results_bbox_cloudrun.json
+# Full 12-case EXP-09 suite with baselines, probe variants and 3 repeats
+./bin/dgem bench-bbox -u "${URL}/v1" --gcp-auth --variants all --repeat 3 \
+  -o results_bbox.json
 ```
 
 ---

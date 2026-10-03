@@ -145,15 +145,16 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 * **Under the Hood**: In `dgem`, `templates/multimodal/bbox_multi_object_detr.json.tmpl` places `obj1_[ymin,xmin,ymax,xmax]` and `obj2_[ymin,xmin,ymax,xmax]` on the same bidirectional `[MASK]` canvas (`reads=1`), allowing the query slots to co-adapt without autoregressive left-to-right drift.
 * **Where You See It in `dgem`**: `dgem bench-bbox` (`bbox-t3-01-detr-dual-buttons`, `bbox-t3-02-detr-stacked-banner-cta`).
 
-### Softmax Expectation (`DFL` / Distribution Focal Loss) Sub-Bin Regression
-* **In Plain English**: Turning 21 coarse `5%` coordinate bins (`00, 05, 10, ..., 100`) into a smooth, continuous coordinate (`32.4%`) by taking the **probability-weighted average** across all 21 bins rather than picking only the single winning bin (`argmax`).
-* **Under the Hood**: When an edge lies at `32.5%`, `dgemma` splits probability mass between bin `30` (`P=0.50`) and bin `35` (`P=0.50`). Discrete `argmax` suffers a `2.5%` quantization penalty (or collapses narrow objects like `008.png` onto `xmin=55, xmax=55` $\rightarrow$ `0.000 IoU`), whereas Softmax Expectation:
+### Softmax Expectation (probability-weighted coordinate)
+* **In Plain English**: Instead of taking only the single most likely coordinate label (`argmax`), take the **probability-weighted average** over all 21 labels (`00, 05, ..., 100`). If the model is split 50/50 between `30` and `35`, the expectation says `32.5`.
+* **Under the Hood**:
   $$\hat{c}_m = \sum_{k=0}^{20} (5k) \cdot P(\text{slot}_m = \text{bin}_k)$$
-  recovers the continuous coordinate (`+8.75%` `mIoU` across `EXP-09` and `0.000` $\rightarrow$ `0.504 IoU` on `008.png`).
-* **Where You See It in `dgem`**: `cmd/bench_bbox.go` (`computeEdgeMetrics`).
+* **What we measured**: In the [EXP-09 re-baseline](experiments/exp-09-spatial-grounding.md) (v0.2.0, 11 synthetic boxes ×3), the expectation box and the argmax box were about equally good (mIoU `0.599` vs `0.588`). It slightly hurt boxes whose edges sit exactly on a label, and its gain elsewhere was not significant. It does not deliver sub-bin precision: most of the error comes from the model looking in slightly the wrong place, not from rounding.
+* **Where You See It in `dgem`**: `cmd/bench_bbox.go` (`evaluateCoordinateDistribution`).
 
-### Per-Edge Occlusion Entropy ($\tilde{H}_{\text{edge}}$)
-* **In Plain English**: Traditional object detectors give you a single confidence number for an entire box, hiding *which side* of the object is blocked. Because `dgem` evaluates `ymin`, `xmin`, `ymax`, and `xmax` as 4 independent 21-bin distributions, an object covering the bottom edge causes entropy to spike **specifically on `ymax`** (`1.37×` higher on live Cloud Run `dgemma`) while the 3 visible edges stay sharp.
-* **Under the Hood**: Computed per edge $m \in \{\text{ymin}, \text{xmin}, \text{ymax}, \text{xmax}\}$ as $\tilde{H}_m = H_m / \ln(21) \in [0, 1]$.
-* **Where You See It in `dgem`**: `dgem bench-bbox --annotate`.
+### Per-Edge Entropy ($\tilde{H}_{\text{edge}}$)
+* **In Plain English**: Each side of the box (`ymin`, `xmin`, `ymax`, `xmax`) gets its own hesitation score, so you can see *which* side the model is unsure about.
+* **Under the Hood**: $\tilde{H}_m = H_m / \ln K$ for each edge $m$, where $K$ is the number of labels (21).
+* **What we measured**: High edge hesitation picked out edges that were more than one step wrong (AUROC `0.82`, 17 wrong edges of 156). It did **not** rise when an edge was hidden behind another element. An earlier "`1.37×` on occluded edges" figure did not hold up when each occluded image was compared with its unoccluded twin.
+* **Where You See It in `dgem`**: `dgem bench-bbox` (edge table and "Entropy → edge error" line).
 

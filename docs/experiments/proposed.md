@@ -46,6 +46,7 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 | [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Proposed |
 | [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | P1 | Done → [EXP-16](exp-16-slot-names.md) (single slot: no; second slot: yes) |
 | [`PROP-17`](#prop-17-calibrated-agent-context-pre-compiler-internal-pilot) | Calibrated agent context pre-compiler (internal pilot) | Can one multi-slot pass decide which context blocks an agent turn needs, dropping little that matters? | — | P2 | Running (internal pilot) |
+| [`PROP-18`](#prop-18-validate-image-metrics-beyond-exp-09) | Validate image metrics beyond EXP-09 | Which image aspects (location, presence/count, attributes/relations, quality/occlusion, domain checks) does one pass read reliably, judged against ground truth, Gemini 3.x and classical detectors? | — | P1 | Phases 1–4 (pilot) done → [EXP-09 re-baseline](exp-09-spatial-grounding.md), [EXP-22](exp-22-image-readouts.md); next: bench-vision on real images, matrix image gate, live cascade |
 
 ---
 
@@ -249,6 +250,48 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 * **Decision:** If H17 holds, build a larger labelled set from real agent traces and consider publishing the
   templates; if recall < 95%, test a two-stage variant (coarse keep/drop, then action) before continuing.
 * **Cost / Dependencies:** ~200 requests plus labelling; none.
+
+### `PROP-18`: Validate image metrics beyond EXP-09
+
+* **Motivation:** The [EXP-09 re-baseline](exp-09-spatial-grounding.md) (phase 1) found three things:
+  - The model localizes on 11 synthetic UI fixtures (mIoU 0.60 vs 0.33 for a fixed box).
+  - The sub-bin and occlusion-entropy claims do not hold.
+  - Boxes are unstable under flips and padding (consistency IoU 0.34–0.53).
+
+  The suite is too small and too synthetic to say which image readouts can be trusted.
+* **Hypothesis (H18):** For each aspect:
+  - Accuracy beats the best image-free baseline, with a paired 95% interval above 0.
+  - Per-slot hesitation flags errors with AUROC ≥ 0.75.
+  - Results hold within the measured noise floor under transforms that should not change the answer.
+* **Design (phased; each phase is analyzed before the next is fixed):**
+  1. *Done.* Harness fixes, image-free baselines, repeats, probe variants (EXP-09 re-baseline).
+  2. **Gemini 3.x reference and judge** (`gemini-3.8-flash`, `gemini-3.7-flash`). Gemini gives its own answers on the
+     same items; it also judges dgem's annotated overlays edge by edge. First measure the judge against ground truth
+     (agreement, Cohen's κ) on the synthetic and RefCOCO subsets; only then use it to label images without ground
+     truth.
+  3. **Data and references.**
+     - A generated synthetic set of several hundred images, varying: aspect ratio (native, not just padded),
+       horizontal position, size, occluder coverage 0–100% per edge, distractors, blur/noise/JPEG.
+     - RefCOCO/COCO and ScreenSpot/RICO subsets: committed manifests; images fetched by script.
+     - OWLv2, Grounding DINO and SAM boxes as references, computed on a short-lived GCE GPU VM that the script tears
+       down when it finishes.
+     - Test client-side preprocessing (pad or stretch to square) against the aspect-ratio failure.
+  4. **`bench-vision` multi-aspect harness.** Typed aspects: location (box and 3×3/5×5 grid), presence and count,
+     attributes and relations, quality/occlusion/legibility, and the domain templates (`ui_design_review`,
+     `pcb_defect_triage`, `kyc_document_audit`). Each aspect has its own ground-truth source, metric and Gemini
+     comparison. A small image gate goes into the regression matrix.
+* **Metrics:**
+  - Primary: per-aspect accuracy (or IoU) lift over image-free baselines.
+  - Then: hesitation→error AUROC, transform consistency, Gemini agreement and κ, latency and cost against Gemini.
+* **Decision:**
+  - Aspects that pass get documented as supported, with their measured limits.
+  - Aspects that fail are documented as unsupported.
+  - If padding/flip instability persists on real images, the localization template gets a preprocessing
+    recommendation or a coarse grid output.
+* **Cost / Dependencies:**
+  - About 5k dgem requests and 2k Gemini calls per full pass.
+  - About 1 GPU-hour of GCE for the detector references.
+  - Phase 2 needs Vertex Gemini access.
 
 ---
 
