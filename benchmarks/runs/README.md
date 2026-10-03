@@ -13,6 +13,11 @@ Each manifest entry records the suite, config, exact command, SHA-256 of the rec
 time for Vertex runs (`backend_state`: machine, accelerator, min/max/available replicas, image), and headline
 numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.9 confidence, mean Mirror TVD).
 
+**What gets committed (from 2026-10-03):** `manifest.json`, `report.md`, `summary.json` and receipts up to about
+2 MB each. Larger raw per-item outputs go to `gs://<PROJECT>-dgem-matrix/receipts/<run_id>/`, with a committed
+`receipts.lock.json` listing each file's path, size and SHA-256, so the run stays reproducible and verifiable. Runs
+committed before that date keep their raw receipts in place. `*.log` files are never committed.
+
 | Run | What it is |
 | :--- | :--- |
 | `20260920-legacy` | Receipts produced before versioning (Sep 20–24, 2026), registered in place. Mixed endpoints and service revisions. |
