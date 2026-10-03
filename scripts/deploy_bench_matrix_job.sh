@@ -18,7 +18,7 @@
 #   dgem-matrix-t0   daily:  T0 smoke (health, contract, calibration, multilingual spot check), ~200 requests
 #   dgem-matrix-t1   weekly: T1 gate (adds JevBench x3 on both prompt paths, calibration x3, intents, latency), ~2.7k requests
 #
-# Runs are single-target (compared with the reference ranges in benchmarks/matrix/matrix_v1.json). Each run uploads
+# Runs are single-target (compared with the reference ranges in benchmarks/matrix/matrix_v2.json). Each run uploads
 # its directory (report.md, summary.json, redacted receipts) to MATRIX_BUCKET and writes JSON log lines
 # (jsonPayload.matrix_event: dgem.matrix.start | suite | gate | done | uploaded). Nothing is committed. T2 is never
 # scheduled.

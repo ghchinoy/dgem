@@ -8,8 +8,10 @@ anything changed: `scripts/bench_matrix.py`. Use it for every serving-image chan
 and experiment that could move answers, and to check a self-hosted install against our numbers
 ([Evaluate dgem on your own GPU](/dgem/deploy/evaluate/)).
 
-The matrix is defined in [`benchmarks/matrix/matrix_v1.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/matrix/matrix_v1.json). Changing
-what a tier contains means a new matrix version, never an edit to a past run.
+The matrix is defined in [`benchmarks/matrix/matrix_v2.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/matrix/matrix_v2.json), the default for
+`scripts/bench_matrix.py` and the scheduled jobs. `matrix_v1.json` is frozen (2026-10-03); `bench_matrix.py report` on
+an older run uses the matrix version it was recorded with. Changing what a tier contains means a new matrix version,
+never an edit to an existing one.
 
 ## Which tier to run
 
@@ -26,9 +28,8 @@ endpoint yet, `bench-ecotone` needs its sidecar, and `bench-permutation` is cove
 
 [`benchmarks/matrix/matrix_v2.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/matrix/matrix_v2.json) is v1 plus the image suites and suites that
 any decision model can answer. **v1 is frozen as of 2026-10-03** and kept only to reproduce older runs; tier changes go
-to a new matrix version, never into an existing file. v2 becomes the default (scheduled jobs included) once its
-reference run on the current production image is recorded; until then pass `--matrix benchmarks/matrix/matrix_v2.json`
-and the new suites report INFO. Suites marked `"accuracy": true` are scored per item. New in v2:
+to a new matrix version, never into an existing file. v2 is the default, scheduled jobs included, with reference ranges
+from a T2 run on production v0.2.1. Suites marked `"accuracy": true` are scored per item. New in v2:
 
 | Suite | n | What it adds |
 | :--- | :--- | :--- |
@@ -125,7 +126,7 @@ changes against it.
 | Latency | every mode's p50 within ×1.10 of the baseline, throughput at least ×0.90, 0 errors | REVIEW up to ×1.25, FAIL beyond or on errors |
 | Bounding boxes, Decision Index | reported, not gated (INFO) | — |
 
-Thresholds live in `matrix_v1.json` (`thresholds`). Suites marked `"accuracy": true` are scored per item (accuracy,
+Thresholds live in the matrix file (`thresholds`). Suites marked `"accuracy": true` are scored per item (accuracy,
 calibration, coverage and the noise floor); a new per-item suite only needs that flag, not a code change. Look at a REVIEW before promoting; a FAIL blocks.
 
 Accuracy is computed over answered items, so the coverage gate is what catches an item that starts being refused, for
@@ -166,7 +167,7 @@ Measured on 2026-10-02 with the v0.2.0 server (prompt layout `document_first`) o
 1× RTX PRO 6000), `samples=1`, in two T2 sessions:
 [production](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261002-v020-reference-t2/report.md) and the
 [release-gate canary](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261002-v020-release-t2/report.md), which also compares v0.2.0 with
-v0.1.3 item by item. The ranges are stored in `matrix_v1.json` (`reference`) and used in single-target mode. The v0.1.3
+v0.1.3 item by item. The ranges are stored in the matrix file (`reference`) and used in single-target mode. The v0.1.3
 reference is in [T1](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261001-v013-reference-t1/report.md) and
 [T2](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261001-v013-reference-t2/report.md).
 
