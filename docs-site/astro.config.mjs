@@ -296,6 +296,7 @@ export default defineConfig({
             { label: 'Real-World Applications', slug: 'policies/applications' },
             { label: 'Taxonomy Discovery', slug: 'policies/taxonomy-discovery' },
             { label: 'Prompt Layout', slug: 'policies/prompt-layout' },
+            { label: 'What dgem Can Do With Images', slug: 'policies/images' },
           ],
         },
         {

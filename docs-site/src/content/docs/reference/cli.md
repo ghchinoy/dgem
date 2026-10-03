@@ -391,7 +391,7 @@ Scores **multi-aspect image decisions** ([EXP-22](/dgem/experiments/exp-22-image
 - the predicted-label shares;
 - hesitation→error AUROC.
 
-`--engine gemini` puts the same questions to Gemini 3.x. `--variant blank` measures the prompt prior. `--repeat N` measures run-to-run stability.
+`--engine gemini` puts the same questions to Gemini 3.x. `--variant blank` measures the prompt prior. `--repeat N` measures run-to-run stability. `--only-scored` asks only the questions each item has ground truth for. `--cascade-threshold <nats>` (with `--cascade-model`) runs the live Stage-2 cascade: slots at or above the threshold go to Gemini together with the image. It reports dgem-only vs cascaded accuracy, the share of requests that called Gemini, and latency.
 
 ```bash
 ./bin/dgem bench-vision --vertex-url <ENDPOINT_ID> --gcp-auth --repeat 2 -o vision.json

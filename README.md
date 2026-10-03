@@ -201,7 +201,7 @@ Attach local image paths (automatically base64 encoded) or remote URLs:
 
 ## Benchmark Suites & Empirical Calibration
 
-`dgem` includes nine benchmark harnesses (all tracked in [`docs/experiments/README.md`](docs/experiments/README.md)). Four of the most commonly used are below; the others are `bench-jev` (JevBench v1.3.1), `bench-decision-index` (Decision Index panel + `/v1/systemone`), `bench-permutation` (option-order sensitivity, `EXP-13`), `bench-rerank` (listwise reranking, `EXP-10`), and `bench-bbox` (bounding boxes, `EXP-09`).
+`dgem` includes nine benchmark harnesses (all tracked in [`docs/experiments/README.md`](docs/experiments/README.md)). Four of the most commonly used are below; the others are `bench-jev` (JevBench v1.3.1), `bench-decision-index` (Decision Index panel + `/v1/systemone`), `bench-permutation` (option-order sensitivity, `EXP-13`), `bench-rerank` (listwise reranking, `EXP-10`), `bench-bbox` (bounding boxes, `EXP-09`), and `bench-vision` (categorical image questions, `EXP-22`). For what dgem can and cannot do with images, see [`docs/policies/images.md`](docs/policies/images.md).
 
 ### 1. Public Dataset Policy & Epistemic Calibration Suite (`dgem bench-calibration`)
 Evaluates 50 items across **11 public datasets** ([`benchmarks/calibration_suite.jsonl`](benchmarks/calibration_suite.jsonl)), testing declarative policy templates (`templates/calibration/*.json.tmpl`) across agent trajectory hijacking (`AgentDrift`), multilingual jailbreaks (`deepset/prompt-injections`), RAG fact grounding (`LLM-AggreFact`), retrieval relevance (`MS MARCO`), toxicity (`Jigsaw Civil Comments`), and human annotator disagreement (`ChaosNLI`):
