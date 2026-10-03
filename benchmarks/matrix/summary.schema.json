@@ -192,7 +192,31 @@
   },
   "competitors": {
    "type": "object",
-   "description": "per competitor target: per suite paired comparison with the baseline (accuracy, ref_accuracy, only_ref, only_competitor, mcnemar_p) and gate_coupling counts"
+   "description": "per competitor target: per suite paired comparison with the baseline (accuracy, ref_accuracy, only_ref, only_competitor, mcnemar_p, confident_share/confident_accuracy and ref_confident_share/ref_confident_accuracy at confidence >= 0.9), gate_coupling counts, and by_exposure {train|calib|near|unseen|unknown: {n, accuracy, ref_accuracy}} with by_exposure_definition"
+  },
+  "reproduction": {
+   "type": "object",
+   "description": "evidence level E1: the competitor's own harness against our deployment (benchmark, harness, runs {name: {accuracy, n_correct, brier, ece}}, published_match {n, same_prediction, correct_published, correct_reproduced})",
+   "properties": {
+    "benchmark": {
+     "type": "string"
+    },
+    "harness": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "runs": {
+     "type": "object"
+    },
+    "published_match": {
+     "type": [
+      "object",
+      "null"
+     ]
+    }
+   }
   }
  },
  "$defs": {

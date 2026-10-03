@@ -37,7 +37,11 @@
     "ref": "dgem",
     "only_ref": 36,
     "only_competitor": 11,
-    "mcnemar_p": 0.000346001140314911
+    "mcnemar_p": 0.000346001140314911,
+    "confident_share": 0.23809523809523808,
+    "confident_accuracy": 0.9818181818181818,
+    "ref_confident_share": 0.7705627705627706,
+    "ref_confident_accuracy": 0.9438202247191011
    },
    "massive": {
     "accuracy": 0.6717647058823529,
@@ -45,7 +49,11 @@
     "ref": "dgem",
     "only_ref": 1010,
     "only_competitor": 215,
-    "mcnemar_p": 1.766938814968488e-123
+    "mcnemar_p": 1.766938814968488e-123,
+    "confident_share": 0.552156862745098,
+    "confident_accuracy": 0.9030539772727273,
+    "ref_confident_share": 0.8133333333333334,
+    "ref_confident_accuracy": 0.9281581485053038
    },
    "xnli": {
     "accuracy": 0.6368888888888888,
@@ -53,7 +61,11 @@
     "ref": "dgem",
     "only_ref": 763,
     "only_competitor": 480,
-    "mcnemar_p": 9.511302106529387e-16
+    "mcnemar_p": 9.511302106529387e-16,
+    "confident_share": 0.0011111111111111111,
+    "confident_accuracy": 1.0,
+    "ref_confident_share": 0.7766666666666666,
+    "ref_confident_accuracy": 0.7416309012875536
    },
    "typed": {
     "accuracy": 0.6015,
@@ -61,7 +73,11 @@
     "ref": "dgem",
     "only_ref": 437,
     "only_competitor": 204,
-    "mcnemar_p": 1.909398750445667e-20
+    "mcnemar_p": 1.909398750445667e-20,
+    "confident_share": 0.034,
+    "confident_accuracy": 0.9411764705882353,
+    "ref_confident_share": 0.6875,
+    "ref_confident_accuracy": 0.8261818181818181
    },
    "calib_systemone": {
     "accuracy": 0.76,
@@ -69,7 +85,11 @@
     "ref": "dgem",
     "only_ref": 10,
     "only_competitor": 1,
-    "mcnemar_p": 0.01171875
+    "mcnemar_p": 0.01171875,
+    "confident_share": 0.12,
+    "confident_accuracy": 0.8333333333333334,
+    "ref_confident_share": 0.74,
+    "ref_confident_accuracy": 0.972972972972973
    },
    "intents_systemone": {
     "accuracy": 0.8666666666666667,
@@ -77,7 +97,11 @@
     "ref": "dgem",
     "only_ref": 3,
     "only_competitor": 7,
-    "mcnemar_p": 0.34375
+    "mcnemar_p": 0.34375,
+    "confident_share": 0.7166666666666667,
+    "confident_accuracy": 0.9534883720930233,
+    "ref_confident_share": 0.7666666666666667,
+    "ref_confident_accuracy": 0.8913043478260869
    },
    "gate_mixed_noul": {
     "accuracy": 0.8627450980392157,
@@ -85,7 +109,11 @@
     "ref": "dgem",
     "only_ref": 10,
     "only_competitor": 39,
-    "mcnemar_p": 3.845911694355664e-05
+    "mcnemar_p": 3.845911694355664e-05,
+    "confident_share": 0.0,
+    "confident_accuracy": null,
+    "ref_confident_share": 0.6666666666666666,
+    "ref_confident_accuracy": 0.6617647058823529
    },
    "gate_mixed_noul_single": {
     "accuracy": 0.8627450980392157,
@@ -93,13 +121,76 @@
     "ref": "dgem",
     "only_ref": 13,
     "only_competitor": 1,
-    "mcnemar_p": 0.0018310546875
+    "mcnemar_p": 0.0018310546875,
+    "confident_share": 0.0,
+    "confident_accuracy": null,
+    "ref_confident_share": 0.8725490196078431,
+    "ref_confident_accuracy": 1.0
    },
+   "by_exposure": {
+    "train": {
+     "n": 82,
+     "accuracy": 0.8414634146341463,
+     "ref_accuracy": 0.8414634146341463
+    },
+    "calib": {
+     "n": 100,
+     "accuracy": 0.89,
+     "ref_accuracy": 0.89
+    },
+    "near": {
+     "n": 9515,
+     "accuracy": 0.6529689963215974,
+     "ref_accuracy": 0.7665790856542302
+    },
+    "unseen": {
+     "n": 2448,
+     "accuracy": 0.6368464052287581,
+     "ref_accuracy": 0.7361111111111112
+    }
+   },
+   "by_exposure_definition": "every per-item matrix suite in this run (\"accuracy\": true; study-only suites such as intents26_systemone are not matrix suites and are excluded), first run of each side, tagged with the competitor profile's exposure map; items present on both sides only",
    "gate_coupling": [
     11,
     11,
     11
    ]
+  }
+ },
+ "reproduction": {
+  "benchmark": "jevbench",
+  "harness": "fstandhartinger/jevbench @ 1bcc55eb6c8cffde2306b3db03ede39b61c6152a, typesafe adapter",
+  "runs": {
+   "strands_r1": {
+    "accuracy": 0.7316017316017316,
+    "n_correct": 169,
+    "brier": 0.34811322696969693,
+    "ece": 0.04612640692640693
+   },
+   "vertex_r1": {
+    "accuracy": 0.8268398268398268,
+    "n_correct": 191,
+    "brier": 0.23510459486690083,
+    "ece": 0.07472983967161778
+   },
+   "vertex_r2": {
+    "accuracy": 0.8268398268398268,
+    "n_correct": 191,
+    "brier": 0.23520945476019062,
+    "ece": 0.07429679834821429
+   },
+   "vertex_r3": {
+    "accuracy": 0.8441558441558441,
+    "n_correct": 195,
+    "brier": 0.21983426237425435,
+    "ece": 0.05855756384280639
+   }
+  },
+  "published_match": {
+   "n": 231,
+   "same_prediction": 229,
+   "correct_published": 167,
+   "correct_reproduced": 169
   }
  },
  "overall": {},
