@@ -31,6 +31,7 @@ benchmarks/bbox_real_aspects.jsonl, one row per question set, with "aspects" gro
   python3 scripts/build_bbox_real_aspects.py build --project <PROJECT> [--model gemini-3.8-flash]
   python3 scripts/build_bbox_real_aspects.py sheet --n 40          # contact sheets for hand labelling
   python3 scripts/build_bbox_real_aspects.py handcheck <labels.json>  # agreement of Gemini with hand labels
+  python3 scripts/build_bbox_real_aspects.py masks     # RefCOCO segmentation polygons -> benchmarks/bbox_real_masks.jsonl (EXP-23)
 
 Needs scripts/requirements-vision.txt and `gcloud` (Application Default Credentials) for the Gemini calls.
 """
@@ -266,9 +267,29 @@ def handcheck(args):
                       "confusion": dict(conf)}, indent=1))
 
 
+def masks(args):
+    """Ground-truth instance masks for the RefCOCO items: COCO segmentation polygons in pixel coordinates."""
+    import pyarrow.parquet as pq
+    man = [json.loads(l) for l in open(REPO / "benchmarks/bbox_real.jsonl") if '"refcoco"' in l]
+    want = {int(m["notes"].split("ref ")[1].split(",")[0]): m for m in man}
+    rows = []
+    for r in pq.read_table(CACHE / "validation-00000-of-00001-bfeafdc84ca37aa2.parquet").to_pylist():
+        if r["ref_id"] in want:
+            ann, info = json.loads(r["raw_anns"]), json.loads(r["raw_image_info"])
+            seg = ann["segmentation"]
+            if not isinstance(seg, list):  # RLE (crowd) annotations are not used
+                continue
+            rows.append({"id": want[r["ref_id"]]["id"], "width": info["width"], "height": info["height"],
+                         "polygons": [[round(v, 1) for v in poly] for poly in seg]})
+    with open(REPO / "benchmarks/bbox_real_masks.jsonl", "w") as f:
+        for r in sorted(rows, key=lambda x: x["id"]):
+            f.write(json.dumps(r) + "\n")
+    print(f"wrote {len(rows)} masks to benchmarks/bbox_real_masks.jsonl")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["build", "sheet", "handcheck"])
+    ap.add_argument("cmd", choices=["build", "sheet", "handcheck", "masks"])
     ap.add_argument("labels", nargs="?")
     ap.add_argument("--project", default="")
     ap.add_argument("--model", default="gemini-3.8-flash")
@@ -278,7 +299,7 @@ def main():
     ap.add_argument("--out", default="benchmarks/bbox_real_aspects.jsonl")
     ap.add_argument("--sheet-dir", default="/tmp/dgem-handcheck")
     args = ap.parse_args()
-    {"build": build, "sheet": sheet, "handcheck": handcheck}[args.cmd](args)
+    {"build": build, "sheet": sheet, "handcheck": handcheck, "masks": masks}[args.cmd](args)
 
 
 if __name__ == "__main__":
