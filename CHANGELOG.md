@@ -12,7 +12,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 - **Gateway and MCP image references are restricted** to data: URIs and http(s) URLs on public hosts. `dgem serve`
   previously accepted a local path in `image`/`images`, read it from the gateway's filesystem and sent it to the model
   (and, with #70, to the Stage-2 cascade). The CLI and stdio `dgem mcp` still accept local files.
-
+- **Model comparison process and matrix v2 (opt-in).** `docs/operate/model-comparison.md` defines evidence levels,
+  the protocol, the report template and where findings go. `scripts/bench_matrix.py --competitor name=url#profile=...`
+  runs another decision model on the `/v1/systemone` suites without verdicts; `benchmarks/matrix/matrix_v2.json` adds
+  `calib_systemone`, `intents_systemone`, `gate_mixed_noul` and tier TC; `scripts/compare/` adds preflight, exposure
+  split and a report skeleton. First use: EXP-23 (dgem vs Strands Decider 2B), which found a yes/no cross-slot coupling
+  defect (PROP-19). The register gains a Source column and PROP-19 to PROP-26 from the Laya, Strands and Clef studies.
 - **Docs: hesitation-gating replaces "IDC" as the product name.** New flagship page
   `docs/confidence/overview.md` ("Confidence beyond Shannon: hesitation-gated decisions"); the old IDC page moves to
   `docs/history/` (docs-only) with a site redirect. README, glossary, primer, landing page, Studio Concepts tab and
