@@ -5,6 +5,8 @@ description: "The same-canvas mirror hurts the forward answer because the two sl
 
 # EXP-15: Letter Collision in the Dual-Mirror (`PROP-11`)
 
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
+
 **Date:** 2026-09-25 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`, 1 replica available) ·
 **Run:** [`benchmarks/runs/20260925-prop11-letter-collision`](../../benchmarks/runs/20260925-prop11-letter-collision/manifest.json) · **Code:** commit `1a7c13f` (`--mirror-mode`)
 **Reproduce:** `./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 --dual-mirror --mirror-mode <mode>`, then

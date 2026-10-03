@@ -3,7 +3,7 @@ title: "EXP-16: Slot Names Are Part of the Prompt (PROP-16)"
 description: "Question ids are visible to the model. A single slot's id does not matter (decision, q1, random, mirror, check all within noise), but a loaded id on a second slot (__mirror_rev) cost 19 JevBench items even with no letter collision."
 ---
 
-# EXP-16: Slot Names Are Part of the Prompt (`PROP-16`)
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](/dgem/confidence/overview/): order bias is monitored per release rather than corrected per request.
 
 **Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`) ·
 **Run:** [`benchmarks/runs/20260926-prop16-slot-names`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260926-prop16-slot-names/manifest.json) · **Code:** commit `58cae3a` (`bench-jev --slot-id`)

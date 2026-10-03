@@ -177,9 +177,11 @@ MASSIVE, the wide-option suites and the calibration suite, but 2.6 on typed-deci
 where raw confidence is much too high. A single
 global temperature does not fit every domain; fit one on held-out data from your own decisions.
 
-**Option order** (T2, net flip = shuffled minus identical repeat): MASSIVE-en +0.065, emotion +0.050, XNLI-en
-+0.025, JevBench choice +0.029. On 6-option emotion the first-shown option is picked 42.5% of the time against a
-gold rate of 30.5%.
+**Option order** (T2, net flip = shuffled minus identical repeat; v0.2.0
+[reference](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261002-v020-reference-t2/report.md), n=139–200 per suite): emotion +0.090,
+MASSIVE-en +0.040, JevBench choice +0.036, XNLI-en +0.035 (v0.1.3: +0.050, +0.065, +0.029, +0.025). On 6-option
+emotion the first-shown option is picked 45.5% of the time against a gold rate of 30.5% (42.5% on v0.1.3). Order
+effects are monitored here rather than corrected per request.
 
 **Latency** (v0.2.0, `/v1/systemone`, client in the same region, keep-alive): p50 wall / server time
 92 / 54 ms (1 question), 99 / 58 ms (5 questions), 103 / 62 ms (10), 111 / 63 ms (long policy state),

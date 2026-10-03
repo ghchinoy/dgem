@@ -5,6 +5,8 @@ description: "Measuring content-free positional 'A'-bias, Cyclic Jensen-Shannon 
 
 # EXP-13: Permutation Sensitivity, Content-Free Null-Prior De-Biasing & O(1) Dual-Mirror Canvas Calibration
 
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
+
 > **Update (EXP-14, 2026-09-25):** A same-session re-run on the Vertex AI endpoint reproduced the slot-A habit but not every case below (e.g. `perm_08`). It also found that the production `--dual-mirror` path named the reversed slot `<id>__mirror_rev`, and that the word "mirror" in a slot id degraded both readings; `bench-permutation` (used here) names its slots `decision_fwd` / `decision_rev` and was not affected. See [EXP-14](exp-14-idc-rerun.md).
 
 ## 1. Motivation & Problem Statement

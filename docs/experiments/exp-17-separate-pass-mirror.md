@@ -5,6 +5,8 @@ description: "Reading the options reversed in a second, separate pass gives an o
 
 # EXP-17: Separate-Pass Mirror (`PROP-12`)
 
+> **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
+
 **Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (image `dgemma:ab208dd`) ·
 **Run:** [`benchmarks/runs/20260926-prop12-separate-pass`](../../benchmarks/runs/20260926-prop12-separate-pass/manifest.json)
 **Reproduce:** `./bin/dgem bench-jev --vertex-url <endpoint-id> --gcp-auth -w 4 [--flip-options]`, then

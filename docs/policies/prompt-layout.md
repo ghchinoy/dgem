@@ -56,16 +56,18 @@ the share of answers matching the gold label; differences are paired, item by it
 | typed-decisions test, 5 questions per decision (frozen set, release gate) | 2,000 | 0.674 | **0.728** |
 | typed-decisions train, joint read of 5 questions (dev) | 200 × 5 | 0.534 | **0.604** |
 | XNLI test, 15 languages (frozen set, release gate) | 4,500 | 0.662 | **0.699** |
-| CLINC150 validation, 151 options with an "out of scope" option (dev) | 100 × 3 | 0.740 | **0.863** |
-| RAGTruth train, "does the response contain unsupported content?" (dev) | 198 × 3 | 0.712 | **0.771** |
+| CLINC150 validation, 151 options with an "out of scope" option (development split, release gate) | 100 × 3 | 0.740 | **0.863** |
+| RAGTruth train, "does the response contain unsupported content?" (development split, release gate) | 198 × 3 | 0.712 | **0.771** |
 | MASSIVE test, 20 intents, 51 languages (frozen set) | 5,100 | 0.820 | 0.824 |
 | JevBench, single questions | 231 × 3 | 0.840 | 0.848 (within noise) |
 
 The gain is largest when a decision has **several questions** or **many options**. With the questions first, the
 model tends to settle on an answer shape before it has read the input. Single, simple questions barely change.
 
-On the [Decision Index](../experiments/exp-12-decision-index.md), the release with this default (together with yes/no
-descriptions now reaching the model) moved dgem from 40.77 to 45.34.
+On the public [Decision Index](../experiments/exp-12-decision-index.md) leaderboard, the release with this default
+(together with yes/no descriptions now reaching the model) moved dgem from 40.77 to 45.34. Those scores come from the
+index's own scoring, not from a receipt in this repository. In the EXP-19 development session the same layout change
+moved CLINC150 from 0.790 to 0.870 and RAGTruth from 0.705 to 0.770 (`benchmarks/runs/20261002-w2-canary-t1/`).
 
 ## Trade-offs to know about
 

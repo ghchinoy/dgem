@@ -1,5 +1,5 @@
 ---
-title: "Decision Model Experiment Ledger (EXP-01 – EXP-18)"
+title: "Decision Model Experiment Ledger (EXP-01 – EXP-21)"
 description: "Structured empirical research log tracking DiffusionGemma as a Zero-Shot Decision Model, Declarative Policy-as-Template evaluation, Epistemic Calibration, Listwise Reranking, JevBench v1.3.1 Parity, Decision Index, Permutation Invariance, and Next-Horizon Cascades."
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 
 ---
 
-## 2. Master Experiment Index (`EXP-01` – `EXP-18`)
+## 2. Master Experiment Index (`EXP-01` – `EXP-21`)
 
 ### Part A — Completed Empirical Studies
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ---
 
-### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-18`)
+### Part B — Active & Next-Horizon Experiments (`EXP-06` – `EXP-21`)
 
 Detailed architectural specifications, mathematical formulations, and empirical cascade results for `EXP-05` through `EXP-08` are documented in **[`exp-05-roadmap-cascades-and-dags.md`](/dgem/experiments/exp-05-roadmap-cascades-and-dags/)**, `EXP-10` is documented in **[`exp-10-listwise-diffusion-reranking.md`](/dgem/experiments/exp-10-listwise-diffusion-reranking/)**, `EXP-11` is documented in **[`exp-11-jevbench-parity.md`](/dgem/experiments/exp-11-jevbench-parity/)**, `EXP-12` is documented in **[`exp-12-decision-index.md`](/dgem/experiments/exp-12-decision-index/)**, and `EXP-13` is documented in **[`exp-13-permutation-invariance.md`](/dgem/experiments/exp-13-permutation-invariance/)**.
 

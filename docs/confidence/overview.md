@@ -99,8 +99,8 @@ frozen held-out sets scored after the change shipped ([prompt layout](../policie
 | :--- | ---: | ---: | ---: |
 | typed decisions, 5 questions per decision | 2,000 | 0.674 | **0.728** |
 | XNLI, 15 languages | 4,500 | 0.662 | **0.699** |
-| CLINC150 validation, 151 options (dev) | 100 × 3 | 0.740 | **0.863** |
-| RAGTruth train, unsupported content (dev) | 198 × 3 | 0.712 | **0.771** |
+| CLINC150 validation, 151 options (development split, release gate) | 100 × 3 | 0.740 | **0.863** |
+| RAGTruth train, unsupported content (development split, release gate) | 198 × 3 | 0.712 | **0.771** |
 | JevBench, single questions | 231 × 3 | 0.840 | 0.848 (within noise) |
 
 **Trade-off:** with a catch-all "out of scope" option, out-of-scope recall fell from 100% to 82.5% (n=40), and
