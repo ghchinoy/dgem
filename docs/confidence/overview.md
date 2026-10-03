@@ -158,8 +158,11 @@ frozen held-out sets scored only after a change ships, and versioned receipts fo
 - **Rewording:** rephrasing options can shift answers; not yet measured at scale (`PROP-07`).
 - **Base rates:** confidence is not adjusted for how common each class is in your traffic (`PROP-09`).
 - **Out-of-scope recall** is lower under the default layout (§4.2).
-- **Bounding boxes:** locating objects in images is far behind Gemini and not recommended; use categorical image
-  questions instead.
+- **Images:** categorical image questions work, and hesitation flags wrong answers there too (AUROC 0.60–0.87 by
+  question type; a 0.35-nat cascade raised accuracy from 0.76 to 0.85 on 230 synthetic scenes, answering 54% of
+  requests without Gemini, [EXP-22](../experiments/exp-22-image-readouts.md)). dgem's own bounding boxes are far
+  behind Gemini (centre hit 12% vs 93% on ScreenSpot); for boxes, use dgem to skip absent targets and give Gemini a
+  grid-cell hint ([EXP-24](../experiments/exp-24-guided-cascade.md), [images guide](../policies/images.md)).
 - **Multi-step reasoning:** one pass cannot do arithmetic or long chains of inference; these items show up as hesitant
   and are handed off.
 
