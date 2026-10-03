@@ -498,6 +498,7 @@ def build(run_dir, matrix):
                "baseline": base, "started": mx.get("started"), "finished": mx.get("finished"),
                "targets": [{"name": t["name"], "kind": t.get("kind"), "role": t.get("role", "dgem"),
                             **({"profile": t["profile"]} if t.get("profile") else {}),
+                            **{k: t[k] for k in ("evidence_level", "org") if t.get(k)},
                             "health": t.get("health") or {}} for t in mx["targets"]],
                "competitors": comp_summ,
                "overall": {n: overall.get(n, "PASS") for n in cands}, "noise_floor": noise,

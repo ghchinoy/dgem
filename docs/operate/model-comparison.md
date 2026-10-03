@@ -122,7 +122,21 @@ column instead of opening a second one.
 
 ---
 
-## 6. Where things live
+## 6. Machine-readable contract (for the Decision Board and other readers)
+
+- **A comparison run is never a reference run.** Every comparison run keeps both markers: `tier: "TC"` in
+  `summary.json` and `role: "competitor"` on each competitor in `targets[]`. Readers exclude such runs from dgem's
+  reference ranges, history and release gates. An E3 frozen-set run with `--competitor` has `role: "competitor"`
+  targets too, so it is excluded the same way.
+- **Competitor targets are self-describing.** `targets[]` entries for competitors carry `profile`, `model`,
+  `evidence_level` and `org`, copied from the profile when the run starts.
+- **Profiles are a stable schema, `dgem.competitor/v1`.** Fields readers rely on: `schema`, `name`, `org`, `id`,
+  `evidence_level`, `identity.{code,weights,base_model}.repo`, `identity.size_class`, `identity.architecture`,
+  `serving.{model_field,max_choice_options,context_tokens,deterministic,concurrency_safe,concurrency_note}`,
+  `self_reported[]`, `reproduced`, `exposure`, `exposure_note`. Adding fields is fine; renaming or removing one needs
+  `dgem.competitor/v2`.
+
+## 7. Where things live
 
 | What | Where |
 |---|---|

@@ -128,4 +128,6 @@ class CompetitorTarget(Target):
     def redacted(self):
         return {"name": self.name, "kind": self.kind, "role": self.role,
                 **({"profile": self.profile_name} if self.profile_name else {}),
-                **({"model": self.model} if self.model else {})}
+                **({"model": self.model} if self.model else {}),
+                **({"evidence_level": self.profile["evidence_level"]} if self.profile.get("evidence_level") else {}),
+                **({"org": self.profile["org"]} if self.profile.get("org") else {})}

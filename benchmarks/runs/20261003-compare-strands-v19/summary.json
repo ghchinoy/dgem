@@ -24,6 +24,8 @@
    "kind": "cloudrun",
    "role": "competitor",
    "profile": "strands-decider-2b",
+   "evidence_level": "E2",
+   "org": "Amazon \u00b7 Strands Agents",
    "health": {}
   }
  ],

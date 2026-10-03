@@ -96,6 +96,19 @@
      "profile": {
       "type": "string",
       "description": "benchmarks/competitors/<profile>.json"
+     },
+     "evidence_level": {
+      "enum": [
+       "E0",
+       "E1",
+       "E2",
+       "E3"
+      ],
+      "description": "competitor evidence level (docs/operate/model-comparison.md), copied from the profile"
+     },
+     "org": {
+      "type": "string",
+      "description": "competitor organisation, copied from the profile"
      }
     }
    }
