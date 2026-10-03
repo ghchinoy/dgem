@@ -25,6 +25,11 @@
   # Full matrix incl. frozen multilingual / typed-decisions / option-order sets (~25k requests per target)
   scripts/bench_matrix.py run --tier T2 --target prod=<url> --confirm
 
+  # Model comparison (docs/operate/model-comparison.md): dgem baseline plus another decision model; the competitor runs
+  # only the /v1/systemone suites and latency, and never gets a verdict
+  scripts/bench_matrix.py --matrix benchmarks/matrix/matrix_v2.json run --tier TC --target dgem=<url> --baseline dgem \
+      --competitor strands=<url>#profile=strands-decider-2b --label compare-strands
+
   scripts/bench_matrix.py report benchmarks/runs/<run_id>      # (re)build report.md + summary.json
   scripts/bench_matrix.py fetch                                # download + verify the pinned T2 datasets
   scripts/bench_matrix.py list                                 # tiers and suites
@@ -50,10 +55,11 @@ from matrix import cases as caselib  # noqa: E402
 from matrix import datasets  # noqa: E402
 from matrix import report as reportlib  # noqa: E402
 from matrix import runners  # noqa: E402
-from matrix.targets import Target  # noqa: E402
+from matrix.targets import CompetitorTarget, Target  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MATRIX = os.path.join(REPO, "benchmarks", "matrix", "matrix_v1.json")
+COMPETITOR_KINDS = ("systemone", "latency")
 
 
 def load_matrix(path=MATRIX):
@@ -99,6 +105,8 @@ def find_dgem(arg):
 def cmd_run(a):
     mx = load_matrix(a.matrix)
     tier = a.tier
+    if tier not in mx["tiers"]:
+        raise SystemExit(f"tier {tier} is not in {os.path.basename(a.matrix)} (tiers: {', '.join(mx['tiers'])})")
     if tier in mx.get("confirm_required", []) and not a.confirm:
         raise SystemExit(f"{tier} sends ~25k requests per target to shared GPUs; re-run with --confirm")
     suites = [s for s in mx["tiers"][tier] if not a.only or s in a.only]
@@ -107,8 +115,13 @@ def cmd_run(a):
     if not specs:
         raise SystemExit("give --target name=url (or MATRIX_TARGETS=name=url,name=url)")
     targets = [Target(*t.split("=", 1)) for t in specs]
+    competitors = [CompetitorTarget(*c.split("=", 1)) for c in (a.competitor or [])]
     if a.baseline and a.baseline not in [t.name for t in targets]:
-        raise SystemExit(f"--baseline {a.baseline} is not one of the targets")
+        raise SystemExit(f"--baseline {a.baseline} is not one of the --target dgem targets")
+    names = [t.name for t in targets + competitors]
+    if len(set(names)) != len(names):
+        raise SystemExit("target and competitor names must be unique")
+    targets += competitors
     run_id = f"{dt.datetime.now(dt.timezone.utc):%Y%m%d}-{a.label or tier.lower()}"
     run_dir = os.path.abspath(a.out_dir or os.path.join(REPO, "benchmarks", "runs", run_id))
     if os.path.exists(os.path.join(run_dir, "manifest.json")) and not a.resume:
@@ -140,8 +153,9 @@ def cmd_run(a):
     adapters = {}
 
     def via(spec, t):
-        """The target a suite talks to: the target itself, or a local `dgem systemone serve` in front of it."""
-        if spec.get("via") != "adapter":
+        """The target a suite talks to: the target itself, or a local `dgem systemone serve` in front of it.
+        Competitors always answer directly (the adapter is dgem code)."""
+        if spec.get("via") != "adapter" or t.role == "competitor":
             return t
         if t.name not in adapters:
             adapters[t.name] = runners.Adapter(t, dgem_bin, os.path.join(run_dir, f"adapter__{t.name}.log"))
@@ -166,6 +180,8 @@ def cmd_run(a):
             if spec["kind"] == "latency":
                 continue  # after all accuracy work, so it is not measured under the matrix's own load
             for t in order:
+                if t.role == "competitor" and spec["kind"] not in COMPETITOR_KINDS:
+                    continue  # dgem CLI harnesses, health/contract and adapter probes are dgem-specific
                 perms = spec.get("permutes", [None])
                 for perm in perms:
                     if (s, t.name, r, perm) in done:
@@ -186,9 +202,11 @@ def cmd_run(a):
                             runners.dgem(t, spec["args"], out, dgem_bin, workers=a.workers)
                         elif spec["kind"] == "systemone":
                             p = "none" if perm in (None, "none2") else perm
-                            runners.systemone(via(spec, t), cases_for(spec["cases"]), out, workers=a.workers * 2,
-                                              permute=p, run=r, suite=s,
-                                              max_options=None if spec.get("via") == "adapter" else 26)
+                            mo = (t.max_options if t.role == "competitor" else
+                                  None if spec.get("via") == "adapter" else 26)
+                            runners.systemone(via(spec, t), cases_for(spec["cases"]), out,
+                                              workers=(a.competitor_workers if t.role == "competitor" else a.workers * 2),
+                                              permute=p, run=r, suite=s, max_options=mo)
                         elif spec["kind"] == "adapter_probes":
                             runners.adapter_probes(via(spec, t), out)
                         elif spec["kind"] == "kit_compat":
@@ -293,9 +311,15 @@ def main():
     ap.add_argument("--matrix", default=MATRIX)
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
-    r.add_argument("--tier", required=True, choices=["T0", "T1", "T2"])
+    r.add_argument("--tier", required=True, help="a tier of the matrix file (v1: T0, T1, T2; v2 adds TC)")
     r.add_argument("--target", action="append", help="name=url (repeat; or MATRIX_TARGETS=name=url,...)")
     r.add_argument("--baseline", help="target name to compare the others against (same session)")
+    r.add_argument("--competitor", action="append",
+                   help="name=url[#profile=<benchmarks/competitors name>&model=<id>&max_options=N]: another decision "
+                        "model; /v1/systemone suites and latency only, no verdicts (repeat)")
+    r.add_argument("--competitor-workers", type=int, default=4,
+                   help="concurrent requests to a competitor (run scripts/compare/preflight.py first: some servers "
+                        "are not safe under concurrency)")
     r.add_argument("--label", help="run id suffix (default: tier)")
     r.add_argument("--out-dir", help="run directory (default benchmarks/runs/<date>-<label>)")
     r.add_argument("--only", nargs="*", help="run only these suites of the tier")

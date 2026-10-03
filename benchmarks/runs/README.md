@@ -39,11 +39,14 @@ numbers recomputed at T=1 (accuracy, Brier, 10-bin ECE, correct answers above 0.
 | `20261003-prop18-vision-real` | PROP-18 (EXP-22 §5): `bench-vision` on RefCOCO + ScreenSpot (`benchmarks/bbox_real_aspects.jsonl`): dgem ×2, blank prior, Gemini 3.8. |
 | `20261003-prop18-cascade` | PROP-18 (EXP-22 §6): live Stage-2 cascade with the image, thresholds 0.35 / 0.10 nats, six vs scored questions (`scripts/run_prop18_cascade.sh`). |
 | `20261003-vision-gate-ref` | Regression matrix T1 `health` + `vision_spot` + `vision` on production v0.2.0: the first image-gate run (part of the vision reference ranges). |
+| `20261003-compare-strands-v19` | **EXP-23** model comparison: dgem (Vertex G4, v0.2.0) vs Strands Decider 2B v19 (Cloud Run, RTX PRO 6000) in matrix v2 format (tier TC suites plus frozen sets, option order, latency, post-hoc `gate_diag_*`), exported from the study harness. Write-up: [`exp-23-strands-decider.md`](../../docs/experiments/exp-23-strands-decider.md). |
 
 Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
 
 Runs made with `scripts/bench_matrix.py` (the [regression matrix](../../docs/operate/regression-matrix.md)) add
-`report.md` and `summary.json` with verdicts.
+`report.md` and `summary.json` with verdicts. Model comparisons are named `<YYYYMMDD>-compare-<model>` and follow
+[Comparing dgem with Another Decision Model](../../docs/operate/model-comparison.md); re-runs of a published experiment
+are named `<YYYYMMDD>-rerun-<exp>`.
 
 Tools:
 

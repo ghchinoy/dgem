@@ -1,0 +1,50 @@
+{
+ "schema": "dgem.competitor/v1",
+ "name": "Laya",
+ "id": "laya",
+ "first_seen": "2026-09-30",
+ "evidence_level": "E2",
+ "identity": {
+  "code": {
+   "repo": "https://github.com/NandhaKishorM/laya",
+   "version": "0.3.22"
+  },
+  "weights": {
+   "repo": "https://huggingface.co/convaiinnovations/laya",
+   "revision": "55cf4c4"
+  },
+  "architecture": "ModernBERT-large encoder (421M, English) or mmBERT-base (322M, multilingual) plus a 2-layer decision head; one [MASK] marker per option",
+  "size_class": "0.3-0.4B encoder"
+ },
+ "serving": {
+  "command": "laya-serve",
+  "model_field": "english",
+  "max_choice_options": 255,
+  "context_tokens": 512,
+  "server_latency_field": "X-Inference-Time-Ms",
+  "concurrency_safe": true,
+  "concurrency_note": "Refuses work past 16 concurrent requests by default (HTTP 503); one inference at a time.",
+  "deterministic": true
+ },
+ "self_reported": [],
+ "exposure_source": "Laya model card and BENCHMARKS.md",
+ "exposure": {
+  "typed": {
+   "*": "train",
+   "_note": "the laya-typed-decisions checkpoint is fine-tuned on the typed-decisions train split; the base checkpoint is not"
+  },
+  "jev_systemone": {
+   "*": "unknown"
+  },
+  "calib_systemone": {
+   "*": "unknown"
+  },
+  "intents_systemone": {
+   "*": "unknown"
+  },
+  "gate_mixed_noul": {
+   "*": "unknown"
+  }
+ },
+ "exposure_note": "Only the typed-decisions relation is documented; the other suites have not been audited against Laya's training data."
+}

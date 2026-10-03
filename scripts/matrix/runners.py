@@ -172,7 +172,7 @@ def _run_case(target, case, perm, max_options=26):
         if d is None:
             rows.append({**m, "status": "bad_answer", "error": json.dumps(answers.get(q["qid"]))[:300]})
             continue
-        rows.append({**m, "status": 200, "wall_ms": round(ms, 1), "server_ms": timing.get("total_ms"),
+        rows.append({**m, "status": 200, "wall_ms": round(ms, 1), "server_ms": timing.get("total_ms", resp.get("latency_ms")),
                      "probabilities": d, **caselib.score(q, d)})
     return rows
 
@@ -345,7 +345,8 @@ def latency_payloads():
 
 
 class _KeepAlive:
-    def __init__(self, base):
+    def __init__(self, base, competitor=None):
+        self.competitor = competitor  # CompetitorTarget: its model field, no dgem-only body fields
         u = urllib.parse.urlparse(base)
         self.https, self.host, self.prefix, self.base = u.scheme == "https", u.netloc, u.path.rstrip("/"), base
         self.local = threading.local()
@@ -358,7 +359,13 @@ class _KeepAlive:
         return c
 
     def call(self, payload):
-        data = json.dumps({"model": "dgemma", "seed": 42, **payload}).encode()
+        if self.competitor is not None:
+            body = {k: v for k, v in payload.items() if k not in ("samples", "seed", "layout")}
+            if self.competitor.model:
+                body["model"] = self.competitor.model
+            data = json.dumps(body).encode()
+        else:
+            data = json.dumps({"model": "dgemma", "seed": 42, **payload}).encode()
         hdr = {"Content-Type": "application/json", "Connection": "keep-alive"}
         tok = net.token_for(self.base)
         if tok:
@@ -372,8 +379,13 @@ class _KeepAlive:
                 raw = r.read()
                 rec = {"status": r.status, "wall_ms": (time.perf_counter() - t0) * 1000}
                 if r.status == 200:
-                    t = (json.loads(raw).get("diagnostics") or {}).get("timing") or {}
-                    rec["server_ms"] = t.get("total_ms")
+                    j = json.loads(raw)
+                    t = (j.get("diagnostics") or {}).get("timing") or {}
+                    # dgem: diagnostics.timing.total_ms; other servers: latency_ms or X-Inference-Time-Ms
+                    srv = t.get("total_ms", j.get("latency_ms"))
+                    if srv is None and r.getheader("X-Inference-Time-Ms"):
+                        srv = float(r.getheader("X-Inference-Time-Ms"))
+                    rec["server_ms"] = srv
                 else:
                     rec["error"] = raw[:200].decode(errors="replace")
                 return rec
@@ -404,7 +416,10 @@ def _summ(recs, elapsed=None):
 
 def latency(target, out, n=100, warmup=5, sweep_workers=(16, 32), sweep_modes=("q1", "q5"), min_requests=256):
     P = latency_payloads()
-    ka = _KeepAlive(target.base)
+    comp = target if getattr(target, "role", None) == "competitor" else None
+    if comp is not None:
+        P.pop("q5_s4", None)  # samples is a dgem-only field
+    ka = _KeepAlive(target.base, competitor=comp)
     res = {"kind": "latency", "target": target.name, "modes": {}, "sweep": {}}
     for m, payload in P.items():
         for _ in range(warmup):

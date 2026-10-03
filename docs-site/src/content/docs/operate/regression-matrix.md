@@ -29,6 +29,23 @@ T1 and T2 (not T0 until more reference runs give a stable range). They read the 
 `fixtures/bbox_sweep/` (gitignored). The runner generates it on first use (`pip install -r
 scripts/requirements-vision.txt`); the scheduled job image ships it pre-generated. Their reference ranges come from four
 runs on production v0.2.0 (2026-10-03).
+### Matrix v2 (proposed): comparison suites and tier TC
+
+[`benchmarks/matrix/matrix_v2.json`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/matrix/matrix_v2.json) is v1 plus suites that any decision model
+can answer, and is opt-in (`--matrix benchmarks/matrix/matrix_v2.json`) until a v2 reference run records ranges for the
+new suites (until then they report INFO):
+
+| Suite | n | What it adds |
+| :--- | :--- | :--- |
+| `calib_systemone` | 50 | The calibration suite as `/v1/systemone` bodies (the v1 `calibration` suite uses dgem's own CLI path) |
+| `intents_systemone` | 60 | banking77 (30 options) and clinc150 slices with every option; dgem through the adapter, competitors directly |
+| `gate_mixed_noul` | 51 × 2 | Two yes/no questions per request whose answers usually have opposite polarity; the report counts **cross-slot coupling** (both answers the same label), which caught a dgem defect in [EXP-23](/dgem/experiments/exp-23-strands-decider/) |
+| `gate_mixed_noul_single` | 102 | The same questions one per request (TC only), to separate difficulty from coupling |
+
+T1 and T2 gain the first three. **TC** (model comparison) runs health, JevBench via `/v1/systemone`, the four suites
+above, the multilingual spot check and latency, 3 runs each, against a dgem baseline plus `--competitor` targets.
+Competitors run only `/v1/systemone` suites and latency and never get verdicts; the report adds a Competitors section
+with paired tests. The process around it is [Comparing dgem with Another Decision Model](/dgem/operate/model-comparison/).
 
 ## Run it
 
@@ -223,6 +240,7 @@ execution for 7 days + 8 h ([Monitoring and alerts](/dgem/operate/monitoring/#al
 
 ## Related
 
+- [Comparing dgem with Another Decision Model](/dgem/operate/model-comparison/): competitor targets, evidence levels and the report template.
 - [Operations runbook: promote a new serving image](/dgem/operate/runbook/#promote-a-new-serving-image) (uses T1)
 - [Evaluate dgem on your own GPU](/dgem/deploy/evaluate/) (uses T0 and T1 in single-target mode)
 - [Versioned benchmark runs](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/README.md)

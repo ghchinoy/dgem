@@ -11,6 +11,10 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 
 **Lifecycle:** `Proposed` → `Ready` (dependencies met, design reviewed) → `Running` → `Done` (or `Closed` / `Parked` when superseded). When an entry starts running, give it the next free `EXP-XX` number, add it to the ledger, and link it back here. Keep the `PROP-XX` entry, but mark it `Done → EXP-XX` and note any change to the design along with the reason for it.
 
+**Numbering:** claim the `EXP-XX` number by adding the ledger row (status `🧪 Running`) **when the run starts**, in the same change that marks the entry `Running`, so two teams never pick the same number. "Free" means unused on `main` **and** in every open pull request (`gh pr list`, then check each branch's ledger and this page). The same applies to `PROP-XX`.
+
+**Where entries come from:** besides our own open questions, every [model comparison](../operate/model-comparison.md#5-intake-where-findings-for-dgem-go) ends with a "Findings for dgem" table; each hypothesis in it becomes an entry here. The **Source** column records every study that raised it (`Order` = the order-bias research behind EXP-13–EXP-17, formerly called IDC; `Laya`, `Strands`, `Clef` = model comparisons; `DI` = Decision Index runs). When a later study raises the same point, add it to Source instead of opening a second entry.
+
 ---
 
 ## 1. Ground Rules for Every Entry
@@ -28,27 +32,49 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 
 ## 2. Register at a Glance
 
-| ID | Title | Question it answers | Depends on | Priority | Status |
-| :--- | :--- | :--- | :--- | :---: | :--- |
-| [`PROP-00`](#prop-00-expose-mirror-tvd-on-all-four-surfaces-enabler) | Expose Mirror TVD on all four surfaces (*enabler*) | Can production use the mirror signal at all? | — | **P0** | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
-| [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (noise floor: ±1–2 items, Brier ±0.02) |
-| [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (met on 231 JevBench items, not on 50) |
-| [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | **P0** | Partly → EXP-14 (entropy gates); mirror gate moves to `PROP-13` |
-| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | P1 | **Closed**: replaced by `PROP-12` (done → [EXP-17](exp-17-separate-pass-mirror.md)) |
-| [`PROP-04`](#prop-04-order-sensitivity-on-real-chaosnli) | Order sensitivity on real `ChaosNLI` | Do entropy / Mirror TVD / cyclic JSD track real human disagreement? | — | P1 | Proposed |
-| [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | P1 | **Closed** → [EXP-14](exp-14-idc-rerun.md) (50/50 beats 70/30; neither beats single slot); mirror not used in production |
-| [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | P1 | **Closed**: in-pass order corrections retired after EXP-13–EXP-17; order bias is monitored per release instead ([overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored)) |
-| [`PROP-07`](#prop-07-wording-invariance) | Wording invariance | How often does rephrasing an option change the decision? | — | P2 | Proposed |
-| [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed? | — | P2 | Proposed |
-| [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate (label-shift) adaptation | Can unlabeled target traffic correct for different class frequencies? | — | P2 | Proposed |
-| [`PROP-11`](#prop-11-letter-collision-in-the-mirror) | Letter collision in the mirror | Is the mirror's damage caused by shared letters rather than by a second slot? | — | **P0** | Done → [EXP-15](exp-15-letter-collision.md) (supported) |
-| [`PROP-12`](#prop-12-separate-pass-mirror) | Separate-pass mirror (replaces `PROP-03`) | Does a mirror read in its own pass give a clean order signal? | `PROP-11` | P1 | Done → [EXP-17](exp-17-separate-pass-mirror.md) (supported, small effect) |
-| [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | P1 | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
-| [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | P1 | Parked (research only): production monitors order rather than correcting it ([overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored)) |
-| [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | P2 | Parked (research only, depends on `PROP-14`); see [overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored) |
-| [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | P1 | Done → [EXP-16](exp-16-slot-names.md) (single slot: no; second slot: yes) |
-| [`PROP-17`](#prop-17-calibrated-agent-context-pre-compiler-internal-pilot) | Calibrated agent context pre-compiler (internal pilot) | Can one multi-slot pass decide which context blocks an agent turn needs, dropping little that matters? | — | P2 | Running (internal pilot) |
-| [`PROP-18`](#prop-18-validate-image-metrics-beyond-exp-09) | Validate image metrics beyond EXP-09 | Which image aspects (location, presence/count, attributes/relations, quality/occlusion, domain checks) does one pass read reliably, judged against ground truth, Gemini 3.x and classical detectors? | — | P1 | Phases 1–4 (pilot) done → [EXP-09 re-baseline](exp-09-spatial-grounding.md), [EXP-22](exp-22-image-readouts.md); real-image bench-vision, matrix image gate and live image cascade done; next: guided boxes and masks (next free EXP number) |
+| ID | Title | Question it answers | Depends on | Source | Priority | Status |
+| :--- | :--- | :--- | :--- | :--- | :---: | :--- |
+| [`PROP-00`](#prop-00-expose-mirror-tvd-on-all-four-surfaces-enabler) | Expose Mirror TVD on all four surfaces (*enabler*) | Can production use the mirror signal at all? | — | Order | **P0** | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
+| [`PROP-10`](#prop-10-run-to-run-and-revision-noise-floor) | Run-to-run & revision noise floor | How big a difference is real? | — | Order | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (noise floor: ±1–2 items, Brier ±0.02) |
+| [`PROP-01`](#prop-01-held-out-temperature-scaling) | Held-out temperature scaling | Does the ECE gain from $T^*$ survive out of sample? | — | Order | **P0** | Done → [EXP-14](exp-14-idc-rerun.md) (met on 231 JevBench items, not on 50) |
+| [`PROP-02`](#prop-02-end-to-end-idc-cascade) | End-to-end IDC cascade | Does IDC + a mirror-aware gate beat the entropy-only cascade? | `PROP-00`, `PROP-01` | Order | **P0** | Partly → EXP-14 (entropy gates); mirror gate moves to `PROP-13` |
+| [`PROP-03`](#prop-03-same-canvas-vs-separate-pass-mirror) | Same-canvas vs separate-pass mirror | Does sharing a canvas hide disagreement? | — | Order | P1 | **Closed**: replaced by `PROP-12` (done → [EXP-17](exp-17-separate-pass-mirror.md)) |
+| [`PROP-04`](#prop-04-order-sensitivity-on-real-chaosnli) | Order sensitivity on real `ChaosNLI` | Do entropy / Mirror TVD / cyclic JSD track real human disagreement? | — | Order, Laya | P1 | Proposed |
+| [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | Order | P1 | **Closed** → [EXP-14](exp-14-idc-rerun.md) (50/50 beats 70/30; neither beats single slot); mirror not used in production |
+| [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | Order | P1 | **Closed**: in-pass order corrections retired after EXP-13–EXP-17; order bias is monitored per release instead ([overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored)) |
+| [`PROP-07`](#prop-07-wording-invariance) | Wording invariance | How often does rephrasing an option change the decision? | — | Order | P2 | Proposed |
+| [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed? | — | Order | P2 | Proposed |
+| [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate (label-shift) adaptation | Can unlabeled target traffic correct for different class frequencies? | — | Order | P2 | Proposed |
+| [`PROP-11`](#prop-11-letter-collision-in-the-mirror) | Letter collision in the mirror | Is the mirror's damage caused by shared letters rather than by a second slot? | — | Order | **P0** | Done → [EXP-15](exp-15-letter-collision.md) (supported) |
+| [`PROP-12`](#prop-12-separate-pass-mirror) | Separate-pass mirror (replaces `PROP-03`) | Does a mirror read in its own pass give a clean order signal? | `PROP-11` | Order | P1 | Done → [EXP-17](exp-17-separate-pass-mirror.md) (supported, small effect) |
+| [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | Order | P1 | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
+| [`PROP-14`](#prop-14-in-context-vs-blank-question-prior) | In-context vs blank-question prior | Does a prior estimated from real items fix null-prior's overcorrection? | — | Order | P1 | Parked (research only): production monitors order rather than correcting it ([overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored)) |
+| [`PROP-15`](#prop-15-correction-strength-by-question-type) | Correction strength by question type (extends `PROP-06`) | Do yes/no and lettered choices need different correction strengths? | `PROP-14` | Order | P2 | Parked (research only, depends on `PROP-14`); see [overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored) |
+| [`PROP-16`](#prop-16-slot-names-are-part-of-the-prompt) | Slot names are part of the prompt | How much do slot ids change answers? | — | Order | P1 | Done → [EXP-16](exp-16-slot-names.md) (single slot: no; second slot: yes) |
+| [`PROP-17`](#prop-17-calibrated-agent-context-pre-compiler-internal-pilot) | Calibrated agent context pre-compiler (internal pilot) | Can one multi-slot pass decide which context blocks an agent turn needs, dropping little that matters? | — | Pilot | P2 | Running (internal pilot) |
+| [`PROP-18`](#prop-18-validate-image-metrics-beyond-exp-09) | Validate image metrics beyond EXP-09 | Which image aspects (location, presence/count, attributes/relations, quality/occlusion, domain checks) does one pass read reliably, judged against ground truth, Gemini 3.x and classical detectors? | — | DI | P1 | Phases 1–4 (pilot) done → [EXP-09 re-baseline](exp-09-spatial-grounding.md), [EXP-22](exp-22-image-readouts.md); real-image bench-vision, matrix image gate and live image cascade done; next: guided boxes and masks (next free EXP number) |
+| [`PROP-19`](#prop-19-cross-slot-coupling-on-mixed-polarity-yesno-questions) | Cross-slot coupling on mixed-polarity yes/no questions | Why do two yes/no answers in one request collapse to one label, and which serving change removes it? | — | Strands | **P0** | Proposed |
+| [`PROP-20`](#prop-20-shipped-temperature-per-question-type-and-domain) | Shipped temperature per question type and domain | Does a held-out temperature per type (and per policy) as a served default fix dgem's raw overconfidence without hurting error detection? | `PROP-01` | Laya, Strands, DI | **P0** | Proposed |
+| [`PROP-21`](#prop-21-fine-tuning-diffusiongemma-lora-on-the-letter-readout) | Fine-tuning DiffusionGemma: LoRA on the letter readout | Does a LoRA trained with a masked-denoising loss on answer slots raise in-domain accuracy and fix coupling without losing zero-shot breadth? | `PROP-19`, `PROP-20` | Laya, Strands, Clef | P1 | Proposed |
+| [`PROP-22`](#prop-22-distil-dgem-into-a-small-student) | Distil dgem into a small student | Do dgem's soft labels train a better 2B decision model than hard labels? | `PROP-20` | Strands | P2 | Proposed |
+| [`PROP-23`](#prop-23-nondeterminism-at-samples1) | Nondeterminism at `samples=1` | Where do the 5–7% answer changes between identical requests come from, and can serving remove them? | — | Laya, Strands | P1 | Proposed |
+| [`PROP-24`](#prop-24-wide-option-accuracy-626-options-and-beyond) | Wide-option accuracy (6–26 options and beyond) | Why does accuracy fall with option count even in a single read, and which readout change recovers it? | — | DI, Clef, Strands | P1 | Proposed |
+| [`PROP-25`](#prop-25-nli-neutral-pull) | NLI "neutral" pull | Why does dgem over-predict "neutral" on XNLI, and does wording or a per-label prior fix it on the validation split? | — | Laya, Strands | P2 | Proposed |
+| [`PROP-26`](#prop-26-first-shown-bias-on-small-option-sets) | First-shown bias on small option sets (extends `PROP-14`) | Does the first listed option win too often at K ≤ 6, and does an in-context prior remove it? | `PROP-14` | Laya, Strands | P2 | Parked (research only, with `PROP-14`): order bias is monitored per release, not corrected |
+
+### Queued re-runs
+
+Re-runs re-measure a published number after a harness or serving change; they need no hypothesis, but they are
+listed here so they are not lost. Each lands as a new run in `benchmarks/runs/` and a dated note on the affected EXP
+page (history is annotated, not rewritten).
+
+| Re-run | Why | Affects | Source | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| JevBench through `bench-jev` with ordinal `score` items kept as `score` | `bench-jev` flattens score items to choice; the `/v1/systemone` path keeps them ordinal and scores about 4–5 more of the 18 score items | EXP-11, EXP-14 to EXP-17 headline counts | Laya | Queued (needs the `bench-jev` change first) |
+| `--auto-temperature` fitted by k-fold, not in-sample | In-sample T is optimistic on 50 items | EXP-04, EXP-05, EXP-11 calibration figures | Laya | Queued |
+| Matrix v2 reference run (T1 + TC baseline only) | Sets reference ranges for `calib_systemone`, `intents_systemone`, `gate_mixed_noul` before v2 becomes the default | [Regression matrix](../operate/regression-matrix.md) | Strands | Queued |
+| EXP-23 on matrix v2 tier TC | The EXP-23 numbers came from the study harness that TC replaces; one TC run confirms the tooling reproduces them | [EXP-23](exp-23-strands-decider.md) | Strands | Queued (needs a competitor deployment) |
+
 
 ---
 
@@ -294,16 +320,128 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
   - About 5k dgem requests and 2k Gemini calls per full pass.
   - About 1 GPU-hour of GCE for the detector references.
   - Phase 2 needs Vertex Gemini access.
+### `PROP-19`: Cross-slot coupling on mixed-polarity yes/no questions
+
+* **Source:** Strands ([EXP-23](exp-23-strands-decider.md), section 5). Also filed as a bug.
+* **Motivation:** On 51 tool-call review cases with two yes/no questions per request, dgem's two answers carried the
+  same label in 34–40 cases (gold: 7) and it scored 58% (Strands Decider 86%). Asked one question per request, dgem
+  scored 100 of 102; through `dgem systemone serve --noul-mode choice`, 95 of 102. typed-decisions (200 yes/no pairs
+  in one request) shows no coupling, so the trigger is related wording with opposite answers.
+* **Hypothesis (H19):** Coupling comes from rendering both nouls as bare `yes`/`no` labels on one canvas. Rendering
+  them as two-option choices whose labels carry the true/false descriptions brings equal-answer cases on
+  `gate_mixed_noul` to ≤ 12 of 51 without moving JevBench or typed-decisions beyond the noise floor.
+* **Design:** Matrix v2 T1 plus `gate_mixed_noul_single`, on a canary next to production, 3 runs. Arms: current
+  rendering; noul-as-choice server-side; noul-as-choice plus neutral distinct letters per slot; one read per noul
+  (latency reference). Develop on a second, independently written gate suite; score `gate_mixed_noul` once.
+* **Metrics:** equal-answer cases (primary); gate accuracy; JevBench and typed-decisions agreement vs production;
+  latency.
+* **Decision:** Ship the best arm that passes T1 as the server default; add the coupling count to the matrix gates.
+* **Cost / Dependencies:** about 5k requests per arm; a server change in `structured_server.py`.
+
+### `PROP-20`: Shipped temperature per question type and domain
+
+* **Source:** Laya (held-out T ≈ 1.5 global, 2–3 for yes/no; T ≈ 3.3 on typed-decisions), Strands (EXP-23: one T ≈ 1.5
+  brings pooled ECE from 0.069 to 0.028; yes/no wants 1.6–3.5; raw dgem is 74% correct at ≥ 0.9 on XNLI), DI
+  (improvement plan track T1: overconfidence grows with option count).
+* **Motivation:** dgem's confidence ranks errors well (higher AUROC than both comparison models on most suites) but its
+  absolute level is too high off the development suites, so a "≥ 0.9 means act" policy over-automates.
+* **Hypothesis (H20):** Temperatures per question type and option-count bucket, fitted by k-fold on the matrix
+  development suites and served as defaults, cut ECE by ≥ 30% on every T1 suite and on the frozen sets (scored once),
+  with AUROC unchanged (± 0.01).
+* **Design:** Fit on T1 receipts (5-fold by case); evaluate on held-out folds, then on T2 frozen sets after shipping.
+  Compare global T, per-type T, per-type × bucket T. Per-policy override via template field (four-surface parity).
+* **Metrics:** ECE10 (primary), Brier, NLL, AUROC, coverage and accuracy at ≥ 0.9.
+* **Decision:** Ship the simplest variant within 0.005 ECE of the best.
+* **Cost / Dependencies:** offline on existing receipts, then one T1 + one T2 run.
+
+### `PROP-21`: Fine-tuning DiffusionGemma: LoRA on the letter readout
+
+* **Source:** Laya (a 421M encoder fine-tuned on 6,000 typed-decisions labels beat zero-shot dgem on that domain),
+  Strands (EXP-23: a 1.9B LoRA model matches dgem on its training tasks, 85.9% vs 85.2%, and trails by 10 points
+  elsewhere), Clef (a trained routing head leads on intent and taxonomy benchmarks).
+* **Motivation:** Fine-tuning is the main accuracy lever of every competitor; dgem's lead is its base model's breadth.
+  The diffusion objective matches inference exactly (unmask the answer slots), and a training canvas can hold several
+  questions with independent labels, which is the direct fix for `PROP-19`.
+* **Hypothesis (H21):** A rank-16 LoRA on attention and the shared expert (router frozen), trained with the masked
+  denoising loss on answer slots plus a proper scoring rule and a KL term to the frozen model, on Strands Decider's
+  public training corpus plus synthetic mixed-polarity canvases: (1) raises accuracy on the `train` exposure pool from
+  85% to ≥ 90%; (2) keeps JevBench ≥ 190 of 231; (3) brings `gate_mixed_noul` equal answers to ≤ 12 of 51; (4) lowers the
+  fitted yes/no temperature below 1.5.
+* **Design:** Same corpus as the competitor so the base model is the only difference. BF16 training (about 52 GB of
+  weights, 80 GB-class GPUs), merge, re-quantize to NVFP4, refit T. Spike first: vLLM structured mode with a merged
+  checkpoint on the G4 profile. Never train on JevBench or frozen sets; differences under 10 JevBench items are
+  unresolved.
+* **Metrics:** the four predictions; full T1 against production; frozen sets once, after the decision.
+* **Decision:** Ship only if (2) and T1 pass; otherwise publish the result and keep zero-shot as default.
+* **Cost / Dependencies:** training compute (hours on 8× H100-class), one canary; `PROP-19` and `PROP-20` define the
+  baselines.
+
+### `PROP-22`: Distil dgem into a small student
+
+* **Source:** Strands (its recipe distils from a frozen 4B teacher; about 1 hour on 8× H100).
+* **Hypothesis (H22):** Replacing the teacher in Strands Decider's recipe with dgem's temperature-scaled soft labels
+  gives a 2B student that beats v19 on the `unseen` exposure pool by ≥ 3 points at equal latency.
+* **Design:** One recipe change, same data and seeds; compare with v19 and with dgem on matrix TC.
+* **Decision:** If it holds, publish the recipe and offer the student as a CPU-capable option.
+* **Cost / Dependencies:** dgem labelling of the corpus (one batch job), training compute; `PROP-20` first.
+
+### `PROP-23`: Nondeterminism at `samples=1`
+
+* **Source:** Laya (5–7% answer changes between identical requests at `seed=42`), Strands (6.4%, EXP-23). Both
+  competitors are bit-identical across runs.
+* **Hypothesis (H23):** The changes come from batch composition in vLLM (requests batched with different neighbours),
+  not from sampling; serving with batch-invariant kernels or a fixed per-request seed path removes most of them at ≤ 10%
+  throughput cost.
+* **Design:** Identity runs at 1 vs 16 concurrent workers; then the candidate fixes on a canary.
+* **Metrics:** answer agreement between identical runs (primary), throughput.
+* **Decision:** Ship if agreement ≥ 99% and throughput ≥ 90% of current.
+* **Cost / Dependencies:** about 3k requests per arm; vLLM options.
+
+### `PROP-24`: Wide-option accuracy (6–26 options and beyond)
+
+* **Source:** DI (improvement plan findings F1 and F8: 6–26 options in one read already score 36% on the index
+  benchmarks), Clef (leads intent and taxonomy benchmarks by 20–55 points), Strands (EXP-23: banking77 with 30 options,
+  dgem 80% through the adapter vs 87% natively).
+* **Motivation:** Letter readout caps a slot at 26 options and loses accuracy well before that.
+* **Hypothesis (H24):** On `di_wide` and `intents_systemone`, hierarchical routing with calibrated finalists and option
+  descriptions in the prompt recovers ≥ 5 points over the current bracket routing. A pointer readout (`PROP-21` route B)
+  is the longer-term fix.
+* **Design:** Owned with the Decision Index improvement plan; develop on validation data only; T1 plus Decision Index
+  dev set.
+* **Decision:** Ship in the adapter if T1 passes.
+* **Cost / Dependencies:** adapter changes; no training.
+
+### `PROP-25`: NLI "neutral" pull
+
+* **Source:** Laya (XNLI: dgem predicted "neutral" for 659 of 1,500 contradictions and 714 of 1,500 entailments),
+  Strands (EXP-23: XNLI is dgem's smallest lead, 70.0% vs 63.7%, with ECE 0.227).
+* **Hypothesis (H25):** Clearer option descriptions or a per-label prior estimated in context raise XNLI validation
+  accuracy by ≥ 3 points without changing the calibration suite's NLI items.
+* **Design:** XNLI validation only for development; one scored test run after shipping.
+* **Cost / Dependencies:** about 5k requests.
+
+### `PROP-26`: First-shown bias on small option sets
+
+* **Source:** Laya (emotion, K=6: dgem picks the first-shown option 41.5% of the time vs 30.5% gold), Strands (EXP-23:
+  45.0% vs 30.5% on the same suite; Strands Decider 47%).
+* **Hypothesis (H26):** The in-context prior of `PROP-14` brings first-shown picks within 5 points of the gold rate
+  at K ≤ 6 without raising order flips.
+* **Design:** Option-order suite plus `PROP-14`'s items; extends `PROP-14`.
+* **Status:** Parked with `PROP-14`. Under hesitation-gating, order bias is monitored per release (the matrix's
+  option-order suite) rather than corrected; reopen only if the monitored first-shown rate rises.
+* **Cost / Dependencies:** `PROP-14`.
+
 
 ---
 
 ## 4. How to Add an Entry
 
-Copy this block, choose the next `PROP-XX`, and add a row to the table in §2:
+Copy this block, choose the next `PROP-XX`, and add a row (with its Source) to the table in §2:
 
 ```markdown
 ### `PROP-XX`: <title>
 
+* **Source:** <studies that raised it: Order, a comparison (e.g. Strands), DI; add to this list instead of duplicating>
 * **Motivation:** <which doc claim or open question this tests; link receipts>
 * **Hypothesis (HXX):** <falsifiable statement + pre-registered metric and threshold>
 * **Design:** <items, conditions, splits/CV, endpoint + revision>

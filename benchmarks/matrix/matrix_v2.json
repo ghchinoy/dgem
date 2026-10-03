@@ -1,0 +1,431 @@
+{
+ "version": "v2",
+ "description": "dgem regression matrix v2: v1 plus /v1/systemone equivalents of the dgem-CLI suites, a mixed-polarity yes/no suite, and a TC (model comparison) tier. Competitor targets (--competitor) run only suites whose kind is in competitor_kinds and never get verdicts. See docs/operate/regression-matrix.md and docs/operate/model-comparison.md. Changing what is in a tier means a new matrix version, never an edit to a past run.",
+ "tiers": {
+  "T0": [
+   "health",
+   "contract",
+   "calibration",
+   "massive_spot"
+  ],
+  "T1": [
+   "health",
+   "contract",
+   "calibration",
+   "massive_spot",
+   "jev_native",
+   "jev_systemone",
+   "intents_banking77",
+   "intents_clinc150",
+   "latency",
+   "di_probes",
+   "di_wide",
+   "di_catchall",
+   "rag_dev",
+   "calib_systemone",
+   "intents_systemone",
+   "gate_mixed_noul"
+  ],
+  "T2": [
+   "health",
+   "contract",
+   "calibration",
+   "massive_spot",
+   "jev_native",
+   "jev_systemone",
+   "intents_banking77",
+   "intents_clinc150",
+   "latency",
+   "massive",
+   "xnli",
+   "typed",
+   "order",
+   "bbox",
+   "decision_index",
+   "di_probes",
+   "di_wide",
+   "di_kit_compat",
+   "di_catchall",
+   "rag_dev",
+   "calib_systemone",
+   "intents_systemone",
+   "gate_mixed_noul"
+  ],
+  "TC": [
+   "health",
+   "jev_systemone",
+   "calib_systemone",
+   "intents_systemone",
+   "gate_mixed_noul",
+   "gate_mixed_noul_single",
+   "massive_spot",
+   "latency"
+  ]
+ },
+ "confirm_required": [
+  "T2"
+ ],
+ "suites": {
+  "health": {
+   "kind": "health",
+   "description": "/health: status ok, vLLM ready; records version, revision, vLLM commit"
+  },
+  "contract": {
+   "kind": "contract",
+   "description": "scripts/contract_diff.py cases (valid, edge, error, multilingual with known answers)"
+  },
+  "calibration": {
+   "kind": "dgem",
+   "args": [
+    "bench-calibration"
+   ],
+   "runs": {
+    "T0": 1,
+    "T1": 3,
+    "T2": 3
+   },
+   "n": 50,
+   "description": "calibration suite, dgem's production prompt path"
+  },
+  "massive_spot": {
+   "kind": "systemone",
+   "cases": "massive_spot",
+   "runs": 1,
+   "n": 100,
+   "description": "MASSIVE validation split, ru/th/hi/ja/es x 20, 20 options (non-Latin input on /v1/systemone)"
+  },
+  "jev_native": {
+   "kind": "dgem",
+   "args": [
+    "bench-jev"
+   ],
+   "runs": {
+    "T1": 3,
+    "T2": 3
+   },
+   "n": 231,
+   "description": "JevBench via dgem bench-jev (chat/completions)"
+  },
+  "jev_systemone": {
+   "kind": "systemone",
+   "cases": "jev_systemone",
+   "runs": {
+    "T1": 3,
+    "T2": 3,
+    "TC": 3
+   },
+   "n": 231,
+   "description": "JevBench via /v1/systemone with native noul/choice/score types"
+  },
+  "intents_banking77": {
+   "kind": "dgem",
+   "args": [
+    "bench-intents",
+    "--dataset",
+    "banking77"
+   ],
+   "runs": {
+    "T1": 3,
+    "T2": 3
+   },
+   "n": 30,
+   "description": "banking77 slice, 30 options (2-stage bracket)"
+  },
+  "intents_clinc150": {
+   "kind": "dgem",
+   "args": [
+    "bench-intents",
+    "--dataset",
+    "clinc150"
+   ],
+   "runs": {
+    "T1": 3,
+    "T2": 3
+   },
+   "n": 30,
+   "description": "clinc150 slice with out-of-scope"
+  },
+  "latency": {
+   "kind": "latency",
+   "description": "/v1/systemone keep-alive: q1, q5, q10, long_q1, q5_s4 x 100; sweep q1/q5 at 16 and 32 workers, >= 256 requests"
+  },
+  "massive": {
+   "kind": "systemone",
+   "cases": "massive",
+   "runs": 1,
+   "frozen": true,
+   "n": 5100,
+   "description": "MASSIVE test, 51 languages x 100, 20 options"
+  },
+  "xnli": {
+   "kind": "systemone",
+   "cases": "xnli",
+   "runs": 1,
+   "frozen": true,
+   "n": 4500,
+   "description": "XNLI test, 15 languages x 300"
+  },
+  "typed": {
+   "kind": "systemone",
+   "cases": "typed",
+   "runs": 1,
+   "frozen": true,
+   "n": 2000,
+   "description": "LocalLLaMA/typed-decisions test: 400 cases x 5 questions in one request"
+  },
+  "order": {
+   "kind": "systemone",
+   "cases": "order",
+   "permutes": [
+    "none",
+    "none2",
+    "random",
+    "reverse"
+   ],
+   "frozen": true,
+   "n": 739,
+   "description": "option order: MASSIVE-en 200, emotion 200, XNLI-en 200, JevBench choice 139; identical repeat + one shuffle + reversed"
+  },
+  "bbox": {
+   "kind": "dgem",
+   "args": [
+    "bench-bbox"
+   ],
+   "runs": 1,
+   "n": 12,
+   "description": "bounding-box localization (vision)"
+  },
+  "decision_index": {
+   "kind": "dgem",
+   "args": [
+    "bench-decision-index"
+   ],
+   "runs": 1,
+   "n": 22,
+   "description": "Decision Index stand-in panel (wide options, many slots)"
+  },
+  "di_probes": {
+   "kind": "adapter_probes",
+   "via": "adapter",
+   "description": "Decision Index adapter (dgem systemone serve, this checkout's binary) against the target: wide options at K=27/41/61/101/151/255 (answer + complete probabilities summing to 1), 12-question slot batching, ~31k-token input must answer or refuse with HTTP 422 and a kit marker"
+  },
+  "di_wide": {
+   "kind": "systemone",
+   "via": "adapter",
+   "cases": "di_wide",
+   "runs": {
+    "T1": 3,
+    "T2": 3
+   },
+   "n": 100,
+   "description": "MASSIVE validation (English) with the full ~60-label set as options, through the adapter's bracket routing"
+  },
+  "di_kit_compat": {
+   "kind": "kit_compat",
+   "via": "adapter",
+   "description": "Decision Index kit compatibility pass (86 requests) through the adapter; runs only when DGEM_DI_KIT_DIR and DGEM_DI_COMPAT_ROWS are set, otherwise reported as skipped"
+  },
+  "di_catchall": {
+   "kind": "systemone",
+   "via": "adapter",
+   "cases": "di_catchall",
+   "runs": {
+    "T1": 2,
+    "T2": 3
+   },
+   "n": 100,
+   "description": "CLINC150 validation (80 in-scope + 20 out-of-scope) in the Decision Index format, 151 options with an 'out of scope' catch-all, through the adapter; tracks in-scope answered as out-of-scope"
+  },
+  "rag_dev": {
+   "kind": "systemone",
+   "via": "adapter",
+   "cases": "rag_dev",
+   "runs": {
+    "T1": 2,
+    "T2": 3
+   },
+   "n": 198,
+   "description": "RAGTruth train (66 per task), the Decision Index hallucination wording with true/false criteria, through the adapter; tracks the yes/no 'no' bias (macro-F1 and recall on the hallucinated class)"
+  },
+  "calib_systemone": {
+   "kind": "systemone",
+   "cases": "calib_systemone",
+   "runs": {
+    "T1": 3,
+    "T2": 3,
+    "TC": 3
+   },
+   "n": 50,
+   "description": "calibration suite (benchmarks/calibration_suite.jsonl) as /v1/systemone bodies: the same items as `calibration`, runnable on any decision model; score items graded exactly on the nearest level"
+  },
+  "intents_systemone": {
+   "kind": "systemone",
+   "via": "adapter",
+   "cases": "intents_systemone",
+   "runs": {
+    "T1": 3,
+    "T2": 3,
+    "TC": 3
+   },
+   "n": 60,
+   "description": "banking77 (30 options) + clinc150 slices as /v1/systemone bodies with every option; dgem through the adapter's bracket routing, competitors directly"
+  },
+  "gate_mixed_noul": {
+   "kind": "systemone",
+   "cases": "gate_mixed_noul",
+   "runs": {
+    "T1": 3,
+    "T2": 3,
+    "TC": 3
+   },
+   "n": 102,
+   "description": "51 tool-call review cases, two yes/no questions per request with mostly opposite-polarity answers (EXP-23); the report also counts cross-slot answer coupling"
+  },
+  "gate_mixed_noul_single": {
+   "kind": "systemone",
+   "cases": "gate_mixed_noul_single",
+   "runs": 1,
+   "n": 102,
+   "description": "the same 102 questions, one per request: separates question difficulty from cross-slot coupling"
+  }
+ },
+ "excluded": {
+  "bench-rerank": "shells out to dgem decide sequentially and does not take a Vertex URL or token; add after it reads -u/-k",
+  "bench-ecotone": "needs the ecotone sidecar",
+  "bench-permutation": "16 synthetic items; covered by the order suite"
+ },
+ "thresholds": {
+  "agreement_margin_pp": 2.0,
+  "mcnemar_p": 0.01,
+  "multilingual_min_accuracy": 0.7,
+  "latency_p50_ratio_review": 1.1,
+  "latency_p50_ratio_fail": 1.25,
+  "throughput_ratio_min": 0.9,
+  "order_net_flip_delta_review": 0.05,
+  "reference_slack_items_frac": 0.02
+ },
+ "reference": {
+  "image": "v0.2.0",
+  "hardware": "Vertex G4 (g4-standard-48, 1x RTX PRO 6000), samples=1",
+  "runs": [
+   "benchmarks/runs/20261002-v020-reference-t2",
+   "benchmarks/runs/20261002-v020-release-t2"
+  ],
+  "note": "Accuracy ranges = min..max of per-run accuracy over two T2 sessions with the v0.2.0 server: production Vertex G4 (image 658ad8ee, 2026-10-02) and the release-gate canary (e37012a, same server code). Frozen sets have one run per session: min..max of the two values +/- 2 standard errors. Used in single-target mode; a REVIEW is within reference_slack below the range. Previous (v0.1.3) reference: benchmarks/runs/20261001-v013-reference-{t1,t2}. coverage = the highest answered share in the v0.1.3 and v0.2.0 reference runs (every suite answered every item under v0.1.3; jev_native lost one long_policy item to the 4,096-token context under v0.2.0's layout, so v0.2.0 at 4k reviews on coverage until the context is raised). v2 adds suites without reference ranges yet (INFO verdicts until a v2 reference run is recorded).",
+  "suites": {
+   "calibration": {
+    "accuracy": [
+     0.86,
+     0.9
+    ],
+    "runs": 6,
+    "n": 50,
+    "coverage": 1.0
+   },
+   "jev_native": {
+    "accuracy": [
+     0.8,
+     0.8174
+    ],
+    "runs": 6,
+    "n": 230,
+    "coverage": 1.0
+   },
+   "jev_systemone": {
+    "accuracy": [
+     0.8268,
+     0.8571
+    ],
+    "runs": 6,
+    "n": 231,
+    "coverage": 1.0
+   },
+   "intents_banking77": {
+    "accuracy": [
+     0.7667,
+     0.8333
+    ],
+    "runs": 6,
+    "n": 30,
+    "coverage": 1.0
+   },
+   "intents_clinc150": {
+    "accuracy": [
+     0.9667,
+     1.0
+    ],
+    "runs": 6,
+    "n": 30,
+    "coverage": 1.0
+   },
+   "massive_spot": {
+    "accuracy": [
+     0.9208,
+     0.9992
+    ],
+    "runs": 2,
+    "n": 100,
+    "coverage": 1.0
+   },
+   "massive": {
+    "accuracy": [
+     0.8133,
+     0.8365
+    ],
+    "runs": 2,
+    "n": 5100,
+    "coverage": 1.0
+   },
+   "xnli": {
+    "accuracy": [
+     0.6834,
+     0.7128
+    ],
+    "runs": 2,
+    "n": 4500,
+    "coverage": 1.0
+   },
+   "typed": {
+    "accuracy": [
+     0.703,
+     0.7475
+    ],
+    "runs": 2,
+    "n": 2000,
+    "coverage": 1.0
+   },
+   "di_wide": {
+    "accuracy": [
+     0.85,
+     0.89
+    ],
+    "runs": 6,
+    "n": 100,
+    "coverage": 1.0
+   },
+   "di_catchall": {
+    "accuracy": [
+     0.85,
+     0.88
+    ],
+    "runs": 6,
+    "n": 100,
+    "coverage": 1.0
+   },
+   "rag_dev": {
+    "accuracy": [
+     0.7576,
+     0.7727
+    ],
+    "runs": 6,
+    "n": 198,
+    "coverage": 1.0
+   }
+  }
+ },
+ "competitor_kinds": [
+  "systemone",
+  "latency"
+ ],
+ "tc_note": "TC = evidence level E2 of docs/operate/model-comparison.md: run with --target dgem=<url> --baseline dgem --competitor <name>=<url>#profile=<name>. For E3 add a single scored T2 run (--confirm) after the E2 report is written."
+}

@@ -270,6 +270,7 @@ export default defineConfig({
             { label: 'Latency and Capacity', slug: 'operate/latency-capacity' },
             { label: 'Operations Runbook', slug: 'operate/runbook' },
             { label: 'Regression Matrix', slug: 'operate/regression-matrix' },
+            { label: 'Comparing with Other Decision Models', slug: 'operate/model-comparison' },
             { label: 'Monitoring and Alerts', slug: 'operate/monitoring' },
             { label: 'Observability and Traces', slug: 'operate/observability' },
           ],
@@ -314,7 +315,7 @@ export default defineConfig({
         {
           label: 'Experiments & Research Log',
           items: [
-            { label: 'Experiment Ledger (EXP-01 – EXP-18)', slug: 'experiments' },
+            { label: 'Experiment Ledger (EXP-01 – EXP-23)', slug: 'experiments' },
             { label: 'Proposed Experiments Register', slug: 'experiments/proposed' },
             { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
             { label: 'Single-Pass Bounding Boxes, Re-baselined (EXP-09)', slug: 'experiments/exp-09-spatial-grounding' },
@@ -328,6 +329,7 @@ export default defineConfig({
             { label: 'Separate-Pass Mirror (EXP-17)', slug: 'experiments/exp-17-separate-pass-mirror' },
             { label: 'Judge Capabilities, mizan (EXP-18)', slug: 'experiments/exp-18-mizan-judge-capability' },
             { label: 'Validating Image Readouts (EXP-22)', slug: 'experiments/exp-22-image-readouts' },
+            { label: 'dgem vs Strands Decider 2B (EXP-23)', slug: 'experiments/exp-23-strands-decider' },
           ],
         },
       ],
