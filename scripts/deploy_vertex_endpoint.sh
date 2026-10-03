@@ -71,8 +71,10 @@ MAX_SEQS="${MAX_SEQS:-$P_SEQS}"
 # instead of refused). The Decision Index canary uses 32768. The L4 profile keeps 4096 (24 GB VRAM).
 if [ "${VERTEX_PROFILE}" = "l4" ]; then DEFAULT_CTX=4096; else DEFAULT_CTX=8192; fi
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-$DEFAULT_CTX}"
-# Container stdout/stderr to Cloud Logging. Dedicated endpoints default to off, which hides engine crashes.
-DISABLE_CONTAINER_LOGGING="${DISABLE_CONTAINER_LOGGING:-false}"
+# Container stdout/stderr to Cloud Logging. Off by default on these deployments, which hid an engine crash (EXP-20).
+# This script calls v1beta1, where the field is enableContainerLogging (disableContainerLogging is v1-only and was
+# silently ignored here).
+ENABLE_CONTAINER_LOGGING="${ENABLE_CONTAINER_LOGGING:-true}"
 CANVAS="${CANVAS:-128}"
 DEFAULT_SAMPLES="${DEFAULT_SAMPLES:-1}"
 MAX_INFLIGHT="${MAX_INFLIGHT:-8}"
@@ -196,7 +198,7 @@ DEPLOY_PAYLOAD=$(cat <<EOF
     "model": "${MODEL_RESOURCE}",
     "displayName": "${MODEL_DISPLAY_NAME}-deployment",
     "serviceAccount": "${SERVICE_ACCOUNT}",
-    "disableContainerLogging": ${DISABLE_CONTAINER_LOGGING},
+    "enableContainerLogging": ${ENABLE_CONTAINER_LOGGING},
     "dedicatedResources": {
       "machineSpec": {
         "machineType": "${MACHINE_TYPE}",
