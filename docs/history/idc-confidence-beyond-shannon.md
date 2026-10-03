@@ -5,6 +5,13 @@ description: "A plain-English guide to why a raw model confidence score can be m
 
 # Confidence Beyond Shannon: Invariant Decision Calibration (`IDC`)
 
+> **Historical (September 2026), not maintained.** This page describes "Invariant Decision Calibration (IDC)" as it
+> stood before experiments EXP-14 to EXP-17 showed that the same-pass reversed-order check does not improve decisions
+> (letter collision, slot names, and little gain as a separate pass). The current explanation of dgem's confidence
+> techniques is [Confidence beyond Shannon: hesitation-gated decisions](../confidence/overview.md). Relative links below
+> were written for the page's old location (`docs/`) and may not resolve.
+
+
 > **In one sentence:** IDC is a small set of cheap checks and corrections that make a `dgem` confidence score reflect **the question itself, not the position where each answer happened to be listed**, and that flag decisions whose answer changes when the list order changes.
 
 **Why "invariant"?** Reordering the answer options doesn't change the question, so it shouldn't change the decision or how confident the model is in it. A decision that stays the same under reordering is *invariant*. IDC measures how far `DiffusionGemma` is from that ideal and corrects for part of the gap.
@@ -27,7 +34,7 @@ description: "A plain-English guide to why a raw model confidence score can be m
 * **The problem.** Given a blank question with meaningless options, `DiffusionGemma` still picks the first option (`A`) 78–88% of the time. On a genuinely borderline question, that habit can turn a coin flip into a score like "99.9% sure". The usual uncertainty meter (Shannon entropy) then says "certain", and the case skips human or frontier-model review.
 * **The IDC idea.** (1) Measure the model's built-in preference for each position and divide it out (*null-prior de-biasing*). (2) Show the model the options in forward *and* reversed order **on the same canvas, in the same single forward pass**, and check whether the two readings agree (*Dual-Mirror*). (3) If you have labeled data, soften over-sharp scores (*temperature scaling*). (4) Send disagreeing or uncertain cases onward (*the gate*).
 * **What's new.** Steps 1 and 3 are known techniques from the LLM calibration literature. The part specific to `dgem` is step 2: because a diffusion model fills every answer slot at once, the reversed ballot costs **no extra forward pass**, which gives a free per-request "does order matter here?" signal.
-* **How strong is the evidence?** Mixed, and now measured on more data ([EXP-14](/dgem/experiments/exp-14-idc-rerun/), same-session re-run on 50 + 231 items). Null-prior de-biasing clearly helps on the 50-item suite but **not** on the 231-item JevBench set. Dual-Mirror had a naming bug that degraded readings (now fixed), and even after the fix a second slot on the same canvas lowers the forward reading on JevBench, so it is a **research diagnostic, not a production default**. Temperature scaling fitted on held-out data cuts calibration error by about a quarter to a third on 231 items, but not on 50. The entropy-gated cascade remains the most reliable gain. [Section 6](#6-the-evidence-so-far-with-sample-sizes) has the numbers.
+* **How strong is the evidence?** Mixed, and now measured on more data ([EXP-14](../experiments/exp-14-idc-rerun.md), same-session re-run on 50 + 231 items). Null-prior de-biasing clearly helps on the 50-item suite but **not** on the 231-item JevBench set. Dual-Mirror had a naming bug that degraded readings (now fixed), and even after the fix a second slot on the same canvas lowers the forward reading on JevBench, so it is a **research diagnostic, not a production default**. Temperature scaling fitted on held-out data cuts calibration error by about a quarter to a third on 231 items, but not on 50. The entropy-gated cascade remains the most reliable gain. [Section 6](#6-the-evidence-so-far-with-sample-sizes) has the numbers.
 
 ---
 
@@ -84,14 +91,14 @@ Same ticket, same options, only the order changed, yet confidence ranges from 61
 
 > ⚠️ **Honest footnotes on this example**
 >
-> * **It did not fully reproduce on another backend.** In the Vertex AI re-run ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)), `perm_08`'s single reading was already uncertain (hesitation 20%, escalated by entropy alone) and the forward/reversed gap was only 0.064. The example shows the mechanism, not a stable property of this item.
+> * **It did not fully reproduce on another backend.** In the Vertex AI re-run ([EXP-14](../experiments/exp-14-idc-rerun.md)), `perm_08`'s single reading was already uncertain (hesitation 20%, escalated by entropy alone) and the forward/reversed gap was only 0.064. The example shows the mechanism, not a stable property of this item.
 >
 > * **The forward slot changed too.** Adding the reversed slot moved the forward reading from 99.9% to 71.3%. On a diffusion canvas every slot can see every other slot, so the two readings are *not independent*: the mirror is part of the scene, not a detached observer. That is probably part of why it catches disagreement, but it also means the two readings could agree simply because they can see each other. A same-canvas vs. separate-pass ablation is still needed (see [§6](#6-the-evidence-so-far-with-sample-sizes)).
 > * **The mirror only tests one reordering.** On `perm_06` (a surgeon sighing after an operation: complication or just tiredness?), moving the options to a different order in a separate pass flips the answer from `neutral` to `entailment`. But the forward and *reversed* readings agree (TVD = **0.0006**), so the mirror does **not** flag it. Dual-Mirror is a smoke detector for one kind of order sensitivity, not a proof of invariance.
 
 The measured points for both cases are plotted below, next to a reliability diagram recomputed from the 50-item calibration receipts:
 
-![Measured IDC behaviour: perm_08 and perm_06 on probability triangles, and 10-bin reliability curves on the 50-item calibration suite](/dgem/assets/idc/idc_3way_simplex_and_reliability.webp)
+![Measured IDC behaviour: perm_08 and perm_06 on probability triangles, and 10-bin reliability curves on the 50-item calibration suite](../assets/idc/idc_3way_simplex_and_reliability.webp)
 
 ---
 
@@ -118,7 +125,7 @@ flowchart LR
 
 The illustration below shows what each step does to the decision boundary. It uses synthetic curves, not measured data:
 
-![Illustration of the IDC steps as decision-boundary geometry (synthetic)](/dgem/assets/idc/idc_5stage_decision_boundaries_2d.webp)
+![Illustration of the IDC steps as decision-boundary geometry (synthetic)](../assets/idc/idc_5stage_decision_boundaries_2d.webp)
 
 <details>
 <summary><strong>The maths in one place</strong> (click to expand)</summary>
@@ -135,7 +142,7 @@ $$z(\ell_k \mid X, \pi) = \underbrace{s(o_{\pi(k)} \mid X)}_{\text{what we want:
 
 The conceptual picture: an honest score should say 50% where the two classes genuinely overlap. A raw, position-biased, over-sharp score doesn't:
 
-![Illustration: how position bias and over-sharp scores distort confidence (synthetic)](/dgem/assets/idc/idc_1d_class_intersections.webp)
+![Illustration: how position bias and over-sharp scores distort confidence (synthetic)](../assets/idc/idc_1d_class_intersections.webp)
 
 ---
 
@@ -144,7 +151,7 @@ The conceptual picture: an honest score should say 50% where the two classes gen
 * **Wording sensitivity.** Rephrasing an option label can shift scores. IDC only deals with *order*.
 * **Missing context.** If a decisive fact is absent (for example, the sender's domain on a phishing check), the model can be confidently wrong in *both* orders. IDC only helps when the gap happens to show up as entropy or mirror disagreement.
 * **Full order invariance.** Dual-Mirror checks one alternative order. `perm_06` shows another order can still flip the answer. Only the $K$-pass cyclic ensemble tests every rotation.
-* **Real-world base rates.** A score can be well calibrated on a benchmark and still wrong for a deployment where one class is rare (1% fraud vs 50% fraud). There's no base-rate flag today. Target-domain calibration still needs labeled target data (see the [Glossary](/dgem/glossary/#relative-tie-detection-vs-target-domain-probability-calibration)).
+* **Real-world base rates.** A score can be well calibrated on a benchmark and still wrong for a deployment where one class is rare (1% fraud vs 50% fraud). There's no base-rate flag today. Target-domain calibration still needs labeled target data (see the [Glossary](../glossary.md#relative-tie-detection-vs-target-domain-probability-calibration)).
 * **Independence of the two readings.** The forward and reversed slots see each other on the canvas (see [§3](#3-a-worked-example-one-decision-step-by-step)).
 
 ---
@@ -185,7 +192,7 @@ Every row is recomputed from the stored per-item probabilities. **Caveat:** the 
 
 ### 6c. Same-session re-run on Vertex AI (EXP-14)
 
-A single session against the Vertex AI endpoint, with interleaved baselines and versioned receipts ([EXP-14](/dgem/experiments/exp-14-idc-rerun/), `benchmarks/runs/20260925-vertex-idc*`):
+A single session against the Vertex AI endpoint, with interleaved baselines and versioned receipts ([EXP-14](../experiments/exp-14-idc-rerun.md), `benchmarks/runs/20260925-vertex-idc*`):
 
 | Question | 50-item suite | JevBench (231 items) |
 | :--- | :--- | :--- |
@@ -196,11 +203,11 @@ A single session against the Vertex AI endpoint, with interleaved baselines and 
 | Temperature fitted on held-out folds | no reliable gain | ECE 0.081 → 0.054–0.061 (24–33%), $T^* \approx 1.5$ |
 | Entropy cascade to Gemini (offline, hesitation ≥ 16%) | 48/50 at 34% escalated (Gemini alone 48/50) | **221/231 at 39% escalated** (Gemini on all: 225) |
 
-**Follow-up ([EXP-15](/dgem/experiments/exp-15-letter-collision/)):** the mirror's damage is caused by **letter collision**. The server labels every choice A, B, C…, so in a reversed slot the same letter means a different option, and the model copies letters across slots. An identical copy (184) and a reversed slot labelled with digits (`--mirror-mode reversed-digits`, 182) stayed within the baseline noise band (182–189), while the lettered reversed slot fell to 154. On that run, the digit mirror's disagreement added little error detection beyond hesitation (AUROC 0.852 → 0.854).
+**Follow-up ([EXP-15](../experiments/exp-15-letter-collision.md)):** the mirror's damage is caused by **letter collision**. The server labels every choice A, B, C…, so in a reversed slot the same letter means a different option, and the model copies letters across slots. An identical copy (184) and a reversed slot labelled with digits (`--mirror-mode reversed-digits`, 182) stayed within the baseline noise band (182–189), while the lettered reversed slot fell to 154. On that run, the digit mirror's disagreement added little error detection beyond hesitation (AUROC 0.852 → 0.854).
 
-**Follow-up ([EXP-16](/dgem/experiments/exp-16-slot-names/)):** the second slot's *name* matters too. With identical options (no letter collision), naming it `__mirror_rev` cost 19 items versus `__rev`; single-slot ids made no difference. The original dual-mirror collapse had both causes.
+**Follow-up ([EXP-16](../experiments/exp-16-slot-names.md)):** the second slot's *name* matters too. With identical options (no letter collision), naming it `__mirror_rev` cost 19 items versus `__rev`; single-slot ids made no difference. The original dual-mirror collapse had both causes.
 
-**Follow-up ([EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/)):** reading the reversed order in a *separate* pass avoids interference. Its disagreement is statistically related to errors beyond hesitation (partial Spearman 0.13, CI [0.03, 0.24]), but two ordinary forward passes disagree in a similarly informative way, and cross-validated error detection improves by at most 0.016 AUROC, at double the cost. Hesitation alone already detects most errors (AUROC ≈ 0.85).
+**Follow-up ([EXP-17](../experiments/exp-17-separate-pass-mirror.md)):** reading the reversed order in a *separate* pass avoids interference. Its disagreement is statistically related to errors beyond hesitation (partial Spearman 0.13, CI [0.03, 0.24]), but two ordinary forward passes disagree in a similarly informative way, and cross-validated error detection improves by at most 0.016 AUROC, at double the cost. Hesitation alone already detects most errors (AUROC ≈ 0.85).
 
 ### 6d. What is not yet measured
 
@@ -209,7 +216,7 @@ A single session against the Vertex AI endpoint, with interleaved baselines and 
 3. **More ambiguous items:** 4 synthetic "ChaosNLI-style" items is too few. Real `ChaosNLI` items with 100-annotator label distributions would give a much stronger test.
 4. **Prior strength on more than one suite (`PROP-06`):** null-prior's opposite effects on the two suites need explaining.
 
-The structural gains in `EXP-12` (bracket tournaments for more than 26 options, batching more than 10 slots) are about *coverage*, not calibration. They're reported separately in [EXP-12](/dgem/experiments/exp-12-decision-index/) (19-item internal panel).
+The structural gains in `EXP-12` (bracket tournaments for more than 26 options, batching more than 10 slots) are about *coverage*, not calibration. They're reported separately in [EXP-12](../experiments/exp-12-decision-index.md) (19-item internal panel).
 
 ---
 

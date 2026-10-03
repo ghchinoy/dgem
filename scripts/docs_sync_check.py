@@ -43,6 +43,9 @@ RENAMES = {
     "benchmarks-report.md": "benchmarks.md",
     "experiments/README.md": "experiments/index.md",
     "index.md": None,  # docs-site uses a bespoke index.mdx landing page
+    "confidence-beyond-shannon.md": None,  # GitHub stub; the site redirects to /confidence/overview/
+    "history/idc-confidence-beyond-shannon.md": None,  # docs-only historical page (not published)
+    "history/confidence-journey.md": None,  # docs-only historical narrative (not published)
 }
 
 LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")

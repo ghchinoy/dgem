@@ -85,7 +85,7 @@ Applying **Logit-Space Null-Prior De-Biasing** ($\tilde{p}_k \propto p_k / p_0(k
 
 | Hypothesis | Verdict | Evidence |
 | :--- | :--- | :--- |
-| **`H1`** Content-free Slot-`'A'` bias exists; subtracting it improves calibration | ✅ **Supported** (bias); ⚠️ **Mixed** (effect) | Bias is large (`88% / 78% / 49%`). Brier improves `-90.2%` on already-correct answers, but cyclic flip rate rises `12.5% → 25%`. On the 50-item calibration suite it is the best IDC component (see [IDC §6](/dgem/confidence-beyond-shannon/#6-the-evidence-so-far-with-sample-sizes)). |
+| **`H1`** Content-free Slot-`'A'` bias exists; subtracting it improves calibration | ✅ **Supported** (bias); ⚠️ **Mixed** (effect) | Bias is large (`88% / 78% / 49%`). Brier improves `-90.2%` on already-correct answers, but cyclic flip rate rises `12.5% → 25%`. On the 50-item calibration suite it is the best IDC component (see [IDC §6](/dgem/confidence/overview/)). |
 | **`H2`** Single-pass entropy can miss order-sensitive items; cyclic JSD reveals them | ✅ **Supported** (n=4) | `perm_06` and `perm_08` have $\tilde{H} < 0.04$ with large cyclic JSD. |
 | **`H3`** Dual-Mirror is `O(1)`, cancels position bias, gives a live disagreement signal | ⚠️ **Partly** | `O(1)` latency ✅; live signal ✅ (`perm_08`); Brier **worse** (`0.0410`); "0% reversal flip" is by construction; misses `perm_06`. |
 | **`H4`** Entropy + Mirror gate catches every order-unstable ambiguity | ❌ **Not supported** | Catches `perm_07` and `perm_08`; misses `perm_06`. Also escalates 3 correct non-ambiguous items (`perm_10`, `perm_12`, `perm_16`). |

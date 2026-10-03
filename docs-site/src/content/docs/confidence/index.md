@@ -4,7 +4,8 @@ description: "How dgem assures confidence in its decisions: per-answer probabili
 ---
 
 For teams who need to know when a `dgem` decision can be trusted, and how we check that. Every claim below links
-to a measurement with its sample size; simulated or illustrative numbers are labelled as such.
+to a measurement with its sample size; simulated or illustrative numbers are labelled as such. For the full picture of
+why `dgem` decisions can be trusted, start with [Confidence beyond Shannon: hesitation-gated decisions](/dgem/confidence/overview/).
 
 ## What you get with every answer
 
@@ -31,11 +32,12 @@ Why a model can read its own confidence in one pass, in plain language:
 3. **Escalate only what needs it.** A Stage 2 cascade to Gemini on answers above 16% hesitation reached 221/231 on
    JevBench while escalating 39% (Gemini on everything: 225/231), and 48/50 on the calibration suite at 34%
    escalated ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)).
-4. **Test for known biases.** The model has a measurable preference for the first option when unsure; the IDC
-   work measures it and tests corrections ([Confidence beyond Shannon](/dgem/confidence-beyond-shannon/)).
-5. **Re-validate on every serving change.** A new serving image is compared with production on the same
-   benchmarks, three runs each, before it takes traffic
-   ([image parity run](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20260927-image-parity/README.md)).
+4. **Monitor known biases.** The model has a measurable preference for the first option when unsure; it is measured
+   on every release rather than corrected, because the corrections we tested did not help reliably
+   ([Confidence beyond Shannon](/dgem/confidence/overview/#43-order-bias-measured-and-monitored)).
+5. **Re-validate on every serving change.** A new serving image is compared with production in the
+   [regression matrix](/dgem/operate/regression-matrix/), judged against the run-to-run agreement measured in the same
+   session, before it takes traffic.
 
 ## What is recommended today
 
@@ -44,14 +46,15 @@ Why a model can read its own confidence in one pass, in plain language:
 | Hesitation gate (~16%) | **Recommended** | Catches most errors at low cost ([EXP-14](/dgem/experiments/exp-14-idc-rerun/), [EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/)) |
 | Stage 2 cascade to Gemini on hesitant answers | **Recommended** where a larger model is acceptable | EXP-05, EXP-14 |
 | `samples: 4` for an error bar | Use where agreement matters | Adds ~35–40 ms |
-| Temperature scaling | Optional; fit on held-out data | Helped on JevBench, not on the 50-item suite (EXP-14) |
+| Temperature scaling | **Recommended per policy**, fit on held-out data | Best temperature ranges from 1.2 to 3.6 by domain ([v0.2.0 reference](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261002-v020-reference-t2/report.md)) |
+| `document_first` prompt layout | **Default** from serving v0.2.0 | Gains of 3–12 points on multi-question and wide-option sets ([prompt layout](/dgem/policies/prompt-layout/)) |
 | Null-prior de-biasing | Research: helps one suite, hurts another | EXP-13, EXP-14 |
 | Reversed-order ("mirror") check | Research: little gain over hesitation for double the cost | [EXP-15](/dgem/experiments/exp-15-letter-collision/)–[EXP-17](/dgem/experiments/exp-17-separate-pass-mirror/) |
 
 ## Caveats
 
-- **Sample sizes are small.** 50 and 231 items give coarse calibration estimates; differences of about ±2 items
-  (231) are run-to-run noise ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)).
+- **Small suites are noisy.** 50 and 231 items give coarse calibration estimates; two identical runs agree on 94–99% of
+  answers depending on the suite ([regression matrix](/dgem/operate/regression-matrix/)).
 - **Individual answers depend on the serving image.** Accuracy was unchanged across the last runtime upgrade, but
   about 5% of items changed answer; don't compare per-item results across images.
 - **Calibration is policy- and data-specific.** Numbers on public suites don't transfer automatically; check your
@@ -59,7 +62,7 @@ Why a model can read its own confidence in one pass, in plain language:
 
 ## Read more
 
-- [Confidence beyond Shannon (IDC)](/dgem/confidence-beyond-shannon/): the full calibration toolkit and evidence.
+- [Confidence beyond Shannon: hesitation-gated decisions](/dgem/confidence/overview/): the techniques behind trustworthy decisions and their evidence.
 - [How the model decides in one pass](/dgem/confidence/architecture/): discrete diffusion vs autoregression.
 - [Benchmark report](/dgem/benchmarks/), [Ecotone comparison](/dgem/ecotone-comparison/), and the
   [experiment ledger](/dgem/experiments/) with pre-registered [proposed experiments](/dgem/experiments/proposed/).
