@@ -102,11 +102,17 @@ changes against it.
 | Accuracy suites (baseline mode) | answer agreement between candidate and baseline is at least the measured within-target agreement minus 2 points, **and** a paired McNemar test is not significant (p ≥ 0.01) | REVIEW if one fails, FAIL if both |
 | Accuracy suites (single target) | mean accuracy at or above the reference range | REVIEW within 2% below it, FAIL further below |
 | Multilingual spot check | every language at least 70% | FAIL |
+| Coverage | every accuracy suite answers as many items as the baseline (baseline mode) or at least the reference coverage (single target). Unanswered items are classified as `context` (prompt longer than the served context), `capacity` (server shape limits), `na` (skipped by the matrix) or `error`, in the report and in `summary.json` (`refusals`) | REVIEW |
 | Option order | net flip rate (permuted minus identical-repeat) no more than 0.05 above the baseline | REVIEW |
 | Latency | every mode's p50 within ×1.10 of the baseline, throughput at least ×0.90, 0 errors | REVIEW up to ×1.25, FAIL beyond or on errors |
 | Bounding boxes, Decision Index | reported, not gated (INFO) | — |
 
 Thresholds live in `matrix_v1.json` (`thresholds`). Look at a REVIEW before promoting; a FAIL blocks.
+
+Accuracy is computed over answered items, so the coverage gate is what catches an item that starts being refused, for
+example a prompt that a new prompt layout pushes past the served context length. Under v0.2.0 at a 4,096-token context
+one JevBench `long_policy` item is refused (`context`), so single-target runs review on coverage until the context is
+raised.
 
 ## Decision Index adapter track
 

@@ -245,6 +245,13 @@
       "null"
      ],
      "description": "share of multi-question cases with every field right; null for single-question suites"
+    },
+    "refusals": {
+     "type": "object",
+     "description": "unanswered items by reason: context (prompt longer than the served context), capacity (server shape limits), na (skipped by the matrix), error",
+     "additionalProperties": {
+      "type": "integer"
+     }
     }
    }
   },
@@ -387,6 +394,13 @@
       "number",
       "null"
      ]
+    },
+    "refusals": {
+     "type": "object",
+     "description": "unanswered items by reason: context (prompt longer than the served context), capacity (server shape limits), na (skipped by the matrix), error",
+     "additionalProperties": {
+      "type": "integer"
+     }
     }
    }
   }

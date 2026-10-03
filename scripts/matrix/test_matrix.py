@@ -347,6 +347,17 @@ class TestReport(unittest.TestCase):
         self.assertIn(D.CLINC, lock)
         self.assertIn(D.RAGTRUTH, lock)
 
+    def test_refusal_reasons(self):
+        self.assertEqual(M.refusal_reason(400, "This model's maximum context length is 4096 tokens"), "context")
+        self.assertEqual(M.refusal_reason(422, "unsupported"), "capacity")
+        self.assertEqual(M.refusal_reason(400, "schema: at most 26 alternatives"), "capacity")
+        self.assertEqual(M.refusal_reason("n/a", None), "na")
+        self.assertEqual(M.refusal_reason(None, "timed out"), "error")
+        r = {"kind": "systemone", "cases": [{"status": 200}, {"status": 502, "error": "maximum context length"},
+                                            {"status": "n/a"}]}
+        self.assertEqual(M.refusals(r), {"context": 1, "na": 1})
+        self.assertEqual(M.refusals({"cases": [{"error": "HTTP 502 maximum context length"}, {}]}), {"context": 1})
+
     def test_target_options(self):
         from matrix.targets import Target
         t = Target("doc", "http://h:8080/v1#layout=document_first")
