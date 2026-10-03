@@ -22,6 +22,7 @@ DGEM_MATRIX_TOKEN always wins (an API key for a self-hosted server's API_KEY, or
 Sources, in order: GCE/Cloud Run metadata server, then Application Default Credentials
 (~/.config/gcloud/application_default_credentials.json, authorized_user refresh token), then gcloud.
 """
+import http.client
 import json
 import os
 import subprocess
@@ -107,6 +108,38 @@ def token_for(url):
         return tok
 
 
+CONNECT_TIMEOUT = 20.0  # TCP connect + TLS handshake; the read timeout (timeout=) can be much longer
+
+
+class _HTTPSConnection(http.client.HTTPSConnection):
+    """Connect and handshake under CONNECT_TIMEOUT, then switch the socket to the request's read timeout. A plain
+    urlopen(timeout=300) let a wedged TLS handshake hang a worker for minutes per attempt (seen against Vertex)."""
+
+    def __init__(self, *a, read_timeout=None, **kw):
+        self._read_timeout = read_timeout
+        super().__init__(*a, **kw)
+
+    def connect(self):
+        self.timeout = CONNECT_TIMEOUT
+        super().connect()
+        self.sock.settimeout(self._read_timeout)
+
+
+class _HTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, read_timeout):
+        super().__init__()
+        self._rt = read_timeout
+
+    def https_open(self, req):
+        return self.do_open(lambda host, **kw: _HTTPSConnection(host, read_timeout=self._rt, **kw), req)
+
+
+def _open(req, timeout):
+    if req.full_url.startswith("https://"):
+        return urllib.request.build_opener(_HTTPSHandler(timeout)).open(req, timeout=timeout)
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
 def request(url, body=None, method=None, timeout=300, retries=3, raw=False):
     """-> (status, parsed JSON or text, wall_ms, headers). Retries 429/5xx and network errors with backoff."""
     data = None if body is None else (body if isinstance(body, bytes) else json.dumps(body).encode())
@@ -120,7 +153,7 @@ def request(url, body=None, method=None, timeout=300, retries=3, raw=False):
         req = urllib.request.Request(url, data=data, method=method, headers=hdr)
         t0 = time.perf_counter()
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with _open(req, timeout) as r:
                 b = r.read()
                 ms = (time.perf_counter() - t0) * 1000
                 return r.status, (b if raw else _parse(b)), ms, dict(r.headers)
