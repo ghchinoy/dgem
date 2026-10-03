@@ -4,7 +4,7 @@ For decades, software engineers and product teams had to choose between two extr
 
 **DiffusionGemma** introduces a third paradigm: **Discrete Diffusion Decision Models**.
 
-> ✨ **Interactive Walkthrough**: New to decision models? [**Open the plain-language walkthrough ➔**](https://ghchinoy.github.io/dgem/visualizer.html): what a decision model is, one pass vs. word-by-word, when to trust an answer (hesitation), and built-in guardrails. The full version, with a live IDC order-check demo and a glossary, is the **Concepts** tab in Decision Studio (`./bin/dgem serve`).
+> ✨ **Interactive Walkthrough**: New to decision models? [**Open the plain-language walkthrough ➔**](https://ghchinoy.github.io/dgem/visualizer.html): what a decision model is, one pass vs. word-by-word, when to trust an answer (hesitation), and built-in guardrails. The full version, with a hesitation-gating walkthrough and a glossary, is the **Concepts** tab in Decision Studio (`./bin/dgem serve`).
 
 ---
 
@@ -18,7 +18,7 @@ If you are a Product Manager, Engineering Leader, or Systems Architect, here is 
 2. **Autoregressive LLMs (`~2,500 ms` · Instant Setup, Slow & Overconfident at Runtime)**:
    Chat models let you define categories on the fly in plain English (*zero-shot*). **The catch:** They generate text one word at a time from left to right. Using a chat LLM just to classify a ticket into three fields is like asking a novelist to write a paragraph just to check a box—and because it outputs a plain string (`"department": "Technical"`), **it hides whether the model was 99% certain or guessing 51/49 on a coin flip**.
 3. **Decision Models (`dgem` + `DiffusionGemma` · `~450 ms` · Zero-Shot Setup + Per-Field Uncertainty)**:
-   Instead of generating words left to right, `DiffusionGemma` evaluates all of your decision blanks simultaneously on a fixed canvas in **one single pass (`~450 ms`)**. Because it locks directly onto your allowed options, it cannot emit invalid JSON or an off-menu label—and it returns a per-field **uncertainty score (`Shannon Entropy` in `nats`)**. That score is a strong starting signal, not a guarantee: see [how it can be fooled and how `dgem` checks it](confidence-beyond-shannon.md).
+   Instead of generating words left to right, `DiffusionGemma` evaluates all of your decision blanks simultaneously on a fixed canvas in **one single pass (`~450 ms`)**. Because it locks directly onto your allowed options, it cannot emit invalid JSON or an off-menu label—and it returns a per-field **uncertainty score (`Shannon Entropy` in `nats`)**. That score is a strong starting signal, not a guarantee: see [how it can be fooled and how `dgem` checks it](confidence/overview.md).
 
 ### How the Entropy Gate Works (The "Triage Nurse vs. Specialist" Pattern)
 In real products, **70%+ of incoming requests are obvious** (e.g., *"Our API is returning 502 Bad Gateway"*), while **~25–30% are genuinely mixed** (e.g., *"Our API is returning 502 Bad Gateway AND we are disputing our $45,000 Q3 invoice"*).
@@ -92,7 +92,7 @@ When deploying mission-critical systems (such as high-volume customer triage, au
 | **1. The Context Horizon Dilemma** | **Zero context** (Bag-of-Words). Fails on negation. | **Local window (1–3 tokens)**. Fails on semiotic polysemy. | **Full sequence (unidirectional)**. Deep reasoning. | **Full sequence (bidirectional)**. Deep syntax + slot cross-attention. |
 | **2. The Latency & Compute Tax** | **Microseconds** (&lt; 1 ms on CPU). | **Single-digit ms** (1–5 ms on CPU). | **Multi-second** (2,000–15,000 ms sequential loop). | **Sub-second** (750–1,100 ms single forward pass). |
 | **3. The Syntactic Guarantee** | Categorical output guaranteed. | Regular grammar output guaranteed. | **Probabilistic formatting**. Can hallucinate or drift. | **100% Schema-Guaranteed**. Readout directly into pre-allocated slots. |
-| **4. Uncertainty Calibration** | **Overconfident** ($0.9999$ or $0.0001$). Unusable. | Static arc weights. No probabilistic variance. | Logprobs available, but tied to serial token branches. | **Per-slot probabilities & entropy** ($\pm\sigma$ and $H$); calibration via [IDC](confidence-beyond-shannon.md). |
+| **4. Uncertainty Calibration** | **Overconfident** ($0.9999$ or $0.0001$). Unusable. | Static arc weights. No probabilistic variance. | Logprobs available, but tied to serial token branches. | **Per-slot probabilities & entropy** ($\pm\sigma$ and $H$); hesitation-gating and per-domain calibration ([details](confidence/overview.md)). |
 
 ---
 
@@ -128,7 +128,7 @@ While autoregressive LLMs apply a causal mask (token 5 cannot look ahead at toke
 At the target slot position, the model projects the latent representation directly against the authorized token vocabulary for that question. For a boolean question (`"type": "boolean"`), the softmax is restricted strictly to `{ "yes", "no" }`. For a categorical question (`"type": "choice"`), the projection is restricted strictly to the declared category options.
 
 ### 4. Dual-Mode Uncertainty Telemetry & Epistemic Calibration (`ChaosNLI`)
-Because decision models project onto restricted candidate vocabularies rather than open-ended decoding paths, they expose clean per-slot probabilities. These are a strong *uncertainty signal*, though not automatically *calibrated* probabilities (calibration to a real deployment needs labeled data; see [IDC](confidence-beyond-shannon.md)):
+Because decision models project onto restricted candidate vocabularies rather than open-ended decoding paths, they expose clean per-slot probabilities. These are a strong *uncertainty signal*, though not automatically *calibrated* probabilities (calibration to a real deployment needs labeled data; see [Confidence beyond Shannon](confidence/overview.md)):
 * **Empirical Standard Error ($\pm\sigma$)**: On Apple Silicon Metal, multi-seed perturbation noise draws reveal whether the model has high consensus ($\pm 0.0000$) or ambiguity ($\pm 0.1500$).
 * **Monotonic Shannon Entropy ($H = -\sum p_k \ln p_k$)**: Evaluated on [`ChaosNLI`](benchmarks-report.md) (100 human annotators per item), DiffusionGemma's single-pass Shannon entropy correlates monotonically with human disagreement:
 
@@ -143,7 +143,7 @@ When human annotators agree, DiffusionGemma resolves the slot with **100% accura
 
 > **Provenance note (2026-09-25):** The entropies in this table are the raw (T=1) values from the first version of `results_calibration_cloudrun.json` (commit `d0a3fce`). Commit `fb6583c` rewrote that file with temperature scaling at T=1.35. The rescaled values are 0.1878 nats for low-entropy and 0.7334 nats for high-entropy, a 3.9× multiplier instead of 8.0×. Accuracy is unchanged. Each ChaosNLI tier has only n=3 items, so treat the multiplier as illustrative.
 
-> **But raw entropy can be fooled.** The table above uses one fixed option order, and only 3 items sit in each ChaosNLI tier, so treat the 8× figure as a direction rather than a constant. `DiffusionGemma` has a strong habit of picking whichever option is listed first ("Box A"). On a borderline question that habit can make a coin flip *look* like 99.9% certainty, and the entropy gate then waves it through. **[Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](confidence-beyond-shannon.md)** explains the problem with a worked example, describes the checks `dgem` adds (removing the Box-A habit, reading a reversed ballot in the same pass, temperature scaling), and reports what the evidence does and doesn't show so far.
+> **But raw entropy can be fooled.** The table above uses one fixed option order, and only 3 items sit in each ChaosNLI tier, so treat the 8× figure as a direction rather than a constant. `DiffusionGemma` has a strong habit of picking whichever option is listed first ("Box A"). On a borderline question that habit can make a coin flip *look* like 99.9% certainty, and the entropy gate then waves it through. **[Confidence beyond Shannon: hesitation-gated decisions](confidence/overview.md)** explains how `dgem` handles this: it hands hesitant answers to a larger model, keeps the answer template and prompt layout from distorting the probabilities, monitors option-order bias on every release, and calibrates per domain, with the evidence for each.
 
 ### 5. Templates as Executable Decision Policies (`Policy-as-Code`)
 In classical ML or fine-tuned encoder architectures (such as `DeBERTa-v3` or `Llama-Guard`), the decision policy is baked into static linear classification weights. If security engineering adds a 4th trajectory hijack state (`injection_point` vs. `hijacked` vs. `failed_injection`), the classifier head must be retrained.
@@ -197,7 +197,7 @@ DiffusionGemma does not replace FSTs or conversational LLMs; it fills the critic
 | **How are policies updated?** | Relabel dataset & retrain weights | Prompt engineering + output parser | **Declarative `.json.tmpl` (`Policy-as-Code`)** |
 | **How fast is it?** | Microseconds – 20 ms | 2 – 17.5 seconds | **458.9 – 712 ms (1 forward pass)** |
 | **Can slots attend to each other?** | No (independent heads) | Unidirectional (`left -> right` only) | **Yes (`slot_1 <-> slot_2` bidirectionally)** |
-| **Does it know when it's unsure?** | Overconfident out-of-domain | Uncalibrated sequence logprobs | **Often: entropy rises with human disagreement, but option order can hide it ([IDC](confidence-beyond-shannon.md))** |
+| **Does it know when it's unsure?** | Overconfident out-of-domain | Uncalibrated sequence logprobs | **Often: entropy rises with human disagreement, but option order can hide it ([hesitation-gating](confidence/overview.md))** |
 | **Can it handle vision?** | Separate vision classifiers | Yes (multimodal autoregression) | **Yes (native SigLIP vision canvas)** |
 
 By decoupling **deep contextual reasoning** from **slow sequential text generation**, DiffusionGemma and `dgem` bring the power of 26B foundation models to sub-second, zero-shot decision engineering.

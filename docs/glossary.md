@@ -49,7 +49,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ### Relative Tie-Detection vs. Target-Domain Probability Calibration
 * **In Plain English**: `dgem`'s single-pass logprob scores tell you **whether the model is torn between your template choices** (relative routing ambiguity), *not* the real-world base rate of how often a class appears in your database.
-* **Why This Matters**: True statistical calibration ($P(\text{Gold}=A \mid \hat{p}=0.80) = 0.80$) depends on the target environment's class prior $P_{\text{target}}(Y)$ and always requires post-hoc target data (Platt scaling, temperature scaling, or conformal prediction). What `dgem` provides zero-shot in 1 forward pass is a **tie-detector over the user-supplied option letters (`A..Z`)**—eliminating the $10\times\text{–}50\times$ token-cost multiplier of multi-sample autoregressive confidence rollouts. Order bias can also make a tie look decisive; see [IDC](confidence-beyond-shannon.md) for the zero-label corrections `dgem` applies before gating.
+* **Why This Matters**: True statistical calibration ($P(\text{Gold}=A \mid \hat{p}=0.80) = 0.80$) depends on the target environment's class prior $P_{\text{target}}(Y)$ and always requires post-hoc target data (Platt scaling, temperature scaling, or conformal prediction). What `dgem` provides zero-shot in 1 forward pass is a **tie-detector over the user-supplied option letters (`A..Z`)**—eliminating the $10\times\text{–}50\times$ token-cost multiplier of multi-sample autoregressive confidence rollouts. Order bias can also make a tie look decisive; see [Confidence beyond Shannon](confidence/overview.md) for how `dgem` monitors it and gates on hesitation.
 
 ### Distributional Discrete Regression (`score` Slots)
 * **In Plain English**: Turning continuous regression (like a `1..5` severity score) into a probability histogram over discrete levels so that classification confidence and regression variance come out of the exact same softmax formula.
@@ -75,41 +75,28 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ---
 
-## 4. Order Bias & Invariant Decision Calibration (`IDC`)
+## 4. Hesitation-Gating & Trust Techniques
 
-These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration (IDC)](confidence-beyond-shannon.md), which walks through them with a worked example.
+These terms come from [Confidence beyond Shannon: hesitation-gated decisions](confidence/overview.md), which explains each with its evidence.
 
-### Invariant Decision Calibration (`IDC`)
-* **In Plain English**: A set of cheap checks and corrections that make a confidence score reflect *the question*, not *where each answer happened to be listed*, and that flag decisions whose answer changes when the list order changes.
-* **Why "Invariant"**: Reordering the options doesn't change the question, so an ideal decision (and its confidence) shouldn't change either.
-* **Where You See It in `dgem`**: `--null-prior-debias`, `--dual-mirror` (`dgem decide`, `bench-calibration`, `bench-decision-index`), `bench-permutation` (`EXP-13`).
+### Hesitation-Gating
+* **In Plain English**: Answer directly when the model is clearly sure; hand the decision to a larger model or a person when it hesitates. Like a triage nurse who treats clear cases and refers the rest.
+* **Under the Hood**: Escalate when hesitation (normalized entropy $H/\ln K$) is at or above a threshold, forwarding `dgem`'s probabilities as a hint. On JevBench, hesitation detects errors with AUROC ≈ 0.85 (`EXP-17`); a live 35% gate reached 81/86 on safety/faithfulness with 8–32% handed off (`EXP-18`).
+* **Where You See It in `dgem`**: `cascade_mode` / `cascade_threshold` (in nats) / `cascade_model` on the gateway, MCP and Studio; Hesitation % on every Studio answer.
+
+### Answer Template Effects (Letter Collision & Slot Names)
+* **In Plain English**: The model reads the whole answer form, labels and question names included. If two questions use the same letters for different options, it tends to copy the letter across; if a question's name hints the answer should differ, it does.
+* **Under the Hood**: A reversed second slot with letters cost 28 JevBench items (`EXP-15`); naming a second slot `…__mirror_rev` cost 19 even with identical options (`EXP-16`).
+* **Where You See It in `dgem`**: Template rule: neutral, descriptive question ids; no shared letters with different meanings ([templates](policies/templates.md)).
 
 ### Ballot-Order (Primacy) Bias / Null Prior $p_0$
 * **In Plain English**: Like undecided voters who tick the first name on a ballot, the model leans toward whichever option is listed first (`A`). Given a blank question with meaningless options, `DiffusionGemma` still picks `A` 88% (2 options), 78% (3), or 49% (4) of the time.
+* **How dgem handles it**: Measured on every release (the regression matrix shuffles option order and reports extra flips) rather than corrected in the pass; see the research history below.
 * **Under the Hood**: $p_0(k)$ is the model's slot distribution on a content-free input. It estimates the position term $b_{\text{pos}}(k)$ in $z = s(\text{option}) + b_{\text{pos}}(k) + \epsilon$.
-
-### Null-Prior De-Biasing ("Tare the Scale")
-* **In Plain English**: Weigh the empty bowl first, then subtract it. `dgem` divides out the model's built-in preference for each slot before reporting confidence. It needs no labeled data.
-* **Under the Hood**: $\tilde{p}_k \propto p_k / p_0(k)^{\alpha}$, with $\alpha \in [0,1]$ controlling correction strength (`--prior-alpha`, default `0.5`). Related prior work: *contextual calibration* (Zhao et al., 2021).
-* **Caveat**: It removes the *average* slot habit, not input-specific order effects. In `EXP-13` it improved Brier score but increased flips under other orderings (12.5% → 25%). In `EXP-14` it helped on the 50-item suite but made calibration worse on the 231-item JevBench set, so treat it as suite-dependent.
-
-### Dual-Mirror Canvas
-* **In Plain English**: Print the ballot twice on the same page, once in reverse order, and check that both votes agree. Because a diffusion model fills every blank at once, the second copy costs no extra forward pass.
-* **Under the Hood**: For each `choice` slot, `dgem` adds `<id>__rev` with options $[o_K \dots o_1]$, reads both in one pass, maps them back to option names, and merges them (currently 70% forward / 30% reversed with a forward-priority rule).
-* **Caveats**: The two slots can see each other on the canvas, so they are not independent readings. Reversal is only one reordering: `perm_06` flips under a cyclic shift but passes the mirror check. In `EXP-14` the extra slot lowered forward accuracy on JevBench (189 → 163–169), and the original slot id `__mirror_rev` degraded readings further (renamed `__rev`). Treat it as a research diagnostic. `EXP-15` traced the damage to letter collision (both slots labelled A, B, C… with different meanings); a digit-labelled mirror (`--mirror-mode reversed-digits`) avoids it.
-
-### Mirror TVD (Total Variation Distance)
-* **In Plain English**: How far apart the forward and reversed readings are, from `0` (identical) to `1` (completely different). Near 0 means order didn't matter for this input. A large value means the confidence depends on the layout.
-* **Under the Hood**: $\text{TVD} = \tfrac12 \sum_k |p^{\text{fwd}}_k - p^{\text{rev}}_k|$. Clear-cut `EXP-13` items typically score below `0.01`; `perm_08` scored `0.258` while its single reading claimed 99.9%.
-* **Status**: Computed in `bench-permutation`. Not yet returned by `dgem decide`, `dgem serve`, MCP, or the Studio.
-
-### Cyclic JSD (Permutation Mutual Information)
-* **In Plain English**: The expensive, thorough version of the mirror: ask the question once per rotation of the option list and measure how much the answers disagree.
-* **Under the Hood**: The Jensen–Shannon divergence across $K$ cyclic orderings estimates $I(Y; \Pi \mid X)$, the information the option order carries about the answer. It costs $K$ forward passes (`EXP-13A`).
 
 ### Temperature Scaling ("Humility Dial")
 * **In Plain English**: One dial that makes over-confident scores more modest (or under-confident ones bolder) without changing which answer wins.
-* **Under the Hood**: $p_k(T) \propto p_k^{1/T}$. $T > 1$ softens. $T^*$ is **fitted on labeled examples** (Guo et al., 2017), so the improvement is only trustworthy when measured on data not used for fitting.
+* **Under the Hood**: $p_k(T) \propto p_k^{1/T}$. $T > 1$ softens. $T^*$ is **fitted on labeled examples** (Guo et al., 2017), so the improvement is only trustworthy when measured on data not used for fitting. The best held-out temperature ranges from about 1.2 to 3.6 by domain (v0.2.0), so fit one per policy.
 
 ### Expected Calibration Error (`ECE`)
 * **In Plain English**: "When the model says 80%, is it right about 80% of the time?" ECE is the average gap between stated confidence and actual accuracy, so `0` is perfect.
@@ -118,6 +105,30 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 ### Brier Score
 * **In Plain English**: A penalty for being confidently wrong *and* for being needlessly unsure when right. Lower is better. A perfect, fully confident forecaster scores `0`.
 * **Under the Hood**: $\text{Brier} = \frac1N \sum_i \sum_k (p_{i,k} - y_{i,k})^2$, where $y$ is the one-hot gold label.
+
+### Research History: Order-Bias Corrections (formerly "Invariant Decision Calibration", IDC)
+
+The techniques below were tested to correct order bias inside the pass and are kept as research tools. None improved decisions reliably (`EXP-13`–`EXP-17`); the historical write-up is in the repository at `docs/history/idc-confidence-beyond-shannon.md`.
+
+#### Null-Prior De-Biasing ("Tare the Scale")
+* **In Plain English**: Weigh the empty bowl first, then subtract it. `dgem` divides out the model's built-in preference for each slot before reporting confidence. It needs no labeled data.
+* **Under the Hood**: $\tilde{p}_k \propto p_k / p_0(k)^{\alpha}$, with $\alpha \in [0,1]$ controlling correction strength (`--prior-alpha`, default `0.5`). Related prior work: *contextual calibration* (Zhao et al., 2021).
+* **Caveat**: It removes the *average* slot habit, not input-specific order effects. In `EXP-13` it improved Brier score but increased flips under other orderings (12.5% → 25%). In `EXP-14` it helped on the 50-item suite but made calibration worse on the 231-item JevBench set, so treat it as suite-dependent.
+
+#### Dual-Mirror Canvas
+* **In Plain English**: Print the ballot twice on the same page, once in reverse order, and check that both votes agree. Because a diffusion model fills every blank at once, the second copy costs no extra forward pass.
+* **Under the Hood**: For each `choice` slot, `dgem` adds `<id>__rev` with options $[o_K \dots o_1]$, reads both in one pass, maps them back to option names, and merges them (currently 70% forward / 30% reversed with a forward-priority rule).
+* **Caveats**: The two slots can see each other on the canvas, so they are not independent readings. Reversal is only one reordering: `perm_06` flips under a cyclic shift but passes the mirror check. In `EXP-14` the extra slot lowered forward accuracy on JevBench (189 → 163–169), and the original slot id `__mirror_rev` degraded readings further (renamed `__rev`). Treat it as a research diagnostic. `EXP-15` traced the damage to letter collision (both slots labelled A, B, C… with different meanings); a digit-labelled mirror (`--mirror-mode reversed-digits`) avoids it.
+
+#### Mirror TVD (Total Variation Distance)
+* **In Plain English**: How far apart the forward and reversed readings are, from `0` (identical) to `1` (completely different). Near 0 means order didn't matter for this input. A large value means the confidence depends on the layout.
+* **Under the Hood**: $\text{TVD} = \tfrac12 \sum_k |p^{\text{fwd}}_k - p^{\text{rev}}_k|$. Clear-cut `EXP-13` items typically score below `0.01`; `perm_08` scored `0.258` while its single reading claimed 99.9%.
+* **Status**: Computed in `bench-permutation`. Not yet returned by `dgem decide`, `dgem serve`, MCP, or the Studio.
+
+#### Cyclic JSD (Permutation Mutual Information)
+* **In Plain English**: The expensive, thorough version of the mirror: ask the question once per rotation of the option list and measure how much the answers disagree.
+* **Under the Hood**: The Jensen–Shannon divergence across $K$ cyclic orderings estimates $I(Y; \Pi \mid X)$, the information the option order carries about the answer. It costs $K$ forward passes (`EXP-13A`).
+
 
 ---
 
