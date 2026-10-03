@@ -55,6 +55,38 @@ def rows(receipt):
     return out
 
 
+def refusal_reason(status, error):
+    """Why an item went unanswered: "context" (prompt longer than the served context), "capacity" (the server's
+    shape limits: options, questions, canvas; HTTP 422 or a schema 400), "na" (skipped by the matrix, e.g. >26 options
+    on the raw server), or "error" (anything else: network, 5xx, timeouts)."""
+    e = str(error or "").lower()
+    if status == "n/a":
+        return "na"
+    if "maximum context length" in e or "context length" in e or "prompt is too long" in e:
+        return "context"
+    if status == 422 or "at most" in e or "unsupported" in e or "canvas" in e or "schema:" in e:
+        return "capacity"
+    return "error"
+
+
+def refusals(receipt):
+    """{reason: count} over unanswered items of one receipt (see refusal_reason)."""
+    out = {}
+    d = receipt
+    if d.get("kind") == "systemone":
+        items = [(r.get("status"), r.get("error")) for r in d.get("cases") or [] if r.get("status") != 200]
+    else:
+        res = d.get("results")
+        if isinstance(res, list) and res and "intent_accurate" in res[0]:
+            items = [(None, r["error"]) for r in res if r.get("error")]
+        else:
+            items = [(None, c["error"]) for c in d.get("cases") or [] if c.get("error")]
+    for st, err in items:
+        k = refusal_reason(st, err)
+        out[k] = out.get(k, 0) + 1
+    return out
+
+
 def attempted(receipt):
     """(answered, total) item counts, for coverage. Unanswered = refused (HTTP 4xx, e.g. 422 capacity), errors, n/a.
     The Decision Index scores unanswered items as wrong, so coverage belongs next to accuracy."""

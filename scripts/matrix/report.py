@@ -77,7 +77,7 @@ def _suite_summary(entries, runs_rows):
             continue
         answered, total = M.attempted(receipt)
         x.update({"run": e.get("run", 1), "answered": answered, "attempted": total,
-                  "coverage": (answered / total) if total else None})
+                  "coverage": (answered / total) if total else None, "refusals": M.refusals(receipt)})
         runs.append(x)
     if not runs:
         return None
@@ -86,7 +86,9 @@ def _suite_summary(entries, runs_rows):
     return {
         "runs": runs,
         "accuracy": _avg(runs, "accuracy"), "accuracy_range": [min(x["accuracy"] for x in runs), max(x["accuracy"] for x in runs)],
-        "coverage": _avg(runs, "coverage"), "macro_f1": _avg(runs, "macro_f1"), "case_exact": _avg(runs, "case_exact"),
+        "coverage": _avg(runs, "coverage"),
+        "refusals": {k: sum(x["refusals"].get(k, 0) for x in runs) for k in sorted({k for x in runs for k in x["refusals"]})},
+        "macro_f1": _avg(runs, "macro_f1"), "case_exact": _avg(runs, "case_exact"),
         "ece10": _avg(runs, "ece10"),
         "brier": _avg(runs, "brier"), "nll": _avg(runs, "nll"), "auroc": _avg(runs, "auroc"),
         "soft_acc": _avg(runs, "soft_acc"), "score_mae": _avg(runs, "abs_err_ev"),
@@ -156,9 +158,11 @@ def build(run_dir, matrix):
         noise[n] = statistics.mean(ws) if ws else None
     L += ["## Suites", "",
           "Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision "
-          "Index scores them). Accuracy, ECE and the other metrics are over answered items.", "",
-          "| suite | target | runs: correct / n | coverage | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |",
-          "|---|---|---|---|---|---|---|---|---|---|"]
+          "Index scores them). Accuracy, ECE and the other metrics are over answered items. Unanswered reasons: context "
+          "(prompt longer than the served context), capacity (server shape limits), na (skipped by the matrix), error. "
+          "The coverage gate reviews any suite that answers fewer items than the baseline or reference.", "",
+          "| suite | target | runs: correct / n | coverage | unanswered (all runs) | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |",
+          "|---|---|---|---|---|---|---|---|---|---|---|"]
     suite_summ = {}
     for s in acc_suites:
         for n in names:
@@ -170,7 +174,7 @@ def build(run_dir, matrix):
             suite_summ.setdefault(s, {})[n] = ss
             ok = ss["runs"]
             L.append(f"| {s} | {n} | {', '.join(str(x['correct']) for x in ok)} / {ok[0]['n']} | {_f(ss['coverage'])} | "
-                     f"{ss['accuracy']:.3f} | {_f(ss['macro_f1'])} | {_f(ss['ece10'])} | {_f(ss['brier'])} | "
+                     f"{', '.join(f'{k} {v}' for k, v in ss['refusals'].items()) or '—'} | {ss['accuracy']:.3f} | {_f(ss['macro_f1'])} | {_f(ss['ece10'])} | {_f(ss['brier'])} | "
                      f"{_f(ss['auroc'])} | {_f(ss['wall_p50'], 0)} |")
     L.append("")
 
@@ -220,6 +224,32 @@ def build(run_dir, matrix):
                 gates.append((s, n, v, f"acc {mean_c:.3f}; reference {lo:.3f}–{hi:.3f} ({matrix['reference'].get('image')})"))
             else:
                 gates.append((s, n, "INFO", f"acc {mean_c:.3f}; no baseline or reference"))
+
+    # ---------------- coverage: a candidate must answer as many items as the baseline (or the reference). Accuracy is
+    # over answered items, so an item that starts being refused (e.g. a prompt that now exceeds the served context)
+    # would otherwise drop out silently.
+    for n in cands:
+        worse, info = [], []
+        for s in acc_suites:
+            c = suite_summ.get(s, {}).get(n)
+            if not c or c.get("coverage") is None:
+                continue
+            why = ", ".join(f"{k} {v}" for k, v in c["refusals"].items() if k != "na")
+            if base and base in suite_summ.get(s, {}):
+                b = suite_summ[s][base]
+                ca, ba = _avg(c["runs"], "answered"), _avg(b["runs"], "answered")
+                if ca is not None and ba is not None and ca < ba - 0.5:
+                    worse.append(f"{s} {ca:.0f} vs {ba:.0f} answered ({why or 'no reason recorded'})")
+            elif s in ref and ref[s].get("coverage") is not None:
+                if c["coverage"] < ref[s]["coverage"] - 1e-4:
+                    worse.append(f"{s} coverage {c['coverage']:.4f} < reference {ref[s]['coverage']:.4f} ({why or 'no reason recorded'})")
+            elif c["coverage"] < 1 and why:
+                info.append(f"{s} {c['coverage']:.4f} ({why})")
+        if worse:
+            gates.append(("coverage", n, "REVIEW", "fewer answered items: " + "; ".join(worse)))
+        else:
+            gates.append(("coverage", n, "PASS" if not info else "INFO",
+                          "no coverage loss" + ("; unanswered: " + "; ".join(info) if info else "")))
 
     # ---------------- noise floor
     if any(len(rows[s].get(n, [])) > 1 for s in acc_suites for n in names):

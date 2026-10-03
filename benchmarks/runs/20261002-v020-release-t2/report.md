@@ -28,6 +28,7 @@
 | massive | new | **REVIEW** | acc 0.824 vs 0.820; agreement 0.845 (floor 0.945, allowance 0.026); McNemar p=0.44 [frozen set] — agreement 0.845 < noise floor 0.945 - 0.026 |
 | xnli | new | **FAIL** | acc 0.699 vs 0.662; agreement 0.890 (floor 0.945, allowance 0.027); McNemar p=9.4e-15 [frozen set] — agreement 0.890 < noise floor 0.945 - 0.027; McNemar p=9.4e-15 (318 vs 151) |
 | typed | new | **FAIL** | acc 0.728 vs 0.674; agreement 0.739 (floor 0.945, allowance 0.030); McNemar p=6.6e-07 [frozen set] — agreement 0.739 < noise floor 0.945 - 0.030; McNemar p=6.6e-07 (278 vs 172) |
+| coverage | new | **REVIEW** | fewer answered items: jev_native 230 vs 231 answered (context 3) |
 | order | new | **PASS** | net flip vs baseline: within tolerance |
 | di_catchall_oos_rate | prod | **INFO** | in-scope answered as the catch-all: 23.3%; out-of-scope recall 96.7% (pooled runs) |
 | rag_dev_yes_bias | prod | **INFO** | hallucinated-class F1 0.544 (always-flag 0.601), recall 40.0%, predicted yes 20.2% vs gold 42.9% |
@@ -53,34 +54,34 @@ Overall: **new: FAIL**
 
 ## Suites
 
-Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision Index scores them). Accuracy, ECE and the other metrics are over answered items.
+Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision Index scores them). Accuracy, ECE and the other metrics are over answered items. Unanswered reasons: context (prompt longer than the served context), capacity (server shape limits), na (skipped by the matrix), error. The coverage gate reviews any suite that answers fewer items than the baseline or reference.
 
-| suite | target | runs: correct / n | coverage | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |
-|---|---|---|---|---|---|---|---|---|---|
-| calibration | prod | 45, 43, 43 / 50 | 1.000 | 0.873 | 0.717 | 0.084 | 0.218 | 0.895 | 219 |
-| calibration | new | 43, 43, 43 / 50 | 1.000 | 0.860 | 0.664 | 0.091 | 0.269 | 0.811 | 213 |
-| jev_native | prod | 185, 186, 188 / 231 | 1.000 | 0.807 | 0.780 | 0.077 | 0.261 | 0.871 | 129 |
-| jev_native | new | 186, 186, 188 / 230 | 0.996 | 0.812 | 0.808 | 0.088 | 0.283 | 0.801 | 131 |
-| jev_systemone | prod | 198, 192, 192 / 231 | 1.000 | 0.840 | 0.797 | 0.086 | 0.252 | 0.761 | 228 |
-| jev_systemone | new | 196, 195, 197 / 231 | 1.000 | 0.848 | 0.807 | 0.066 | 0.229 | 0.843 | 230 |
-| intents_banking77 | prod | 24, 24, 24 / 30 | 1.000 | 0.800 | 0.741 | 0.174 | 0.377 | 0.819 | 425 |
-| intents_banking77 | new | 24, 23, 23 / 30 | 1.000 | 0.778 | 0.713 | 0.154 | 0.333 | 0.722 | 411 |
-| intents_clinc150 | prod | 29, 30, 30 / 30 | 1.000 | 0.989 | 0.983 | 0.043 | 0.039 | 0.966 | 138 |
-| intents_clinc150 | new | 29, 29, 29 / 30 | 1.000 | 0.967 | 0.949 | 0.044 | 0.052 | 0.931 | 152 |
-| massive_spot | prod | 83 / 100 | 1.000 | 0.830 | 0.796 | 0.109 | 0.243 | 0.906 | 223 |
-| massive_spot | new | 96 / 100 | 1.000 | 0.960 | 0.961 | 0.026 | 0.071 | 0.826 | 254 |
-| di_wide | prod | 85, 85, 84 / 100 | 1.000 | 0.847 | 0.820 | 0.091 | 0.248 | 0.846 | 310 |
-| di_wide | new | 86, 85, 89 / 100 | 1.000 | 0.867 | 0.826 | 0.085 | 0.199 | 0.917 | 440 |
-| di_catchall | prod | 70, 76, 76 / 100 | 1.000 | 0.740 | 0.646 | 0.117 | 0.413 | 0.720 | 798 |
-| di_catchall | new | 85, 87, 87 / 100 | 1.000 | 0.863 | 0.808 | 0.085 | 0.244 | 0.650 | 803 |
-| rag_dev | prod | 138, 142, 143 / 198 | 1.000 | 0.712 | 0.666 | 0.199 | 0.479 | 0.616 | 257 |
-| rag_dev | new | 153, 152, 153 / 198 | 1.000 | 0.771 | 0.751 | 0.188 | 0.410 | 0.634 | 289 |
-| massive | prod | 4184 / 5100 | 1.000 | 0.820 | 0.786 | 0.082 | 0.274 | 0.903 | 210 |
-| massive | new | 4202 / 5100 | 1.000 | 0.824 | 0.792 | 0.104 | 0.275 | 0.918 | 243 |
-| xnli | prod | 2979 / 4500 | 1.000 | 0.662 | 0.664 | 0.263 | 0.587 | 0.625 | 199 |
-| xnli | new | 3146 / 4500 | 1.000 | 0.699 | 0.703 | 0.229 | 0.527 | 0.611 | 206 |
-| typed | prod | 1349 / 2000 | 1.000 | 0.674 | 0.545 | 0.226 | 0.537 | 0.740 | 265 |
-| typed | new | 1455 / 2000 | 1.000 | 0.728 | 0.607 | 0.176 | 0.437 | 0.760 | 310 |
+| suite | target | runs: correct / n | coverage | unanswered (all runs) | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| calibration | prod | 45, 43, 43 / 50 | 1.000 | — | 0.873 | 0.717 | 0.084 | 0.218 | 0.895 | 219 |
+| calibration | new | 43, 43, 43 / 50 | 1.000 | — | 0.860 | 0.664 | 0.091 | 0.269 | 0.811 | 213 |
+| jev_native | prod | 185, 186, 188 / 231 | 1.000 | — | 0.807 | 0.780 | 0.077 | 0.261 | 0.871 | 129 |
+| jev_native | new | 186, 186, 188 / 230 | 0.996 | context 3 | 0.812 | 0.808 | 0.088 | 0.283 | 0.801 | 131 |
+| jev_systemone | prod | 198, 192, 192 / 231 | 1.000 | — | 0.840 | 0.797 | 0.086 | 0.252 | 0.761 | 228 |
+| jev_systemone | new | 196, 195, 197 / 231 | 1.000 | — | 0.848 | 0.807 | 0.066 | 0.229 | 0.843 | 230 |
+| intents_banking77 | prod | 24, 24, 24 / 30 | 1.000 | — | 0.800 | 0.741 | 0.174 | 0.377 | 0.819 | 425 |
+| intents_banking77 | new | 24, 23, 23 / 30 | 1.000 | — | 0.778 | 0.713 | 0.154 | 0.333 | 0.722 | 411 |
+| intents_clinc150 | prod | 29, 30, 30 / 30 | 1.000 | — | 0.989 | 0.983 | 0.043 | 0.039 | 0.966 | 138 |
+| intents_clinc150 | new | 29, 29, 29 / 30 | 1.000 | — | 0.967 | 0.949 | 0.044 | 0.052 | 0.931 | 152 |
+| massive_spot | prod | 83 / 100 | 1.000 | — | 0.830 | 0.796 | 0.109 | 0.243 | 0.906 | 223 |
+| massive_spot | new | 96 / 100 | 1.000 | — | 0.960 | 0.961 | 0.026 | 0.071 | 0.826 | 254 |
+| di_wide | prod | 85, 85, 84 / 100 | 1.000 | — | 0.847 | 0.820 | 0.091 | 0.248 | 0.846 | 310 |
+| di_wide | new | 86, 85, 89 / 100 | 1.000 | — | 0.867 | 0.826 | 0.085 | 0.199 | 0.917 | 440 |
+| di_catchall | prod | 70, 76, 76 / 100 | 1.000 | — | 0.740 | 0.646 | 0.117 | 0.413 | 0.720 | 798 |
+| di_catchall | new | 85, 87, 87 / 100 | 1.000 | — | 0.863 | 0.808 | 0.085 | 0.244 | 0.650 | 803 |
+| rag_dev | prod | 138, 142, 143 / 198 | 1.000 | — | 0.712 | 0.666 | 0.199 | 0.479 | 0.616 | 257 |
+| rag_dev | new | 153, 152, 153 / 198 | 1.000 | — | 0.771 | 0.751 | 0.188 | 0.410 | 0.634 | 289 |
+| massive | prod | 4184 / 5100 | 1.000 | — | 0.820 | 0.786 | 0.082 | 0.274 | 0.903 | 210 |
+| massive | new | 4202 / 5100 | 1.000 | — | 0.824 | 0.792 | 0.104 | 0.275 | 0.918 | 243 |
+| xnli | prod | 2979 / 4500 | 1.000 | — | 0.662 | 0.664 | 0.263 | 0.587 | 0.625 | 199 |
+| xnli | new | 3146 / 4500 | 1.000 | — | 0.699 | 0.703 | 0.229 | 0.527 | 0.611 | 206 |
+| typed | prod | 1349 / 2000 | 1.000 | — | 0.674 | 0.545 | 0.226 | 0.537 | 0.740 | 265 |
+| typed | new | 1455 / 2000 | 1.000 | — | 0.728 | 0.607 | 0.176 | 0.437 | 0.760 | 310 |
 
 ## Measured noise floor (answer agreement between repeated identical runs)
 

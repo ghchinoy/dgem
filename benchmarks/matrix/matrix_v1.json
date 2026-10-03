@@ -253,7 +253,7 @@
    "benchmarks/runs/20261002-v020-reference-t2",
    "benchmarks/runs/20261002-v020-release-t2"
   ],
-  "note": "Accuracy ranges = min..max of per-run accuracy over two T2 sessions with the v0.2.0 server: production Vertex G4 (image 658ad8ee, 2026-10-02) and the release-gate canary (e37012a, same server code). Frozen sets have one run per session: min..max of the two values +/- 2 standard errors. Used in single-target mode; a REVIEW is within reference_slack below the range. Previous (v0.1.3) reference: benchmarks/runs/20261001-v013-reference-{t1,t2}.",
+  "note": "Accuracy ranges = min..max of per-run accuracy over two T2 sessions with the v0.2.0 server: production Vertex G4 (image 658ad8ee, 2026-10-02) and the release-gate canary (e37012a, same server code). Frozen sets have one run per session: min..max of the two values +/- 2 standard errors. Used in single-target mode; a REVIEW is within reference_slack below the range. Previous (v0.1.3) reference: benchmarks/runs/20261001-v013-reference-{t1,t2}. coverage = the highest answered share in the v0.1.3 and v0.2.0 reference runs (every suite answered every item under v0.1.3; jev_native lost one long_policy item to the 4,096-token context under v0.2.0's layout, so v0.2.0 at 4k reviews on coverage until the context is raised).",
   "suites": {
    "calibration": {
     "accuracy": [
@@ -261,7 +261,8 @@
      0.9
     ],
     "runs": 6,
-    "n": 50
+    "n": 50,
+    "coverage": 1.0
    },
    "jev_native": {
     "accuracy": [
@@ -269,7 +270,8 @@
      0.8174
     ],
     "runs": 6,
-    "n": 230
+    "n": 230,
+    "coverage": 1.0
    },
    "jev_systemone": {
     "accuracy": [
@@ -277,7 +279,8 @@
      0.8571
     ],
     "runs": 6,
-    "n": 231
+    "n": 231,
+    "coverage": 1.0
    },
    "intents_banking77": {
     "accuracy": [
@@ -285,7 +288,8 @@
      0.8333
     ],
     "runs": 6,
-    "n": 30
+    "n": 30,
+    "coverage": 1.0
    },
    "intents_clinc150": {
     "accuracy": [
@@ -293,7 +297,8 @@
      1.0
     ],
     "runs": 6,
-    "n": 30
+    "n": 30,
+    "coverage": 1.0
    },
    "massive_spot": {
     "accuracy": [
@@ -301,7 +306,8 @@
      0.9992
     ],
     "runs": 2,
-    "n": 100
+    "n": 100,
+    "coverage": 1.0
    },
    "massive": {
     "accuracy": [
@@ -309,7 +315,8 @@
      0.8365
     ],
     "runs": 2,
-    "n": 5100
+    "n": 5100,
+    "coverage": 1.0
    },
    "xnli": {
     "accuracy": [
@@ -317,7 +324,8 @@
      0.7128
     ],
     "runs": 2,
-    "n": 4500
+    "n": 4500,
+    "coverage": 1.0
    },
    "typed": {
     "accuracy": [
@@ -325,7 +333,8 @@
      0.7475
     ],
     "runs": 2,
-    "n": 2000
+    "n": 2000,
+    "coverage": 1.0
    },
    "di_wide": {
     "accuracy": [
@@ -333,7 +342,8 @@
      0.89
     ],
     "runs": 6,
-    "n": 100
+    "n": 100,
+    "coverage": 1.0
    },
    "di_catchall": {
     "accuracy": [
@@ -341,7 +351,8 @@
      0.88
     ],
     "runs": 6,
-    "n": 100
+    "n": 100,
+    "coverage": 1.0
    },
    "rag_dev": {
     "accuracy": [
@@ -349,7 +360,8 @@
      0.7727
     ],
     "runs": 6,
-    "n": 198
+    "n": 198,
+    "coverage": 1.0
    }
   }
  }

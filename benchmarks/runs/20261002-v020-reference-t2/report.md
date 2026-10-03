@@ -14,18 +14,19 @@
 |---|---|---|---|
 | health | prod | **PASS** | ready |
 | contract | prod | **PASS** | all cases as expected |
-| calibration | prod | **PASS** | acc 0.887; reference 0.860–0.880 (v0.1.3) |
-| jev_native | prod | **PASS** | acc 0.803; reference 0.792–0.823 (v0.1.3) |
-| jev_systemone | prod | **PASS** | acc 0.843; reference 0.823–0.862 (v0.1.3) |
-| intents_banking77 | prod | **PASS** | acc 0.800; reference 0.733–0.833 (v0.1.3) |
-| intents_clinc150 | prod | **PASS** | acc 0.989; reference 0.967–1.000 (v0.1.3) |
+| calibration | prod | **PASS** | acc 0.887; reference 0.860–0.900 (v0.2.0) |
+| jev_native | prod | **PASS** | acc 0.803; reference 0.800–0.817 (v0.2.0) |
+| jev_systemone | prod | **PASS** | acc 0.843; reference 0.827–0.857 (v0.2.0) |
+| intents_banking77 | prod | **PASS** | acc 0.800; reference 0.767–0.833 (v0.2.0) |
+| intents_clinc150 | prod | **PASS** | acc 0.989; reference 0.967–1.000 (v0.2.0) |
 | massive_spot | prod | **PASS** | es 19/20, hi 20/20, ja 19/20, ru 19/20, th 19/20 |
-| di_wide | prod | **PASS** | acc 0.877; reference 0.830–0.890 (v0.1.3) |
-| di_catchall | prod | **PASS** | acc 0.877; reference 0.691–0.859 (v0.1.3) |
-| rag_dev | prod | **PASS** | acc 0.763; reference 0.674–0.800 (v0.1.3) |
-| massive | prod | **PASS** | acc 0.826; reference 0.811–0.832 (v0.1.3) |
-| xnli | prod | **PASS** | acc 0.697; reference 0.664–0.692 (v0.1.3) |
-| typed | prod | **PASS** | acc 0.723; reference 0.646–0.688 (v0.1.3) |
+| di_wide | prod | **PASS** | acc 0.877; reference 0.850–0.890 (v0.2.0) |
+| di_catchall | prod | **PASS** | acc 0.877; reference 0.850–0.880 (v0.2.0) |
+| rag_dev | prod | **PASS** | acc 0.763; reference 0.758–0.773 (v0.2.0) |
+| massive | prod | **PASS** | acc 0.826; reference 0.813–0.837 (v0.2.0) |
+| xnli | prod | **PASS** | acc 0.697; reference 0.683–0.713 (v0.2.0) |
+| typed | prod | **PASS** | acc 0.723; reference 0.703–0.748 (v0.2.0) |
+| coverage | prod | **REVIEW** | fewer answered items: jev_native coverage 0.9957 < reference 1.0000 (context 3) |
 | order | prod | **INFO** | order_emotion net +0.090, order_jev_choice net +0.036, order_massive_en net +0.040, order_xnli_en net +0.035 |
 | di_catchall_oos_rate | prod | **INFO** | in-scope answered as the catch-all: 1.2%; out-of-scope recall 88.3% (pooled runs) |
 | rag_dev_yes_bias | prod | **INFO** | hallucinated-class F1 0.667 (always-flag 0.601), recall 55.3%, predicted yes 28.3% vs gold 42.9% |
@@ -38,26 +39,26 @@
 | decision_index | prod | **INFO** | headline_decision_index=96.667, ece_10bin=0.048 |
 | latency | prod | **PASS** | within tolerance |
 
-Overall: **prod: PASS**
+Overall: **prod: REVIEW**
 
 ## Suites
 
-Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision Index scores them). Accuracy, ECE and the other metrics are over answered items.
+Coverage = answered / attempted items (refusals such as HTTP 422 and errors count as unanswered, as the Decision Index scores them). Accuracy, ECE and the other metrics are over answered items. Unanswered reasons: context (prompt longer than the served context), capacity (server shape limits), na (skipped by the matrix), error. The coverage gate reviews any suite that answers fewer items than the baseline or reference.
 
-| suite | target | runs: correct / n | coverage | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |
-|---|---|---|---|---|---|---|---|---|---|
-| calibration | prod | 44, 45, 44 / 50 | 1.000 | 0.887 | 0.681 | 0.085 | 0.230 | 0.810 | 204 |
-| jev_native | prod | 184, 185, 185 / 230 | 0.996 | 0.803 | 0.801 | 0.099 | 0.292 | 0.805 | 134 |
-| jev_systemone | prod | 191, 195, 198 / 231 | 1.000 | 0.843 | 0.810 | 0.077 | 0.231 | 0.846 | 227 |
-| intents_banking77 | prod | 23, 24, 25 / 30 | 1.000 | 0.800 | 0.744 | 0.161 | 0.344 | 0.719 | 405 |
-| intents_clinc150 | prod | 30, 29, 30 / 30 | 1.000 | 0.989 | 0.983 | 0.056 | 0.041 | 0.931 | 151 |
-| massive_spot | prod | 96 / 100 | 1.000 | 0.960 | 0.969 | 0.036 | 0.067 | 0.766 | 243 |
-| di_wide | prod | 88, 88, 87 / 100 | 1.000 | 0.877 | 0.859 | 0.069 | 0.197 | 0.906 | 437 |
-| di_catchall | prod | 87, 88, 88 / 100 | 1.000 | 0.877 | 0.826 | 0.103 | 0.232 | 0.637 | 810 |
-| rag_dev | prod | 151, 152, 150 / 198 | 1.000 | 0.763 | 0.741 | 0.195 | 0.426 | 0.651 | 295 |
-| massive | prod | 4212 / 5100 | 1.000 | 0.826 | 0.791 | 0.104 | 0.275 | 0.913 | 244 |
-| xnli | prod | 3137 / 4500 | 1.000 | 0.697 | 0.701 | 0.229 | 0.529 | 0.607 | 207 |
-| typed | prod | 1446 / 2000 | 1.000 | 0.723 | 0.602 | 0.178 | 0.438 | 0.773 | 321 |
+| suite | target | runs: correct / n | coverage | unanswered (all runs) | mean accuracy | macro-F1 | ECE10 | Brier | AUROC | wall p50 ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| calibration | prod | 44, 45, 44 / 50 | 1.000 | — | 0.887 | 0.681 | 0.085 | 0.230 | 0.810 | 204 |
+| jev_native | prod | 184, 185, 185 / 230 | 0.996 | context 3 | 0.803 | 0.801 | 0.099 | 0.292 | 0.805 | 134 |
+| jev_systemone | prod | 191, 195, 198 / 231 | 1.000 | — | 0.843 | 0.810 | 0.077 | 0.231 | 0.846 | 227 |
+| intents_banking77 | prod | 23, 24, 25 / 30 | 1.000 | — | 0.800 | 0.744 | 0.161 | 0.344 | 0.719 | 405 |
+| intents_clinc150 | prod | 30, 29, 30 / 30 | 1.000 | — | 0.989 | 0.983 | 0.056 | 0.041 | 0.931 | 151 |
+| massive_spot | prod | 96 / 100 | 1.000 | — | 0.960 | 0.969 | 0.036 | 0.067 | 0.766 | 243 |
+| di_wide | prod | 88, 88, 87 / 100 | 1.000 | — | 0.877 | 0.859 | 0.069 | 0.197 | 0.906 | 437 |
+| di_catchall | prod | 87, 88, 88 / 100 | 1.000 | — | 0.877 | 0.826 | 0.103 | 0.232 | 0.637 | 810 |
+| rag_dev | prod | 151, 152, 150 / 198 | 1.000 | — | 0.763 | 0.741 | 0.195 | 0.426 | 0.651 | 295 |
+| massive | prod | 4212 / 5100 | 1.000 | — | 0.826 | 0.791 | 0.104 | 0.275 | 0.913 | 244 |
+| xnli | prod | 3137 / 4500 | 1.000 | — | 0.697 | 0.701 | 0.229 | 0.529 | 0.607 | 207 |
+| typed | prod | 1446 / 2000 | 1.000 | — | 0.723 | 0.602 | 0.178 | 0.438 | 0.773 | 321 |
 
 ## Measured noise floor (answer agreement between repeated identical runs)
 
