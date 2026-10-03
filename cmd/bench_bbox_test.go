@@ -353,3 +353,17 @@ func TestFilterSchemaQuestions(t *testing.T) {
 		t.Error("empty filter accepted")
 	}
 }
+
+func TestCellCropPct(t *testing.T) {
+	b, ok := cellCropPct("top_left")
+	if !ok || b[0] != 0 || b[1] != 0 || !near(b[2], 50) || !near(b[3], 50) {
+		t.Errorf("top_left crop = %v", b)
+	}
+	b, _ = cellCropPct("middle_center")
+	if !near(b[0], 100.0/6) || !near(b[3], 100-100.0/6) {
+		t.Errorf("middle_center crop = %v", b)
+	}
+	if _, ok := cellCropPct("nowhere"); ok {
+		t.Error("bad cell accepted")
+	}
+}

@@ -70,8 +70,9 @@ Guidance:
   per image instead of only the scored ones, 69% of requests reached Gemini (instead of 46%), and the p50 rose from
   0.43 s to 7.4 s.
 - **Keep the threshold at the default 0.35 nats.** At 0.10, Gemini kept dgem's (wrong) answer more often: escalated
-  answers were 0.86 correct, against 0.95 when Gemini answered alone. dgem's answer is passed to Gemini as a hint,
-  and the hint can anchor it. A follow-up experiment tests this directly.
+  answers were 0.86 correct, against 0.95 when Gemini answered alone. In the cascade prompt, dgem's answer and its
+  distribution are given as the candidate, and that can anchor Gemini. A softer hint is different: in
+  [EXP-24](/dgem/experiments/exp-24-guided-cascade/), "probably in the top-left; may be wrong" never hurt Gemini's boxes.
 
 ## Boxes, masks and screenshots: use something else
 
@@ -80,6 +81,8 @@ Guidance:
 | Box for an object described in a photo | Grounding DINO (open source, ~0.65 s on one L4) or Gemini 3.x | centre hit 89–90% on RefCOCO |
 | Box for a UI element from an instruction ("raise the temperature") | Gemini 3.x | centre hit 93% on ScreenSpot; open detectors 5–8% |
 | Grade or label boxes without ground truth | Gemini 3.x as a judge (`dgem bench-bbox-judge`) | catches 99–100% of edges more than 5 points off |
+| Faster Gemini boxes | dgem first; skip Gemini if dgem confidently says absent; else Gemini at LOW thinking with dgem's grid cell as a hint | same accuracy as Gemini alone (mIoU 0.654 vs 0.639), 2.1 s vs 3.9 s p50, 35% fewer calls when half the targets are absent ([EXP-24](/dgem/experiments/exp-24-guided-cascade/)) |
+| Masks | SAM prompted with the Gemini (or Grounding DINO) box | mask IoU 0.73 (0.69 with Grounding DINO) vs 0.64 for Gemini's own polygon outline |
 
 ## Validate on your images
 
