@@ -9,12 +9,20 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.2.1 (2026-10-03)
+
+Gateway, MCP, CLI and Studio release; serving images rebuilt for one additive diagnostics field (no behaviour change).
+
 - **Prompt layout on every surface.** `dgem decide --layout`, gateway `/api/decide` (`layout`, `X-DGem-Layout`,
   `?layout=`), MCP `decide_policy` / `decide_custom_questions` (`layout`) and a Studio **Prompt layout** menu (also used
   by the batch runner). Empty keeps the template's layout or the server default. The serving image reports the layout it
-  used in `diagnostics.layout` (next serving release). New guide: `docs/policies/prompt-layout.md`.
+  used in `diagnostics.layout`. New guide: `docs/policies/prompt-layout.md`.
 - Regression matrix: coverage gate and refusal reasons (`context`, `capacity`, `na`, `error`) in reports and
   `summary.json` (#60).
+- **Context length 8,192 tokens** by default on RTX PRO 6000 in `deploy_vertex_endpoint.sh` and
+  `deploy_cloudrun_vllm.sh` (EXP-20: same short-prompt accuracy and latency as 4,096; longer prompts answered instead
+  of refused). L4 stays at 4,096.
+- Vertex deploys turn container logging on (`enableContainerLogging`); it was off, which hid an engine crash.
 
 ## v0.2.0 (2026-10-02)
 
