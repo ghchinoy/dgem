@@ -187,6 +187,8 @@ Decision Studio: see [Studio, MCP and HTTP API](../reference/studio-mcp-api.md).
 - [Run a dataset](datasets.md): evaluate a policy on hundreds or thousands of labelled rows.
 - [Template catalog](templates.md) and [real-world applications](applications.md): policies you can copy.
 - [Taxonomy discovery](taxonomy-discovery.md): let the model propose missing options.
+- [Prompt layout](prompt-layout.md): the input goes first by default from v0.2.0; when to choose the other layout
+  and how to compare both on your data.
 - [Calibrate your policy](../confidence/calibrate-your-policy.md): check that confidence matches accuracy on
   your data.
 - [Evaluate dgem on your own GPU](../deploy/evaluate.md): hosting it yourself? Verify the install, then evaluate

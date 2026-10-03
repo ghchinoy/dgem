@@ -41,6 +41,7 @@ var (
 	decideNullPriorDebias   bool
 	decidePriorAlpha        float64
 	decideSuggestExpansions bool
+	decideLayout            string
 	decideExpansionEntropy  float64
 )
 
@@ -71,6 +72,7 @@ func init() {
 	decideCmd.Flags().BoolVar(&decideDualMirror, "dual-mirror", false, "EXP-13C: Evaluate forward + reversed option slots simultaneously in 1 diffusion canvas pass (0ms overhead)")
 	decideCmd.Flags().BoolVar(&decideNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
 	decideCmd.Flags().Float64Var(&decidePriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
+	decideCmd.Flags().StringVar(&decideLayout, "layout", "", "Prompt layout: document_first (the state first, then the questions; server default from v0.2.0) or schema_first (the questions as the system prompt). Empty: the template's \"layout\" or the server default. See docs/policies/prompt-layout.md")
 	decideCmd.Flags().BoolVar(&decideSuggestExpansions, "suggest-expansions", false, "Dynamically inject an 'other_unclassified' catch-all (if absent) and propose new {"+"\"name\", \"description\""+"} options when unclassified or high-entropy")
 	decideCmd.Flags().Float64Var(&decideExpansionEntropy, "expansion-entropy", 0.35, "Shannon entropy threshold (in nats) on choice slots to trigger taxonomy expansion suggestions")
 
@@ -170,6 +172,9 @@ func runDecide(cmd *cobra.Command, args []string) error {
 
 	var injectedSlots map[string]bool
 	var existingOptions map[string][]client.ProposedOption
+	if schemaContent, err = ApplyPromptLayout(schemaContent, decideLayout); err != nil {
+		return err
+	}
 	if decideSuggestExpansions {
 		schemaContent, injectedSlots, existingOptions = InjectUnclassifiedCatchAll(schemaContent)
 	} else {

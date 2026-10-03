@@ -79,6 +79,8 @@ export interface QuestionDiagnostic {
 export interface DecisionDiagnostics {
   hole?: string;
   steps?: number;
+  /** Prompt layout the server used (serving v0.2.0+): "document_first" or "schema_first". */
+  layout?: string;
   timing?: {
     total_ms?: number;
     reads?: number;

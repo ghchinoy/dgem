@@ -225,6 +225,8 @@ export class DgemStudio extends LitElement {
   @state() private inspectedTemplate: TemplateEntry | null = null;
   @state() private cascadeTau = 0.35;
   @state() private suggestExpansions = false;
+  /** Prompt layout override: '' = the policy's own layout or the server default (document_first from v0.2.0). */
+  @state() private promptLayout: '' | 'document_first' | 'schema_first' = '';
   @state() private expansionEntropy = 0.35;
   @state() private customTemplateOverride = '';
   @state() private appliedExpansions: string[] = [];
@@ -1360,6 +1362,9 @@ export class DgemStudio extends LitElement {
         suggest_expansions: this.suggestExpansions,
         expansion_entropy: this.expansionEntropy,
       };
+      if (this.promptLayout) {
+        payload.layout = this.promptLayout;
+      }
       if (this.customTemplateOverride) {
         payload.custom_template = this.customTemplateOverride;
       }
@@ -2142,6 +2147,25 @@ export class DgemStudio extends LitElement {
                       }}
                     />
                     <span>Suggest Taxonomy Expansions (--suggest-expansions)</span>
+                  </label>
+                  <label
+                    style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;font-weight:600;color:var(--text-heading)"
+                    title="How the prompt is laid out. Document first: the input, then the questions (default from serving v0.2.0). Questions first: the questions as the system prompt (the older layout). See the Prompt layout guide in the docs."
+                  >
+                    <span>Prompt layout</span>
+                    <select
+                      .value=${this.promptLayout}
+                      @change=${(e: Event) => {
+                        this.promptLayout = (e.target as HTMLSelectElement).value as '' | 'document_first' | 'schema_first';
+                      }}
+                    >
+                      <option value="">Default (policy or server)</option>
+                      <option value="document_first">Document first</option>
+                      <option value="schema_first">Questions first</option>
+                    </select>
+                    ${this.result?.decision?.diagnostics?.layout
+                      ? html`<span class="field-var-badge tabular">used: ${this.result.decision.diagnostics.layout}</span>`
+                      : ''}
                   </label>
                   <span class="field-var-badge tabular">
                     Auto-injects 'other_unclassified' · H ≥ ${this.expansionEntropy.toFixed(2)} nats
@@ -3124,6 +3148,7 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
                     <dgem-batch-runner
                       .resolvedTheme=${this.resolvedTheme}
                       .backendTarget=${this.backendTarget}
+                      .promptLayout=${this.promptLayout}
                       .vertexUrl=${this.vertexOverride}
                       @batch-started=${() => this.fetchGPUStatus()}
                       @batch-completed=${() => this.fetchGPUStatus()}

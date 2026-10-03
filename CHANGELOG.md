@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Prompt layout on every surface.** `dgem decide --layout`, gateway `/api/decide` (`layout`, `X-DGem-Layout`,
+  `?layout=`), MCP `decide_policy` / `decide_custom_questions` (`layout`) and a Studio **Prompt layout** menu (also used
+  by the batch runner). Empty keeps the template's layout or the server default. The serving image reports the layout it
+  used in `diagnostics.layout` (next serving release). New guide: `docs/policies/prompt-layout.md`.
+- Regression matrix: coverage gate and refusal reasons (`context`, `capacity`, `na`, `error`) in reports and
+  `summary.json` (#60).
+
 ## v0.2.0 (2026-10-02)
 
 Serving images rebuilt. **Behaviour change: the default prompt layout is now `document_first`.**

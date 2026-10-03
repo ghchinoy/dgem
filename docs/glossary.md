@@ -33,6 +33,11 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 * **Under the Hood**: Go `text/template` files compiled by `dgem decide -t` into structured slot schemas and single-token option maps (`[A–Z]`).
 * **Where You See It in `dgem`**: [`templates/`](../templates) (`templates/calibration/*.json.tmpl`, `templates/secops_conditional_dag.json.tmpl`).
 
+### Prompt Layout (`document_first` / `schema_first`)
+* **In Plain English**: Whether the model reads your input before or after it sees the questions. Like handing someone the letter first and then the questionnaire, instead of the questionnaire first.
+* **Under the Hood**: `document_first` (default from serving v0.2.0) puts the input in `<user_text>` and the questions in `<instructions>`, both in the user turn; `schema_first` sends the questions as the system message. Set per template, request (`"layout"`), CLI (`--layout`), Studio or deployment (`DEFAULT_LAYOUT`).
+* **Where You See It in `dgem`**: [Prompt layout guide](policies/prompt-layout.md), [`EXP-19`](experiments/README.md), `diagnostics.layout` in responses.
+
 ### Conditional Policy DAG (`depends_on` & `ask_if`)
 * **In Plain English**: A multi-stage decision flowchart where follow-up questions are only evaluated if an upstream gate question resolves to `true` (or a specific option).
 * **Under the Hood**: Topological sorting in `pkg/schema` partitions questions into stages. If Stage 1 (`is_prompt_injection`) evaluates to `false`, downstream forensic slots are pruned in **1 pass** (`682 ms`), saving 50% of compute on benign traffic.

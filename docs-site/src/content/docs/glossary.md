@@ -36,6 +36,11 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 * **Under the Hood**: Go `text/template` files compiled by `dgem decide -t` into structured slot schemas and single-token option maps (`[A–Z]`).
 * **Where You See It in `dgem`**: [`templates/`](https://github.com/ghchinoy/dgem/tree/main/templates) (`templates/calibration/*.json.tmpl`, `templates/secops_conditional_dag.json.tmpl`).
 
+### Prompt Layout (`document_first` / `schema_first`)
+* **In Plain English**: Whether the model reads your input before or after it sees the questions. Like handing someone the letter first and then the questionnaire, instead of the questionnaire first.
+* **Under the Hood**: `document_first` (default from serving v0.2.0) puts the input in `<user_text>` and the questions in `<instructions>`, both in the user turn; `schema_first` sends the questions as the system message. Set per template, request (`"layout"`), CLI (`--layout`), Studio or deployment (`DEFAULT_LAYOUT`).
+* **Where You See It in `dgem`**: [Prompt layout guide](/dgem/policies/prompt-layout/), [`EXP-19`](/dgem/experiments/), `diagnostics.layout` in responses.
+
 ### Conditional Policy DAG (`depends_on` & `ask_if`)
 * **In Plain English**: A multi-stage decision flowchart where follow-up questions are only evaluated if an upstream gate question resolves to `true` (or a specific option).
 * **Under the Hood**: Topological sorting in `pkg/schema` partitions questions into stages. If Stage 1 (`is_prompt_injection`) evaluates to `false`, downstream forensic slots are pruned in **1 pass** (`682 ms`), saving 50% of compute on benign traffic.
@@ -154,4 +159,3 @@ These terms come from [Confidence Beyond Shannon: Invariant Decision Calibration
 * **In Plain English**: Traditional object detectors give you a single confidence number for an entire box, hiding *which side* of the object is blocked. Because `dgem` evaluates `ymin`, `xmin`, `ymax`, and `xmax` as 4 independent 21-bin distributions, an object covering the bottom edge causes entropy to spike **specifically on `ymax`** (`1.37×` higher on live Cloud Run `dgemma`) while the 3 visible edges stay sharp.
 * **Under the Hood**: Computed per edge $m \in \{\text{ymin}, \text{xmin}, \text{ymax}, \text{xmax}\}$ as $\tilde{H}_m = H_m / \ln(21) \in [0, 1]$.
 * **Where You See It in `dgem`**: `dgem bench-bbox --annotate`.
-

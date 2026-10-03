@@ -294,6 +294,7 @@ export default defineConfig({
             { label: 'Template Catalog', slug: 'policies/templates' },
             { label: 'Real-World Applications', slug: 'policies/applications' },
             { label: 'Taxonomy Discovery', slug: 'policies/taxonomy-discovery' },
+            { label: 'Prompt Layout', slug: 'policies/prompt-layout' },
           ],
         },
         {
