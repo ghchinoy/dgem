@@ -1,0 +1,94 @@
+{
+  "run_id": "20261003-prop18-vision",
+  "created": "2026-10-03T15:20:56+00:00",
+  "git_commit": "a22657a5e15896b032bbcdc38a5768468de234ba",
+  "git_dirty_paths": [
+    "md/bench_bbox.go",
+    "cmd/bench_bbox_analysis.go",
+    "cmd/bench_bbox_gemini.go",
+    "cmd/bench_bbox_judge.go",
+    "cmd/bench_bbox_test.go",
+    "cmd/bench_bbox_variants.go",
+    "cmd/bench_vision.go",
+    "templates/multimodal/vision_aspects.json.tmpl"
+  ],
+  "notes": "PROP-18 phase 4 pilot: bench-vision on benchmarks/bbox_sweep.jsonl: dgem x2, dgem blank-image prior, Gemini reference (gemini-3.8-flash).",
+  "receipts": [
+    {
+      "suite": "vision",
+      "config": "vertex_g4_x2",
+      "path": "vision__vertex_g4_x2.json",
+      "sha256": "e26f7e56edb85969fbc996bb6059fda3a12c2781884c0d316eb80315d91edfdf",
+      "recorded": "2026-10-03T15:21:15+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl --vertex-url <endpoint-id> --gcp-auth --repeat 2 -o /workspace/dgem/benchmarks/runs/20261003-prop18-vision/vision__vertex_g4_x2.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "1854494035767459840",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 2,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T15:21:14Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 460,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision",
+      "config": "vertex_g4_blank",
+      "path": "vision__vertex_g4_blank.json",
+      "sha256": "0bd2f51c402494075ec7e4b0fa1657f8382437302300181a3dcdaa7ce132b0bc",
+      "recorded": "2026-10-03T15:21:23+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl --vertex-url <endpoint-id> --gcp-auth --variant blank -o /workspace/dgem/benchmarks/runs/20261003-prop18-vision/vision__vertex_g4_blank.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "1854494035767459840",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 2,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T15:21:21Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "vision",
+      "config": "reference_gemini_3_8_flash",
+      "path": "vision__reference_gemini_3_8_flash.json",
+      "sha256": "11fa153bd75efd5bbcc8d33b2530429aeb6be14f6a3490aafd185c8d54eba006",
+      "recorded": "2026-10-03T15:28:45+00:00",
+      "command": "./bin/dgem bench-vision -d benchmarks/bbox_sweep.jsonl --engine gemini --gemini-model gemini-3.8-flash -o /workspace/dgem/benchmarks/runs/20261003-prop18-vision/vision__reference_gemini_3_8_flash.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T15:28:45Z",
+        "target_model": "gemini-3.8-flash",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    }
+  ]
+}

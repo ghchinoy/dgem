@@ -1,0 +1,62 @@
+{
+  "run_id": "20261003-prop18-sweep",
+  "created": "2026-10-03T13:48:32+00:00",
+  "git_commit": "a22657a5e15896b032bbcdc38a5768468de234ba",
+  "git_dirty_paths": [
+    "md/bench_bbox.go",
+    "cmd/bench_bbox_analysis.go",
+    "cmd/bench_bbox_gemini.go",
+    "cmd/bench_bbox_judge.go",
+    "cmd/bench_bbox_test.go",
+    "cmd/bench_bbox_variants.go"
+  ],
+  "notes": "PROP-18 phase 3: generated sweep (230 items, seed 18): dgem x2 on Vertex G4, Gemini reference (gemini-3.8-flash).",
+  "receipts": [
+    {
+      "suite": "bbox_sweep",
+      "config": "vertex_g4_x2",
+      "path": "bbox_sweep__vertex_g4_x2.json",
+      "sha256": "b685ffb456b39f4067482ae75566aca0f3fc58d3ae8e85fa6b965a41027db2a6",
+      "recorded": "2026-10-03T13:49:21+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_sweep.jsonl --vertex-url <endpoint-id> --gcp-auth --repeat 2 -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-sweep/bbox_sweep__vertex_g4_x2.json",
+      "backend_state": {
+        "endpoint": "<endpoint-id>",
+        "deployed_models": [
+          {
+            "id": "1854494035767459840",
+            "machine": "g4-standard-48",
+            "accelerator": "NVIDIA_RTX_PRO_6000",
+            "accelerator_count": 1,
+            "min_replicas": 1,
+            "max_replicas": 2,
+            "available_replicas": 1,
+            "image": "us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem@sha256:658ad8ee35ac6c9aaa2f04bf0c7a3b50ac3fdc7c1ae68cda056fd44b432d023d"
+          }
+        ]
+      },
+      "summary": {
+        "timestamp": "2026-10-03T13:49:19Z",
+        "target_model": "diffgemma-26b-a4b-it-q4",
+        "idc_config": null,
+        "n": 460,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_sweep",
+      "config": "reference_gemini_3_8_flash",
+      "path": "bbox_sweep__reference_gemini_3_8_flash.json",
+      "sha256": "03b9fd42a1a66d59fb547f329f9a983d8f9335d9651bfb24dcd5acb09e53ed5c",
+      "recorded": "2026-10-03T13:58:28+00:00",
+      "command": "./bin/dgem bench-bbox -d benchmarks/bbox_sweep.jsonl --engine gemini --gemini-model gemini-3.8-flash -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-sweep/bbox_sweep__reference_gemini_3_8_flash.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T13:58:28Z",
+        "target_model": "gemini-3.8-flash",
+        "idc_config": null,
+        "n": 230,
+        "errors": 0
+      }
+    }
+  ]
+}

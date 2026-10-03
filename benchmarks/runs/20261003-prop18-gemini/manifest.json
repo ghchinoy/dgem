@@ -1,0 +1,118 @@
+{
+  "run_id": "20261003-prop18-gemini",
+  "created": "2026-10-03T13:43:51+00:00",
+  "git_commit": "a22657a5e15896b032bbcdc38a5768468de234ba",
+  "git_dirty_paths": [
+    "md/bench_bbox.go",
+    "cmd/bench_bbox_analysis.go",
+    "cmd/bench_bbox_gemini.go",
+    "cmd/bench_bbox_judge.go",
+    "cmd/bench_bbox_test.go",
+    "cmd/bench_bbox_variants.go"
+  ],
+  "notes": "PROP-18 phase 2: Gemini reference boxes (original,blank,hflip,vflip,pad_right,pad_left,pad_bottom x3) and Gemini judge validation (calibration + benchmarks/runs/20261003-exp09-rebaseline/bbox__vertex_g4_all_x3.json). Models: gemini-3.8-flash gemini-3.7-flash.",
+  "receipts": [
+    {
+      "suite": "bbox",
+      "config": "reference_gemini_3_8_flash_x3",
+      "path": "bbox__reference_gemini_3_8_flash_x3.json",
+      "sha256": "e3e2fda465d70083a330d2e09c39e4bd0d0cc187c1a0252519b8ad42a235df2c",
+      "recorded": "2026-10-03T13:54:25+00:00",
+      "command": "./bin/dgem bench-bbox --engine gemini --gemini-model gemini-3.8-flash --variants original,blank,hflip,vflip,pad_right,pad_left,pad_bottom --repeat 3 -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-gemini/bbox__reference_gemini_3_8_flash_x3.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T13:54:25Z",
+        "target_model": "gemini-3.8-flash",
+        "idc_config": null,
+        "n": 252,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_judge",
+      "config": "judge_gemini_3_8_flash",
+      "path": "bbox_judge__judge_gemini_3_8_flash.json",
+      "sha256": "28d90760017d4418e673d3dd8dd79be360886c4a5d3ca9e06bcc6903e3cdd635",
+      "recorded": "2026-10-03T13:58:00+00:00",
+      "command": "./bin/dgem bench-bbox-judge --judge-model gemini-3.8-flash --calibrate --receipt benchmarks/runs/20261003-exp09-rebaseline/bbox__vertex_g4_all_x3.json -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-gemini/bbox_judge__judge_gemini_3_8_flash.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-10-03T13:54:25Z",
+        "target_model": null,
+        "idc_config": null,
+        "n": 0,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox",
+      "config": "reference_gemini_3_7_flash_x3",
+      "path": "bbox__reference_gemini_3_7_flash_x3.json",
+      "sha256": "0c7a6b1c7908460cc500679c007463ce85ee7c1f49c1fba5cbea134c57ca9c3c",
+      "recorded": "2026-10-03T14:00:17+00:00",
+      "command": "./bin/dgem bench-bbox --engine gemini --gemini-model gemini-3.7-flash --variants original,blank,hflip,vflip,pad_right,pad_left,pad_bottom --repeat 3 -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-gemini/bbox__reference_gemini_3_7_flash_x3.json",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T14:00:17Z",
+        "target_model": "gemini-3.7-flash",
+        "idc_config": null,
+        "n": 252,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_judge",
+      "config": "judge_gemini_3_7_flash",
+      "path": "bbox_judge__judge_gemini_3_7_flash.json",
+      "sha256": "426303f91d55a69071a5470e96bcd88ff88018833ba3997f2dfb9b1502025c9f",
+      "recorded": "2026-10-03T14:02:30+00:00",
+      "command": "./bin/dgem bench-bbox-judge --judge-model gemini-3.7-flash --calibrate --receipt benchmarks/runs/20261003-exp09-rebaseline/bbox__vertex_g4_all_x3.json -w 8 -o /workspace/dgem/benchmarks/runs/20261003-prop18-gemini/bbox_judge__judge_gemini_3_7_flash.json",
+      "backend_state": {
+        "endpoint": "",
+        "deployed_models": []
+      },
+      "summary": {
+        "timestamp": "2026-10-03T14:00:17Z",
+        "target_model": null,
+        "idc_config": null,
+        "n": 0,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_judge",
+      "config": "judge_gemini_3_8_flash_rescored",
+      "path": "bbox_judge__judge_gemini_3_8_flash_rescored.json",
+      "sha256": "a2d7501c1465159ddc6cefe5ba01e5623ae692bf7fbf360e5d72185387583453",
+      "recorded": "2026-10-03T14:06:21+00:00",
+      "command": "./bin/dgem bench-bbox-judge --rescore bbox_judge__judge_gemini_3_8_flash.json -o {out}",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T13:54:25Z",
+        "target_model": null,
+        "idc_config": null,
+        "n": 0,
+        "errors": 0
+      }
+    },
+    {
+      "suite": "bbox_judge",
+      "config": "judge_gemini_3_7_flash_rescored",
+      "path": "bbox_judge__judge_gemini_3_7_flash_rescored.json",
+      "sha256": "65db424a87e152803151a56a34af63c0b345a46c39a1368a3d77353f210eacfa",
+      "recorded": "2026-10-03T14:06:21+00:00",
+      "command": "./bin/dgem bench-bbox-judge --rescore bbox_judge__judge_gemini_3_7_flash.json -o {out}",
+      "backend_state": null,
+      "summary": {
+        "timestamp": "2026-10-03T14:00:17Z",
+        "target_model": null,
+        "idc_config": null,
+        "n": 0,
+        "errors": 0
+      }
+    }
+  ]
+}
