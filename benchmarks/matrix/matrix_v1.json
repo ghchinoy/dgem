@@ -69,14 +69,16 @@
     "T2": 3
    },
    "n": 50,
-   "description": "calibration suite, dgem's production prompt path"
+   "description": "calibration suite, dgem's production prompt path",
+   "accuracy": true
   },
   "massive_spot": {
    "kind": "systemone",
    "cases": "massive_spot",
    "runs": 1,
    "n": 100,
-   "description": "MASSIVE validation split, ru/th/hi/ja/es x 20, 20 options (non-Latin input on /v1/systemone)"
+   "description": "MASSIVE validation split, ru/th/hi/ja/es x 20, 20 options (non-Latin input on /v1/systemone)",
+   "accuracy": true
   },
   "jev_native": {
    "kind": "dgem",
@@ -88,7 +90,8 @@
     "T2": 3
    },
    "n": 231,
-   "description": "JevBench via dgem bench-jev (chat/completions)"
+   "description": "JevBench via dgem bench-jev (chat/completions)",
+   "accuracy": true
   },
   "jev_systemone": {
    "kind": "systemone",
@@ -98,7 +101,8 @@
     "T2": 3
    },
    "n": 231,
-   "description": "JevBench via /v1/systemone with native noul/choice/score types"
+   "description": "JevBench via /v1/systemone with native noul/choice/score types",
+   "accuracy": true
   },
   "intents_banking77": {
    "kind": "dgem",
@@ -112,7 +116,8 @@
     "T2": 3
    },
    "n": 30,
-   "description": "banking77 slice, 30 options (2-stage bracket)"
+   "description": "banking77 slice, 30 options (2-stage bracket)",
+   "accuracy": true
   },
   "intents_clinc150": {
    "kind": "dgem",
@@ -126,7 +131,8 @@
     "T2": 3
    },
    "n": 30,
-   "description": "clinc150 slice with out-of-scope"
+   "description": "clinc150 slice with out-of-scope",
+   "accuracy": true
   },
   "latency": {
    "kind": "latency",
@@ -138,7 +144,8 @@
    "runs": 1,
    "frozen": true,
    "n": 5100,
-   "description": "MASSIVE test, 51 languages x 100, 20 options"
+   "description": "MASSIVE test, 51 languages x 100, 20 options",
+   "accuracy": true
   },
   "xnli": {
    "kind": "systemone",
@@ -146,7 +153,8 @@
    "runs": 1,
    "frozen": true,
    "n": 4500,
-   "description": "XNLI test, 15 languages x 300"
+   "description": "XNLI test, 15 languages x 300",
+   "accuracy": true
   },
   "typed": {
    "kind": "systemone",
@@ -154,7 +162,8 @@
    "runs": 1,
    "frozen": true,
    "n": 2000,
-   "description": "LocalLLaMA/typed-decisions test: 400 cases x 5 questions in one request"
+   "description": "LocalLLaMA/typed-decisions test: 400 cases x 5 questions in one request",
+   "accuracy": true
   },
   "order": {
    "kind": "systemone",
@@ -201,7 +210,8 @@
     "T2": 3
    },
    "n": 100,
-   "description": "MASSIVE validation (English) with the full ~60-label set as options, through the adapter's bracket routing"
+   "description": "MASSIVE validation (English) with the full ~60-label set as options, through the adapter's bracket routing",
+   "accuracy": true
   },
   "di_kit_compat": {
    "kind": "kit_compat",
@@ -217,7 +227,8 @@
     "T2": 3
    },
    "n": 100,
-   "description": "CLINC150 validation (80 in-scope + 20 out-of-scope) in the Decision Index format, 151 options with an 'out of scope' catch-all, through the adapter; tracks in-scope answered as out-of-scope"
+   "description": "CLINC150 validation (80 in-scope + 20 out-of-scope) in the Decision Index format, 151 options with an 'out of scope' catch-all, through the adapter; tracks in-scope answered as out-of-scope",
+   "accuracy": true
   },
   "rag_dev": {
    "kind": "systemone",
@@ -228,7 +239,8 @@
     "T2": 3
    },
    "n": 198,
-   "description": "RAGTruth train (66 per task), the Decision Index hallucination wording with true/false criteria, through the adapter; tracks the yes/no 'no' bias (macro-F1 and recall on the hallucinated class)"
+   "description": "RAGTruth train (66 per task), the Decision Index hallucination wording with true/false criteria, through the adapter; tracks the yes/no 'no' bias (macro-F1 and recall on the hallucinated class)",
+   "accuracy": true
   }
  },
  "excluded": {

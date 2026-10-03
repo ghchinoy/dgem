@@ -107,7 +107,8 @@ changes against it.
 | Latency | every mode's p50 within ×1.10 of the baseline, throughput at least ×0.90, 0 errors | REVIEW up to ×1.25, FAIL beyond or on errors |
 | Bounding boxes, Decision Index | reported, not gated (INFO) | — |
 
-Thresholds live in `matrix_v1.json` (`thresholds`). Look at a REVIEW before promoting; a FAIL blocks.
+Thresholds live in `matrix_v1.json` (`thresholds`). Suites marked `"accuracy": true` are scored per item (accuracy,
+calibration, coverage and the noise floor); a new per-item suite only needs that flag, not a code change. Look at a REVIEW before promoting; a FAIL blocks.
 
 Accuracy is computed over answered items, so the coverage gate is what catches an item that starts being refused, for
 example a prompt that a new prompt layout pushes past the served context length. Under v0.2.0 at a 4,096-token context
