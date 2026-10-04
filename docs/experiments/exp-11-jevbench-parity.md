@@ -15,6 +15,13 @@ description: "Headline empirical gains of DiffusionGemma (dgem) on JevBench v1.3
 >   without the rubric text. It now sends them as ordinal `score` questions; `--flatten-score` reproduces the old
 >   behaviour.
 >
+> **Re-score (2026-10-05, #85):** the k-fold replays of every calibration-suite receipt behind EXP-04, EXP-05 and EXP-11
+> give a held-out ECE no better than raw: `results_calibration_cloudrun.json` 0.075 → 0.097, `results_calibration_vertex_l4.json`
+> 0.047 → 0.072, the two EXP-05 cascade receipts 0.029 → 0.041 and 0.020 → 0.025. With an NLL objective (as the matrix
+> T-cal uses) the 34 scored items give 0.106 → 0.117 and 0.113 → 0.080: 50-item suites are too small to fit a
+> temperature. JevBench (231): raw 0.077, held-out 0.080–0.084. For fitting your own temperature, see
+> [calibrate your policy](../confidence/calibrate-your-policy.md#5-temperature-scaling-optional) (per-policy, PROP-20).
+>
 > Re-runs are tracked in [#84](https://github.com/ghchinoy/dgem/issues/84) (ordinal score items) and [#85](https://github.com/ghchinoy/dgem/issues/85) (k-fold temperature).
 
 > **TL;DR — Headline Results First**:
