@@ -52,6 +52,7 @@ version recorded in its manifest unless `--matrix` is given.
 | `20261003-exp24-guided` | EXP-24: dgem-guided Gemini 3.8 boxes (full/hint/crop × thinking) and masks (Gemini polygons; SAM from Gemini/Grounding DINO/ground-truth boxes on a deleted-after-use VM). |
 | `20261004-exp26-domains` | EXP-26 (#76): guided boxes (Gemini 3.8 and 3.7) and `bench-vision` on mobile UI, web UI, DocLayNet pages and synthetic PCBs; `decision.json` holds the pre-registered rule outcomes. `vision__vertex_g4_x2.json` (2.8 MB) is in the matrix bucket (`receipts.lock.json`). |
 | `20261004-locate-acceptance` | #74 acceptance of guided locate: the EXP-24 items (432) through `POST /api/locate` against production. Recorded with the **pre-EXP-26 defaults** (hint on, skip at 0.16) under concurrent EXP-26 load; mIoU 0.626 on 228 positives, 139 requests skipped Gemini. The shipped defaults (hint and skip off) came later. |
+| `20261004-v031-reference-t2` | Matrix v2 T2 reference on production v0.3.1 (Vertex G4, 8k, auto yes/no isolation): PASS on every gate; the current source of dgem's native rows. `jev_native` per-run receipts included. |
 
 Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
 
