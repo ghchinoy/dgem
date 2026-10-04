@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`isolate` option for yes/no questions (PROP-19, opt-in).** `"isolate": "noul"` on a request or template reads each
+  yes/no question in its own parallel read (`"alone"` per question still wins; `DEFAULT_ISOLATE` per deployment).
+  It fixes yes/no answer copying in agent/tool-call policies (tool-call gate 0.60 → 0.98) but costs about +30 ms server
+  time and 20% throughput on 5-question requests and 1.6 points on image decisions, so the default stays one joint
+  read. Responses list isolated questions in `diagnostics.isolated`. Needs the next serving image.
+
 ## v0.2.2 (2026-10-04)
 
 Gateway, MCP, CLI and Studio release. **Serving images are unchanged**: still v0.2.1 (`dgem@sha256:fcad9df8…`).

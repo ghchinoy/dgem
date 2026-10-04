@@ -36,7 +36,7 @@ from . import net
 
 
 class Target:
-    OPTIONS = {"layout": ("schema_first", "document_first")}
+    OPTIONS = {"layout": ("schema_first", "document_first"), "isolate": ("noul", "none", "all")}
     role = "dgem"
 
     def __init__(self, name, url):
@@ -117,7 +117,7 @@ class CompetitorTarget(Target):
         self.options = {}
 
     def systemone(self, body, timeout=300):
-        b = {k: v for k, v in body.items() if k not in ("samples", "seed", "layout")}
+        b = {k: v for k, v in body.items() if k not in ("samples", "seed", "layout", "isolate")}
         if self.model:
             b["model"] = self.model
         return net.request(self.base + "/v1/systemone", b, timeout=timeout)

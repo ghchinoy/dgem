@@ -115,6 +115,28 @@ Leaving the field empty uses the template's own `layout`, or else the server's d
 server used in `diagnostics.layout`; the Studio shows it next to the menu. Servers older than v0.2.0 ignore the field
 and always use `schema_first`.
 
+## Yes/no questions in agent and tool-call policies: read them alone
+
+Asked in one joint read, a yes/no question that follows another one can copy its answer, especially in agent and
+tool-call states ([PROP-19](/dgem/experiments/proposed/#prop-19-cross-slot-coupling-on-mixed-polarity-yesno-questions)).
+Setting `"isolate": "noul"` on the request (or in the template) reads each yes/no question on its own, in parallel within
+the request, with a prompt that lists only that question.
+
+| Measured (serving v0.2.1 build with the option) | Joint read | `isolate: noul` |
+| :--- | ---: | ---: |
+| Tool-call review gate, 51 cases × 2 questions (scored once, release-gate run) | 0.601 | **0.977** |
+| Development suite, action question after a fact question, agent settings (120 cases × 3) | 0.344 | **0.994** |
+| typed-decisions train, 200 × 5 (dev) | 0.614 | 0.628 |
+| Server time, 5 questions per request | 59 ms | 90 ms |
+| Throughput, 5 questions, 16 concurrent | 60 req/s | 48 req/s |
+| Image decisions (230 synthetic images, several yes/no questions each) | 0.762 | 0.746 |
+
+It is **opt-in** because of the latency and throughput cost and the small loss on image decisions, where each isolated
+read repeats the image. Use it for policies that combine a fact check with an action judgment ("should the assistant
+ask first?", "should the agent hold the refund?"), especially over tool calls. `"alone": true` / `false` on a question
+overrides it; `DEFAULT_ISOLATE=noul` sets it for a whole deployment; responses list isolated questions in
+`diagnostics.isolated`. A narrower automatic default is being tested.
+
 ## How to compare both on your own data
 
 Run the same labelled rows twice and compare accuracy, agreement and hesitation:
