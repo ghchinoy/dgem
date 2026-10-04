@@ -5,6 +5,12 @@ description: "Pre-registered follow-ups PROP-01, PROP-02 (offline), PROP-05, PRO
 
 # EXP-14: Same-Session IDC Re-run on Vertex AI
 
+> **Note (2026-10-05, #84):** `bench-jev` now sends JevBench's 18 score items as ordinal questions with their rubric.
+> Re-run on production v0.3.1 ([`20261005-rerun-jev-score`](../../benchmarks/runs/20261005-rerun-jev-score/README.md)):
+> totals 190/189/192 (ordinal) vs 186/191/192 (old flattened path), within run-to-run noise; score items 14–15 vs 9–14 of
+> 18. Counts on this page from `bench-jev` used the flattened path.
+
+
 > **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
 
 **Date:** 2026-09-25 · **Backend:** Vertex AI Dedicated Endpoint `<legacy-l4-endpoint>` (1× L4) · **Stage 2:** `gemini-3.8-flash`

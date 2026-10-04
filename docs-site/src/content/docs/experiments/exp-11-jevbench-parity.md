@@ -3,14 +3,12 @@ title: "EXP-11: JevBench v1.3.1 4-Axis Parity, Slot Temperature Calibration & En
 description: "Headline empirical gains of DiffusionGemma (dgem) on JevBench v1.3.1: +13.8 Calibration points via Slot Temperature Scaling & Entropy-Gated Cascades, +10.5 Intelligence points on JevBench Hard, followed by our Manifest-Verified Upstream Sync architecture."
 ---
 
-# `EXP-11`: `JevBench v1.3.1` Results, Slot Temperature Calibration & Cascade Gains
-
 > **Note (2026-10-04): two corrections to this page's figures; the text below is unchanged.**
 >
 > - **Temperature fitted in-sample.** The `-56.2%` ECE (`0.0745 → 0.0326`, $T^* = 1.35$) was fitted and scored on the
 >   same 50 items. Replaying the same receipt with the fit cross-validated (`--auto-temperature`, now 5-fold by
 >   default) gives ECE `0.097` against `0.075` raw, so no gain on 50 items. On JevBench (231 items), held-out
->   temperature does help ([EXP-14](exp-14-idc-rerun.md)).
+>   temperature does help ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)).
 > - **Score items were not ordinal.** `bench-jev` sent JevBench's 18 `score` items as a choice over bare level indices,
 >   without the rubric text. It now sends them as ordinal `score` questions; `--flatten-score` reproduces the old
 >   behaviour.
@@ -20,11 +18,11 @@ description: "Headline empirical gains of DiffusionGemma (dgem) on JevBench v1.3
 > 0.047 → 0.072, the two EXP-05 cascade receipts 0.029 → 0.041 and 0.020 → 0.025. With an NLL objective (as the matrix
 > T-cal uses) the 34 scored items give 0.106 → 0.117 and 0.113 → 0.080: 50-item suites are too small to fit a
 > temperature. JevBench (231): raw 0.077, held-out 0.080–0.084. For fitting your own temperature, see
-> [calibrate your policy](../confidence/calibrate-your-policy.md#5-temperature-scaling-optional) (per-policy, PROP-20).
+> [calibrate your policy](/dgem/confidence/calibrate-your-policy/#5-temperature-scaling-optional) (per-policy, PROP-20).
 >
 > **Re-run (2026-10-05, #84):** with ordinal score items, `bench-jev` totals on production v0.3.1 were 190/189/192 vs
 > 186/191/192 on the old path (score items 14–15 vs 9–14 of 18); see
-> [`20261005-rerun-jev-score`](../../benchmarks/runs/20261005-rerun-jev-score/README.md).
+> [`20261005-rerun-jev-score`](https://github.com/ghchinoy/dgem/blob/main/benchmarks/runs/20261005-rerun-jev-score/README.md).
 >
 > Re-runs are tracked in [#84](https://github.com/ghchinoy/dgem/issues/84) (ordinal score items) and [#85](https://github.com/ghchinoy/dgem/issues/85) (k-fold temperature).
 

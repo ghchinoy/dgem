@@ -5,6 +5,12 @@ description: "Question ids are visible to the model. A single slot's id does not
 
 # EXP-16: Slot Names Are Part of the Prompt (`PROP-16`)
 
+> **Note (2026-10-05, #84):** `bench-jev` now sends JevBench's 18 score items as ordinal questions with their rubric.
+> Re-run on production v0.3.1 ([`20261005-rerun-jev-score`](../../benchmarks/runs/20261005-rerun-jev-score/README.md)):
+> totals 190/189/192 (ordinal) vs 186/191/192 (old flattened path), within run-to-run noise; score items 14–15 vs 9–14 of
+> 18. Counts on this page from `bench-jev` used the flattened path.
+
+
 > **Naming note (2026-10-03):** this page uses "IDC" (Invariant Decision Calibration), the research name at the time. The production approach is now [hesitation-gating](../confidence/overview.md): order bias is monitored per release rather than corrected per request.
 
 **Date:** 2026-09-26 · **Backend:** Vertex AI G4 endpoint `<endpoint-id>` (g4-standard-48 + RTX PRO 6000, image `dgemma:ab208dd`) ·
