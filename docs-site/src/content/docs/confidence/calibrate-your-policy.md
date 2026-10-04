@@ -73,20 +73,38 @@ with 34% escalated ([EXP-14](/dgem/experiments/exp-14-idc-rerun/)). Your escalat
 
 ## 5. Temperature scaling (optional)
 
-A temperature $T$ rescales probabilities after the fact ($T > 1$ softens overconfident answers). Fit it on data you
-did not use to choose it, otherwise the improvement is illusory. For the built-in suites, `--auto-temperature` does
-exactly that: it fits $T$ by 5-fold cross-validation and scores each item with the $T$ fitted on the other folds (the
-same folds as the regression matrix). The report's `temperature_fit` block lists the fold temperatures and raw vs
-held-out ECE; `--auto-temperature-in-sample` reproduces the older, optimistic in-sample fit.
+A temperature $T$ rescales probabilities after the fact: $T > 1$ softens overconfident answers, $T < 1$ sharpens
+them, and the answer itself never changes. **Fit it on your own labelled sample**, on data you did not use to choose
+it. There is no single served default: a temperature fitted on our other development suites and applied to a new one
+made calibration worse on 4 of 8 suites, and so did one per question type
+([PROP-20](/dgem/experiments/proposed/#prop-20-shipped-temperature-per-question-type-and-domain)). Fitted on the suite
+itself (held out by 5-fold cross-validation), it helps on every suite.
+
+**Fit it.** For the built-in suites, `--auto-temperature` fits $T$ by 5-fold cross-validation and scores each item with
+the $T$ fitted on the other folds (the same folds as the regression matrix). Its `temperature_fit` block lists the fold
+temperatures and raw vs held-out ECE:
 
 ```bash
 ./bin/dgem bench-calibration --from-receipt <receipt.json> --auto-temperature
 ./bin/dgem bench-jev --from-receipt <receipt.json> --auto-temperature
 ```
 
-On JevBench a held-out fit ($T^* \approx 1.5$) cut ECE by 24–33%; on the 50-item suite it gave no reliable gain
-([EXP-14](/dgem/experiments/exp-14-idc-rerun/)). Serve a fitted temperature through `dgem serve
---systemone-temperature` for `/v1/systemone`, or apply it in your client.
+For your own policy, run it on your labelled rows (the [dataset runner](/dgem/policies/datasets/)) and fit one $T$ per
+question type the same way. On our suites yes/no questions wanted about 3, choices about 1.3 and scores about 1.1.
+
+**Use it.** Put the fitted value in the policy, or send it per request:
+
+| Where | How |
+| :--- | :--- |
+| Template | `"temperature": 1.4` or `"temperature": {"noul": 3.0, "choice": 1.3, "score": 1.1}` next to `"questions"` |
+| `dgem decide` | `--temperature 1.4` (overrides the template) |
+| Gateway `POST /api/decide` | `"temperature": 1.4` or the per-type object (overrides the template) |
+| MCP decide tools | `temperature` and `temperature_by_type` |
+| Web Studio | **Temperature** field next to Prompt layout (also used by the batch runner) |
+| `/v1/systemone` adapter | `dgem systemone serve --temperature`, or `dgem serve --systemone-temperature` |
+
+The temperature is applied after Stage 1 and after the Gemini cascade: the cascade still gates on raw entropy, and
+answers the cascade resolved are left as Gemini gave them. Responses report the temperature applied in `temperature`.
 
 ## 6. Re-check when things change
 

@@ -42,6 +42,7 @@ var (
 	decidePriorAlpha        float64
 	decideSuggestExpansions bool
 	decideLayout            string
+	decideTemperature       float64
 	decideExpansionEntropy  float64
 )
 
@@ -73,6 +74,7 @@ func init() {
 	decideCmd.Flags().BoolVar(&decideNullPriorDebias, "null-prior-debias", false, "EXP-13B: Divide out calibrated content-free positional 'A'-bias in logit space")
 	decideCmd.Flags().Float64Var(&decidePriorAlpha, "prior-alpha", 0.50, "Damping exponent alpha in [0, 1] for content-free null-prior de-biasing")
 	decideCmd.Flags().StringVar(&decideLayout, "layout", "", "Prompt layout: document_first (the state first, then the questions; server default from v0.2.0) or schema_first (the questions as the system prompt). Empty: the template's \"layout\" or the server default. See docs/policies/prompt-layout.md")
+	decideCmd.Flags().Float64Var(&decideTemperature, "temperature", 0, "Post-hoc temperature for every answer (T > 1 softens overconfidence); 0 = the template's \"temperature\" key, else none. Fit it on labelled examples of your own (docs/confidence/calibrate-your-policy.md)")
 	decideCmd.Flags().BoolVar(&decideSuggestExpansions, "suggest-expansions", false, "Dynamically inject an 'other_unclassified' catch-all (if absent) and propose new {"+"\"name\", \"description\""+"} options when unclassified or high-entropy")
 	decideCmd.Flags().Float64Var(&decideExpansionEntropy, "expansion-entropy", 0.35, "Shannon entropy threshold (in nats) on choice slots to trigger taxonomy expansion suggestions")
 
@@ -195,6 +197,15 @@ func runDecide(cmd *cobra.Command, args []string) error {
 
 	if decideDualMirror || decideNullPriorDebias {
 		permutation.PostProcessDecisionResponse(resp, slotOpts, decideDualMirror, decideNullPriorDebias, decidePriorAlpha)
+	}
+
+	// Policy temperature last, on the final distributions (template "temperature" key, or --temperature).
+	var reqT *client.Temperature
+	if decideTemperature > 0 {
+		reqT = &client.Temperature{All: decideTemperature}
+	}
+	if _, _, err := applyPolicyTemperature(resp, schemaContent, reqT, nil); err != nil {
+		return err
 	}
 
 	if decideSuggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
