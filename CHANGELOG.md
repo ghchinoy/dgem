@@ -9,11 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
-- **`isolate` option for yes/no questions (PROP-19, opt-in).** `"isolate": "noul"` on a request or template reads each
-  yes/no question in its own parallel read (`"alone"` per question still wins; `DEFAULT_ISOLATE` per deployment).
-  It fixes yes/no answer copying in agent/tool-call policies (tool-call gate 0.60 → 0.98) but costs about +30 ms server
-  time and 20% throughput on 5-question requests and 1.6 points on image decisions, so the default stays one joint
-  read. Responses list isolated questions in `diagnostics.isolated`. Needs the next serving image.
+- **Behaviour change (serving): yes/no questions in small text requests are read alone (PROP-19, issue #68).** In a text
+  request with 2–3 questions, at least 2 of them yes/no, each yes/no question gets its own parallel read
+  (`DEFAULT_ISOLATE=auto`). Read jointly, an action question after a fact question copied its answer (dev: 0.60 → 0.88;
+  agent settings 0.33 → 0.98; tool-call gate 0.588 → 0.967 in the release gate). Other requests are unchanged.
+  `"isolate": "auto" | "noul" | "none" | "all"` per request or template, `"alone"` per question, `DEFAULT_ISOLATE` per
+  deployment; responses list isolated questions in `diagnostics.isolated`.
 
 ## v0.2.2 (2026-10-04)
 

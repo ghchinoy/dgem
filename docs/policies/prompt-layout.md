@@ -115,27 +115,29 @@ Leaving the field empty uses the template's own `layout`, or else the server's d
 server used in `diagnostics.layout`; the Studio shows it next to the menu. Servers older than v0.2.0 ignore the field
 and always use `schema_first`.
 
-## Yes/no questions in agent and tool-call policies: read them alone
+## Yes/no questions in small requests are read alone
 
-Asked in one joint read, a yes/no question that follows another one can copy its answer, especially in agent and
-tool-call states ([PROP-19](../experiments/proposed.md#prop-19-cross-slot-coupling-on-mixed-polarity-yesno-questions)).
-Setting `"isolate": "noul"` on the request (or in the template) reads each yes/no question on its own, in parallel within
-the request, with a prompt that lists only that question.
+Asked in one joint read, a yes/no question that follows another one can copy its answer, mostly in small requests and
+in agent or tool-call states ([PROP-19](../experiments/proposed.md#prop-19-cross-slot-coupling-on-mixed-polarity-yesno-questions)).
+From serving v0.3.0 the server handles this automatically: in a **text** request with **2 or 3 questions, at least 2 of
+them yes/no**, each yes/no question gets its own read, run in parallel within the request with a prompt that lists only
+that question. Everything else is read jointly as before.
 
-| Measured (serving v0.2.1 build with the option) | Joint read | `isolate: noul` |
+| Measured | Joint read | Own read |
 | :--- | ---: | ---: |
-| Tool-call review gate, 51 cases × 2 questions (scored once, release-gate run) | 0.601 | **0.977** |
-| Development suite, action question after a fact question, agent settings (120 cases × 3) | 0.344 | **0.994** |
-| typed-decisions train, 200 × 5 (dev) | 0.614 | 0.628 |
-| Server time, 5 questions per request | 59 ms | 90 ms |
-| Throughput, 5 questions, 16 concurrent | 60 req/s | 48 req/s |
-| Image decisions (230 synthetic images, several yes/no questions each) | 0.762 | 0.746 |
+| Action question after a fact question, 2-question requests (dev, 120 cases × 2) | 0.600 | **0.883** |
+| same, agent and tool-call settings | 0.333 | **0.983** |
+| same pair plus 3 neutral questions (5-question requests) | 0.912 | 0.883 |
+| Tool-call review gate, 51 cases × 2 questions (release-gate run, scored once) | 0.588 | **0.967** |
 
-It is **opt-in** because of the latency and throughput cost and the small loss on image decisions, where each isolated
-read repeats the image. Use it for policies that combine a fact check with an action judgment ("should the assistant
-ask first?", "should the agent hold the refund?"), especially over tool calls. `"alone": true` / `false` on a question
-overrides it; `DEFAULT_ISOLATE=noul` sets it for a whole deployment; responses list isolated questions in
-`diagnostics.isolated`. A narrower automatic default is being tested.
+Requests outside the rule (one question, four or more questions, images) are unchanged, so latency and throughput on
+them are unchanged. Isolating yes/no questions in every request (`"isolate": "noul"`) costs about +30 ms server time and
+20% throughput at 5 questions and 1.6 points on image decisions, so it stays opt-in.
+
+**Controls:** `"isolate"` on a request or template: `"auto"` (default), `"noul"` (every yes/no question, requests of 2–8
+questions), `"none"` (one joint read, the behaviour before v0.3.0) or `"all"`. `"alone": true` / `false` on a question
+overrides it; `DEFAULT_ISOLATE` sets the deployment default. Responses list isolated questions in
+`diagnostics.isolated`.
 
 ## How to compare both on your own data
 
