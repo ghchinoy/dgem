@@ -1718,7 +1718,7 @@ func buildMCPServer() *mcp.Server {
 
 		coordEnt := map[string]float64{}
 		maxEnt := 0.0
-		for _, k := range []string{"presence", "ymin", "xmin", "ymax", "xmax"} {
+		for _, k := range []string{"object_present", "ymin", "xmin", "ymax", "xmax"} {
 			e := resp.Answers[k].Entropy
 			if e == 0 {
 				if q, ok := resp.Diagnostics.Questions[k]; ok {
@@ -1730,7 +1730,11 @@ func buildMCPServer() *mcp.Server {
 				maxEnt = e
 			}
 		}
-		presAns := resp.Answers["presence"]
+		// The template's presence slot is "object_present" ("presence" in older templates).
+		presAns, ok := resp.Answers["object_present"]
+		if !ok {
+			presAns = resp.Answers["presence"]
+		}
 		present := strings.EqualFold(presAns.Label, "yes") || strings.EqualFold(presAns.Label, "true")
 
 		return nil, LocateBBoxToolOutput{
@@ -1745,6 +1749,34 @@ func buildMCPServer() *mcp.Server {
 			BackendTarget:      backendTarget,
 			UpstreamURL:        targetURL,
 		}, nil
+	})
+
+	// Tool 4b: locate_object (guided locate, #74 / EXP-24)
+	mcp.AddTool(srv, &mcp.Tool{
+		Name: "locate_object",
+		Description: "Locates an object or UI element in an image: dgem first answers presence and 3x3 location (~0.2 s); if it " +
+			"is confident the target is absent, returns absent without a Gemini call; otherwise Gemini 3.x (LOW thinking) " +
+			"returns the box with dgem's cell as a hint, and optionally a SAM mask (when DGEM_SAM_URL is configured). " +
+			"Returns box_1000 [ymin, xmin, ymax, xmax] in [0, 1000], the path taken and per-stage latency. Prefer this over " +
+			"locate_bounding_boxes for precise boxes.",
+		InputSchema: visionBackendChoicesSchema[LocateRequest](),
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input LocateRequest) (*mcp.CallToolResult, LocateResult, error) {
+		if err := checkRequestImages(ctx, []string{input.Image}); err != nil {
+			return nil, LocateResult{}, err
+		}
+		backendTarget, targetURL, bErr := resolveBackendTargetFromParams(ctx, input.Backend, input.VertexURL)
+		if bErr != nil {
+			return nil, LocateResult{}, bErr
+		}
+		if backendTarget == "local" {
+			return nil, LocateResult{}, fmt.Errorf("locate_object needs a vision backend: use 'vertex_first', 'vertex' or 'cloudrun'")
+		}
+		res, err := runGuidedLocate(ctx, input, locateDecideVia(backendTarget, targetURL))
+		if err != nil {
+			return nil, LocateResult{}, err
+		}
+		res.BackendTarget = backendTarget
+		return nil, *res, nil
 	})
 
 	// Tool 5: decide_custom_questions

@@ -1738,6 +1738,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		_ = json.NewEncoder(w).Encode(out)
 	}
+	// POST /api/locate: guided locate (#74, EXP-24). dgem presence + grid cell, then Gemini only when needed.
+	mux.HandleFunc("/api/locate", handleLocate)
+
 	mux.HandleFunc("/api/decide", decideHandler)
 	mux.HandleFunc("/api/decide/", decideHandler)
 
