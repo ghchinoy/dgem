@@ -1645,7 +1645,7 @@ func buildMCPServer() *mcp.Server {
 	// Tool 4: locate_bounding_boxes
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "locate_bounding_boxes",
-		Description: "Localizes an object in an image in a single forward pass (EXP-09) using Gemma 4's SigLIP vision tower and 21-bin discrete diffusion coordinate readout, returning both continuous Softmax Expectation and discrete argmax [ymin, xmin, ymax, xmax] bounding boxes in [0, 1000] coordinates.",
+		Description: "Approximate single-pass box from dgem (EXP-09): softmax-expectation and argmax [ymin, xmin, ymax, xmax] in [0, 1000]. Coarse: box centre lands inside the target ~75% of the time on photos and ~12% on app/web screenshots, and boxes move under flips or padding (EXP-22). Use it for rough location only; for precise boxes use Grounding DINO or Gemini (see docs/policies/images.md). For presence, 3x3 location or relations, decide_custom_questions with an image is faster and better calibrated.",
 		InputSchema: visionBackendChoicesSchema[LocateBBoxToolInput](),
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input LocateBBoxToolInput) (*mcp.CallToolResult, LocateBBoxToolOutput, error) {
 		if strings.TrimSpace(input.Image) == "" {

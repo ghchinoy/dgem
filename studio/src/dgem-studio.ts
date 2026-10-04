@@ -94,10 +94,10 @@ const PRESETS: PresetSample[] = [
   },
   {
     id: 'bbox-spatial',
-    title: 'Multimodal SigLIP BBox Readout',
+    title: 'Multimodal BBox Readout (coarse)',
     badge: 'EXP-09 · Spatial BBox',
     template: 'bbox_localization',
-    description: 'Single-pass [0,1000] box readout: argmax and probability-weighted (expectation) boxes. See EXP-09 for measured accuracy.',
+    description: 'Approximate single-pass [0,1000] box (argmax and expectation). Coarse: centre hit ~75% on photos, ~12% on screenshots (EXP-22). For precise boxes use Grounding DINO or Gemini; see the image guide.',
     variables: {
       target: 'primary_cta_button',
       scene_context: 'UI viewport or camera frame',
@@ -151,7 +151,7 @@ const MCP_TOOLS: MCPToolSpec[] = [
     name: 'locate_bounding_boxes',
     badge: 'EXP-09 · Multimodal BBox',
     description:
-      'Runs single-pass SigLIP spatial localization in normalized [0,1000] coordinates, computing both Softmax Expectation and Discrete Argmax boxes plus per-edge entropy.',
+      'Approximate single-pass box in [0,1000] coordinates (expectation and argmax) with per-edge entropy. Coarse; use Grounding DINO or Gemini for precise boxes (docs/policies/images.md).',
     defaultArgs: {
       target: 'the red emergency stop button',
       mode: 'single',
@@ -2236,7 +2236,7 @@ export class DgemStudio extends LitElement {
                       style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem"
                     >
                       <span style="font-size:0.74rem;color:var(--text-muted)">
-                        Solid Blue = Softmax Expectation E[c] · Dashed Amber = Discrete Argmax
+                        Approximate boxes (EXP-22: coarse; not for precise localization) · Solid Blue = Expectation · Dashed Amber = Argmax
                       </span>
                       <div class="segmented">
                         ${(['both', 'expectation', 'argmax'] as const).map(
