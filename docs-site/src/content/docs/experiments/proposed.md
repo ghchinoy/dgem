@@ -68,7 +68,7 @@ page (history is annotated, not rewritten).
 
 | Re-run | Why | Affects | Source | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| JevBench through `bench-jev` with ordinal `score` items kept as `score` | `bench-jev` flattens score items to choice; the `/v1/systemone` path keeps them ordinal and scores about 4–5 more of the 18 score items | EXP-11, EXP-14 to EXP-17 headline counts | Laya | Unblocked: code merged; run tracked in [#84](https://github.com/ghchinoy/dgem/issues/84). The old path also never sent the rubric text |
+| JevBench through `bench-jev` with ordinal `score` items kept as `score` | `bench-jev` flattens score items to choice; the `/v1/systemone` path keeps them ordinal and scores about 4–5 more of the 18 score items | EXP-11, EXP-14 to EXP-17 headline counts | Laya | **Done** (2026-10-05): totals within noise; score items 14–15 vs 9–14 of 18 (`20261005-rerun-jev-score`) |
 | `--auto-temperature` fitted by k-fold, not in-sample | In-sample T is optimistic on 50 items | EXP-04, EXP-05, EXP-11 calibration figures | Laya | **Done** (2026-10-05): held-out ECE no better than raw on every 50-item receipt; note on EXP-11 |
 | Matrix v2 reference run (T1 + TC baseline only) | Sets reference ranges for `calib_systemone`, `intents_systemone`, `gate_mixed_noul` before v2 becomes the default | [Regression matrix](/dgem/operate/regression-matrix/) | Strands | **Done** (#87, 2026-10-03; re-referenced for v0.3.x) |
 | EXP-23 on matrix v2 tier TC | The EXP-23 numbers came from the study harness that TC replaces; one TC run confirms the tooling reproduces them | [EXP-23](/dgem/experiments/exp-23-strands-decider/) | Strands | Queued (needs a competitor deployment): [#83](https://github.com/ghchinoy/dgem/issues/83) |
