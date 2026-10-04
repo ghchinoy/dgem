@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.0 (2026-10-04)
+
+Serving images rebuilt. **Behaviour change: yes/no questions in small text requests are read alone.**
+
 - **Behaviour change (serving): yes/no questions in small text requests are read alone (PROP-19, issue #68).** In a text
   request with 2–3 questions, at least 2 of them yes/no, each yes/no question gets its own parallel read
   (`DEFAULT_ISOLATE=auto`). Read jointly, an action question after a fact question copied its answer (dev: 0.60 → 0.88;
