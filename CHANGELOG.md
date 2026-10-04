@@ -9,6 +9,9 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- An explicit request `temperature: 1` now turns a template's temperature off for that request (it used to fall back to
+  the template's value).
+
 ## v0.3.1 (2026-10-04)
 
 Serving images rebuilt (idle-connection timeout); gateway, MCP, CLI and Studio: Stage-2 soft hint and per-policy

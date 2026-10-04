@@ -39,6 +39,10 @@ func TestApplyPolicyTemperature(t *testing.T) {
 		t.Fatalf("request override should temper every answer: %v %+v", err, r.Answers["team"])
 	}
 	r = mk()
+	if tt, _, _ := applyPolicyTemperature(r, schema, &client.Temperature{All: 1}, nil); tt != nil || r.Answers["urgent"].Noul != 0.9 {
+		t.Fatalf("an explicit temperature 1 must override the template: %+v %+v", tt, r.Answers["urgent"])
+	}
+	r = mk()
 	cas := &CascadeExecutionSummary{Slots: map[string]CascadeSlotTelemetry{"urgent": {Escalated: true}}}
 	applyPolicyTemperature(r, schema, nil, cas)
 	if r.Answers["urgent"].Noul != 0.9 {

@@ -25,8 +25,8 @@ import (
 func applyPolicyTemperature(resp *client.StructuredDecisionResponse, schemaJSON string, req *client.Temperature,
 	cascade *CascadeExecutionSummary) (*client.Temperature, float64, error) {
 	t := client.Temperature{}
-	if req != nil && req.IsSet() {
-		t = *req
+	if req != nil && (req.All > 0 || len(req.ByType) > 0) {
+		t = *req // an explicit request value wins, including 1 ("no temperature for this request")
 	} else {
 		st, err := client.ParseSchemaTemperature(schemaJSON)
 		if err != nil {
