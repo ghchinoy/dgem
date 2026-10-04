@@ -50,6 +50,7 @@ var (
 	visionVariant  string
 	visionCascadeT float64
 	visionCascadeM string
+	visionCascadeP string
 	visionOnlyGT   bool
 )
 
@@ -82,6 +83,7 @@ func init() {
 	f.Float64Var(&visionCascadeT, "cascade-threshold", 0, "Live Stage-2 cascade (engine dgem): send slots with entropy >= this many nats, with the image, to Gemini (0 = off)")
 	f.BoolVar(&visionOnlyGT, "only-scored", false, "Ask only the questions the item has ground truth for (a caller asking just what it needs)")
 	f.StringVar(&visionCascadeM, "cascade-model", DefaultCascadeGeminiModel, "Gemini 3.x model for --cascade-threshold")
+	f.StringVar(&visionCascadeP, "cascade-prior", "full", "How Stage 1's answer is shown to Gemini: full, soft or none (issue #75)")
 	RootCmd.AddCommand(benchVisionCmd)
 }
 
@@ -363,7 +365,7 @@ func runBenchVision(cmd *cobra.Command, args []string) error {
 								stage1[k] = v
 							}
 							t1 := time.Now()
-							cas = ExecuteStage2GeminiCascadeWithImages(ctx, "entropy", visionCascadeT, visionCascadeM, nil,
+							cas = ExecuteStage2GeminiCascadeWithImages(WithStage2Prior(ctx, visionCascadeP), "entropy", visionCascadeT, visionCascadeM, nil,
 								schemaJSON, stateJSON, resp, []string{img})
 							if cas != nil {
 								res.EscalatedSlots, res.TotalSlots, res.CascadeError = cas.EscalatedCount, cas.TotalSlots, cas.Error

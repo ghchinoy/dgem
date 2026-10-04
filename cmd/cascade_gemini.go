@@ -64,6 +64,46 @@ type CascadeExecutionSummary struct {
 	Slots          map[string]CascadeSlotTelemetry `json:"slots,omitempty"`
 	// ImageCount is how many images were sent to Stage 2 with the escalated slots.
 	ImageCount int `json:"image_count,omitempty"`
+	// Prior is how Stage 1's answer was shown to Stage 2: "full", "soft" or "none" (see Stage2PriorModes).
+	Prior string `json:"prior,omitempty"`
+}
+
+// Stage2PriorModes control how much of Stage 1's answer the Stage-2 prompt shows (issue #75):
+//   - full: Stage 1's answer, confidence, entropy and full distribution, presented as "the candidate";
+//   - soft: only that a fast first stage leaned toward an answer and may be wrong;
+//   - none: the question alone (allowed values are still enforced by the response schema).
+var Stage2PriorModes = []string{"full", "soft", "none"}
+
+type stage2PriorKey struct{}
+
+// WithStage2Prior sets the Stage-2 prior mode for cascades run with this context.
+func WithStage2Prior(ctx context.Context, mode string) context.Context {
+	return context.WithValue(ctx, stage2PriorKey{}, mode)
+}
+
+// NormalizeStage2Prior validates a prior mode; "" means the default (DGEM_CASCADE_PRIOR, else "full").
+func NormalizeStage2Prior(mode string) (string, error) {
+	m := strings.ToLower(strings.TrimSpace(mode))
+	if m == "" {
+		m = strings.ToLower(strings.TrimSpace(os.Getenv("DGEM_CASCADE_PRIOR")))
+	}
+	if m == "" {
+		return "full", nil
+	}
+	for _, v := range Stage2PriorModes {
+		if m == v {
+			return m, nil
+		}
+	}
+	return "", fmt.Errorf("stage2_prior must be full, soft or none (got %q)", mode)
+}
+
+func stage2PriorFrom(ctx context.Context) string {
+	m, _ := ctx.Value(stage2PriorKey{}).(string)
+	if n, err := NormalizeStage2Prior(m); err == nil {
+		return n
+	}
+	return "full"
 }
 
 var (
@@ -349,6 +389,8 @@ func ExecuteStage2GeminiCascadeWithImages(
 	// Build a structured ResponseSchema and Prior-Guided Prompt for all escalated question slots
 	slotProps := make(map[string]*genai.Schema, len(escalatedIDs))
 	var priorLines []string
+	prior := stage2PriorFrom(ctx)
+	summary.Prior = prior
 
 	for _, qID := range escalatedIDs {
 		tel := summary.Slots[qID]
@@ -369,10 +411,19 @@ func ExecuteStage2GeminiCascadeWithImages(
 			distParts = append(distParts, fmt.Sprintf("%s: %.1f%%", k, p*100.0))
 		}
 		sort.Strings(distParts)
-		priorLines = append(priorLines, fmt.Sprintf(
-			"- Slot %q (%s): Stage-1 dgemma candidate=%q (conf=%.1f%%, H=%.4f nats, reason=%s). Allowed distribution: {%s}. Question: %s",
-			qID, qType, tel.Stage1Value, tel.Stage1Confidence*100.0, tel.Stage1Entropy, tel.Reason, strings.Join(distParts, ", "), qInstr,
-		))
+		switch prior {
+		case "soft":
+			priorLines = append(priorLines, fmt.Sprintf(
+				"- Slot %q (%s): a fast first-stage model leaned toward %q but may be wrong; decide from the input yourself. Question: %s",
+				qID, qType, tel.Stage1Value, qInstr))
+		case "none":
+			priorLines = append(priorLines, fmt.Sprintf("- Slot %q (%s): Question: %s", qID, qType, qInstr))
+		default:
+			priorLines = append(priorLines, fmt.Sprintf(
+				"- Slot %q (%s): Stage-1 dgemma candidate=%q (conf=%.1f%%, H=%.4f nats, reason=%s). Allowed distribution: {%s}. Question: %s",
+				qID, qType, tel.Stage1Value, tel.Stage1Confidence*100.0, tel.Stage1Entropy, tel.Reason, strings.Join(distParts, ", "), qInstr,
+			))
+		}
 
 		var valSchema *genai.Schema
 		switch strings.ToLower(qType) {
@@ -438,13 +489,17 @@ func ExecuteStage2GeminiCascadeWithImages(
 		Required:   escalatedIDs,
 	}
 
+	slotHeader := "[TIER-1 DISCRETE DIFFUSION PRIOR TELEMETRY]"
+	if prior != "full" {
+		slotHeader = "[QUESTIONS TO RESOLVE]"
+	}
 	prompt := fmt.Sprintf(
 		"You are Stage-2 (%s) in a 2-Stage DiffusionGemma -> Gemini Decision Cascade.\n"+
 			"Global Policy Instructions:\n%s\n\n"+
 			"Input State / Context:\n%s\n\n"+
-			"[TIER-1 DISCRETE DIFFUSION PRIOR TELEMETRY]\n%s\n\n"+
+			"%s\n%s\n\n"+
 			"Carefully verify the input state against the policy instructions and resolve each escalated slot.",
-		model, globalInstr, stateContent, strings.Join(priorLines, "\n"),
+		model, globalInstr, stateContent, slotHeader, strings.Join(priorLines, "\n"),
 	)
 
 	imgParts, imgErr := cascadeImageParts(ctx, images)

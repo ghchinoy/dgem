@@ -136,6 +136,7 @@ type GatewayDecideRequest struct {
 	SuggestExpansions bool                   `json:"suggest_expansions,omitempty"` // dynamically inject 'other_unclassified' and propose new {"name", "description"} options
 	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
 	Layout            string                 `json:"layout,omitempty"`             // prompt layout: "document_first" | "schema_first"; empty = template or server default
+	Stage2Prior       string                 `json:"stage2_prior,omitempty"`       // how Stage 1's answer is shown to the Stage-2 cascade: "full" | "soft" | "none"; empty = DGEM_CASCADE_PRIOR or "full"
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
@@ -1602,9 +1603,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 		var cascadeSummary *CascadeExecutionSummary
 		if cascadeMode != "" && cascadeMode != "off" && cascadeMode != "none" {
+			prior := payload.Stage2Prior
+			if prior == "" {
+				prior = r.Header.Get("X-DGem-Stage2-Prior")
+			}
+			prior, perr := NormalizeStage2Prior(prior)
+			if perr != nil {
+				rootSpan.SetStatus(codes.Error, perr.Error())
+				rootSpan.End()
+				writeErr(http.StatusBadRequest, perr.Error())
+				return
+			}
 			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
 			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
-				ctx,
+				WithStage2Prior(ctx, prior),
 				cascadeMode,
 				cascadeThreshold,
 				cascadeModel,
