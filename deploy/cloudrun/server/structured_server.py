@@ -52,8 +52,8 @@ A question may also declare:
                              its prompt
   "ask_if": {id: [answers]}  asked only when that question's answer is
                              among them (a skipped answer is null)
-  "alone": true              a read of its own (default: yes/no questions in requests of 2-8
-                             questions, see DEFAULT_ISOLATE; "alone": false keeps one in the joint read)
+  "alone": true              a read of its own ("isolate": "noul" on the request does this for every
+                             yes/no question in requests of 2-8 questions; "alone": false keeps one joint)
 Questions run in stages by these dependencies. Each stage is one joint
 read. Later stages continue the earlier answers, prefilled for a text
 state and restated for an image.
@@ -109,11 +109,12 @@ MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
 # The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
 # the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
 DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
-# Which questions get a read of their own when the request does not say ("alone"): "noul" (yes/no questions, the
-# default from v0.3.0), "none" (one joint read, the behaviour before v0.3.0) or "all". Read jointly, a yes/no question
-# after another one tended to copy its answer in agent/tool-call states (PROP-19); its own read, run in parallel within
-# the request, fixed that at about +60 ms. Applies to requests with at most ISOLATE_MAX_QUESTIONS questions.
-DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "noul")
+# Which questions get a read of their own when the request does not say ("alone"): "none" (one joint read, the
+# default), "noul" (yes/no questions) or "all". Read jointly, a yes/no question after another one tended to copy its
+# answer in agent/tool-call states (PROP-19); "noul" fixes that (tool-call gate 0.60 -> 0.98) but costs about +30 ms
+# server time and 20% throughput on 5-question requests, so it is opt-in. Applies to requests with at most
+# ISOLATE_MAX_QUESTIONS questions.
+DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "none")
 ISOLATE_MAX_QUESTIONS = int(os.environ.get("ISOLATE_MAX_QUESTIONS", "8"))
 if DEFAULT_ISOLATE not in ("noul", "none", "all"):
     raise SystemExit("DEFAULT_ISOLATE must be noul, none or all")

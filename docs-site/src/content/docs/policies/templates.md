@@ -53,6 +53,13 @@ From serving v0.2.0 the model reads the `"state"` first and the questions after 
 pin the older order with `"layout": "schema_first"` next to `"questions"`, for example to keep a validated policy's
 prompt unchanged. See [Prompt layout](/dgem/policies/prompt-layout/) for the measured effect and how to compare both.
 
+### Yes/no questions over agent actions
+
+If a template asks a fact question and an action judgment as yes/no questions about the same state (for example
+"did the user give the date?" and "should the assistant ask before booking?"), add `"isolate": "noul"` next to
+`"questions"`, so each yes/no question gets its own read. See
+[Prompt layout](/dgem/policies/prompt-layout/#yesno-questions-in-agent-and-tool-call-policies-read-them-alone).
+
 ### 3-Step Workflow to Create & Validate a New Template
 
 1. **Always pipe input variables through `| toJson`**: Write `"clause": {{ default "" .clause | toJson }}` inside `"state"` so quotes, newlines, and special characters in user text are automatically JSON-escaped.

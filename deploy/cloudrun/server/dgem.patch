@@ -28,8 +28,8 @@
    "ask_if": {id: [answers]}  asked only when that question's answer is
                               among them (a skipped answer is null)
 -  "alone": true              a read of its own
-+  "alone": true              a read of its own (default: yes/no questions in requests of 2-8
-+                             questions, see DEFAULT_ISOLATE; "alone": false keeps one in the joint read)
++  "alone": true              a read of its own ("isolate": "noul" on the request does this for every
++                             yes/no question in requests of 2-8 questions; "alone": false keeps one joint)
  Questions run in stages by these dependencies. Each stage is one joint
  read. Later stages continue the earlier answers, prefilled for a text
  state and restated for an image.
@@ -45,7 +45,7 @@
  the image in view and the server seeds it into the canvas ahead of the
  answer, so the canvas bounds it. The noise draws of a decision share one
  thought.
-@@ -97,9 +103,23 @@
+@@ -97,9 +103,24 @@
  
  ARGS = None
  TOK = None
@@ -58,11 +58,12 @@
 +# The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
 +# the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
 +DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
-+# Which questions get a read of their own when the request does not say ("alone"): "noul" (yes/no questions, the
-+# default from v0.3.0), "none" (one joint read, the behaviour before v0.3.0) or "all". Read jointly, a yes/no question
-+# after another one tended to copy its answer in agent/tool-call states (PROP-19); its own read, run in parallel within
-+# the request, fixed that at about +60 ms. Applies to requests with at most ISOLATE_MAX_QUESTIONS questions.
-+DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "noul")
++# Which questions get a read of their own when the request does not say ("alone"): "none" (one joint read, the
++# default), "noul" (yes/no questions) or "all". Read jointly, a yes/no question after another one tended to copy its
++# answer in agent/tool-call states (PROP-19); "noul" fixes that (tool-call gate 0.60 -> 0.98) but costs about +30 ms
++# server time and 20% throughput on 5-question requests, so it is opt-in. Applies to requests with at most
++# ISOLATE_MAX_QUESTIONS questions.
++DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "none")
 +ISOLATE_MAX_QUESTIONS = int(os.environ.get("ISOLATE_MAX_QUESTIONS", "8"))
 +if DEFAULT_ISOLATE not in ("noul", "none", "all"):
 +    raise SystemExit("DEFAULT_ISOLATE must be noul, none or all")
@@ -72,7 +73,7 @@
  CANVAS_LEN = 64  # the served canvas length. A request may be narrower.
  CANVAS_STEP = 16  # request widths are multiples of this
  VOCAB = 262144
-@@ -195,9 +215,19 @@
+@@ -195,9 +216,19 @@
                  "labels": labels,
                  "depends_on": list(dict.fromkeys(list(deps) + list(ask_if))),
                  "ask_if": ask_if,
@@ -93,7 +94,7 @@
      by_id = {q["id"]: q for q in qs}
      for q in qs:
          for dep in q["depends_on"]:
-@@ -213,7 +243,10 @@
+@@ -213,7 +244,10 @@
                      f"must be among {names}"
                  )
      schedule(qs)  # refuses a cycle
@@ -105,7 +106,7 @@
      if samples == "auto":
          policy = {
              "mode": "auto",
-@@ -240,6 +273,9 @@
+@@ -240,6 +274,9 @@
      if chunk_prompt not in ("shared", "own"):
          raise SchemaError('schema: chunk_prompt must be "shared" or "own"')
      sequential = bool(value.get("sequential", False))
@@ -115,7 +116,7 @@
      think = value.get("think", 0)
      if isinstance(think, bool) or not isinstance(think, int) or not 0 <= think <= 4096:
          raise SchemaError("schema: think must be a thought budget in tokens, 0 to 4096")
-@@ -253,6 +289,7 @@
+@@ -253,6 +290,7 @@
          "chunk_rows": chunk_rows,
          "chunk_prompt": chunk_prompt,
          "sequential": sequential,
@@ -123,7 +124,7 @@
          "format": "lines" if len(qs) <= 10 else "indexed",
      }
  
-@@ -280,6 +317,38 @@
+@@ -280,6 +318,38 @@
  }
  
  
@@ -162,7 +163,7 @@
  def system_text(schema, chunked=False):
      s = (
          "Answer a fixed set of questions about the state the user provides. "
-@@ -303,6 +372,8 @@
+@@ -303,6 +373,8 @@
              " A reply may cover only some of the questions; answer every line "
              "that is present."
          )
@@ -171,7 +172,7 @@
      return s
  
  
-@@ -432,7 +503,24 @@
+@@ -432,7 +504,24 @@
      return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
  
  
@@ -196,7 +197,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/chat/completions",
          data=json.dumps(body).encode(),
-@@ -441,7 +529,32 @@
+@@ -441,7 +530,32 @@
      return json.load(urllib.request.urlopen(req, timeout=timeout))
  
  
@@ -229,7 +230,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -454,10 +567,7 @@
+@@ -454,10 +568,7 @@
      """The prompt the chat endpoint would build, as token ids, ending after
      the model turn marker. Text states only. ``thinking`` turns the chat
      template's thinking marker on."""
@@ -241,7 +242,7 @@
      out = TOK.apply_chat_template(
          messages, tokenize=True, add_generation_prompt=True, enable_thinking=thinking
      )
-@@ -502,10 +612,7 @@
+@@ -502,10 +613,7 @@
      Returns the thought's token ids and a diagnostics dict."""
      body = {
          "model": ARGS.model,
@@ -253,7 +254,7 @@
          "max_tokens": budget,
          "logprobs": True,
          "top_logprobs": 0,
-@@ -538,10 +645,7 @@
+@@ -538,10 +646,7 @@
  ):
      if prefix is not None:
          return one_read_continuation(schema, template, slots, prefix, seed)
@@ -265,7 +266,7 @@
      body = {
          "model": ARGS.model,
          "messages": messages,
-@@ -871,6 +975,8 @@
+@@ -871,6 +976,8 @@
      one = len(parts) == 1 and not skipped
      diagnostics = {
          "steps": schema["steps"],
@@ -274,7 +275,7 @@
          "stages": stages,
          "skipped": skipped,
          "chunks": chunks,
-@@ -1034,6 +1140,7 @@
+@@ -1034,6 +1141,7 @@
          "answers": answers,
          "diagnostics": {
              "steps": schema["steps"],
@@ -282,7 +283,7 @@
              "samples": {
                  "n": n,
                  "tops": tops,
-@@ -1065,6 +1172,8 @@
+@@ -1065,6 +1173,8 @@
      "chunk_rows",
      "chunk_prompt",
      "sequential",
@@ -291,7 +292,7 @@
  )
  
  
-@@ -1160,7 +1269,8 @@
+@@ -1160,7 +1270,8 @@
      state = body.get("state")
      if state is None:
          raise SchemaError("state: required")
@@ -301,7 +302,7 @@
      if not image_parts:
          return text
      return list(image_parts) + [{"type": "text", "text": text}]
-@@ -1170,7 +1280,13 @@
+@@ -1170,7 +1281,13 @@
      if a is None:
          return None
      if q["type"] == "noul":
@@ -316,7 +317,7 @@
      if q["type"] == "choice":
          return {
              "type": "choice",
-@@ -1201,19 +1317,38 @@
+@@ -1201,19 +1318,38 @@
      return c if isinstance(c, str) else ""
  
  
@@ -356,7 +357,7 @@
          if self.path == "/health":
              return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1251,6 +1386,7 @@
+@@ -1251,6 +1387,7 @@
  
      def do_POST(self):
          if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
@@ -364,7 +365,7 @@
              return self._json(
                  401,
                  {
-@@ -1276,7 +1412,8 @@
+@@ -1276,7 +1413,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -374,7 +375,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1440,8 @@
+@@ -1303,6 +1441,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -383,7 +384,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1457,12 @@
+@@ -1318,6 +1458,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -396,7 +397,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1362,6 +1507,7 @@
+@@ -1362,6 +1508,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -404,7 +405,7 @@
          )
  
      def _chat(self, req):
-@@ -1451,9 +1597,18 @@
+@@ -1451,9 +1598,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -423,7 +424,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,7 +1642,7 @@
+@@ -1487,7 +1643,7 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -432,7 +433,7 @@
      srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
      threading.Thread(target=srv.serve_forever, daemon=True).start()
      return srv
-@@ -1537,7 +1692,7 @@
+@@ -1537,7 +1693,7 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
