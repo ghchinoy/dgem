@@ -137,6 +137,7 @@ type GatewayDecideRequest struct {
 	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
 	Layout            string                 `json:"layout,omitempty"`             // prompt layout: "document_first" | "schema_first"; empty = template or server default
 	Stage2Prior       string                 `json:"stage2_prior,omitempty"`       // how Stage 1's answer is shown to the Stage-2 cascade: "full" | "soft" | "none"; empty = DGEM_CASCADE_PRIOR or "soft"
+	Temperature       *client.Temperature    `json:"temperature,omitempty"`        // post-hoc temperature: a number, or {"noul":T,"choice":T,"score":T}; overrides the template's "temperature"
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
@@ -146,6 +147,7 @@ type GatewayDecideResponse struct {
 	Diagnostics         client.Diagnostics                   `json:"diagnostics"`
 	Decision            *client.StructuredDecisionResponse   `json:"decision,omitempty"`
 	Cascade             *CascadeExecutionSummary             `json:"cascade,omitempty"`
+	Temperature         *client.Temperature                  `json:"temperature,omitempty"` // temperature applied to the answers (request, else template), if any
 	SuggestedExpansions []client.TaxonomyExpansionSuggestion `json:"suggested_expansions,omitempty"`
 	MaxEntropy          float64                              `json:"max_entropy"`
 	WallTimeMs          int64                                `json:"wall_time_ms"`
@@ -1642,6 +1644,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 			cascadeSpan.End()
 		}
 
+		appliedTemp, _, terr := applyPolicyTemperature(resp, schemaContent, payload.Temperature, cascadeSummary)
+		if terr != nil {
+			rootSpan.SetStatus(codes.Error, terr.Error())
+			rootSpan.End()
+			writeErr(http.StatusBadRequest, terr.Error())
+			return
+		}
+
 		// Optional Unclassified Grouping & Taxonomy Expansion Synthesis (dgem.taxonomy.expand OTel child span)
 		if suggestExpansions || (resp.Diagnostics.Thought != nil && strings.Contains(resp.Diagnostics.Thought.Text, "SUGGESTED_")) {
 			expandCtx, expandSpan := gatewayTracer().Start(ctx, "dgem.taxonomy.expand")
@@ -1711,6 +1721,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			Template:            tmplLabel,
 			Answers:             resp.Answers,
 			Diagnostics:         resp.Diagnostics,
+			Temperature:         appliedTemp,
 			Decision:            resp,
 			Cascade:             cascadeSummary,
 			SuggestedExpansions: resp.SuggestedExpansions,

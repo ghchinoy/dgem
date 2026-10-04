@@ -116,7 +116,7 @@ Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts
 
 | Route | Method | Description |
 | :--- | :---: | :--- |
-| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders a named or inline (`custom_template`) `.json.tmpl` policy with `variables`, executes Stage 1 `DiffusionGemma` readout on `vertex_first` / `vertex` / `cloudrun`, and optionally runs the **Stage 2 Gemini Cascade** (`cascade_mode`: `"off" \| "entropy" \| "on_miss"`, `cascade_threshold`: `0.35`, `cascade_model`: `"gemini-3.8-flash"`, `stage2_prior`: `"soft" \| "full" \| "none"`). |
+| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders a named or inline (`custom_template`) `.json.tmpl` policy with `variables`, executes Stage 1 `DiffusionGemma` readout on `vertex_first` / `vertex` / `cloudrun`, and optionally runs the **Stage 2 Gemini Cascade** (`cascade_mode`: `"off" \| "entropy" \| "on_miss"`, `cascade_threshold`: `0.35`, `cascade_model`: `"gemini-3.8-flash"`, `stage2_prior`: `"soft" \| "full" \| "none"`, `temperature`: a number or `{"noul": T, "choice": T, "score": T}`). |
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation). Supports both `application/json` (`{"state": ..., "questions": ...}`) and `multipart/form-data` (`image` file + JSON fields), routing to `/invoke/v1/systemone` on Vertex AI or `/v1/systemone` on Cloud Run GPU. |
 | **`/v1/chat/completions`** | `POST` | OpenAI-compatible structured diffusion decision envelope proxy with `vertex_first` auto-failover and automatic GCP token injection. |
 | **`/v1/raw/chat/completions`** | `POST` | Direct pass-through proxy to `vLLM`'s raw `/v1/chat/completions` endpoint. |
@@ -137,6 +137,7 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
 | **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
 | **`stage2_prior`** | `string` | `"soft"` *(default)* \| `"full"` \| `"none"` | Decide tools only. How much of Stage 1's answer the Stage-2 Gemini cascade sees (see the [authoring guide](/dgem/policies/authoring/)). |
+| **`temperature`**, **`temperature_by_type`** | `number`, `object` | none | Decide tools only. Post-hoc temperature for every answer, or per question type (`{"noul": 3, "choice": 1.3}`); overrides the template's `"temperature"`. |
 | **`expected_answers`** | `object` | `{}` *(optional)* | Map of slot id to expected value, used by `cascade_mode: "on_miss"`. |
 | **`suggest_expansions`** | `boolean` | `false` | Adds an `other_unclassified` option to `choice` slots and proposes new options when a slot is unclassified or hesitant ([taxonomy discovery](/dgem/policies/taxonomy-discovery/)). |
 | **`expansion_entropy`** | `number` | `0.35` *(nats)* | Entropy threshold on `choice` slots that triggers an expansion proposal. |
@@ -188,6 +189,7 @@ dgem decide [flags]
 * `-d`, `--data string`: Path to a JSON file containing variables.
 * `-f`, `--format string`: Output format: `table` (default) or `json`.
 * `-I`, `--image stringArray`: Attach local image file path or remote image URL (can be specified multiple times for video frame sequences).
+* `--temperature T`: Post-hoc temperature for every answer; 0 uses the template's `"temperature"`. See [calibrate your policy](/dgem/confidence/calibrate-your-policy/#5-temperature-scaling-optional).
 * `--layout document_first|schema_first`: Prompt layout for this decision. Empty uses the template's `layout`, or else the server default (`document_first` from serving v0.2.0). See [Prompt layout](/dgem/policies/prompt-layout/).
 * `--suggest-expansions`: Dynamically inject an `other_unclassified` catch-all option into `choice` slots (if absent) and propose new `{"name", "description"}` options when an item resolves to `other*` or exceeds `--expansion-entropy` (see [Unclassified Grouping & Taxonomy Discovery](/dgem/policies/taxonomy-discovery/)).
 * `--expansion-entropy float`: Shannon entropy threshold in nats on `choice` slots to trigger taxonomy expansion proposals (default: `0.35`).

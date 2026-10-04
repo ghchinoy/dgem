@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Per-policy temperature (PROP-20, #81).** `"temperature"` in a template (a number, or per question type:
+  `{"noul": 3.0, "choice": 1.3, "score": 1.1}`), `dgem decide --temperature`, `/api/decide` `temperature`, MCP
+  `temperature` / `temperature_by_type`, and a Studio **Temperature** field. Applied after Stage 1 and the cascade
+  (cascade gating unchanged; cascade-resolved answers untouched); responses report `temperature`. No served default:
+  fitted on our other dev suites, a global or per-type temperature made calibration worse on 4 of 8 suites.
+
 - **Stage-2 cascade prompt shows a soft hint by default (issue #75).** `stage2_prior: soft | full | none` on
   `/api/decide` (also header `X-DGem-Stage2-Prior`), MCP decide tools, the Studio batch runner and
   `bench-vision --cascade-prior`; deployment default `DGEM_CASCADE_PRIOR`. `soft` tells Gemini only that a fast first

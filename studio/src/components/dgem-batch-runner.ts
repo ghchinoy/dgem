@@ -153,6 +153,8 @@ export class DgemBatchRunner extends LitElement {
   @property({ type: String }) backendTarget: 'vertex_first' | 'cloudrun' | 'vertex' | 'local' = 'vertex_first';
   /** Prompt layout override from the Studio ('' = policy or server default). */
   @property({ type: String }) promptLayout = '';
+  /** Post-hoc temperature from the Studio (0 = policy or none). */
+  @property({ type: Number }) temperature = 0;
   @property({ type: String }) vertexUrl = '';
 
   @state() private suites: BatchPresetSuite[] = [];
@@ -1631,6 +1633,9 @@ export class DgemBatchRunner extends LitElement {
           };
           if (this.promptLayout) {
             body.layout = this.promptLayout;
+          }
+          if (this.temperature > 0) {
+            body.temperature = this.temperature;
           }
           if (this.vertexUrl) {
             body.vertex_url = this.vertexUrl;

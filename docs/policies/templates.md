@@ -60,6 +60,12 @@ automatically. For larger templates that pair a fact question with an action jud
 the date?" and "should the assistant ask before booking?"), add `"isolate": "noul"` next to `"questions"`. See
 [Prompt layout](prompt-layout.md#yesno-questions-in-small-requests-are-read-alone).
 
+### Temperature
+
+A template may carry `"temperature"` (a number, or one per question type such as `{"noul": 3.0, "choice": 1.3}`) fitted on
+labelled examples of its own decisions. It rescales confidence and hesitation without changing the answers. See
+[calibrate your policy](../confidence/calibrate-your-policy.md#5-temperature-scaling-optional).
+
 ### 3-Step Workflow to Create & Validate a New Template
 
 1. **Always pipe input variables through `| toJson`**: Write `"clause": {{ default "" .clause | toJson }}` inside `"state"` so quotes, newlines, and special characters in user text are automatically JSON-escaped.

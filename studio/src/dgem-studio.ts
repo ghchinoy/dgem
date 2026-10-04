@@ -227,6 +227,8 @@ export class DgemStudio extends LitElement {
   @state() private suggestExpansions = false;
   /** Prompt layout override: '' = the policy's own layout or the server default (document_first from v0.2.0). */
   @state() private promptLayout: '' | 'document_first' | 'schema_first' = '';
+  /** Post-hoc temperature for every answer (0 = the policy's own "temperature", else none). */
+  @state() private temperature = 0;
   @state() private expansionEntropy = 0.35;
   @state() private customTemplateOverride = '';
   @state() private appliedExpansions: string[] = [];
@@ -1365,6 +1367,9 @@ export class DgemStudio extends LitElement {
       if (this.promptLayout) {
         payload.layout = this.promptLayout;
       }
+      if (this.temperature > 0) {
+        payload.temperature = this.temperature;
+      }
       if (this.customTemplateOverride) {
         payload.custom_template = this.customTemplateOverride;
       }
@@ -2166,6 +2171,25 @@ export class DgemStudio extends LitElement {
                     ${this.result?.decision?.diagnostics?.layout
                       ? html`<span class="field-var-badge tabular">used: ${this.result.decision.diagnostics.layout}</span>`
                       : ''}
+                  </label>
+                  <label
+                    style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;font-weight:600;color:var(--text-heading)"
+                    title="Temperature above 1 softens overconfident answers (it never changes which answer wins). Leave empty to use the policy's own temperature. Fit it on labelled examples of your own decisions; one value does not fit every domain."
+                  >
+                    <span>Temperature</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.05"
+                      placeholder="policy"
+                      style="width:4.5rem"
+                      .value=${this.temperature > 0 ? String(this.temperature) : ''}
+                      @change=${(e: Event) => {
+                        const v = parseFloat((e.target as HTMLInputElement).value);
+                        this.temperature = Number.isFinite(v) && v > 0 ? v : 0;
+                      }}
+                    />
                   </label>
                   <span class="field-var-badge tabular">
                     Auto-injects 'other_unclassified' · H ≥ ${this.expansionEntropy.toFixed(2)} nats
@@ -3149,6 +3173,7 @@ curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
                       .resolvedTheme=${this.resolvedTheme}
                       .backendTarget=${this.backendTarget}
                       .promptLayout=${this.promptLayout}
+                      .temperature=${this.temperature}
                       .vertexUrl=${this.vertexOverride}
                       @batch-started=${() => this.fetchGPUStatus()}
                       @batch-completed=${() => this.fetchGPUStatus()}
