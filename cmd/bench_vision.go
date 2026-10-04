@@ -83,7 +83,7 @@ func init() {
 	f.Float64Var(&visionCascadeT, "cascade-threshold", 0, "Live Stage-2 cascade (engine dgem): send slots with entropy >= this many nats, with the image, to Gemini (0 = off)")
 	f.BoolVar(&visionOnlyGT, "only-scored", false, "Ask only the questions the item has ground truth for (a caller asking just what it needs)")
 	f.StringVar(&visionCascadeM, "cascade-model", DefaultCascadeGeminiModel, "Gemini 3.x model for --cascade-threshold")
-	f.StringVar(&visionCascadeP, "cascade-prior", "full", "How Stage 1's answer is shown to Gemini: full, soft or none (issue #75)")
+	f.StringVar(&visionCascadeP, "cascade-prior", "soft", "How Stage 1's answer is shown to Gemini: full, soft or none (issue #75)")
 	RootCmd.AddCommand(benchVisionCmd)
 }
 

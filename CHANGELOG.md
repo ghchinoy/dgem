@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Stage-2 cascade prompt shows a soft hint by default (issue #75).** `stage2_prior: soft | full | none` on
+  `/api/decide` (also header `X-DGem-Stage2-Prior`), MCP decide tools, the Studio batch runner and
+  `bench-vision --cascade-prior`; deployment default `DGEM_CASCADE_PRIOR`. `soft` tells Gemini only that a fast first
+  stage leaned toward an answer and may be wrong; `full` (previous behaviour) shows dgem's answer, confidence and
+  distribution as the candidate. On the image cascade at 0.10 nats soft scored 0.906 vs 0.880 (+2.6 points, 2 SE 1.4);
+  no difference on text (JevBench). Responses report `cascade.prior`.
+
 ## v0.3.0 (2026-10-04)
 
 Serving images rebuilt. **Behaviour change: yes/no questions in small text requests are read alone.**

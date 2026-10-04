@@ -21,7 +21,7 @@ import (
 
 func TestStage2Prior(t *testing.T) {
 	t.Setenv("DGEM_CASCADE_PRIOR", "")
-	for in, want := range map[string]string{"": "full", "Soft": "soft", "none": "none", "full": "full"} {
+	for in, want := range map[string]string{"": "soft", "Soft": "soft", "none": "none", "full": "full"} {
 		if got, err := NormalizeStage2Prior(in); err != nil || got != want {
 			t.Fatalf("%q -> %q %v (want %q)", in, got, err, want)
 		}

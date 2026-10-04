@@ -1410,7 +1410,7 @@ type DecidePolicyToolInput struct {
 	ExpectedAnswers   map[string]string      `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
 	SuggestExpansions bool                   `json:"suggest_expansions,omitempty" jsonschema:"If true, dynamically injects an 'other_unclassified' catch-all option into choice slots (if absent) and proposes new {'name', 'description'} options when unclassified or high-entropy."`
 	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty" jsonschema:"Shannon entropy threshold H in nats on choice slots to trigger taxonomy expansion proposals (default 0.35)."`
-	Stage2Prior       string                 `json:"stage2_prior,omitempty" jsonschema:"Optional: how much of Stage 1's answer the Stage-2 Gemini cascade sees: 'full' (answer, confidence and distribution; default), 'soft' (only that a fast first stage leaned toward an answer and may be wrong) or 'none'."`
+	Stage2Prior       string                 `json:"stage2_prior,omitempty" jsonschema:"Optional: how much of Stage 1's answer the Stage-2 Gemini cascade sees: 'soft' (default: only that a fast first stage leaned toward an answer and may be wrong), 'full' (answer, confidence and distribution) or 'none'."`
 	Layout            string                 `json:"layout,omitempty" jsonschema:"Optional prompt layout: 'document_first' (default on serving v0.2.0+: the input first, then the questions) or 'schema_first' (the questions as the system prompt). See docs/policies/prompt-layout.md."`
 }
 
@@ -1460,7 +1460,7 @@ type DecideCustomToolInput struct {
 	ExpectedAnswers   map[string]string    `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
 	SuggestExpansions bool                 `json:"suggest_expansions,omitempty" jsonschema:"If true, dynamically injects an 'other_unclassified' catch-all option into choice slots (if absent) and proposes new {'name', 'description'} options when unclassified or high-entropy."`
 	ExpansionEntropy  float64              `json:"expansion_entropy,omitempty" jsonschema:"Shannon entropy threshold H in nats on choice slots to trigger taxonomy expansion proposals (default 0.35)."`
-	Stage2Prior       string               `json:"stage2_prior,omitempty" jsonschema:"Optional: how much of Stage 1's answer the Stage-2 Gemini cascade sees: 'full' (answer, confidence and distribution; default), 'soft' (only that a fast first stage leaned toward an answer and may be wrong) or 'none'."`
+	Stage2Prior       string               `json:"stage2_prior,omitempty" jsonschema:"Optional: how much of Stage 1's answer the Stage-2 Gemini cascade sees: 'soft' (default: only that a fast first stage leaned toward an answer and may be wrong), 'full' (answer, confidence and distribution) or 'none'."`
 	Layout            string               `json:"layout,omitempty" jsonschema:"Optional prompt layout: 'document_first' (default on serving v0.2.0+: the input first, then the questions) or 'schema_first' (the questions as the system prompt). See docs/policies/prompt-layout.md."`
 }
 

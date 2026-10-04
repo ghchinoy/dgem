@@ -136,7 +136,7 @@ type GatewayDecideRequest struct {
 	SuggestExpansions bool                   `json:"suggest_expansions,omitempty"` // dynamically inject 'other_unclassified' and propose new {"name", "description"} options
 	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
 	Layout            string                 `json:"layout,omitempty"`             // prompt layout: "document_first" | "schema_first"; empty = template or server default
-	Stage2Prior       string                 `json:"stage2_prior,omitempty"`       // how Stage 1's answer is shown to the Stage-2 cascade: "full" | "soft" | "none"; empty = DGEM_CASCADE_PRIOR or "full"
+	Stage2Prior       string                 `json:"stage2_prior,omitempty"`       // how Stage 1's answer is shown to the Stage-2 cascade: "full" | "soft" | "none"; empty = DGEM_CASCADE_PRIOR or "soft"
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.

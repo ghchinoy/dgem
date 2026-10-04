@@ -81,14 +81,15 @@ func WithStage2Prior(ctx context.Context, mode string) context.Context {
 	return context.WithValue(ctx, stage2PriorKey{}, mode)
 }
 
-// NormalizeStage2Prior validates a prior mode; "" means the default (DGEM_CASCADE_PRIOR, else "full").
+// NormalizeStage2Prior validates a prior mode; "" means the default (DGEM_CASCADE_PRIOR, else "soft": on image
+// cascades at 0.10 nats, soft scored +2.6 points over full and was never worse on text, issue #75).
 func NormalizeStage2Prior(mode string) (string, error) {
 	m := strings.ToLower(strings.TrimSpace(mode))
 	if m == "" {
 		m = strings.ToLower(strings.TrimSpace(os.Getenv("DGEM_CASCADE_PRIOR")))
 	}
 	if m == "" {
-		return "full", nil
+		return "soft", nil
 	}
 	for _, v := range Stage2PriorModes {
 		if m == v {
@@ -103,7 +104,7 @@ func stage2PriorFrom(ctx context.Context) string {
 	if n, err := NormalizeStage2Prior(m); err == nil {
 		return n
 	}
-	return "full"
+	return "soft"
 }
 
 var (
