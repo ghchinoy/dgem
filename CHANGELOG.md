@@ -9,6 +9,11 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.1 (2026-10-04)
+
+Serving images rebuilt (idle-connection timeout); gateway, MCP, CLI and Studio: Stage-2 soft hint and per-policy
+temperature.
+
 - Serving: idle keep-alive connections close after `HTTP_IDLE_TIMEOUT` seconds (default 120; 0 = never, the previous
   behaviour), and a watchdog logs thread and in-flight counts every 60 s (diagnostics for #96).
 
