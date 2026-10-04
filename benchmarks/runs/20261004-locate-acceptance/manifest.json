@@ -3,7 +3,7 @@
   "created": "2026-10-04T13:39:45+00:00",
   "git_commit": "1c9b05306889c4b9daa0293723cacd4049a71e2f",
   "git_dirty_paths": [],
-  "notes": "#74 acceptance: EXP-24 items (benchmarks/bbox_real_aspects.jsonl) through POST /api/locate on a local gateway (feat/locate-guided) against production Vertex G4; run concurrently with EXP-26 Gemini load.",
+  "notes": "#74 acceptance: EXP-24 items (benchmarks/bbox_real_aspects.jsonl) through POST /api/locate on a local gateway (feat/locate-guided) against production Vertex G4; run concurrently with EXP-26 Gemini load. Recorded with the pre-EXP-26 locate defaults (hint on, skip below normalized entropy 0.16; 139 of 432 requests skipped Gemini) and under concurrent EXP-26 Gemini load (p50 inflated vs EXP-24's 2.1 s). The shipped defaults (hint off, skip off) were set afterwards in 65be5c6.",
   "receipts": [
     {
       "suite": "locate",
@@ -14,11 +14,18 @@
       "command": "python3 scripts/locate_acceptance.py --gateway http://localhost:8099 -o {out}",
       "backend_state": null,
       "summary": {
-        "timestamp": null,
-        "target_model": null,
-        "idc_config": null,
-        "n": 0,
-        "errors": 0
+        "n": 432,
+        "errors": 0,
+        "positives": 228,
+        "miou_ci": [
+          0.6258199639296252,
+          0.5784022830641565,
+          0.6728801140294043
+        ],
+        "e2e_p50_ms": 2756,
+        "skipped": 139,
+        "positives_skipped": 5,
+        "defaults": "pre-EXP-26 (hint on, skip 0.16)"
       }
     }
   ]
