@@ -315,7 +315,7 @@ export default defineConfig({
         {
           label: 'Experiments & Research Log',
           items: [
-            { label: 'Experiment Ledger (EXP-01 – EXP-24)', slug: 'experiments' },
+            { label: 'Experiment Ledger (EXP-01 – EXP-25)', slug: 'experiments' },
             { label: 'Proposed Experiments Register', slug: 'experiments/proposed' },
             { label: 'Next-Horizon Cascades & Policy DAGs', slug: 'experiments/exp-05-roadmap-cascades-and-dags' },
             { label: 'Single-Pass Bounding Boxes, Re-baselined (EXP-09)', slug: 'experiments/exp-09-spatial-grounding' },
@@ -331,6 +331,7 @@ export default defineConfig({
             { label: 'Validating Image Readouts (EXP-22)', slug: 'experiments/exp-22-image-readouts' },
             { label: 'dgem vs Strands Decider 2B (EXP-23)', slug: 'experiments/exp-23-strands-decider' },
             { label: 'dgem-Guided Gemini Boxes and Masks (EXP-24)', slug: 'experiments/exp-24-guided-cascade' },
+            { label: 'dgem as a Documentation Reviewer (EXP-25)', slug: 'experiments/exp-25-docs-reviewer' },
           ],
         },
       ],

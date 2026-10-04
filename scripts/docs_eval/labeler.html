@@ -1,0 +1,122 @@
+<!doctype html>
+<!-- Copyright 2026 Google LLC. Licensed under the Apache License, Version 2.0. -->
+<!-- EXP-25 labeler: open this file in a browser (no server, no network), load benchmarks/docs_eval/label_set.jsonl,
+     label with the keyboard, then Export to save labels.jsonl. Progress is autosaved in this browser (localStorage). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EXP-25 docs labeler</title>
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 1fr 380px; height: 100vh; }
+  #left { overflow: auto; padding: 16px 24px; border-right: 1px solid #ddd; }
+  #right { overflow: auto; padding: 16px; background: #fafaf7; }
+  pre { white-space: pre-wrap; font: 13px/1.5 ui-monospace, monospace; background: #fff; border: 1px solid #e3e3e3; padding: 12px; }
+  .meta { color: #666; font-size: 12px; }
+  fieldset { border: 1px solid #ddd; margin: 0 0 10px; padding: 6px 10px; }
+  legend { font-weight: 600; }
+  label { display: block; cursor: pointer; padding: 1px 0; }
+  kbd { font: 11px ui-monospace, monospace; border: 1px solid #bbb; border-radius: 3px; padding: 0 4px; background: #fff; }
+  .bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  button { font: inherit; padding: 4px 10px; }
+  #status { font-weight: 600; }
+  .missing legend { color: #b00; }
+  textarea { width: 100%; height: 48px; font: inherit; }
+</style>
+</head>
+<body>
+<div id="left">
+  <div class="bar">
+    <input type="file" id="setfile" accept=".jsonl"> <span class="meta">1. load label_set.jsonl</span>
+  </div>
+  <div class="bar">
+    <input type="file" id="resumefile" accept=".jsonl"> <span class="meta">optional: resume from an exported labels.jsonl</span>
+  </div>
+  <div class="meta" id="where"></div>
+  <pre id="text">Load benchmarks/docs_eval/label_set.jsonl to start.</pre>
+</div>
+<div id="right">
+  <div class="bar"><button id="prev">&larr; prev</button><button id="next">next &rarr;</button>
+    <button id="jump">first unlabelled</button><button id="export">Export labels.jsonl</button></div>
+  <div id="status"></div>
+  <p class="meta">Keys: <kbd>&rarr;</kbd>/<kbd>Enter</kbd> next, <kbd>&larr;</kbd> prev. Instructions: benchmarks/docs_eval/LABELING.md</p>
+  <form id="form"></form>
+  <textarea id="note" placeholder="note (optional)"></textarea>
+</div>
+<script>
+const FIELDS = [
+  {id: "doc_type", title: "Type (what it does for the reader)", kind: "one", opts: [
+    ["tutorial", "1", "tutorial: a lesson, learn by doing"], ["how_to", "2", "how_to: steps toward a goal"],
+    ["reference", "3", "reference: facts to look up"], ["explanation", "4", "explanation: the why, concepts, trade-offs"],
+    ["results_report", "5", "results_report: measurements, findings"], ["navigation", "6", "navigation: mostly links"]]},
+  {id: "purity", title: "Purity", kind: "one", opts: [
+    ["single_purpose", "q", "single_purpose"], ["mostly_one_type", "w", "mostly_one_type (short aside)"],
+    ["clearly_mixed", "e", "clearly_mixed"]]},
+  {id: "problems", title: "Style problems present (tick all that apply)", kind: "many", opts: [
+    ["openers", "a", "announces points / throat-clearing / flourish"], ["framing", "s", "contrast frames (not X, it's Y)"],
+    ["actors", "d", "hidden actors (passive, false agency)"], ["sentences", "f", "staccato fragments"],
+    ["reader", "g", "hand-holding / meta-commentary"], ["tone", "h", "promotional / hype"]]},
+  {id: "verdict", title: "Style verdict", kind: "one", opts: [
+    ["ship", "z", "ship"], ["light_edit", "x", "light_edit"], ["rewrite", "c", "rewrite"]]},
+  {id: "evidence", title: "Measured results", kind: "one", opts: [
+    ["no_measured_results", "v", "no_measured_results"], ["all_sourced", "b", "all_sourced"],
+    ["some_unsourced", "n", "some_unsourced"], ["illustrative_labelled", "m", "illustrative_labelled"]]},
+  {id: "unsure", title: "Flag", kind: "flag", opts: [["unsure", "u", "unsure about this one"]]},
+];
+const KEY = "exp25-labels-v1";
+let rows = [], i = 0, labels = JSON.parse(localStorage.getItem(KEY) || "{}");
+const save = () => localStorage.setItem(KEY, JSON.stringify(labels));
+const cur = () => rows[i] && (labels[rows[i].id] = labels[rows[i].id] || {problems: []});
+
+function render() {
+  if (!rows.length) return;
+  const r = rows[i], L = cur();
+  document.getElementById("where").textContent = `${i + 1} / ${rows.length} · ${r.page} · ${r.heading} · id ${r.id}`;
+  document.getElementById("text").textContent = r.text;
+  const f = document.getElementById("form"); f.innerHTML = "";
+  for (const fd of FIELDS) {
+    const fs = document.createElement("fieldset");
+    if (fd.kind === "one" && !L[fd.id]) fs.className = "missing";
+    fs.innerHTML = `<legend>${fd.title}</legend>`;
+    for (const [val, key, text] of fd.opts) {
+      const checked = fd.kind === "one" ? L[fd.id] === val : fd.kind === "many" ? L.problems.includes(val) : !!L.unsure;
+      const lab = document.createElement("label");
+      lab.innerHTML = `<input type="${fd.kind === "one" ? "radio" : "checkbox"}" ${checked ? "checked" : ""}> <kbd>${key}</kbd> ${text}`;
+      lab.onclick = (e) => { e.preventDefault(); setField(fd, val); };
+      fs.appendChild(lab);
+    }
+    f.appendChild(fs);
+  }
+  document.getElementById("note").value = L.note || "";
+  const done = rows.filter(x => complete(labels[x.id])).length;
+  document.getElementById("status").textContent = `${done} / ${rows.length} complete`;
+}
+const complete = (L) => L && FIELDS.filter(f => f.kind === "one").every(f => L[f.id]);
+function setField(fd, val) {
+  const L = cur();
+  if (fd.kind === "one") L[fd.id] = val;
+  else if (fd.kind === "many") L.problems = L.problems.includes(val) ? L.problems.filter(x => x !== val) : [...L.problems, val];
+  else L.unsure = !L.unsure;
+  save(); render();
+}
+function go(d) { if (!rows.length) return; i = Math.max(0, Math.min(rows.length - 1, i + d)); render(); window.scrollTo(0, 0); document.getElementById("left").scrollTop = 0; }
+document.getElementById("note").oninput = (e) => { cur().note = e.target.value; save(); };
+document.getElementById("prev").onclick = () => go(-1);
+document.getElementById("next").onclick = () => go(1);
+document.getElementById("jump").onclick = () => { const k = rows.findIndex(x => !complete(labels[x.id])); if (k >= 0) { i = k; render(); } };
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); return go(1); }
+  if (e.key === "ArrowLeft") { e.preventDefault(); return go(-1); }
+  for (const fd of FIELDS) for (const [val, key] of fd.opts) if (e.key === key) { e.preventDefault(); return setField(fd, val); }
+});
+const readJsonl = (file, cb) => { const fr = new FileReader(); fr.onload = () => cb(fr.result.split("\n").filter(l => l.trim()).map(l => JSON.parse(l))); fr.readAsText(file); };
+document.getElementById("setfile").onchange = (e) => readJsonl(e.target.files[0], (r) => { rows = r; i = 0; const k = rows.findIndex(x => !complete(labels[x.id])); if (k > 0) i = k; render(); });
+document.getElementById("resumefile").onchange = (e) => readJsonl(e.target.files[0], (r) => { for (const x of r) { const {id, ...rest} = x; labels[id] = rest; } save(); render(); });
+document.getElementById("export").onclick = () => {
+  const out = rows.map(r => JSON.stringify({id: r.id, ...(labels[r.id] || {problems: []})})).join("\n") + "\n";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([out], {type: "application/jsonl"}));
+  a.download = "labels.jsonl"; a.click();
+};
+</script>
+</body>
+</html>

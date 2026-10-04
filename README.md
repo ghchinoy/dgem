@@ -12,7 +12,7 @@
 | **Hesitation-gated decisions** | A probability for every option and a hesitation score from one pass; hesitant answers handed off; per-domain calibration and noise-judged release checks. | [Confidence beyond Shannon](docs/confidence/overview.md) · [Confidence and calibration](docs/confidence/index.md) |
 | **Hesitation-gated cascade** | Answers low-hesitation decisions directly and hands the rest to Vertex AI `gemini-3.8-flash` with `dgem`'s probabilities attached. | [Authoring and cascades](docs/policies/authoring.md) · [EXP-18](docs/experiments/exp-18-mizan-judge-capability.md) |
 | **Four surfaces** | CLI, HTTP gateway (`/api/decide`, `/v1/systemone`), MCP server (`dgem mcp`, `/mcp`), and the embedded Decision Studio web app (`dgem serve`). | [Studio, MCP & API](docs/reference/studio-mcp-api.md) · [CLI reference](docs/reference/cli.md) |
-| **Benchmarks & research log** | 12 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-24`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
+| **Benchmarks & research log** | 12 reproducible `dgem bench-*` harnesses with committed JSON receipts, an experiment ledger (`EXP-01`–`EXP-25`), and a register of pre-registered follow-up experiments. | [Experiment Ledger](docs/experiments/README.md) · [Proposed Experiments](docs/experiments/proposed.md) |
 | **Serving** | Vertex AI Dedicated Endpoint on RTX PRO 6000 (primary), Cloud Run GPU (scale-to-zero failover), GCE VMs, and local Apple Silicon (Metal). | [From laptop to production](docs/deploy/index.md) |
 
 ## Quick Start

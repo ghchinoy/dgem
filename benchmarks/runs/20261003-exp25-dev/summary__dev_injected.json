@@ -1,0 +1,588 @@
+{
+  "experiment": "EXP-25",
+  "set": "dev_injected",
+  "rubric_hash": "cea4c82b5ad6",
+  "configs": {
+    "dgem/isolated/original/r1": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 0.731,
+          "accuracy_ci": [
+            0.669,
+            0.794
+          ],
+          "positives": 25,
+          "f1_problem": 0.515,
+          "auroc_problem": 0.947
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.789,
+          "accuracy_ci": [
+            0.726,
+            0.851
+          ],
+          "positives": 25,
+          "f1_problem": 0.493,
+          "auroc_problem": 0.77
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.709,
+          "accuracy_ci": [
+            0.646,
+            0.777
+          ],
+          "positives": 25,
+          "f1_problem": 0.32,
+          "auroc_problem": 0.635
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.886,
+          "accuracy_ci": [
+            0.834,
+            0.931
+          ],
+          "positives": 25,
+          "f1_problem": 0.688,
+          "auroc_problem": 0.961
+        },
+        "reader": {
+          "n": 175,
+          "accuracy": 0.76,
+          "accuracy_ci": [
+            0.697,
+            0.823
+          ],
+          "positives": 25,
+          "f1_problem": 0.543,
+          "auroc_problem": 0.999
+        },
+        "tone": {
+          "n": 175,
+          "accuracy": 0.903,
+          "accuracy_ci": [
+            0.857,
+            0.943
+          ],
+          "positives": 25,
+          "f1_problem": 0.746,
+          "auroc_problem": 0.998
+        },
+        "_hesitation_error_auroc": {
+          "n": 1050,
+          "errors": 214,
+          "auroc": 0.642
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": 311.4,
+        "per_section_p50_ms": 3194.6
+      },
+      "mean_accuracy": 0.796,
+      "answers_scored": 1050
+    },
+    "dgem/joint/original/r1": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 0.714,
+          "accuracy_ci": [
+            0.651,
+            0.777
+          ],
+          "positives": 25,
+          "f1_problem": 0.5,
+          "auroc_problem": 0.962
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.88,
+          "accuracy_ci": [
+            0.829,
+            0.926
+          ],
+          "positives": 25,
+          "f1_problem": 0.553,
+          "auroc_problem": 0.781
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.874,
+          "accuracy_ci": [
+            0.823,
+            0.926
+          ],
+          "positives": 25,
+          "f1_problem": 0.267,
+          "auroc_problem": 0.716
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.743,
+          "accuracy_ci": [
+            0.68,
+            0.806
+          ],
+          "positives": 25,
+          "f1_problem": 0.526,
+          "auroc_problem": 0.994
+        },
+        "reader": {
+          "n": 175,
+          "accuracy": 0.737,
+          "accuracy_ci": [
+            0.674,
+            0.806
+          ],
+          "positives": 25,
+          "f1_problem": 0.521,
+          "auroc_problem": 0.994
+        },
+        "tone": {
+          "n": 175,
+          "accuracy": 0.931,
+          "accuracy_ci": [
+            0.891,
+            0.966
+          ],
+          "positives": 25,
+          "f1_problem": 0.806,
+          "auroc_problem": 1.0
+        },
+        "_hesitation_error_auroc": {
+          "n": 1050,
+          "errors": 196,
+          "auroc": 0.75
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": 359.8,
+        "per_section_p50_ms": 1092.9
+      },
+      "mean_accuracy": 0.813,
+      "answers_scored": 1050
+    },
+    "dgem/joint/original/r2": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 0.726,
+          "accuracy_ci": [
+            0.663,
+            0.789
+          ],
+          "positives": 25,
+          "f1_problem": 0.51,
+          "auroc_problem": 0.959
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.88,
+          "accuracy_ci": [
+            0.829,
+            0.926
+          ],
+          "positives": 25,
+          "f1_problem": 0.604,
+          "auroc_problem": 0.744
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.846,
+          "accuracy_ci": [
+            0.794,
+            0.897
+          ],
+          "positives": 25,
+          "f1_problem": 0.229,
+          "auroc_problem": 0.709
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.76,
+          "accuracy_ci": [
+            0.697,
+            0.823
+          ],
+          "positives": 25,
+          "f1_problem": 0.543,
+          "auroc_problem": 0.995
+        },
+        "reader": {
+          "n": 175,
+          "accuracy": 0.743,
+          "accuracy_ci": [
+            0.68,
+            0.806
+          ],
+          "positives": 25,
+          "f1_problem": 0.526,
+          "auroc_problem": 0.987
+        },
+        "tone": {
+          "n": 175,
+          "accuracy": 0.937,
+          "accuracy_ci": [
+            0.903,
+            0.971
+          ],
+          "positives": 25,
+          "f1_problem": 0.82,
+          "auroc_problem": 1.0
+        },
+        "_hesitation_error_auroc": {
+          "n": 1050,
+          "errors": 194,
+          "auroc": 0.739
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": 383.6,
+        "per_section_p50_ms": 1198.9
+      },
+      "mean_accuracy": 0.815,
+      "answers_scored": 1050
+    },
+    "dgem/joint/shuffled/r1": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 0.743,
+          "accuracy_ci": [
+            0.68,
+            0.806
+          ],
+          "positives": 25,
+          "f1_problem": 0.526,
+          "auroc_problem": 0.992
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.846,
+          "accuracy_ci": [
+            0.789,
+            0.897
+          ],
+          "positives": 25,
+          "f1_problem": 0.509,
+          "auroc_problem": 0.778
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.863,
+          "accuracy_ci": [
+            0.811,
+            0.914
+          ],
+          "positives": 25,
+          "f1_problem": 0.143,
+          "auroc_problem": 0.72
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.966,
+          "accuracy_ci": [
+            0.937,
+            0.989
+          ],
+          "positives": 25,
+          "f1_problem": 0.885,
+          "auroc_problem": 0.989
+        },
+        "reader": {
+          "n": 175,
+          "accuracy": 0.909,
+          "accuracy_ci": [
+            0.869,
+            0.949
+          ],
+          "positives": 25,
+          "f1_problem": 0.758,
+          "auroc_problem": 0.994
+        },
+        "tone": {
+          "n": 175,
+          "accuracy": 0.977,
+          "accuracy_ci": [
+            0.954,
+            0.994
+          ],
+          "positives": 25,
+          "f1_problem": 0.926,
+          "auroc_problem": 1.0
+        },
+        "_hesitation_error_auroc": {
+          "n": 1050,
+          "errors": 122,
+          "auroc": 0.76
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": 397.5,
+        "per_section_p50_ms": 1198.4
+      },
+      "mean_accuracy": 0.884,
+      "answers_scored": 1050
+    },
+    "docstats/r1": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 1.0,
+          "accuracy_ci": [
+            1.0,
+            1.0
+          ],
+          "positives": 25,
+          "f1_problem": 1.0
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.937,
+          "accuracy_ci": [
+            0.897,
+            0.971
+          ],
+          "positives": 25,
+          "f1_problem": 0.718
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.783,
+          "accuracy_ci": [
+            0.72,
+            0.846
+          ],
+          "positives": 25,
+          "f1_problem": 0.537
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.949,
+          "accuracy_ci": [
+            0.914,
+            0.977
+          ],
+          "positives": 25,
+          "f1_problem": 0.78
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": null,
+        "per_section_p50_ms": 0.0
+      },
+      "mean_accuracy": 0.917,
+      "answers_scored": 700
+    },
+    "gemini:gemini-3.8-flash/r1": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 0.897,
+          "accuracy_ci": [
+            0.851,
+            0.937
+          ],
+          "positives": 25,
+          "f1_problem": 0.735
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.977,
+          "accuracy_ci": [
+            0.954,
+            0.994
+          ],
+          "positives": 25,
+          "f1_problem": 0.926
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.931,
+          "accuracy_ci": [
+            0.891,
+            0.966
+          ],
+          "positives": 25,
+          "f1_problem": 0.769
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.994,
+          "accuracy_ci": [
+            0.983,
+            1.0
+          ],
+          "positives": 25,
+          "f1_problem": 0.98
+        },
+        "reader": {
+          "n": 175,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.92,
+            0.983
+          ],
+          "positives": 25,
+          "f1_problem": 0.862
+        },
+        "tone": {
+          "n": 175,
+          "accuracy": 0.994,
+          "accuracy_ci": [
+            0.983,
+            1.0
+          ],
+          "positives": 25,
+          "f1_problem": 0.98
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": 6437.1,
+        "per_section_p50_ms": 16575.5
+      },
+      "mean_accuracy": 0.958,
+      "answers_scored": 1050
+    },
+    "dgem/joint/original/r1+thr": {
+      "scores": {
+        "openers": {
+          "n": 175,
+          "accuracy": 0.926,
+          "accuracy_ci": [
+            0.886,
+            0.96
+          ],
+          "positives": 25,
+          "f1_problem": 0.745,
+          "auroc_problem": 0.962
+        },
+        "framing": {
+          "n": 175,
+          "accuracy": 0.863,
+          "accuracy_ci": [
+            0.806,
+            0.914
+          ],
+          "positives": 25,
+          "f1_problem": 0.586,
+          "auroc_problem": 0.781
+        },
+        "actors": {
+          "n": 175,
+          "accuracy": 0.783,
+          "accuracy_ci": [
+            0.726,
+            0.84
+          ],
+          "positives": 25,
+          "f1_problem": 0.424,
+          "auroc_problem": 0.716
+        },
+        "sentences": {
+          "n": 175,
+          "accuracy": 0.977,
+          "accuracy_ci": [
+            0.954,
+            0.994
+          ],
+          "positives": 25,
+          "f1_problem": 0.923,
+          "auroc_problem": 0.994
+        },
+        "reader": {
+          "n": 175,
+          "accuracy": 0.971,
+          "accuracy_ci": [
+            0.949,
+            0.994
+          ],
+          "positives": 25,
+          "f1_problem": 0.909,
+          "auroc_problem": 0.994
+        },
+        "tone": {
+          "n": 175,
+          "accuracy": 1.0,
+          "accuracy_ci": [
+            1.0,
+            1.0
+          ],
+          "positives": 25,
+          "f1_problem": 1.0,
+          "auroc_problem": 1.0
+        },
+        "_hesitation_error_auroc": {
+          "n": 1050,
+          "errors": 84,
+          "auroc": 0.63
+        }
+      },
+      "latency": {
+        "per_request_p50_ms": 359.8,
+        "per_section_p50_ms": 1092.9
+      },
+      "mean_accuracy": 0.92,
+      "answers_scored": 1050
+    }
+  },
+  "cascade": [
+    {
+      "tau": 0.16,
+      "n": 1050,
+      "accuracy": 0.95,
+      "accuracy_ci": [
+        0.936,
+        0.962
+      ],
+      "handed_off": 0.303
+    },
+    {
+      "tau": 0.25,
+      "n": 1050,
+      "accuracy": 0.949,
+      "accuracy_ci": [
+        0.935,
+        0.962
+      ],
+      "handed_off": 0.224
+    },
+    {
+      "tau": 0.35,
+      "n": 1050,
+      "accuracy": 0.945,
+      "accuracy_ci": [
+        0.931,
+        0.958
+      ],
+      "handed_off": 0.171
+    },
+    {
+      "tau": 0.5,
+      "n": 1050,
+      "accuracy": 0.938,
+      "accuracy_ci": [
+        0.924,
+        0.952
+      ],
+      "handed_off": 0.12
+    }
+  ],
+  "flips": {
+    "option order shuffled": {
+      "n": 1750,
+      "flip_rate": 0.131
+    },
+    "identical repeat": {
+      "n": 1750,
+      "flip_rate": 0.078
+    },
+    "one question per request": {
+      "n": 1750,
+      "flip_rate": 0.157
+    }
+  }
+}
