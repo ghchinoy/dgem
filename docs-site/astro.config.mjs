@@ -332,6 +332,7 @@ export default defineConfig({
             { label: 'dgem vs Strands Decider 2B (EXP-23)', slug: 'experiments/exp-23-strands-decider' },
             { label: 'dgem-Guided Gemini Boxes and Masks (EXP-24)', slug: 'experiments/exp-24-guided-cascade' },
             { label: 'dgem as a Documentation Reviewer (EXP-25)', slug: 'experiments/exp-25-docs-reviewer' },
+            { label: 'Guided Boxes and Image Questions on Domain Images (EXP-26)', slug: 'experiments/exp-26-domain-images' },
           ],
         },
       ],
