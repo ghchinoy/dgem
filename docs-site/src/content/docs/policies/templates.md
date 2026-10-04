@@ -55,10 +55,10 @@ prompt unchanged. See [Prompt layout](/dgem/policies/prompt-layout/) for the mea
 
 ### Yes/no questions over agent actions
 
-If a template asks a fact question and an action judgment as yes/no questions about the same state (for example
-"did the user give the date?" and "should the assistant ask before booking?"), add `"isolate": "noul"` next to
-`"questions"`, so each yes/no question gets its own read. See
-[Prompt layout](/dgem/policies/prompt-layout/#yesno-questions-in-agent-and-tool-call-policies-read-them-alone).
+From serving v0.3.0, a text request with 2–3 questions, at least 2 of them yes/no, reads each yes/no question alone
+automatically. For larger templates that pair a fact question with an action judgment (for example "did the user give
+the date?" and "should the assistant ask before booking?"), add `"isolate": "noul"` next to `"questions"`. See
+[Prompt layout](/dgem/policies/prompt-layout/#yesno-questions-in-small-requests-are-read-alone).
 
 ### 3-Step Workflow to Create & Validate a New Template
 

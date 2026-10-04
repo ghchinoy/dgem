@@ -1,0 +1,131 @@
+{
+  "run_id": "20261004-v030b-latency-rerun",
+  "created": "2026-10-04T13:21:55+00:00",
+  "git_commit": "d8484cb4850574c41799c7151cce7a38aaea29fb",
+  "notes": "",
+  "receipts": [
+    {
+      "path": "order__none__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "none",
+      "kind": "systemone",
+      "sha256": "44b55e439be32d88d380425da83f0d370b56c3e4e554edfe4dbdba84b6342b20",
+      "seconds": 34.3
+    },
+    {
+      "path": "order__none2__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "none2",
+      "kind": "systemone",
+      "sha256": "e148dfaf53a5d2d63060d7e3a4c7e0336140fde28bcb8f377b0fa003d138c785",
+      "seconds": 31.6
+    },
+    {
+      "path": "order__random__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "random",
+      "kind": "systemone",
+      "sha256": "5640aa40e23639773f2b535b92d5f8e23388a5fae9f65dbe3a6b3ba75f62449a",
+      "seconds": 33.3
+    },
+    {
+      "path": "order__reverse__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "reverse",
+      "kind": "systemone",
+      "sha256": "ada0506411c0f68f820a6b2135f0f3aab12fdb5cf612290e970783b387421884",
+      "seconds": 33.7
+    },
+    {
+      "path": "order__none__new__r1.json",
+      "suite": "order",
+      "config": "new",
+      "run": 1,
+      "perm": "none",
+      "kind": "systemone",
+      "sha256": "0266ed91146f183ae2b06eb8c43f84bb6c5bf1483f7f431e33b6c422564110ae",
+      "seconds": 259.6
+    },
+    {
+      "path": "order__none2__new__r1.json",
+      "suite": "order",
+      "config": "new",
+      "run": 1,
+      "perm": "none2",
+      "kind": "systemone",
+      "sha256": "2bd1d14a586dbeecfef8bef9c4e05fb4d51c1cf8d5e573b51de21924903a43e7",
+      "seconds": 42.6
+    },
+    {
+      "path": "order__random__new__r1.json",
+      "suite": "order",
+      "config": "new",
+      "run": 1,
+      "perm": "random",
+      "kind": "systemone",
+      "sha256": "4e59fc6b128262d3e1243bc31a5a9e076b8ece245a8fe84092c5f16e5e07e5b3",
+      "seconds": 48.6
+    },
+    {
+      "path": "order__reverse__new__r1.json",
+      "suite": "order",
+      "config": "new",
+      "run": 1,
+      "perm": "reverse",
+      "kind": "systemone",
+      "sha256": "310839ee0c7c985dc219181c665c25d071787002ad306732b89347d214a1a2eb",
+      "seconds": 45.2
+    },
+    {
+      "path": "latency__prod__r1.json",
+      "suite": "latency",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "e1c8af751eebcfb41ffd73d5871d99f136a5240faf637a999d1b249b91470318",
+      "seconds": 90.2
+    },
+    {
+      "path": "latency__new__r1.json",
+      "suite": "latency",
+      "config": "new",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "dd72555ad9708fc2e160f5e4d7739f390e41101b7c800d53f332378e81452925",
+      "seconds": 86.7
+    }
+  ],
+  "matrix": {
+    "matrix_version": "v2",
+    "tier": "T2",
+    "suites": [
+      "latency",
+      "order"
+    ],
+    "baseline": "prod",
+    "targets": [
+      {
+        "name": "prod",
+        "kind": "vertex",
+        "role": "dgem"
+      },
+      {
+        "name": "new",
+        "kind": "vertex",
+        "role": "dgem"
+      }
+    ],
+    "started": "2026-10-04T13:21:55+00:00",
+    "finished": "2026-10-04T13:33:40+00:00"
+  }
+}
