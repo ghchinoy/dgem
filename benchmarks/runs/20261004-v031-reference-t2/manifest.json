@@ -1,0 +1,564 @@
+{
+  "run_id": "20261004-v031-reference-t2",
+  "created": "2026-10-04T18:32:03+00:00",
+  "git_commit": "708af1963c2e2e22cd2482a0583ba23c67ca114d",
+  "notes": "reference: production Vertex G4 v0.3.1 (dfee359f; DEFAULT_ISOLATE=auto, idle timeout), 8k, defaults; gateway v0.3.2",
+  "receipts": [
+    {
+      "path": "health__prod__r1.json",
+      "suite": "health",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "health",
+      "sha256": "e501596cba4ba1e6b4db58df3cf71fe1a8c8acccf8975a515795443271da617c",
+      "seconds": 0.4
+    },
+    {
+      "path": "contract__prod__r1.json",
+      "suite": "contract",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "contract",
+      "sha256": "add44788341809991f407980cb4409fb47a0936abc9f361d6223f12af2db89c8",
+      "seconds": 1.1
+    },
+    {
+      "path": "calibration__prod__r1.json",
+      "suite": "calibration",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "40e8656b0e2121f72138f6885d460c03b16296949b6186320d21fecb1c744d0d",
+      "seconds": 2.5
+    },
+    {
+      "path": "massive_spot__prod__r1.json",
+      "suite": "massive_spot",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "4712f9fd644cdafe68d36af97a9d25b6ab22b048d2bc4904e6c2cafee941cf5f",
+      "seconds": 4.2
+    },
+    {
+      "path": "jev_native__prod__r1.json",
+      "suite": "jev_native",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "dd90f277a6e4ec29078a796e4e55564b5ca4f20e27105d7ae1116e87fd5d2516",
+      "seconds": 11.4
+    },
+    {
+      "path": "jev_systemone__prod__r1.json",
+      "suite": "jev_systemone",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "396404f4a2a1f22ad3dc1c0dac0c1d04a2df15e5fdaa745424d4dbfa8fb68b35",
+      "seconds": 12.5
+    },
+    {
+      "path": "intents_banking77__prod__r1.json",
+      "suite": "intents_banking77",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "e9c276e2f50cd00f559a63bc4e6be3f0d595cc44c7d24dee3f1dfbf87fd08aa7",
+      "seconds": 4.3
+    },
+    {
+      "path": "intents_clinc150__prod__r1.json",
+      "suite": "intents_clinc150",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "c17f7ab911c5bebdfeb8047638f3c065441763d1aa1cfceb89083a93273fcfa8",
+      "seconds": 1.6
+    },
+    {
+      "path": "massive__prod__r1.json",
+      "suite": "massive",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "cfdadb7ccce33f5e13ddbbdff54aaf6774b2d9e8997840b2dfcf65f00684a22e",
+      "seconds": 217.0
+    },
+    {
+      "path": "xnli__prod__r1.json",
+      "suite": "xnli",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "5c9ae209f1f73740dec615075c84b095727753b1aab329ffefdc22d5f87b5a5b",
+      "seconds": 362.0
+    },
+    {
+      "path": "typed__prod__r1.json",
+      "suite": "typed",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "b84d7d1175c1a57a1b94d5809eacc1930b28bb7cb8f16d5eecff57fb4fe8c401",
+      "seconds": 19.2
+    },
+    {
+      "path": "order__none__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "none",
+      "kind": "systemone",
+      "sha256": "cbd908a3f15066e0e3c06227122368d799632010b92bfbfe6370c891b16b506a",
+      "seconds": 34.4
+    },
+    {
+      "path": "order__none2__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "none2",
+      "kind": "systemone",
+      "sha256": "b39e252be81500d5d2c0c468aada77182924714fc9b8df5d6f0d8fdcb2d76d63",
+      "seconds": 37.8
+    },
+    {
+      "path": "order__random__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "random",
+      "kind": "systemone",
+      "sha256": "c442e02fc14773af9e6639052aa6b8ca8dad48a5f382d7408bffa71bc1954475",
+      "seconds": 29.1
+    },
+    {
+      "path": "order__reverse__prod__r1.json",
+      "suite": "order",
+      "config": "prod",
+      "run": 1,
+      "perm": "reverse",
+      "kind": "systemone",
+      "sha256": "4cd540af1a0587c1a78b9eb0d02cbd91a56c623fff064b52f16c2bf27b610dd7",
+      "seconds": 29.7
+    },
+    {
+      "path": "bbox__prod__r1.json",
+      "suite": "bbox",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "a3b0792d15f347b1b07a5bb09251d990146db1e4e79cf46d4adf4b78886a38e9",
+      "seconds": 1.8
+    },
+    {
+      "path": "decision_index__prod__r1.json",
+      "suite": "decision_index",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "fc82f2d433e5868a51267dec5fd2297c63204ce25fa4d3347dae6ba10da49a92",
+      "seconds": 1.4
+    },
+    {
+      "path": "di_probes__prod__r1.json",
+      "suite": "di_probes",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "adapter_probes",
+      "sha256": "6accb7e2750416d4fc1fefc148bd04c8de64e544aac846c7a8b55debcdb0362b",
+      "seconds": 3.4
+    },
+    {
+      "path": "di_wide__prod__r1.json",
+      "suite": "di_wide",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "8ca73fb5987730c3b50750f96f214e9d0eddbfb3452ceb526029d059a7665efc",
+      "seconds": 5.7
+    },
+    {
+      "path": "di_kit_compat__prod__r1.json",
+      "suite": "di_kit_compat",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "kit_compat",
+      "sha256": "3ea2536e771cdbaca4157b82c1cde3f4875548cf8a06408c3163835c775d1d7b",
+      "seconds": 0.0
+    },
+    {
+      "path": "di_catchall__prod__r1.json",
+      "suite": "di_catchall",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "a69d2daefed6e2782042fdcd13e93b0c7df299809e90980f066c4e92fe9cdd6c",
+      "seconds": 10.1
+    },
+    {
+      "path": "rag_dev__prod__r1.json",
+      "suite": "rag_dev",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "b7b8709f30bf9408b97d42d37e924ac0dcfee2898d33f008b927bc1d41fd222b",
+      "seconds": 7.1
+    },
+    {
+      "path": "calib_systemone__prod__r1.json",
+      "suite": "calib_systemone",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "746063525fa895d68b4c53692ff9fd18ac19f384787ce74862990ef9a1bc12da",
+      "seconds": 2.2
+    },
+    {
+      "path": "intents_systemone__prod__r1.json",
+      "suite": "intents_systemone",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "28a7f1d37e42de9579ea4ceadbc08797717437993851f6f50d49c57c6ef4791b",
+      "seconds": 2.2
+    },
+    {
+      "path": "gate_mixed_noul__prod__r1.json",
+      "suite": "gate_mixed_noul",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "a7dd3982cefba735d05b5089dfaf49cd8506daab15c3f408b9192fcc5283c447",
+      "seconds": 3.8
+    },
+    {
+      "path": "vision_spot__prod__r1.json",
+      "suite": "vision_spot",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "65b92e8d89ca692a8b5da5fb1f3ed53e752b26a1ac55b69a12bb70ab9acb0919",
+      "seconds": 4.0
+    },
+    {
+      "path": "vision__prod__r1.json",
+      "suite": "vision",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "a5325978de6e99a7e9650051313fc81564c7c6c8b2fb46eb725fd062087803e8",
+      "seconds": 19.1
+    },
+    {
+      "path": "calibration__prod__r2.json",
+      "suite": "calibration",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "5d9ca6d620131314813c0b581cad6546ae87c031c9f1d656654d244b6217a28f",
+      "seconds": 2.6
+    },
+    {
+      "path": "jev_native__prod__r2.json",
+      "suite": "jev_native",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "f163262672c05f9e3dce65ca1578c14436819e485dfffd1ba4fa6a05a65cb5c7",
+      "seconds": 11.3
+    },
+    {
+      "path": "jev_systemone__prod__r2.json",
+      "suite": "jev_systemone",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "360ab9091c762018fc139ea3d3223eb8bf6f0a34f6b0012c79b6ece582ee9ed1",
+      "seconds": 13.7
+    },
+    {
+      "path": "intents_banking77__prod__r2.json",
+      "suite": "intents_banking77",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "22cd692a374b2c440a6f1d886f4ed734974511e0780968bb6bcb0edc691c033d",
+      "seconds": 4.3
+    },
+    {
+      "path": "intents_clinc150__prod__r2.json",
+      "suite": "intents_clinc150",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "d56e9ad0a667c8b47da9b1df1e102fbbd8906d3c88a1cfc40c1bc55bc408174b",
+      "seconds": 1.6
+    },
+    {
+      "path": "di_wide__prod__r2.json",
+      "suite": "di_wide",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "c1c5f8b924eb666cba35b1340d062a8c7f14070d33e22fd05602dba06c586bb0",
+      "seconds": 6.0
+    },
+    {
+      "path": "di_catchall__prod__r2.json",
+      "suite": "di_catchall",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "7710a3c61146284e8b1c209f8e54fdec12ca1c3f3a796d11bf619fc601a30882",
+      "seconds": 10.1
+    },
+    {
+      "path": "rag_dev__prod__r2.json",
+      "suite": "rag_dev",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "e25fa10d0689e4a474748ecd10ef910284ee8d89482a136883909d467afd1892",
+      "seconds": 7.0
+    },
+    {
+      "path": "calib_systemone__prod__r2.json",
+      "suite": "calib_systemone",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "29e0f612391d9f92cdaf84c6a761e2481a9bc2603eb98235cd20378511de4312",
+      "seconds": 2.6
+    },
+    {
+      "path": "intents_systemone__prod__r2.json",
+      "suite": "intents_systemone",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "cafe31e1d577824cab2acddf05d988fc58929d77b8aaea7e504075d714a2cfd1",
+      "seconds": 2.2
+    },
+    {
+      "path": "gate_mixed_noul__prod__r2.json",
+      "suite": "gate_mixed_noul",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "3227ff54a74907d625a69c37ca931c9b144c847d375999915d1728fa63e9a23c",
+      "seconds": 2.4
+    },
+    {
+      "path": "vision__prod__r2.json",
+      "suite": "vision",
+      "config": "prod",
+      "run": 2,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "08255212ff03aae9c653b0b70ca71b61ac3e041abc55a8a51759f755a16fb576",
+      "seconds": 22.2
+    },
+    {
+      "path": "calibration__prod__r3.json",
+      "suite": "calibration",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "3fd4b087e959cc6694c69f902e045e97d67a3778c20ec9fa86e65afe6b308abb",
+      "seconds": 2.7
+    },
+    {
+      "path": "jev_native__prod__r3.json",
+      "suite": "jev_native",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "718ed58b61deb08b23522d8b4e0dec242732956c656c8418e1cc2a51c756d40e",
+      "seconds": 10.7
+    },
+    {
+      "path": "jev_systemone__prod__r3.json",
+      "suite": "jev_systemone",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "5d32deec78256c63907c8464447b88284eddcd6a07ca36f1317c092a6b626e70",
+      "seconds": 12.2
+    },
+    {
+      "path": "intents_banking77__prod__r3.json",
+      "suite": "intents_banking77",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "aa75752c44eb8930b8ae4923cec9700ef5580efca8e6d2b8984236829415d829",
+      "seconds": 3.7
+    },
+    {
+      "path": "intents_clinc150__prod__r3.json",
+      "suite": "intents_clinc150",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "dgem",
+      "sha256": "210c7191b068b736468744c74207bc99634a79c6c7256f3f4bba6fa28598e96a",
+      "seconds": 1.6
+    },
+    {
+      "path": "di_wide__prod__r3.json",
+      "suite": "di_wide",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "e5622f235fe7865e43fb91020f993f0c4bfd9a750bf540ba655af9694c4b56a8",
+      "seconds": 5.7
+    },
+    {
+      "path": "di_catchall__prod__r3.json",
+      "suite": "di_catchall",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "9476aa3ce99faf5c46f3ecc2565d87ddbc9d95b3bd0e5d9c24723a2b0866e537",
+      "seconds": 9.9
+    },
+    {
+      "path": "rag_dev__prod__r3.json",
+      "suite": "rag_dev",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "9ea5682b2bc69e4dc59e4b54dc4754ffd4f1bcc5858597c422319c652f6ee782",
+      "seconds": 6.7
+    },
+    {
+      "path": "calib_systemone__prod__r3.json",
+      "suite": "calib_systemone",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "ac4eb3410b4aa9852589e493240bdc4acfc5ef24a0e2f2437600f0b101fa364d",
+      "seconds": 2.1
+    },
+    {
+      "path": "intents_systemone__prod__r3.json",
+      "suite": "intents_systemone",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "c05589ccc21f241cb3fc84994e8125cbc4c95a3df7cc8e3f3b98167ea5a53276",
+      "seconds": 2.3
+    },
+    {
+      "path": "gate_mixed_noul__prod__r3.json",
+      "suite": "gate_mixed_noul",
+      "config": "prod",
+      "run": 3,
+      "perm": null,
+      "kind": "systemone",
+      "sha256": "fe54cd5719da112a81fe0426b9bd1f8cf2efd8d20d337530d48ac7db546aebea",
+      "seconds": 2.5
+    },
+    {
+      "path": "latency__prod__r1.json",
+      "suite": "latency",
+      "config": "prod",
+      "run": 1,
+      "perm": null,
+      "kind": "latency",
+      "sha256": "f54671257be51503167b1a2583443916d0d8d44580d3e67c9e2599a8065c93de",
+      "seconds": 79.9
+    }
+  ],
+  "matrix": {
+    "matrix_version": "v2",
+    "tier": "T2",
+    "suites": [
+      "health",
+      "contract",
+      "calibration",
+      "massive_spot",
+      "jev_native",
+      "jev_systemone",
+      "intents_banking77",
+      "intents_clinc150",
+      "latency",
+      "massive",
+      "xnli",
+      "typed",
+      "order",
+      "bbox",
+      "decision_index",
+      "di_probes",
+      "di_wide",
+      "di_kit_compat",
+      "di_catchall",
+      "rag_dev",
+      "calib_systemone",
+      "intents_systemone",
+      "gate_mixed_noul",
+      "vision_spot",
+      "vision"
+    ],
+    "baseline": null,
+    "targets": [
+      {
+        "name": "prod",
+        "kind": "vertex",
+        "role": "dgem",
+        "health": {
+          "version": "v0.3.1",
+          "revision": "c13cd20",
+          "vllm_commit": "a9eafde59cbd55182dc2265cc398b7186f0a0eaa"
+        }
+      }
+    ],
+    "started": "2026-10-04T18:32:03+00:00",
+    "finished": "2026-10-04T18:49:37+00:00"
+  }
+}
