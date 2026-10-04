@@ -15,7 +15,7 @@ Answers take Jev's shapes, with this server's diagnostics alongside:
   score:  {"score", "legend", "probabilities", "confidence"}
 The request body may also carry the schema keys "instructions", "samples",
 "auto_max", "auto_threshold", "steps", "think", "ask", "chunk_rows",
-"chunk_prompt", "sequential", "layout" and "isolate" ("noul", "none" or "all") as
+"chunk_prompt", "sequential", "layout" and "isolate" ("auto", "noul", "none" or "all") as
 extensions. Images go ahead of the
 state, either as multipart/form-data with the JSON body in a part named
 "request" and each image as a file part, or as an "images" array of data
@@ -52,8 +52,9 @@ A question may also declare:
                              its prompt
   "ask_if": {id: [answers]}  asked only when that question's answer is
                              among them (a skipped answer is null)
-  "alone": true              a read of its own ("isolate": "noul" on the request does this for every
-                             yes/no question in requests of 2-8 questions; "alone": false keeps one joint)
+  "alone": true              a read of its own (by default yes/no questions get one in text requests of
+                             2-3 questions with 2+ yes/no, DEFAULT_ISOLATE=auto; "isolate": "noul" on the
+                             request does it in requests of 2-8 questions; "alone": false keeps one joint)
 Questions run in stages by these dependencies. Each stage is one joint
 read. Later stages continue the earlier answers, prefilled for a text
 state and restated for an image.
@@ -109,15 +110,18 @@ MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
 # The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
 # the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
 DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
-# Which questions get a read of their own when the request does not say ("alone"): "none" (one joint read, the
-# default), "noul" (yes/no questions) or "all". Read jointly, a yes/no question after another one tended to copy its
-# answer in agent/tool-call states (PROP-19); "noul" fixes that (tool-call gate 0.60 -> 0.98) but costs about +30 ms
-# server time and 20% throughput on 5-question requests, so it is opt-in. Applies to requests with at most
-# ISOLATE_MAX_QUESTIONS questions.
-DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "none")
+# Which questions get a read of their own when the request does not say ("alone"): "auto" (the default), "none" (one
+# joint read), "noul" (yes/no questions) or "all". Read jointly, a yes/no question after another one tended to copy
+# its answer in agent/tool-call states (PROP-19), mostly in small requests: with 2 questions an action judgment scored
+# 0.60 jointly vs 0.88 alone; with 5 questions there was no loss. "auto" isolates yes/no questions only in text requests
+# of 2..ISOLATE_AUTO_MAX questions with at least 2 yes/no questions, where the cost is one or two extra parallel reads;
+# "noul" isolates them in any request of up to ISOLATE_MAX_QUESTIONS questions (+30 ms, -20% throughput at 5 questions).
+DEFAULT_ISOLATE = os.environ.get("DEFAULT_ISOLATE", "auto")
 ISOLATE_MAX_QUESTIONS = int(os.environ.get("ISOLATE_MAX_QUESTIONS", "8"))
-if DEFAULT_ISOLATE not in ("noul", "none", "all"):
-    raise SystemExit("DEFAULT_ISOLATE must be noul, none or all")
+ISOLATE_AUTO_MAX = int(os.environ.get("ISOLATE_AUTO_MAX", "3"))
+ISOLATE_MODES = ("auto", "noul", "none", "all")
+if DEFAULT_ISOLATE not in ISOLATE_MODES:
+    raise SystemExit("DEFAULT_ISOLATE must be auto, noul, none or all")
 INFLIGHT_WAIT_S = float(os.environ.get("INFLIGHT_WAIT_S", "30.0"))
 _INFLIGHT = threading.BoundedSemaphore(MAX_INFLIGHT) if MAX_INFLIGHT > 0 else None
 _upstream_ready = False  # when set, POST routes need "Authorization: Bearer <key>"
@@ -220,13 +224,21 @@ def parse_schema(value):
             }
         )
     isolate = value.get("isolate", DEFAULT_ISOLATE)
-    if isolate not in ("noul", "none", "all"):
-        raise SchemaError('schema: isolate must be "noul", "none" or "all"')
+    if isolate not in ISOLATE_MODES:
+        raise SchemaError('schema: isolate must be "auto", "noul", "none" or "all"')
+    n_noul = sum(1 for q in qs if q["type"] == "noul")
+    if isolate == "auto":
+        # text-only is checked in decide(), which sees the state
+        isolate = "noul" if 2 <= len(qs) <= ISOLATE_AUTO_MAX and n_noul >= 2 else "none"
+        auto = isolate == "noul"
+    else:
+        auto = False
     if len(qs) < 2 or len(qs) > ISOLATE_MAX_QUESTIONS:
         isolate = "none"
     for q in qs:
         if q["alone"] is None:
             q["alone"] = isolate == "all" or (isolate == "noul" and q["type"] == "noul")
+            q["alone_auto"] = auto and q["alone"]
         else:
             q["alone"] = bool(q["alone"])
     by_id = {q["id"]: q for q in qs}
@@ -843,8 +855,12 @@ def decide(schema, state_content, seed):
         for q in schema["questions"]
         if not schema.get("ask") or q["id"] in schema["ask"]
     ]
-    levels = schedule(qs)
     text_state = isinstance(state_content, str)
+    if not text_state:
+        for q in schema["questions"]:
+            if q.get("alone_auto"):
+                q["alone"] = False  # "auto" isolation is for text states only (each read would repeat the image)
+    levels = schedule(qs)
     fmt = schema["format"]
     join = FORMATS[fmt][0]
     # More than one read in sequence needs the full question list in every

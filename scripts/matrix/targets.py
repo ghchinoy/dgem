@@ -36,7 +36,7 @@ from . import net
 
 
 class Target:
-    OPTIONS = {"layout": ("schema_first", "document_first"), "isolate": ("noul", "none", "all")}
+    OPTIONS = {"layout": ("schema_first", "document_first"), "isolate": ("auto", "noul", "none", "all")}
     role = "dgem"
 
     def __init__(self, name, url):
