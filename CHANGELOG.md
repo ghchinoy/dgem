@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.2 (2026-10-05)
+
+Gateway, MCP, CLI and Studio release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`).
+
+- **Guided locate (#74, EXP-24/EXP-26):** `dgem locate`, `POST /api/locate`, MCP `locate_object` and a Studio
+  "Precise box (guided)" button. dgem answers presence and the 3×3 grid cell in one pass, then Gemini 3.x at LOW
+  thinking returns the box. Hint and skip-when-absent are opt-in (`hint`, `skip_h`); masks come from an optional SAM
+  service (`DGEM_SAM_URL`), off by default. `locate_bounding_boxes` stays, described as approximate.
 - An explicit request `temperature: 1` now turns a template's temperature off for that request (it used to fall back to
   the template's value).
 
