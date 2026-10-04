@@ -354,14 +354,14 @@
   "reference_slack_items_frac": 0.02
  },
  "reference": {
-  "image": "v0.2.1",
+  "image": "v0.3.0",
   "hardware": "Vertex G4 (g4-standard-48, 1x RTX PRO 6000), samples=1",
   "runs": [
    "benchmarks/runs/20261003-v2-reference-v021-t2",
    "benchmarks/runs/20261002-v020-reference-t2",
    "benchmarks/runs/20261002-v020-release-t2"
   ],
-  "note": "matrix v2 reference, production Vertex G4 v0.2.1 (fcad9df8, MAX_MODEL_LEN 8192), T2 on 2026-10-03. Suites with an established range of 4+ runs (v0.2.0 sessions, same server logic) take the union of that range and this session's per-run accuracies; new or small suites take this session's min..max widened to mean +/- 2 standard errors, united with any previous range (vision_spot: a 3-run range was too narrow for 141 answers). coverage = lowest answered share this session (jev_native answers 231/231 at 8k). Previous references: v0.2.0 (matrix_v1), v0.1.3 (benchmarks/runs/20261001-v013-reference-*). gate_mixed_noul's range reflects the known coupling defect (issue #68); a fix shows as a gain.",
+  "note": "matrix v2 reference, production Vertex G4 v0.2.1 (fcad9df8, MAX_MODEL_LEN 8192), T2 on 2026-10-03. Suites with an established range of 4+ runs (v0.2.0 sessions, same server logic) take the union of that range and this session's per-run accuracies; new or small suites take this session's min..max widened to mean +/- 2 standard errors, united with any previous range (vision_spot: a 3-run range was too narrow for 141 answers). coverage = lowest answered share this session (jev_native answers 231/231 at 8k). Previous references: v0.2.0 (matrix_v1), v0.1.3 (benchmarks/runs/20261001-v013-reference-*). gate_mixed_noul's range reflects the known coupling defect (issue #68); a fix shows as a gain. 2026-10-04: gate_mixed_noul re-referenced for v0.3.0 (auto isolation; release-gate 0.967 over 3 runs, production T1 0.980; range = min..max +/- 2 SE), since v0.2.1's 0.50-0.69 reflected the fixed defect; intents_banking77 lower bound 0.733 (two production T1 runs at 0.756 on 30 items, one item below the old range). Other suites unchanged: v0.3.0 does not change their code path (release gate PASS).",
   "suites": {
    "calibration": {
     "accuracy": [
@@ -401,10 +401,10 @@
    },
    "intents_banking77": {
     "accuracy": [
-     0.7667,
+     0.7333,
      0.8333
     ],
-    "runs": 9,
+    "runs": 11,
     "n": 30,
     "coverage": 1.0
    },
@@ -491,10 +491,10 @@
    },
    "gate_mixed_noul": {
     "accuracy": [
-     0.4976,
-     0.692
+     0.9352,
+     1.0
     ],
-    "runs": 3,
+    "runs": 4,
     "n": 102,
     "coverage": 1.0
    },
