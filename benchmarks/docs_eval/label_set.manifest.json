@@ -1,0 +1,34 @@
+{
+  "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+  "seed": 2025,
+  "n_test": 150,
+  "n_repeat": 15,
+  "strata": {
+    "deploy": 26,
+    "operate": 26,
+    "policies": 34,
+    "reference": 19,
+    "confidence": 15,
+    "root": 15,
+    "experiments": 15
+  },
+  "repeat_ids": {
+    "e466812f5er": "e466812f5e",
+    "e7f330e202r": "e7f330e202",
+    "ef6324a8ddr": "ef6324a8dd",
+    "1edd7d79d6r": "1edd7d79d6",
+    "6ad0ac2194r": "6ad0ac2194",
+    "91a4f19710r": "91a4f19710",
+    "45f03d65fdr": "45f03d65fd",
+    "99c25ad1f2r": "99c25ad1f2",
+    "e9a0c3468ar": "e9a0c3468a",
+    "9c4bd4e2e0r": "9c4bd4e2e0",
+    "969c6688b8r": "969c6688b8",
+    "313bfa8ef7r": "313bfa8ef7",
+    "6e728dc58br": "6e728dc58b",
+    "3ec128f4d0r": "3ec128f4d0",
+    "d01004aeear": "d01004aeea"
+  },
+  "rubric_hash": "cea4c82b5ad6",
+  "sections_total": 355
+}

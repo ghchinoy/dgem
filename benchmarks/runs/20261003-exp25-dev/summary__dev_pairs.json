@@ -1,0 +1,35 @@
+{
+  "experiment": "EXP-25",
+  "set": "dev_pairs",
+  "rubric_hash": "cea4c82b5ad6",
+  "configs": {
+    "dgem/joint/original/r1": {
+      "pairs": 10,
+      "after_better": 5,
+      "after_worse": 5,
+      "tie": 0,
+      "after_better_share": 0.5
+    },
+    "docstats/r1": {
+      "pairs": 0,
+      "after_better": 0,
+      "after_worse": 0,
+      "tie": 0,
+      "after_better_share": null
+    },
+    "gemini:gemini-3.8-flash/r1": {
+      "pairs": 10,
+      "after_better": 1,
+      "after_worse": 0,
+      "tie": 9,
+      "after_better_share": 0.1
+    },
+    "dgem/joint/original/r1+thr": {
+      "pairs": 10,
+      "after_better": 5,
+      "after_worse": 5,
+      "tie": 0,
+      "after_better_share": 0.5
+    }
+  }
+}

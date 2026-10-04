@@ -1,0 +1,51 @@
+{
+  "config": "dgem/joint/original/r1",
+  "rubric_hash": "cea4c82b5ad6",
+  "fitted_on": "dev_injected",
+  "thresholds": {
+    "openers": 0.9990626455207894,
+    "framing": 0.06863404137032036,
+    "actors": 0.04392207875946282,
+    "sentences": 0.9455266403293039,
+    "reader": 0.9863992168771485,
+    "tone": 0.9937438599602518
+  },
+  "cv": {
+    "openers": {
+      "threshold_all_dev": 0.9990626455207894,
+      "cv_f1": 0.655,
+      "cv_accuracy": 0.891,
+      "n": 175
+    },
+    "framing": {
+      "threshold_all_dev": 0.06863404137032036,
+      "cv_f1": 0.49,
+      "cv_accuracy": 0.857,
+      "n": 175
+    },
+    "actors": {
+      "threshold_all_dev": 0.04392207875946282,
+      "cv_f1": 0.308,
+      "cv_accuracy": 0.743,
+      "n": 175
+    },
+    "sentences": {
+      "threshold_all_dev": 0.9455266403293039,
+      "cv_f1": 0.902,
+      "cv_accuracy": 0.971,
+      "n": 175
+    },
+    "reader": {
+      "threshold_all_dev": 0.9863992168771485,
+      "cv_f1": 0.873,
+      "cv_accuracy": 0.96,
+      "n": 175
+    },
+    "tone": {
+      "threshold_all_dev": 0.9937438599602518,
+      "cv_f1": 0.98,
+      "cv_accuracy": 0.994,
+      "n": 175
+    }
+  }
+}

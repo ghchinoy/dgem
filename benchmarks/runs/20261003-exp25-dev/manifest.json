@@ -1,0 +1,185 @@
+{
+  "experiment": "EXP-25",
+  "runs": [
+    {
+      "file": "preds__dev_injected__dgem__joint__original__r1.jsonl",
+      "set": "dev_injected",
+      "engine": "dgem",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 1,
+      "n": 175,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": "vertex",
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:41:32+00:00"
+    },
+    {
+      "file": "preds__dev_injected__dgem__joint__original__r2.jsonl",
+      "set": "dev_injected",
+      "engine": "dgem",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 2,
+      "n": 175,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": "vertex",
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:42:28+00:00"
+    },
+    {
+      "file": "preds__dev_injected__dgem__joint__shuffled__r1.jsonl",
+      "set": "dev_injected",
+      "engine": "dgem",
+      "mode": "joint",
+      "order": "shuffled",
+      "repeat": 1,
+      "n": 175,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": "vertex",
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:43:28+00:00"
+    },
+    {
+      "file": "preds__dev_injected__dgem__isolated__original__r1.jsonl",
+      "set": "dev_injected",
+      "engine": "dgem",
+      "mode": "isolated",
+      "order": "original",
+      "repeat": 1,
+      "n": 175,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": "vertex",
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:46:23+00:00"
+    },
+    {
+      "file": "preds__dev_injected__docstats__r1.jsonl",
+      "set": "dev_injected",
+      "engine": "docstats",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 1,
+      "n": 175,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": null,
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:46:23+00:00"
+    },
+    {
+      "file": "preds__dev_pairs__dgem__joint__original__r1.jsonl",
+      "set": "dev_pairs",
+      "engine": "dgem",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 1,
+      "n": 20,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": "vertex",
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:46:28+00:00"
+    },
+    {
+      "file": "preds__dev_pairs__docstats__r1.jsonl",
+      "set": "dev_pairs",
+      "engine": "docstats",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 1,
+      "n": 20,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": null,
+      "model": null,
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:46:28+00:00"
+    },
+    {
+      "file": "preds__dev_injected__gemini-gemini-3.8-flash__r1.jsonl",
+      "set": "dev_injected",
+      "engine": "gemini:gemini-3.8-flash",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 1,
+      "n": 175,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": null,
+      "model": "gemini-3.8-flash",
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:48:56+00:00"
+    },
+    {
+      "file": "preds__dev_pairs__gemini-gemini-3.8-flash__r1.jsonl",
+      "set": "dev_pairs",
+      "engine": "gemini:gemini-3.8-flash",
+      "mode": "joint",
+      "order": "original",
+      "repeat": 1,
+      "n": 20,
+      "policies": [
+        "docs_diataxis",
+        "docs_style_audit",
+        "docs_claim_evidence"
+      ],
+      "rubric_hash": "cea4c82b5ad6",
+      "target_kind": null,
+      "model": "gemini-3.8-flash",
+      "thinking": null,
+      "git_sha": "50083c57f8de15cece91e2457cc4b3144c30cf63",
+      "utc": "2026-10-03T23:49:38+00:00"
+    }
+  ]
+}
