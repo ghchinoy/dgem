@@ -95,7 +95,7 @@ Gemini 3.7 Flash matched 3.8 on these questions and boxes at lower latency (4.8 
 | Box for an object described in a photo | Grounding DINO (open source, ~0.65 s on one L4) or Gemini 3.x | centre hit 89–90% on RefCOCO |
 | Box for a UI element from an instruction ("raise the temperature") | Gemini 3.x | centre hit 93% on ScreenSpot; open detectors 5–8% |
 | Grade or label boxes without ground truth | Gemini 3.x as a judge (`dgem bench-bbox-judge`) | catches 99–100% of edges more than 5 points off |
-| Faster Gemini boxes | Gemini 3.x (3.7 or 3.8) at LOW thinking, without a dgem hint; skip Gemini when dgem confidently says absent only on photos and mobile UI | LOW thinking cuts median latency 30–45% at the same accuracy (except defect images); dgem's grid-cell hint helped on photos (EXP-24) but not on UI, documents or PCB ([EXP-26](/dgem/experiments/exp-26-domain-images/)) |
+| Faster Gemini boxes | `dgem locate`, `POST /api/locate` or MCP `locate_object` (defaults: LOW thinking, no hint, no skip): Gemini 3.x (3.7 or 3.8) at LOW thinking, without a dgem hint; skip Gemini when dgem confidently says absent only on photos and mobile UI | LOW thinking cuts median latency 30–45% at the same accuracy (except defect images); dgem's grid-cell hint helped on photos (EXP-24) but not on UI, documents or PCB ([EXP-26](/dgem/experiments/exp-26-domain-images/)) |
 | Masks | SAM prompted with the Gemini (or Grounding DINO) box | mask IoU 0.73 (0.69 with Grounding DINO) vs 0.64 for Gemini's own polygon outline |
 
 ## Validate on your images

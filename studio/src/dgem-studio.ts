@@ -148,6 +148,19 @@ const MCP_TOOLS: MCPToolSpec[] = [
     },
   },
   {
+    name: 'locate_object',
+    badge: 'EXP-24 · Guided locate',
+    description:
+      'dgem answers presence and 3x3 location (~0.2 s), then Gemini 3.x (LOW thinking) returns the box. Opt-in: skip_h (skip Gemini when dgem is confidently absent) and hint. Optional SAM mask when DGEM_SAM_URL is set.',
+    defaultArgs: {
+      target: 'the red emergency stop button',
+      image_url: '',
+      mask: false,
+      skip_h: 0,
+      hint: false,
+    },
+  },
+  {
     name: 'locate_bounding_boxes',
     badge: 'EXP-09 · Multimodal BBox',
     description:
@@ -208,6 +221,9 @@ export class DgemStudio extends LitElement {
   @state() private imageDataUrl = '';
   @state() private imageName = '';
   @state() private bboxMode: 'expectation' | 'argmax' | 'both' = 'both';
+  /** Result of POST /api/locate (guided locate, EXP-24) for the current image. */
+  @state() private guidedLocate: any = null;
+  @state() private guidedLocating = false;
 
   @state() private loading = false;
   @state() private warmingUp = false;
@@ -1324,6 +1340,7 @@ export class DgemStudio extends LitElement {
     const reader = new FileReader();
     reader.onload = () => {
       this.imageDataUrl = String(reader.result || '');
+      this.guidedLocate = null;
       if (!this.selectedTemplateName.startsWith('bbox_')) {
         this.selectedTemplateName = 'bbox_single';
         this.variableValues = { target: 'primary foreground object' };
@@ -1514,6 +1531,28 @@ export class DgemStudio extends LitElement {
         );
         return;
       }
+      if (this.selectedMcpTool === 'locate_object') {
+        const resp = await fetch('/api/locate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-DGem-Surface': 'web_studio_mcp' },
+          body: JSON.stringify({
+            target: String(parsedArgs.target || 'main object'),
+            image: String(parsedArgs.image_url || this.imageDataUrl || ''),
+            mask: Boolean(parsedArgs.mask),
+            skip_h: Number(parsedArgs.skip_h || 0),
+            hint: Boolean(parsedArgs.hint),
+            backend: this.backendTarget,
+          }),
+        });
+        const data = await resp.json();
+        this.mcpLatencyMs = Math.round(performance.now() - start);
+        this.mcpResponseText = JSON.stringify(
+          { jsonrpc: '2.0', id: 1, result: { tool: 'locate_object', structuredContent: data } },
+          null,
+          2
+        );
+        return;
+      }
       if (this.selectedMcpTool === 'locate_bounding_boxes') {
         const mode = parsedArgs.mode === 'multi' ? 'bbox_detr_multi' : 'bbox_single';
         const resp = await fetch(`/api/decide/${mode}`, {
@@ -1604,6 +1643,56 @@ export class DgemStudio extends LitElement {
     if (!m) return 0;
     const v = parseFloat(m[1]);
     return v <= 100 ? v * 10 : v;
+  }
+
+  private async runGuidedLocate() {
+    if (!this.imageDataUrl) return;
+    this.guidedLocating = true;
+    try {
+      const target = String(this.variableValues['target'] || 'the main object');
+      const resp = await fetch('/api/locate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-DGem-Surface': 'web_studio',
+          'X-DGem-Backend': this.backendTarget,
+        },
+        body: JSON.stringify({ image: this.imageDataUrl, target }),
+      });
+      this.guidedLocate = await resp.json();
+    } catch (e) {
+      this.guidedLocate = { error: String(e) };
+    } finally {
+      this.guidedLocating = false;
+    }
+  }
+
+  private renderGuidedBox() {
+    const b = this.guidedLocate?.box_1000;
+    if (!b) return null;
+    return svg`
+      <svg class="bbox-overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+        <rect x="${b.xmin}" y="${b.ymin}" width="${Math.max(10, b.xmax - b.xmin)}" height="${Math.max(10, b.ymax - b.ymin)}"
+          fill="rgba(16, 185, 129, 0.12)" stroke="#10b981" stroke-width="7" />
+      </svg>
+    `;
+  }
+
+  private renderGuidedSummary() {
+    const g = this.guidedLocate;
+    if (!g) return null;
+    if (g.error) return html`<div style="font-size:0.74rem;color:var(--danger, #dc2626)">Guided locate: ${g.error}</div>`;
+    const path =
+      g.path === 'skipped_absent'
+        ? 'absent (dgem confident, Gemini skipped)'
+        : g.path === 'gemini_absent'
+          ? `absent (Gemini ${g.gemini?.model} found nothing)`
+          : `box from Gemini ${g.gemini?.model} @ ${g.gemini?.thinking}${g.gemini?.hint ? ' with dgem hint' : ''}`;
+    return html`<div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:0.6rem">
+      Guided locate (EXP-24, solid green): ${path} · dgem ${Math.round(g.dgem?.ms || 0)} ms
+      (present=${g.dgem?.present}, cell=${g.dgem?.grid_cell})${g.gemini ? html` · Gemini ${Math.round(g.gemini.ms)} ms` : null}
+      · total ${Math.round(g.total_ms || 0)} ms${g.mask_note ? html` · ${g.mask_note}` : null}
+    </div>`;
   }
 
   private renderBBoxOverlay() {
@@ -2240,6 +2329,7 @@ export class DgemStudio extends LitElement {
                           class="btn btn--sm"
                           @click=${() => {
                             this.imageDataUrl = '';
+                            this.guidedLocate = null;
                             this.imageName = '';
                           }}
                         >
@@ -2254,14 +2344,24 @@ export class DgemStudio extends LitElement {
                 ? html`
                     <div class="bbox-stage">
                       <img src=${this.imageDataUrl} alt="Uploaded multimodal frame" />
-                      ${this.renderBBoxOverlay()}
+                      ${this.renderBBoxOverlay()} ${this.renderGuidedBox()}
                     </div>
+                    ${this.renderGuidedSummary()}
                     <div
                       style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem"
                     >
                       <span style="font-size:0.74rem;color:var(--text-muted)">
                         Approximate boxes (EXP-22: coarse; not for precise localization) · Solid Blue = Expectation · Dashed Amber = Argmax
                       </span>
+                      <button
+                        class="btn btn--sm"
+                        ?disabled=${this.guidedLocating}
+                        title="dgem pass, then a Gemini 3.x box at LOW thinking (EXP-24/26)"
+                        @click=${() => this.runGuidedLocate()}
+                      >
+                        <span class="material-symbols-outlined">center_focus_strong</span>
+                        ${this.guidedLocating ? 'Locating…' : 'Precise box (guided)'}
+                      </button>
                       <div class="segmented">
                         ${(['both', 'expectation', 'argmax'] as const).map(
                           (m) => html`
