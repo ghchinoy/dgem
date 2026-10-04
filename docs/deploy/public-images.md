@@ -104,6 +104,7 @@ Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
 | **`DEFAULT_SAMPLES`**, **`MAX_INFLIGHT`** | `1`, `8` | Samples for schemas without `samples`; decisions processed at once (the rest queue). |
 | **`MAX_MODEL_LEN`** | `4096` (image); deploy scripts set `8192` on RTX PRO 6000 | Longest prompt plus answer, in tokens. Longer prompts are refused. At 8,192 short-prompt accuracy and latency match 4,096 (EXP-20); 32,768 answers far longer prompts but is still being validated under load. |
 | **`DEFAULT_ISOLATE`**, **`ISOLATE_AUTO_MAX`**, **`ISOLATE_MAX_QUESTIONS`** | `auto`, `3`, `8` | Which questions get a read of their own when a request doesn't say: `auto` (yes/no questions in text requests of 2–3 questions with at least 2 yes/no; from v0.3.0), `none` (one joint read, the behaviour before v0.3.0), `noul` (every yes/no question, requests of 2–8 questions) or `all`. A request can set `"isolate"`, and a question `"alone": true/false`. See [reading yes/no questions alone](../policies/prompt-layout.md#yesno-questions-in-small-requests-are-read-alone). |
+| **`HTTP_IDLE_TIMEOUT`** | `120` | Seconds before an idle keep-alive connection is closed (0 = never). |
 | **`DEFAULT_LAYOUT`** | `document_first` | Prompt layout for requests without `layout`: `document_first` (the state, then the questions) or `schema_first` (the questions as the system prompt, the behaviour before v0.2.0). |
 | **`DISABLE_MM`** | `0` | `1` disables the vision tower (required on an L4 with 32 GiB host RAM). |
 

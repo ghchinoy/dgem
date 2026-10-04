@@ -9,6 +9,9 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- Serving: idle keep-alive connections close after `HTTP_IDLE_TIMEOUT` seconds (default 120; 0 = never, the previous
+  behaviour), and a watchdog logs thread and in-flight counts every 60 s (diagnostics for #96).
+
 - **Per-policy temperature (PROP-20, #81).** `"temperature"` in a template (a number, or per question type:
   `{"noul": 3.0, "choice": 1.3, "score": 1.1}`), `dgem decide --temperature`, `/api/decide` `temperature`, MCP
   `temperature` / `temperature_by_type`, and a Studio **Temperature** field. Applied after Stage 1 and the cascade
