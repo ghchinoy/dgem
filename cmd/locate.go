@@ -17,10 +17,11 @@ package cmd
 // Guided locate (#74, EXP-24): dgem first, Gemini only when needed.
 //
 //  1. dgem answers "is the target present?" and "which 3x3 cell holds it?" in one pass (~0.2 s).
-//  2. If dgem says absent with normalized entropy below the skip threshold, return "absent" without calling Gemini
-//     (EXP-24: 35% of calls saved, 1.3% of positives lost).
-//  3. Otherwise Gemini 3.x at LOW thinking returns the box, with dgem's cell as a "may be wrong" hint (EXP-24: same
-//     accuracy as Gemini alone at default thinking, about half the latency).
+//  2. Opt-in (skip_h > 0): if dgem says absent with normalized entropy below skip_h, return "absent" without calling
+//     Gemini. EXP-24 (photos): 35% of calls saved, 1.3% of positives lost; EXP-26: safe on mobile UI only (it missed
+//     15% of PCB defects), so it is off by default.
+//  3. Gemini 3.x at LOW thinking returns the box (EXP-24/26: same accuracy as default thinking, 30-45% faster).
+//     Opt-in (hint): dgem's cell as a "may be wrong" hint; neutral on average across EXP-24 and EXP-26.
 //  4. Optionally, a mask from a SAM service at DGEM_SAM_URL prompted with that box (mask IoU 0.73 vs 0.64 for Gemini
 //     polygons). Without DGEM_SAM_URL, masks are reported as unavailable.
 //
@@ -46,8 +47,9 @@ import (
 )
 
 const (
-	defaultLocateSkipH    = 0.16
-	defaultLocateThinking = "low"
+	// recommendedLocateSkipH is the skip threshold measured in EXP-24/26, used when the caller opts in.
+	recommendedLocateSkipH = 0.16
+	defaultLocateThinking  = "low"
 )
 
 // LocateRequest is the input shared by every surface.
@@ -57,8 +59,8 @@ type LocateRequest struct {
 	Mask        bool    `json:"mask,omitempty" jsonschema:"Also return a mask from the SAM service at DGEM_SAM_URL (prompted with the box)."`
 	GeminiModel string  `json:"gemini_model,omitempty" jsonschema:"Gemini 3.x model for the box (default gemini-3.8-flash; gemini-3.7-flash also supported)."`
 	Thinking    string  `json:"thinking,omitempty" jsonschema:"Gemini thinking level: low (default), medium, high or default."`
-	SkipH       float64 `json:"skip_h,omitempty" jsonschema:"Skip Gemini when dgem says absent with normalized entropy below this (default 0.16; negative disables skipping)."`
-	NoHint      bool    `json:"no_hint,omitempty" jsonschema:"Do not pass dgem's grid cell to Gemini as a hint."`
+	SkipH       float64 `json:"skip_h,omitempty" jsonschema:"Opt-in: skip Gemini when dgem says absent with normalized entropy below this (0.16 recommended; 0 = never skip). Measured safe on photos and mobile UI, not on defect images (EXP-26)."`
+	Hint        bool    `json:"hint,omitempty" jsonschema:"Opt-in: pass dgem's 3x3 cell to Gemini as a 'may be wrong' hint (neutral on average, EXP-26)."`
 	Backend     string  `json:"backend,omitempty" jsonschema:"dgem backend: vertex_first (default), vertex or cloudrun."`
 	VertexURL   string  `json:"vertex_url,omitempty" jsonschema:"Optional Vertex AI endpoint ID or /invoke/* URL override."`
 }
@@ -147,9 +149,6 @@ func runGuidedLocate(ctx context.Context, req LocateRequest, decide locateDecide
 		return nil, fmt.Errorf("'image' is required")
 	}
 	skipH := req.SkipH
-	if skipH == 0 {
-		skipH = defaultLocateSkipH
-	}
 	thinking := strings.ToLower(strings.TrimSpace(req.Thinking))
 	if thinking == "" {
 		thinking = defaultLocateThinking
@@ -194,7 +193,7 @@ func runGuidedLocate(ctx context.Context, req LocateRequest, decide locateDecide
 	// 3. Gemini box, hinted with dgem's cell.
 	model := SanitizeCascadeModel(req.GeminiModel)
 	g := &LocateGemini{Model: model, Thinking: thinking}
-	if !req.NoHint && res.Dgem.GridCell != "" {
+	if req.Hint && res.Dgem.GridCell != "" {
 		g.Hint = fmt.Sprintf("Hint from a fast first-pass model (it may be wrong): the target is probably in the %s part of the image (3x3 grid).",
 			strings.ReplaceAll(res.Dgem.GridCell, "_", " "))
 	}

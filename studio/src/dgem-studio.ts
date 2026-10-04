@@ -151,11 +151,13 @@ const MCP_TOOLS: MCPToolSpec[] = [
     name: 'locate_object',
     badge: 'EXP-24 · Guided locate',
     description:
-      'dgem answers presence and 3x3 location (~0.2 s); skips Gemini when confidently absent; otherwise Gemini 3.x (LOW thinking) returns the box with dgem\'s cell as a hint. Optional SAM mask when DGEM_SAM_URL is set.',
+      'dgem answers presence and 3x3 location (~0.2 s), then Gemini 3.x (LOW thinking) returns the box. Opt-in: skip_h (skip Gemini when dgem is confidently absent) and hint. Optional SAM mask when DGEM_SAM_URL is set.',
     defaultArgs: {
       target: 'the red emergency stop button',
       image_url: '',
       mask: false,
+      skip_h: 0,
+      hint: false,
     },
   },
   {
@@ -1537,6 +1539,8 @@ export class DgemStudio extends LitElement {
             target: String(parsedArgs.target || 'main object'),
             image: String(parsedArgs.image_url || this.imageDataUrl || ''),
             mask: Boolean(parsedArgs.mask),
+            skip_h: Number(parsedArgs.skip_h || 0),
+            hint: Boolean(parsedArgs.hint),
             backend: this.backendTarget,
           }),
         });
@@ -2352,7 +2356,7 @@ export class DgemStudio extends LitElement {
                       <button
                         class="btn btn--sm"
                         ?disabled=${this.guidedLocating}
-                        title="dgem first, then a Gemini 3.x box only when needed (EXP-24)"
+                        title="dgem pass, then a Gemini 3.x box at LOW thinking (EXP-24/26)"
                         @click=${() => this.runGuidedLocate()}
                       >
                         <span class="material-symbols-outlined">center_focus_strong</span>

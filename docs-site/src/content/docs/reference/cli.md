@@ -117,7 +117,7 @@ Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts
 | Route | Method | Description |
 | :--- | :---: | :--- |
 | **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders a named or inline (`custom_template`) `.json.tmpl` policy with `variables`, executes Stage 1 `DiffusionGemma` readout on `vertex_first` / `vertex` / `cloudrun`, and optionally runs the **Stage 2 Gemini Cascade** (`cascade_mode`: `"off" \| "entropy" \| "on_miss"`, `cascade_threshold`: `0.35`, `cascade_model`: `"gemini-3.8-flash"`, `stage2_prior`: `"soft" \| "full" \| "none"`, `temperature`: a number or `{"noul": T, "choice": T, "score": T}`). |
-| **`/api/locate`** | `POST` | Guided locate ([EXP-24](/dgem/experiments/exp-24-guided-cascade/)): `{"image": "<data-uri-or-public-url>", "target": "the checkout button", "mask": false, "gemini_model": "gemini-3.8-flash", "thinking": "low", "skip_h": 0.16, "no_hint": false, "backend": "vertex_first"}`. dgem answers presence and 3×3 cell; if it is confidently absent, Gemini is skipped (`path: skipped_absent`); otherwise Gemini 3.x returns `box_1000` / `box_pct` with dgem's cell as a hint (`path: gemini` or `gemini_absent`). With `mask: true` and `DGEM_SAM_URL` set, a SAM service adds `mask`; otherwise `mask_note` explains why not. Returns per-stage latency (`dgem.ms`, `gemini.ms`, `sam_ms`, `total_ms`). Images must be data: URIs or public http(s) URLs. Spans: `dgem.gateway.locate` → `dgem.locate` → `dgem.locate.dgem` / `.gemini` / `.sam`. |
+| **`/api/locate`** | `POST` | Guided locate ([EXP-24](/dgem/experiments/exp-24-guided-cascade/)): `{"image": "<data-uri-or-public-url>", "target": "the checkout button", "mask": false, "gemini_model": "gemini-3.8-flash", "thinking": "low", "skip_h": 0, "hint": false, "backend": "vertex_first"}`. dgem answers presence and 3×3 cell, then Gemini 3.x (LOW thinking) returns `box_1000` / `box_pct` (`path: gemini` or `gemini_absent`). Opt-ins: `skip_h` > 0 (0.16 recommended on photos and mobile UI, not on defect images) returns `path: skipped_absent` without Gemini when dgem is confidently absent; `hint: true` passes dgem's cell to Gemini (neutral on average, EXP-26). With `mask: true` and `DGEM_SAM_URL` set, a SAM service adds `mask`; otherwise `mask_note` explains why not. Returns per-stage latency (`dgem.ms`, `gemini.ms`, `sam_ms`, `total_ms`). Images must be data: URIs or public http(s) URLs. Spans: `dgem.gateway.locate` → `dgem.locate` → `dgem.locate.dgem` / `.gemini` / `.sam`. |
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation). Supports both `application/json` (`{"state": ..., "questions": ...}`) and `multipart/form-data` (`image` file + JSON fields), routing to `/invoke/v1/systemone` on Vertex AI or `/v1/systemone` on Cloud Run GPU. |
 | **`/v1/chat/completions`** | `POST` | OpenAI-compatible structured diffusion decision envelope proxy with `vertex_first` auto-failover and automatic GCP token injection. |
 | **`/v1/raw/chat/completions`** | `POST` | Direct pass-through proxy to `vLLM`'s raw `/v1/chat/completions` endpoint. |
@@ -325,14 +325,14 @@ Runs the 49-case Text Normalization evaluation (`EXP-02` & `EXP-07`) comparing D
 
 
 ### `dgem locate`
-Locates an object or UI element in an image with the guided pipeline from [EXP-24](/dgem/experiments/exp-24-guided-cascade/): one dgem pass (presence + 3×3 cell, ~0.2 s), no Gemini call when dgem is confident the target is absent, otherwise a Gemini 3.x box at LOW thinking hinted with dgem's cell. `--mask` adds a SAM mask when `DGEM_SAM_URL` is set. See [what dgem can do with images](/dgem/policies/images/).
+Locates an object or UI element in an image with the guided pipeline from [EXP-24](/dgem/experiments/exp-24-guided-cascade/): one dgem pass (presence + 3×3 cell, ~0.2 s), then a Gemini 3.x box at LOW thinking. `--skip-h 0.16` skips Gemini when dgem is confidently absent (photos and mobile UI only, per EXP-26); `--hint` passes dgem's cell to Gemini. `--mask` adds a SAM mask when `DGEM_SAM_URL` is set. See [what dgem can do with images](/dgem/policies/images/).
 
 ```bash
 ./bin/dgem locate --vertex-url <ENDPOINT_ID> -I screenshot.png --target "the checkout button"
 ./bin/dgem locate --vertex-url <ENDPOINT_ID> -I photo.jpg --target "the dog on the left" --gemini-model gemini-3.7-flash -f json
 ```
 
-Flags: `-I/--image`, `--target`, `--mask`, `--gemini-model`, `--thinking low|medium|high|default`, `--skip-h` (negative: never skip), `--no-hint`, `-f table|json`. Gemini needs Application Default Credentials and `GOOGLE_CLOUD_PROJECT`.
+Flags: `-I/--image`, `--target`, `--mask`, `--gemini-model`, `--thinking low|medium|high|default`, `--skip-h` (0 = never skip, the default), `--hint`, `-f table|json`. Gemini needs Application Default Credentials and `GOOGLE_CLOUD_PROJECT`.
 
 ### `dgem bench-bbox`
 Runs the **single-pass bounding-box suite (`EXP-09`)** (`benchmarks/bbox_suite.jsonl`, `fixtures/bbox/`) or any custom image directory (`--dir`). For each image it reads `[ymin, xmin, ymax, xmax]` in one pass and reports:

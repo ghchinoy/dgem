@@ -60,7 +60,7 @@ func stubGemini(t *testing.T, box *[4]float64, gotHint *string, called *bool) fu
 func TestLocateSkipsGeminiWhenConfidentlyAbsent(t *testing.T) {
 	called := false
 	defer stubGemini(t, &[4]float64{1, 2, 3, 4}, nil, &called)()
-	res, err := runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "the button"}, fakeLocateDecide("no", 0.999, "top_left"))
+	res, err := runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "the button", SkipH: recommendedLocateSkipH}, fakeLocateDecide("no", 0.999, "top_left"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestLocateHintedGeminiWhenUnsureOrPresent(t *testing.T) {
 	hint := ""
 	defer stubGemini(t, &[4]float64{10, 20, 30, 40}, &hint, nil)()
 	// Unsure "no" (p=0.6) must not skip.
-	res, err := runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "the button"}, fakeLocateDecide("no", 0.6, "bottom_right"))
+	res, err := runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "the button", SkipH: recommendedLocateSkipH, Hint: true}, fakeLocateDecide("no", 0.6, "bottom_right"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,21 +83,21 @@ func TestLocateHintedGeminiWhenUnsureOrPresent(t *testing.T) {
 	if !strings.Contains(hint, "bottom right") || !strings.Contains(hint, "may be wrong") {
 		t.Errorf("hint = %q", hint)
 	}
-	res, _ = runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "x", NoHint: true}, fakeLocateDecide("yes", 0.99, "top_left"))
+	res, _ = runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "x"}, fakeLocateDecide("yes", 0.99, "top_left"))
 	if hint != "" || res.Gemini.Hint != "" {
-		t.Errorf("no_hint still hinted: %q", hint)
+		t.Errorf("hint is opt-in but was sent: %q", hint)
 	}
 }
 
-func TestLocateNeverSkipWithNegativeSkipH(t *testing.T) {
+func TestLocateDoesNotSkipByDefault(t *testing.T) {
 	called := false
 	defer stubGemini(t, nil, nil, &called)()
-	res, err := runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "x", SkipH: -1}, fakeLocateDecide("no", 0.999, "top_left"))
+	res, err := runGuidedLocate(context.Background(), LocateRequest{Image: tinyPNG, Target: "x"}, fakeLocateDecide("no", 0.999, "top_left"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !called || res.Path != "gemini_absent" {
-		t.Errorf("skip_h<0 must always call Gemini; path=%s called=%v", res.Path, called)
+		t.Errorf("skipping is opt-in; path=%s called=%v", res.Path, called)
 	}
 }
 

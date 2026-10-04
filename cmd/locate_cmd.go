@@ -30,7 +30,7 @@ var (
 	locateModel    string
 	locateThinking string
 	locateSkipH    float64
-	locateNoHint   bool
+	locateHint     bool
 	locateFormat   string
 )
 
@@ -40,8 +40,9 @@ var locateCmd = &cobra.Command{
 	Short:   "Locate an object in an image: dgem first, Gemini 3.x box only when needed, optional SAM mask",
 	Long: `locate runs the guided pipeline measured in EXP-24:
   1. dgem answers "is the target present?" and "which 3x3 cell holds it?" in one pass (~0.2 s).
-  2. If dgem is confident the target is absent (normalized entropy < --skip-h), it returns absent without calling Gemini.
-  3. Otherwise Gemini 3.x (default LOW thinking) returns the box, with dgem's cell as a "may be wrong" hint.
+  2. With --skip-h > 0 (0.16 recommended on photos and mobile UI; not on defect images), it returns absent without
+     calling Gemini when dgem is confident the target is absent.
+  3. Gemini 3.x (default LOW thinking) returns the box; --hint adds dgem's cell as a "may be wrong" hint.
   4. With --mask and DGEM_SAM_URL set, a SAM service turns the box into a mask
      (POST {"image", "box_pct"} -> {"png_base64", "polygon_pct", "score"}).
 Gemini needs Application Default Credentials and GOOGLE_CLOUD_PROJECT (or GCP_PROJECT).`,
@@ -54,7 +55,7 @@ Gemini needs Application Default Credentials and GOOGLE_CLOUD_PROJECT (or GCP_PR
 			return resp, err
 		}
 		res, err := runGuidedLocate(context.Background(), LocateRequest{Image: locateImage, Target: locateTarget,
-			Mask: locateMask, GeminiModel: locateModel, Thinking: locateThinking, SkipH: locateSkipH, NoHint: locateNoHint}, decide)
+			Mask: locateMask, GeminiModel: locateModel, Thinking: locateThinking, SkipH: locateSkipH, Hint: locateHint}, decide)
 		if err != nil {
 			return err
 		}
@@ -93,8 +94,8 @@ func init() {
 	f.BoolVar(&locateMask, "mask", false, "Also request a SAM mask (needs DGEM_SAM_URL)")
 	f.StringVar(&locateModel, "gemini-model", DefaultCascadeGeminiModel, "Gemini 3.x model (gemini-3.8-flash, gemini-3.7-flash)")
 	f.StringVar(&locateThinking, "thinking", defaultLocateThinking, "Gemini thinking level: low, medium, high, default")
-	f.Float64Var(&locateSkipH, "skip-h", defaultLocateSkipH, "Skip Gemini when dgem says absent below this normalized entropy (negative: never skip)")
-	f.BoolVar(&locateNoHint, "no-hint", false, "Do not pass dgem's grid cell to Gemini")
+	f.Float64Var(&locateSkipH, "skip-h", 0, "Skip Gemini when dgem says absent below this normalized entropy (0 = never; 0.16 recommended on photos/mobile UI)")
+	f.BoolVar(&locateHint, "hint", false, "Pass dgem's grid cell to Gemini as a hint")
 	f.StringVarP(&locateFormat, "format", "f", "table", "Output: table or json")
 	RootCmd.AddCommand(locateCmd)
 }
