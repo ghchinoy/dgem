@@ -116,7 +116,7 @@ Every inference endpoint on `dgem serve` (`https://<your-dgem-gateway>`) accepts
 
 | Route | Method | Description |
 | :--- | :---: | :--- |
-| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders a named or inline (`custom_template`) `.json.tmpl` policy with `variables`, executes Stage 1 `DiffusionGemma` readout on `vertex_first` / `vertex` / `cloudrun`, and optionally runs the **Stage 2 Gemini Cascade** (`cascade_mode`: `"off" \| "entropy" \| "on_miss"`, `cascade_threshold`: `0.35`, `cascade_model`: `"gemini-3.8-flash"`). |
+| **`/api/decide` & `/api/decide/{template}`** | `POST` | Renders a named or inline (`custom_template`) `.json.tmpl` policy with `variables`, executes Stage 1 `DiffusionGemma` readout on `vertex_first` / `vertex` / `cloudrun`, and optionally runs the **Stage 2 Gemini Cascade** (`cascade_mode`: `"off" \| "entropy" \| "on_miss"`, `cascade_threshold`: `0.35`, `cascade_model`: `"gemini-3.8-flash"`, `stage2_prior`: `"soft" \| "full" \| "none"`). |
 | **`/v1/systemone`** | `POST` | Direct pass-through proxy to `structured_server.py`'s `/v1/systemone` (`SystemOne` / `JevBench` schema evaluation). Supports both `application/json` (`{"state": ..., "questions": ...}`) and `multipart/form-data` (`image` file + JSON fields), routing to `/invoke/v1/systemone` on Vertex AI or `/v1/systemone` on Cloud Run GPU. |
 | **`/v1/chat/completions`** | `POST` | OpenAI-compatible structured diffusion decision envelope proxy with `vertex_first` auto-failover and automatic GCP token injection. |
 | **`/v1/raw/chat/completions`** | `POST` | Direct pass-through proxy to `vLLM`'s raw `/v1/chat/completions` endpoint. |
@@ -136,6 +136,7 @@ The MCP inference tools (`decide_policy`, `decide_custom_questions`, and `locate
 | **`cascade_mode`** | `string` | `"off"` *(default)* \| `"entropy"` \| `"on_miss"` | Stage 2 Gemini Cascade trigger policy (`"entropy"` escalates when Stage 1 Shannon entropy $H \ge$ `cascade_threshold`; `"on_miss"` escalates slots that disagree with `expected_answers`). |
 | **`cascade_threshold`** | `number` | `0.35` *(default, in nats)* | Shannon entropy threshold $\tau$ in nats for `"entropy"` escalation. |
 | **`cascade_model`** | `string` | `"gemini-3.8-flash"` *(default)* | Stage 2 Vertex AI Gemini model (`"gemini-3.8-flash"`, `"gemini-3.7-flash"`, or `"gemini-3.5-flash-lite"`). |
+| **`stage2_prior`** | `string` | `"soft"` *(default)* \| `"full"` \| `"none"` | Decide tools only. How much of Stage 1's answer the Stage-2 Gemini cascade sees (see the [authoring guide](/dgem/policies/authoring/)). |
 | **`expected_answers`** | `object` | `{}` *(optional)* | Map of slot id to expected value, used by `cascade_mode: "on_miss"`. |
 | **`suggest_expansions`** | `boolean` | `false` | Adds an `other_unclassified` option to `choice` slots and proposes new options when a slot is unclassified or hesitant ([taxonomy discovery](/dgem/policies/taxonomy-discovery/)). |
 | **`expansion_entropy`** | `number` | `0.35` *(nats)* | Entropy threshold on `choice` slots that triggers an expansion proposal. |

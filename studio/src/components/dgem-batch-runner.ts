@@ -160,6 +160,8 @@ export class DgemBatchRunner extends LitElement {
   @state() private concurrency = 4;
   @state() private cascadeMode: 'off' | 'on_miss' | 'entropy' = 'off';
   @state() private cascadeModel = 'gemini-3.8-flash';
+  /** How much of Stage 1's answer Gemini sees: '' = server default, 'full', 'soft' or 'none' (issue #75). */
+  @state() private stage2Prior: '' | 'full' | 'soft' | 'none' = '';
   @state() private cascadeModels: string[] = [
     'gemini-3.8-flash',
     'gemini-3.7-flash',
@@ -1623,6 +1625,7 @@ export class DgemBatchRunner extends LitElement {
             backend: this.backendTarget,
             cascade_mode: this.cascadeMode,
             cascade_model: this.cascadeModel,
+            ...(this.stage2Prior ? { stage2_prior: this.stage2Prior } : {}),
             cascade_threshold: this.cascadeThreshold,
             expected_answers: expectedMap,
           };
@@ -1925,6 +1928,23 @@ export class DgemBatchRunner extends LitElement {
                             }}
                           >
                             ${m}
+                          </button>
+                        `
+                      )}
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <span class="control-label" title="How much of dgem's answer Gemini sees. Full: answer, confidence and distribution. Soft: only that dgem leaned toward an answer and may be wrong. None: the question alone.">Stage-1 hint to Gemini</span>
+                    <div class="seg-group">
+                      ${(['', 'full', 'soft', 'none'] as const).map(
+                        (m) => html`
+                          <button
+                            class="seg-btn ${this.stage2Prior === m ? 'active' : ''}"
+                            @click=${() => {
+                              if (!this.running) this.stage2Prior = m;
+                            }}
+                          >
+                            ${m || 'default'}
                           </button>
                         `
                       )}

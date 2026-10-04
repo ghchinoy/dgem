@@ -446,6 +446,7 @@ func runRemoteMCPProxy(remoteURL string) error {
 								SuggestExpansions: customIn.SuggestExpansions,
 								ExpansionEntropy:  customIn.ExpansionEntropy,
 								Layout:            customIn.Layout,
+								Stage2Prior:       customIn.Stage2Prior,
 							}
 							if b, mErr := json.Marshal(gwReq); mErr == nil {
 								reqPayload = b
@@ -1409,6 +1410,7 @@ type DecidePolicyToolInput struct {
 	ExpectedAnswers   map[string]string      `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
 	SuggestExpansions bool                   `json:"suggest_expansions,omitempty" jsonschema:"If true, dynamically injects an 'other_unclassified' catch-all option into choice slots (if absent) and proposes new {'name', 'description'} options when unclassified or high-entropy."`
 	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty" jsonschema:"Shannon entropy threshold H in nats on choice slots to trigger taxonomy expansion proposals (default 0.35)."`
+	Stage2Prior       string                 `json:"stage2_prior,omitempty" jsonschema:"Optional: how much of Stage 1's answer the Stage-2 Gemini cascade sees: 'soft' (default: only that a fast first stage leaned toward an answer and may be wrong), 'full' (answer, confidence and distribution) or 'none'."`
 	Layout            string                 `json:"layout,omitempty" jsonschema:"Optional prompt layout: 'document_first' (default on serving v0.2.0+: the input first, then the questions) or 'schema_first' (the questions as the system prompt). See docs/policies/prompt-layout.md."`
 }
 
@@ -1458,6 +1460,7 @@ type DecideCustomToolInput struct {
 	ExpectedAnswers   map[string]string    `json:"expected_answers,omitempty" jsonschema:"Optional map of slot_id -> expected value for 'on_miss' cascade mode."`
 	SuggestExpansions bool                 `json:"suggest_expansions,omitempty" jsonschema:"If true, dynamically injects an 'other_unclassified' catch-all option into choice slots (if absent) and proposes new {'name', 'description'} options when unclassified or high-entropy."`
 	ExpansionEntropy  float64              `json:"expansion_entropy,omitempty" jsonschema:"Shannon entropy threshold H in nats on choice slots to trigger taxonomy expansion proposals (default 0.35)."`
+	Stage2Prior       string               `json:"stage2_prior,omitempty" jsonschema:"Optional: how much of Stage 1's answer the Stage-2 Gemini cascade sees: 'soft' (default: only that a fast first stage leaned toward an answer and may be wrong), 'full' (answer, confidence and distribution) or 'none'."`
 	Layout            string               `json:"layout,omitempty" jsonschema:"Optional prompt layout: 'document_first' (default on serving v0.2.0+: the input first, then the questions) or 'schema_first' (the questions as the system prompt). See docs/policies/prompt-layout.md."`
 }
 
@@ -1559,6 +1562,9 @@ func buildMCPServer() *mcp.Server {
 		if schemaContent, err = ApplyPromptLayout(schemaContent, input.Layout); err != nil {
 			return nil, GatewayDecideResponse{}, err
 		}
+		if _, err := NormalizeStage2Prior(input.Stage2Prior); err != nil {
+			return nil, GatewayDecideResponse{}, err
+		}
 		var injectedSlots map[string]bool
 		var existingOptions map[string][]client.ProposedOption
 		if input.SuggestExpansions {
@@ -1590,7 +1596,7 @@ func buildMCPServer() *mcp.Server {
 		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
 			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
 			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
-				ctx,
+				WithStage2Prior(ctx, input.Stage2Prior),
 				input.CascadeMode,
 				input.CascadeThreshold,
 				input.CascadeModel,
@@ -1753,6 +1759,9 @@ func buildMCPServer() *mcp.Server {
 		if lerr != nil {
 			return nil, GatewayDecideResponse{}, lerr
 		}
+		if _, perr := NormalizeStage2Prior(input.Stage2Prior); perr != nil {
+			return nil, GatewayDecideResponse{}, perr
+		}
 		var injectedSlots map[string]bool
 		var existingOptions map[string][]client.ProposedOption
 		if input.SuggestExpansions {
@@ -1784,7 +1793,7 @@ func buildMCPServer() *mcp.Server {
 		if input.CascadeMode != "" && input.CascadeMode != "off" && input.CascadeMode != "none" {
 			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
 			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
-				ctx,
+				WithStage2Prior(ctx, input.Stage2Prior),
 				input.CascadeMode,
 				input.CascadeThreshold,
 				input.CascadeModel,
