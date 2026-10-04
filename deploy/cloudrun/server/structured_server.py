@@ -1348,6 +1348,11 @@ class Handler(BaseHTTPRequestHandler):
     # closed (503 "Model server early terminated the request (truncated headers)" at 16-32 concurrent
     # requests). Every response sets content-length, and every path reads the body or closes.
     protocol_version = "HTTP/1.1"
+    # dgem: close a keep-alive connection that stays idle this long (seconds; 0 = never, the behaviour before
+    # v0.3.1). Without it every idle or half-open connection kept a thread blocked in readline() forever, and over
+    # long sessions a single replica stopped serving requests, /health included (issue #96).
+    timeout = float(os.environ.get("HTTP_IDLE_TIMEOUT", "120")) or None
+
     def log_message(self, fmt, *args):
         pass
 
@@ -1665,6 +1670,15 @@ def serve_tls(host, port, cert_dir):
     return srv
 
 
+def _watchdog(period=60.0):
+    """dgem: log the thread count, decisions in flight and open connections every period (issue #96)."""
+    while True:
+        time.sleep(period)
+        inflight = MAX_INFLIGHT - getattr(_INFLIGHT, "_value", MAX_INFLIGHT) if _INFLIGHT is not None else -1
+        print(f"watchdog: threads={threading.active_count()} inflight={inflight} "
+              f"idle_timeout={Handler.timeout}", flush=True)
+
+
 def main():
     global ARGS, CANVAS_LEN, CANVAS_STEP
     p = argparse.ArgumentParser()
@@ -1709,6 +1723,7 @@ def main():
         f"(canvas {CANVAS_LEN})",
         flush=True,
     )
+    threading.Thread(target=_watchdog, daemon=True).start()
     _Server((ARGS.host, ARGS.port), Handler).serve_forever()
 
 
