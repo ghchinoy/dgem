@@ -5,7 +5,7 @@ description: "Pre-registered repeat of EXP-24 (dgem-guided Gemini boxes) and EXP
 
 # EXP-26: Guided Boxes and Image Questions on Domain Images
 
-**Status:** pre-registered 2026-10-04, before any scored run. Results are added below this section without editing it.
+**Status:** pre-registered 2026-10-04, before any scored run (commit in PR #95); results added 2026-10-04 below without editing the design or rule.
 **Issue:** #76. **Follows:** [EXP-22](exp-22-image-readouts.md), [EXP-24](exp-24-guided-cascade.md).
 
 ## Question
@@ -64,4 +64,81 @@ The outcome of each rule per domain goes into `docs/policies/images.md`.
 
 ## Results
 
-Pending.
+**Run:** [`benchmarks/runs/20261004-exp26-domains`](../../benchmarks/runs/20261004-exp26-domains/manifest.json)
+(dgem on production Vertex G4; Gemini on Vertex). **Reproduce:** `./scripts/run_exp26_domains.sh`, then
+`python3 scripts/exp26_decide.py benchmarks/runs/<run_id>` (writes `decision.json`).
+
+Errors:
+- 13 of 6,184 Gemini box calls failed and are excluded pairwise.
+- 24 of 1,546 dgem `bench-vision` requests failed at the network level and are excluded.
+
+### Pre-registered verdicts
+
+| Domain | R1 hint@low, 3.8 | R1 hint@low, 3.7 (= R4) | R2 skip | Categorical questions (R3) |
+| :--- | :---: | :---: | :---: | :--- |
+| `ui_mobile` | fail | fail | **pass** (22% saved, 0–1 / 100 positives lost) | present: **cascade**; grid cell: **cascade**; relation: not supported |
+| `ui_web` | fail | fail | fail (33% saved, 3–4 / 100 positives lost) | present: **supported**; grid cell, relation: not supported |
+| `documents` | fail | fail | fail (10% saved) | grid cell: **cascade**; present, relation: not supported |
+| `pcb` | fail | fail | fail (23% saved, 14–15 / 100 positives lost) | grid cell: **cascade**; present, relation: not supported |
+
+**R1, guided boxes: fails on all four domains with both models.** Each paired difference against 3.8 at default
+thinking:
+
+| Domain | Δ mIoU, hint@low 3.8 | Δ mIoU, hint@low 3.7 | Median latency, hint@low 3.8 / 3.7 / reference |
+| :--- | :---: | :---: | :---: |
+| ui_mobile | −0.041 [−0.088, +0.005] | −0.009 [−0.052, +0.033] | 2.1 / 3.1 / 3.7 s |
+| ui_web | +0.014 [−0.046, +0.072] | +0.015 [−0.039, +0.072] | 3.3 / 4.1 / 4.5 s |
+| documents | −0.028 [−0.066, +0.007] | −0.029 [−0.067, +0.005] | 2.2 / 2.3 / 3.7 s |
+| pcb | −0.048 [−0.100, −0.001] | −0.028 [−0.079, +0.022] | 3.9 / 3.7 / 6.4 s |
+
+Latency always improved. Every failure is on the accuracy bound: the lower bound is below −0.03. On `ui_web` the
+point estimate is positive, but the interval is too wide.
+
+**R3, categorical questions (dgem ×2):**
+
+| Domain | Aspect | dgem accuracy | Majority | Lift [95% CI] | Hesitation AUROC | Gemini 3.8 / 3.7 |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| ui_web | present | 0.900 | 0.526 | +0.374 [+0.292, +0.453] | 0.85 | 0.995 / 0.989 |
+| ui_mobile | present | 0.833 | 0.546 | +0.287 [+0.221, +0.350] | 0.78 | 0.951 / 0.956 |
+| ui_mobile | grid cell | 0.590 | 0.220 | +0.370 [+0.250, +0.485] | 0.72 | 0.900 / 0.910 |
+| documents | grid cell | 0.610 | 0.250 | +0.360 [+0.255, +0.460] | 0.79 | 0.910 / 0.900 |
+| pcb | grid cell | 0.365 | 0.180 | +0.185 [+0.065, +0.300] | 0.72 | 0.790 / 0.770 |
+| ui_web | grid cell | 0.480 | 0.200 | +0.280 [+0.155, +0.400] | 0.65 | 0.920 / 0.910 |
+| documents | present | 0.667 | 0.500 | +0.168 [+0.040, +0.287] | 0.62 | 0.825 / 0.805 |
+| pcb | present | 0.677 | 0.500 | +0.177 [+0.098, +0.260] | 0.64 | 0.845 / 0.790 |
+| documents | relation | 0.817 | 0.463 | +0.354 [+0.220, +0.500] | 0.55 | 0.878 / 0.854 |
+| ui_mobile | relation | 0.667 | 0.273 | +0.394 [+0.227, +0.561] | 0.60 | 0.636 / 0.667 |
+| ui_web | relation | 0.588 | 0.309 | +0.279 [+0.140, +0.412] | 0.65 | 0.971 / 0.912 |
+| pcb | relation | 0.621 | 0.439 | +0.182 [+0.061, +0.303] | 0.57 | 0.682 / 0.682 |
+
+- dgem beats the majority baseline on every question, but its hesitation identifies its own errors well enough
+  (AUROC ≥ 0.70) on only half of them.
+- **Latency:** median for the three questions, 0.56 s for dgem, 7.6 s for Gemini 3.8 and 4.8 s for Gemini 3.7.
+
+### Exploratory (not pre-registered)
+
+- **Thinking level matters, the dgem hint does not.** For the same model, "LOW thinking, no hint" vs "default
+  thinking" changes mIoU by −0.036 to +0.013 (only 3.8 on PCB is significant, −0.036 [−0.075, −0.006]). It cuts
+  median latency by 30–45%.
+- **The hint is −0.032 to +0.009** against LOW thinking without it (no interval excludes 0).
+- **Why the hint doesn't help here:** dgem's grid cell was right on only 36–61% of these positives (EXP-24 photos:
+  52%), and the hint helped only when the cell was right.
+- **3.7 vs 3.8:** box accuracy is equivalent. 3.7 is faster on the categorical questions (4.8 s vs 7.6 s p50).
+- **Skip on PCB:** dgem confidently answers "absent" for 14–15% of real defects. It does not recognise small
+  defects, so the skip is unsafe there.
+
+## Decision
+
+- **Guided boxes:** don't send dgem's grid-cell hint by default. Across EXP-24 and EXP-26 it is neutral on average.
+  The latency gain comes from Gemini's LOW thinking. For boxes, call Gemini at LOW thinking (3.7 or 3.8; same
+  accuracy) without a hint. The exception is PCB-like defect images, where 3.8 at default thinking is more accurate.
+- **Skip absent targets:** only on mobile-UI-like images. Do not use it on documents (it saves little) or on
+  defect/inspection images (it loses real defects).
+- **Categorical questions:** per the R3 table.
+  - "Is X on the screen?" is dgem-alone on web UI and cascade on mobile UI.
+  - Grid cell is cascade on mobile UI, documents and PCB.
+  - Relations are not supported on any of these domains.
+  - Presence is not supported on documents or PCB.
+- **Follow-ups:** the guided-locate defaults in #98 (hint on, skip at 0.16) should change to no hint by default, with
+  skipping off unless the caller opts in. This is noted on the PR. `docs/policies/images.md` now carries the
+  per-domain table.

@@ -76,6 +76,20 @@ Guidance:
   distribution are given as the candidate, and that can anchor Gemini. A softer hint is different: in
   [EXP-24](../experiments/exp-24-guided-cascade.md), "probably in the top-left; may be wrong" never hurt Gemini's boxes.
 
+## By domain (EXP-26)
+
+dgem was measured on mobile UI (RICO), web UI (ScreenSpot-v2), document pages (DocLayNet) and synthetic circuit boards,
+with presence, 3×3 grid cell and relation questions ([EXP-26](../experiments/exp-26-domain-images.md), rule fixed before scoring):
+
+| Domain | dgem alone | With a Gemini cascade | Not supported | Skip Gemini on "absent"? |
+| :--- | :--- | :--- | :--- | :--- |
+| Web UI | present (0.90) | — | grid cell, relation | no (loses 3–4% of targets) |
+| Mobile UI | — | present (0.83), grid cell (0.59) | relation | yes (22% of calls saved) |
+| Document pages | — | grid cell (0.61) | present, relation | no (saves only 10%) |
+| Circuit-board defects | — | grid cell (0.37) | present, relation | no (misses 15% of defects) |
+
+Gemini 3.7 Flash matched 3.8 on these questions and boxes at lower latency (4.8 s vs 7.6 s median for three questions).
+
 ## Boxes, masks and screenshots: use something else
 
 | Need | Use | Measured (EXP-22) |
@@ -83,7 +97,7 @@ Guidance:
 | Box for an object described in a photo | Grounding DINO (open source, ~0.65 s on one L4) or Gemini 3.x | centre hit 89–90% on RefCOCO |
 | Box for a UI element from an instruction ("raise the temperature") | Gemini 3.x | centre hit 93% on ScreenSpot; open detectors 5–8% |
 | Grade or label boxes without ground truth | Gemini 3.x as a judge (`dgem bench-bbox-judge`) | catches 99–100% of edges more than 5 points off |
-| Faster Gemini boxes | dgem first; skip Gemini if dgem confidently says absent; else Gemini at LOW thinking with dgem's grid cell as a hint | same accuracy as Gemini alone (mIoU 0.654 vs 0.639), 2.1 s vs 3.9 s p50, 35% fewer calls when half the targets are absent ([EXP-24](../experiments/exp-24-guided-cascade.md)) |
+| Faster Gemini boxes | Gemini 3.x (3.7 or 3.8) at LOW thinking, without a dgem hint; skip Gemini when dgem confidently says absent only on photos and mobile UI | LOW thinking cuts median latency 30–45% at the same accuracy (except defect images); dgem's grid-cell hint helped on photos (EXP-24) but not on UI, documents or PCB ([EXP-26](../experiments/exp-26-domain-images.md)) |
 | Masks | SAM prompted with the Gemini (or Grounding DINO) box | mask IoU 0.73 (0.69 with Grounding DINO) vs 0.64 for Gemini's own polygon outline |
 
 ## Validate on your images

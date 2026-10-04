@@ -50,6 +50,7 @@ version recorded in its manifest unless `--matrix` is given.
 | `20261003-vision-gate-ref` | Regression matrix T1 `health` + `vision_spot` + `vision` on production v0.2.0: the first image-gate run (part of the vision reference ranges). |
 | `20261003-compare-strands-v19` | **EXP-23** model comparison: dgem (Vertex G4, v0.2.0) vs Strands Decider 2B v19 (Cloud Run, RTX PRO 6000) in matrix v2 format (tier TC suites plus frozen sets, option order, latency, post-hoc `gate_diag_*`), exported from the study harness. Write-up: [`exp-23-strands-decider.md`](../../docs/experiments/exp-23-strands-decider.md). |
 | `20261003-exp24-guided` | EXP-24: dgem-guided Gemini 3.8 boxes (full/hint/crop × thinking) and masks (Gemini polygons; SAM from Gemini/Grounding DINO/ground-truth boxes on a deleted-after-use VM). |
+| `20261004-exp26-domains` | EXP-26 (#76): guided boxes (Gemini 3.8 and 3.7) and `bench-vision` on mobile UI, web UI, DocLayNet pages and synthetic PCBs; `decision.json` holds the pre-registered rule outcomes. `vision__vertex_g4_x2.json` (2.8 MB) is in the matrix bucket (`receipts.lock.json`). |
 
 Write-up: [`docs/experiments/exp-14-idc-rerun.md`](../../docs/experiments/exp-14-idc-rerun.md).
 
