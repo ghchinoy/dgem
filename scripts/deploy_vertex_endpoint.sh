@@ -111,6 +111,7 @@ UPLOAD_PAYLOAD=$(cat <<EOF
         { "name": "KV_CACHE_GB", "value": "${KV_CACHE_GB}" },
         { "name": "MAX_SEQS", "value": "${MAX_SEQS}" },
         { "name": "MAX_MODEL_LEN", "value": "${MAX_MODEL_LEN}" },
+        { "name": "HTTP_IDLE_TIMEOUT", "value": "${HTTP_IDLE_TIMEOUT:-120}" },
         { "name": "DEFAULT_SAMPLES", "value": "${DEFAULT_SAMPLES}" },
         { "name": "MAX_INFLIGHT", "value": "${MAX_INFLIGHT}" }
       ]
