@@ -468,6 +468,41 @@ func deriveAvailableBackends(vxURL, crURL, locURL string, locMode bool) []string
 	return backends
 }
 
+// vertexEndpointResource is the part of a Vertex AI endpoint resource (endpoints.get) the gateway reads.
+type vertexEndpointResource struct {
+	DisplayName    string                   `json:"displayName"`
+	TrafficSplit   map[string]int           `json:"trafficSplit"`
+	DeployedModels []vertexDeployedModelRes `json:"deployedModels"`
+}
+
+type vertexDeployedModelRes struct {
+	ID                 string `json:"id"`
+	DisplayName        string `json:"displayName"`
+	DedicatedResources struct {
+		MachineSpec struct {
+			MachineType     string `json:"machineType"`
+			AcceleratorType string `json:"acceleratorType"`
+		} `json:"machineSpec"`
+	} `json:"dedicatedResources"`
+	Status struct {
+		AvailableReplicaCount int `json:"availableReplicaCount"`
+	} `json:"status"`
+}
+
+// servingDeployedModel returns the deployed model that receives the most traffic. During a blue/green deploy an
+// endpoint holds several models (the new one often at 0%), and the order of deployedModels is not the traffic
+// order, so the endpoint's state must be judged by the model that serves requests. Falls back to the first model
+// when no traffic split is reported. Callers check len(DeployedModels) > 0.
+func (e vertexEndpointResource) servingDeployedModel() vertexDeployedModelRes {
+	best, bestPct := 0, -1
+	for i, dm := range e.DeployedModels {
+		if pct, ok := e.TrafficSplit[dm.ID]; ok && pct > bestPct {
+			best, bestPct = i, pct
+		}
+	}
+	return e.DeployedModels[best]
+}
+
 func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertexEndpointLiveStatus {
 	epID := extractEndpointIDFromURL(rawVertexURL)
 	if epID == "" {
@@ -539,26 +574,11 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 		if resp, err := http.DefaultClient.Do(req); err == nil {
 			defer resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				var epData struct {
-					DisplayName    string `json:"displayName"`
-					DeployedModels []struct {
-						ID                 string `json:"id"`
-						DisplayName        string `json:"displayName"`
-						DedicatedResources struct {
-							MachineSpec struct {
-								MachineType     string `json:"machineType"`
-								AcceleratorType string `json:"acceleratorType"`
-							} `json:"machineSpec"`
-						} `json:"dedicatedResources"`
-						Status struct {
-							AvailableReplicaCount int `json:"availableReplicaCount"`
-						} `json:"status"`
-					} `json:"deployedModels"`
-				}
+				var epData vertexEndpointResource
 				if json.NewDecoder(resp.Body).Decode(&epData) == nil {
 					st.DisplayName = epData.DisplayName
 					if len(epData.DeployedModels) > 0 {
-						dm := epData.DeployedModels[0]
+						dm := epData.servingDeployedModel()
 						st.DeployedModel = dm.ID
 						ms := dm.DedicatedResources.MachineSpec
 						if ms.MachineType != "" {
