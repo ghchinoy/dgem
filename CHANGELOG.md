@@ -9,6 +9,17 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.3 (2026-10-07)
+
+Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only
+`deploy/cloudrun` changes since v0.3.2 are licence-header comments (#109).
+
+- **Gateway: Vertex status follows the serving model (#111).** The gateway judged the Vertex endpoint by
+  `deployedModels[0]`; during a blue/green deploy with a new model listed first at 0% traffic and no replicas,
+  `vertex_first` requests failed over to Cloud Run. It now uses the deployed model with the largest traffic share.
+- **`bench-jev --sync` honours the pin (#112).** Without `--ref` it downloads the release pinned in
+  `benchmarks/jevbench/manifest.lock.json` and verifies the dataset hash; `--ref <tag>` moves the pin.
+
 ## v0.3.2 (2026-10-05)
 
 Gateway, MCP, CLI and Studio release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`).
