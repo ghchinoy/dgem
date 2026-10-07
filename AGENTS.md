@@ -100,6 +100,10 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
   - When multiple agents concurrently modify overlapping packages (`cmd/*.go`, `studio/src/*.ts`), isolate edits and builds in a dedicated git worktree (`git worktree add ../dgem-<feature> -b <branch>`) and `git cherry-pick` onto `main` after the peer agent completes.
 
 ## 3. Benchmark Harnesses
+- **Experiments moved to `decision-lab` (2026-10-07).** Experiments, run receipts (`benchmarks/runs/`), matrix
+  definitions with reference ranges, comparisons, the DI harness and scheduled matrix jobs now live in the private repo
+  `ghchinoy/decision-lab` (`/workspace/decision-lab`), which pins this repo as the `dgem/` submodule. Experiment agents
+  start there. The copies below remain here until the public cutover; do not add new runs or EXP pages in this repo.
 - **Multi-Agent Benchmark Coordination (owner: the experiments agent)**:
   - **Matrix versions:** `benchmarks/matrix/matrix_v2.json` is the current regression matrix; `matrix_v1.json` is frozen (2026-10-03) and kept only to reproduce old runs. Changing what is in a tier (adding, removing or moving a suite) means a **new matrix version**, never an edit to an existing file. Reference ranges and thresholds may be updated in place, with the reference runs named in `reference.note`. Mark per-item suites with `"accuracy": true` in the matrix file; never hard-code suite lists in `scripts/matrix/report.py`.
   - **New suites in T0** (daily, alerts on FAIL) need a reference range from at least 5 runs or a ±2 SE range; until then they go in T1/T2 only.
