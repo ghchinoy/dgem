@@ -116,7 +116,7 @@ func init() {
 	benchJevCmd.Flags().StringVar(&jevLockPath, "lockfile", "benchmarks/jevbench/manifest.lock.json", "Path to local JevBench manifest lockfile")
 	benchJevCmd.Flags().BoolVar(&jevSync, "sync", false, "Download, SHA-256 verify, and sync JevBench public splits & upstream reference into benchmarks/jevbench/")
 	benchJevCmd.Flags().BoolVar(&jevCheckUpstream, "check-upstream", false, "Check if local benchmarks/jevbench/manifest.lock.json matches upstream fstandhartinger/jevbench")
-	benchJevCmd.Flags().StringVar(&jevGitRef, "ref", "main", "Git branch or tag on fstandhartinger/jevbench to sync/check against")
+	benchJevCmd.Flags().StringVar(&jevGitRef, "ref", "", "Git branch or tag on fstandhartinger/jevbench to sync/check against (default: the git_ref pinned in the lock file; pass a ref to move the pin)")
 	benchJevCmd.Flags().StringVar(&jevFromReceipt, "from-receipt", "", "Recompute JevBench v1.3.1 4-Axis parity and family/topic breakdowns from a saved JSON receipt")
 	benchJevCmd.Flags().StringVar(&jevCascadeFrom, "cascade-from", "", "Path to Stage-1 JevBench JSON receipt to run Phase 2B Entropy-Gated Escalation Cascade")
 	benchJevCmd.Flags().Float64Var(&jevCascadeThreshold, "cascade-threshold", 0.62, "Normalized entropy threshold H/ln(|V|) (or raw H nats) to trigger Stage-2 escalation")
@@ -429,6 +429,21 @@ func runBenchJev(cmd *cobra.Command, args []string) error {
 // syncJevBenchUpstream downloads and cryptographically verifies JevBench's public datasets, topics,
 // and upstream djev reference telemetry into benchmarks/jevbench/.
 func syncJevBenchUpstream(datasetOut, lockOut, gitRef string) error {
+	// Without --ref, download the release pinned in the lock file and refuse data that does not match it.
+	var pinned *JevManifestLock
+	if raw, err := os.ReadFile(lockOut); err == nil {
+		var l JevManifestLock
+		if json.Unmarshal(raw, &l) == nil && l.GitRef != "" {
+			pinned = &l
+		}
+	}
+	movePin := gitRef != ""
+	if !movePin {
+		gitRef = "main"
+		if pinned != nil {
+			gitRef = pinned.GitRef
+		}
+	}
 	baseRaw := fmt.Sprintf("https://raw.githubusercontent.com/fstandhartinger/jevbench/%s", gitRef)
 	httpClient := &http.Client{Timeout: 60 * time.Second}
 
@@ -567,6 +582,21 @@ func syncJevBenchUpstream(datasetOut, lockOut, gitRef string) error {
 	unifiedSum := sha256.Sum256(unifiedBytes)
 	unifiedSHA := hex.EncodeToString(unifiedSum[:])
 
+	if !movePin && pinned != nil && pinned.UnifiedSHA256 != "" {
+		if unifiedSHA != pinned.UnifiedSHA256 {
+			return fmt.Errorf("JevBench %s does not match %s (sha256 %s, pinned %s); pass --ref <tag> to move the pin deliberately",
+				gitRef, lockOut, truncateStr(unifiedSHA, 14), truncateStr(pinned.UnifiedSHA256, 14))
+		}
+		if err := os.WriteFile(datasetOut, unifiedBytes, 0644); err != nil {
+			return err
+		}
+		if !jevJSON {
+			fmt.Printf("  Synced %d JevBench public items (%s) to %s, verified against %s\n\n", len(allTasks), gitRef,
+				styleID.Render(datasetOut), styleID.Render(lockOut))
+		}
+		return nil // the lock file and the reference receipt are left unchanged
+	}
+
 	if err := os.WriteFile(datasetOut, unifiedBytes, 0644); err != nil {
 		return err
 	}
@@ -619,6 +649,9 @@ func checkJevBenchUpstream(lockPath, gitRef string) error {
 	var lock JevManifestLock
 	if err := json.Unmarshal(rawLock, &lock); err != nil {
 		return err
+	}
+	if gitRef == "" { // compare upstream main with the pin to see whether a newer release exists
+		gitRef = "main"
 	}
 
 	baseRaw := fmt.Sprintf("https://raw.githubusercontent.com/fstandhartinger/jevbench/%s", gitRef)
