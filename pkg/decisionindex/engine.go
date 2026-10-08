@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -87,6 +88,26 @@ type SystemOneRequest struct {
 	Model     string                       `json:"model,omitempty"`
 	State     any                          `json:"state"`
 	Questions map[string]SystemOneQuestion `json:"questions"`
+	// Images are data: URIs or http(s) URLs shown to the model ahead of the state, the same "images" field the
+	// serving image's /v1/systemone accepts. Every sub-request (batches and bracket rounds) carries them.
+	Images []string `json:"images,omitempty"`
+}
+
+// ErrInvalidImage marks an image reference the adapter refuses. Local file paths are rejected because the adapter
+// runs as a network server: a path would read the adapter host's own filesystem.
+var ErrInvalidImage = errors.New("invalid image")
+
+// ValidateImages checks that every image is a data: URI or an http(s) URL (empty entries are skipped, as
+// client.BuildMultimodalContent does).
+func ValidateImages(images []string) error {
+	for i, img := range images {
+		img = strings.TrimSpace(img)
+		if img == "" || strings.HasPrefix(img, "data:") || strings.HasPrefix(img, "https://") || strings.HasPrefix(img, "http://") {
+			continue
+		}
+		return fmt.Errorf("%w: images[%d] must be a data: URI or an http(s) URL", ErrInvalidImage, i)
+	}
+	return nil
 }
 
 // SystemOneAnswer matches the per-question answer validated by decision_index.engines.base:validate().
@@ -108,13 +129,13 @@ type SystemOneResponse struct {
 
 // EvaluationTrace records dgem's multi-slot batching and wide-option bracket telemetry.
 type EvaluationTrace struct {
-	TotalQuestions    int     `json:"total_questions"`
-	MaxOptionsSeen    int     `json:"max_options_seen"`
-	ForwardPasses     int     `json:"forward_passes"`
-	WideBracketedQs   int     `json:"wide_bracketed_questions"`
-	MultiSlotBatches  int     `json:"multi_slot_batches"`
-	WallTimeMs        float64 `json:"wall_time_ms"`
-	TemperatureScale  float64 `json:"temperature_scale,omitempty"`
+	TotalQuestions   int     `json:"total_questions"`
+	MaxOptionsSeen   int     `json:"max_options_seen"`
+	ForwardPasses    int     `json:"forward_passes"`
+	WideBracketedQs  int     `json:"wide_bracketed_questions"`
+	MultiSlotBatches int     `json:"multi_slot_batches"`
+	WallTimeMs       float64 `json:"wall_time_ms"`
+	TemperatureScale float64 `json:"temperature_scale,omitempty"`
 }
 
 // EngineOptions configures the Decision Index execution adapter.
@@ -233,6 +254,9 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 		}
 	}
 
+	if err := ValidateImages(req.Images); err != nil {
+		return nil, err
+	}
 	stateText := FormatState(req.State)
 	answers := make(map[string]SystemOneAnswer, len(qKeys))
 	var mu sync.Mutex
@@ -261,7 +285,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 		batchKeys := standardKeys[i:end]
 		multiBatches++
 
-		batchAns, passes, err := evaluateStandardBatch(ctx, cli, stateText, batchKeys, req.Questions, opts)
+		batchAns, passes, err := evaluateStandardBatch(ctx, cli, stateText, req.Images, batchKeys, req.Questions, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -277,7 +301,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	for _, k := range wideKeys {
 		wideQs++
 		q := req.Questions[k]
-		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll, opts.PromptLayout)
+		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, req.Images, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll, opts.PromptLayout)
 		if err != nil {
 			return nil, err
 		}
@@ -306,6 +330,7 @@ func evaluateStandardBatch(
 	ctx context.Context,
 	cli *client.Client,
 	stateText string,
+	images []string,
 	batchKeys []string,
 	allQuestions map[string]SystemOneQuestion,
 	opts EngineOptions,
@@ -372,7 +397,7 @@ func evaluateStandardBatch(
 		stateText = "Evaluate the decision questions based on the provided option criteria."
 	}
 
-	resp, _, err := cli.Decide(ctx, schemaJSON, stateText)
+	resp, _, err := cli.Decide(ctx, schemaJSON, stateText, images...)
 	if err != nil {
 		return nil, 1, err
 	}
@@ -485,6 +510,7 @@ func evaluateWideQuestionTournament(
 	ctx context.Context,
 	cli *client.Client,
 	stateText string,
+	images []string,
 	qKey string,
 	qSpec SystemOneQuestion,
 	tempScale float64,
@@ -519,7 +545,7 @@ func evaluateWideQuestionTournament(
 		}
 	}
 	if numOpts <= MaxOptionsPerSlot {
-		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale, PromptLayout: layout})
+		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale, PromptLayout: layout})
 		if err != nil {
 			return SystemOneAnswer{}, passes, err
 		}
@@ -561,7 +587,7 @@ func evaluateWideQuestionTournament(
 			end = len(round1Keys)
 		}
 		subKeys := round1Keys[i:end]
-		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
+		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, images, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
 		if err != nil {
 			return SystemOneAnswer{}, passesUsed + p, err
 		}
@@ -627,7 +653,7 @@ func evaluateWideQuestionTournament(
 		},
 	}
 
-	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
+	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
 	if err != nil {
 		return SystemOneAnswer{}, passesUsed + p, err
 	}
@@ -645,7 +671,7 @@ func evaluateWideQuestionTournament(
 		for _, k := range catchAll {
 			vCrit[k] = qSpec.Criteria[k]
 		}
-		vBatch, p2, err := evaluateStandardBatch(ctx, cli, stateText, []string{qKey},
+		vBatch, p2, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey},
 			map[string]SystemOneQuestion{qKey: {Type: "choice", Instructions: FormatInstructions(qSpec.Instructions), Criteria: vCrit}},
 			EngineOptions{TemperatureScale: 1.0, PromptLayout: layout})
 		if err != nil {
@@ -763,6 +789,10 @@ func NewSystemOneHTTPHandler(cli *client.Client, opts EngineOptions) http.Handle
 		}
 		resp, err := ExecuteSystemOne(r.Context(), cli, req, opts)
 		if err != nil {
+			if errors.Is(err, ErrInvalidImage) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			errStr := err.Error()
 			if strings.Contains(errStr, "HTTP 422") ||
 				strings.Contains(errStr, "options per choice") ||

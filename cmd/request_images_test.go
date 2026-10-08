@@ -39,3 +39,22 @@ func TestCheckRequestImages(t *testing.T) {
 		t.Fatalf("server must allow data URIs: %v", err)
 	}
 }
+
+func TestCheckSystemOneImages(t *testing.T) {
+	ctx := context.Background()
+	defer func() { allowLocalImagePaths = true }()
+	allowLocalImagePaths = false
+	if err := checkSystemOneImages(ctx, []string{"data:image/png;base64,AA==", ""}); err != nil {
+		t.Fatalf("data URIs must pass: %v", err)
+	}
+	for _, bad := range []string{"/etc/passwd", "http://169.254.169.254/computeMetadata/v1/", "http://localhost/a.png"} {
+		if err := checkSystemOneImages(ctx, []string{bad}); err == nil {
+			t.Fatalf("gateway must reject %q", bad)
+		}
+	}
+	// The adapter never reads local paths, even where the CLI would allow them.
+	allowLocalImagePaths = true
+	if err := checkSystemOneImages(ctx, []string{"fixtures/x.png"}); err == nil {
+		t.Fatal("systemone images must not be local paths")
+	}
+}
