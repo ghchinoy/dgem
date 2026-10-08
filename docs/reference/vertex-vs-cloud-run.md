@@ -17,12 +17,13 @@ differ, and historical head-to-head receipts. For the current recommendation and
 
 ## 1. Why We Use Vertex AI Arbitrary Custom Routes (`invokeRoutePrefix: "/*"`)
 
-Standard Vertex AI Online Prediction (`:predict` and `:rawPredict`) binds a container deployment to a **single fixed HTTP path** (`AIP_PREDICT_ROUTE`). However, the `dgemma` container (`structured_server.py` on port `8080` fronting `vLLM EngineCore` on port `8000`) exposes **four distinct HTTP routes**:
+Standard Vertex AI Online Prediction (`:predict` and `:rawPredict`) binds a container deployment to a **single fixed HTTP path** (`AIP_PREDICT_ROUTE`). However, the `dgemma` container (`structured_server.py` on port `8080` fronting `vLLM EngineCore` on port `8000`) exposes **three HTTP routes**, all for decisions or readiness:
 
 - `POST /v1/chat/completions` — Structured 128-token diffusion decision envelope (`answers` + `diagnostics`).
-- `POST /v1/raw/chat/completions` — Direct pass-through to `vLLM`'s raw `/v1/chat/completions`.
 - `POST /v1/systemone` — Multipart image + JSON decision route (`JevBench` / `SystemOne`).
 - `GET /health` — Live container warmup phase, staged GiB telemetry, and `vllm_ready` flag.
+
+Free-form generation (`/v1/raw/chat/completions` in vLLM's upstream example) is not served: serving images released after v0.3.3 answer it with `410 Gone`.
 
 By uploading the model with **[`invokeRoutePrefix: "/*"`](https://docs.cloud.google.com/gemini-enterprise-agent-platform/machine-learning/predictions/use-arbitrary-custom-routes)** and deploying it to a **Vertex AI Dedicated Endpoint** (`dedicatedEndpointEnabled: true`), Vertex AI forwards any non-root path under `/invoke/<path>` **verbatim** as `/<path>` to `structured_server.py`:
 
@@ -38,14 +39,12 @@ flowchart LR
 
   subgraph Container["dgemma Container (port 8080 -> vLLM 8000)"]
     R1["POST /v1/chat/completions\n(Structured Decision Envelope)"]
-    R2["POST /v1/raw/chat/completions\n(Raw vLLM Pass-Through)"]
     R3["POST /v1/systemone\n(SystemOne / JevBench)"]
     R4["GET /health\n(Warmup & vLLM Readiness)"]
   end
 
   GW -->|"Bearer <OAuth2 cloud-platform>"| INV
   INV -->|"/invoke/v1/chat/completions"| R1
-  INV -->|"/invoke/v1/raw/chat/completions"| R2
   INV -->|"/invoke/v1/systemone"| R3
   INV -->|"/invoke/health"| R4
 ```

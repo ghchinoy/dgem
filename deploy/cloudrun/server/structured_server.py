@@ -25,8 +25,8 @@ POST /v1/chat/completions makes the same decision from an OpenAI-shaped
 call. The system message is the schema JSON below and the user message is
 the state. The reply's `content` is the JSON answer set.
 
-POST /v1/raw/chat/completions passes the body to vLLM's chat completions
-unchanged, for plain generation through this port.
+dgem: POST /v1/raw/chat/completions (plain generation passed to vLLM) is
+not served and answers 410: this server returns decisions.
 
 With API_KEY set in the environment, every POST needs "Authorization:
 Bearer <key>". --tls-port adds an HTTPS listener with a self-signed
@@ -1418,8 +1418,20 @@ class Handler(BaseHTTPRequestHandler):
                     }
                 },
             )
+        # dgem: no free-form generation through this port; decisions only.
         if self.path == "/v1/raw/chat/completions":
-            return self._raw_chat()
+            # read the body so a keep-alive connection stays in step
+            self.rfile.read(int(self.headers.get("content-length", "0")))
+            return self._json(
+                410,
+                {
+                    "error": {
+                        "message": "free-form generation is not served: use "
+                        "/v1/systemone or /v1/chat/completions (decisions)",
+                        "type": "route_removed",
+                    }
+                },
+            )
         try:
             req, images = self._read_request()
         except Exception as e:
@@ -1438,27 +1450,6 @@ class Handler(BaseHTTPRequestHandler):
         if self.path in ("/v1/chat/completions", "/predict", "/rawPredict"):
             return self._chat(req)
         return self._json(404, {"error": {"message": "unknown route"}})
-
-    def _raw_chat(self):
-        """Pass the body and status through to vLLM's chat completions."""
-        raw = self.rfile.read(int(self.headers.get("content-length", "0")))
-        req = urllib.request.Request(
-            ARGS.upstream.rstrip("/") + "/v1/chat/completions",
-            data=raw,
-            headers={
-                "content-type": self.headers.get("content-type", "application/json")
-            },
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=600) as r:
-                code, body = r.status, r.read()
-        except urllib.error.HTTPError as e:
-            code, body = e.code, e.read()
-        self.send_response(code)
-        self.send_header("content-type", "application/json")
-        self.send_header("content-length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
 
     def _decide(self, schema, state, seed):
         """-> (status, body) with the error body already shaped."""

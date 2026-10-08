@@ -9,6 +9,11 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Serving image: no free-form generation.** `structured_server.py` answers `/v1/raw/chat/completions` (vLLM's
+  plain-generation pass-through, unused by dgem) with `410 Gone`, on Vertex `/invoke/*` and Cloud Run. Decision routes
+  (`/v1/systemone`, `/v1/chat/completions`, `/predict`, `/rawPredict`) and `/health` are unchanged. Needs a
+  serving-image release (T1 canary next to production).
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only
