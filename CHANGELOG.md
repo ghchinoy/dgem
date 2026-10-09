@@ -9,6 +9,17 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **One entropy basis for answers (#121).** `pkg/client` now fills each answer's `entropy` from its label
+  probabilities when the server doesn't send one (the vLLM server never did). Before, the Stage-2 cascade gate fell
+  back to `diagnostics.questions.<id>.entropy`, which the server computes over the top-20 tokens at the slot (it can
+  include other questions' labels and leave out labels outside the top 20), while the 0.35-nat threshold and the
+  Hesitation bands were fitted on probability entropy. The Studio result panel read `answer.entropy` and showed 0%
+  hesitation when it was missing. **Behaviour change:** cascade escalation and Hesitation % now use label entropy on
+  every backend.
+- **Serving (next image; needs a canary and T1 before promotion):** `structured_server.py` adds a per-read
+  `label_entropy` diagnostic next to `entropy` (#121; `entropy` and the `samples: "auto"` trigger are unchanged), and
+  refuses a read that needs more than 128 label tokens with a 422 instead of truncating `logprob_token_ids` (#122).
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only

@@ -511,9 +511,19 @@ def build_canvas(template, slots, seed):
     return canvas
 
 
+LOGPROB_TOKEN_IDS_MAX = 128  # dgem: vLLM's cap on logprob_token_ids per request
+
+
 def label_id_union(slots):
     ids = sorted({i for s in slots for i in s["label_ids"]})
-    return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
+    # dgem: refuse rather than truncate (#122). A label past the cap would get the floor logprob and could never win.
+    # Today's labels (A-Z, yes/no, 1-9) stay far below it; a wider label set would not.
+    if len(ids) > LOGPROB_TOKEN_IDS_MAX:
+        raise SchemaError(
+            f"one read needs {len(ids)} distinct label tokens; vLLM returns at most "
+            f"{LOGPROB_TOKEN_IDS_MAX} (logprob_token_ids)"
+        )
+    return ids
 
 
 def _wait_for_upstream(max_wait=180):
@@ -705,6 +715,9 @@ def slot_distribution(top, label_ids):
     top_p = [math.exp(v) for v in top.values()]
     return {
         "probs": probs,
+        # dgem: entropy of probs, the label distribution this slot answers with (#121). "entropy" below is over the
+        # returned top-k tokens, which can include other slots' labels and miss labels outside the top k.
+        "label_entropy": -sum(p * math.log(p) for p in probs if p > 0),
         "label_mass": sum(math.exp(x) for x in lp_t),
         "entropy": -sum(p * math.log(p) for p in top_p if p > 0),
         "argmax_is_label": max(top, key=top.get) in label_ids,
@@ -1137,6 +1150,7 @@ def decide_group(schema, sys_text, state_content, seed, prefix=None, lead=""):
         diag_q[q["id"]] = {
             "pos": slots[qi]["pos"],
             "entropy": [r[qi]["entropy"] for r in reads],
+            "label_entropy": [r[qi]["label_entropy"] for r in reads],
             "label_mass": reads[0][qi]["label_mass"],
             "argmax_is_label": reads[0][qi]["argmax_is_label"],
         }
