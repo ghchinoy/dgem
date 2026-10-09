@@ -9,6 +9,11 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Templates keep dict-form order (#118).** Questions and options written as JSON objects (`"questions": {"id": …}`,
+  `"options": {"name": "description"}`, `criteria`) were turned into lists by ranging over a Go map, so their order
+  (and the letters A, B, C… the server assigns) changed between calls. They now keep the order they were written in.
+  Requests from list-form templates are unchanged.
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only
