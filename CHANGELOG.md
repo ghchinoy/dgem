@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Opt-in normalized cascade gate (#123).** `cascade_threshold_mode: "nats" | "normalized"` on `POST /api/decide`
+  (or `X-DGem-Cascade-Threshold-Mode`), MCP `decide_policy` / `decide_custom_questions`, and the Studio Batch Eval
+  ("Escalation gate"). `normalized` compares H / ln K, the Hesitation scale, so wide slots no longer escalate more
+  readily than yes/no ones at the same setting; its default threshold is 0.16 (EXP-05b). The default stays `nats`
+  (0.35). Cascade telemetry adds `threshold_mode` and each slot's `stage1_normalized_entropy`; the
+  `dgem.cascade.gemini` span records the mode and threshold. (`dgem decide` has no cascade, so there is no CLI flag.)
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only
