@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Serving image: vision on by default (#124).** `entrypoint.sh` defaulted `DISABLE_MM=1`, so `docker run` of the
+  public images without `-e DISABLE_MM=0` served text only, although the docs list `0` as the default. It now defaults
+  to `0`; L4 hosts with 32 GiB RAM still set `DISABLE_MM=1`. Deploy scripts already set it explicitly, so Vertex and
+  Cloud Run deployments are unchanged. Also removed the unreachable second `/health` branch in `structured_server.py`
+  and the `deploy_cloudrun_vllm.sh` boot-time rewrite that targeted it (the `dgem.patch` health handler already merges
+  `warmup_state.json`).
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only

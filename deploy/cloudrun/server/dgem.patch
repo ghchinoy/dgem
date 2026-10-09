@@ -343,7 +343,7 @@
      if q["type"] == "choice":
          return {
              "type": "choice",
-@@ -1201,19 +1334,43 @@
+@@ -1201,21 +1334,43 @@
      return c if isinstance(c, str) else ""
  
  
@@ -383,12 +383,14 @@
          self.wfile.write(body)
  
      def do_GET(self):
+-        if self.path == "/health":
+-            return self._json(200, {"status": "ok"})
 +        if self.path in ("/health", "/invoke/health", "/"):
 +            return self._json(200, _health_info())
-         if self.path == "/health":
-             return self._json(200, {"status": "ok"})
          return self._json(404, {"error": {"message": "unknown route"}})
-@@ -1251,6 +1408,7 @@
+ 
+     def _read_request(self):
+@@ -1251,6 +1406,7 @@
  
      def do_POST(self):
          if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
@@ -396,7 +398,7 @@
              return self._json(
                  401,
                  {
-@@ -1276,7 +1434,8 @@
+@@ -1276,7 +1432,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -406,7 +408,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1462,8 @@
+@@ -1303,6 +1460,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -415,7 +417,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1479,12 @@
+@@ -1318,6 +1477,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -428,7 +430,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1362,6 +1529,7 @@
+@@ -1362,6 +1527,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -436,7 +438,7 @@
          )
  
      def _chat(self, req):
-@@ -1451,9 +1619,18 @@
+@@ -1451,9 +1617,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -455,7 +457,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,12 +1664,21 @@
+@@ -1487,12 +1662,21 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -478,7 +480,7 @@
  def main():
      global ARGS, CANVAS_LEN, CANVAS_STEP
      p = argparse.ArgumentParser()
-@@ -1537,7 +1723,8 @@
+@@ -1537,7 +1721,8 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
