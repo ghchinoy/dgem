@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`dgem systemone serve` answers 422, not 500, when the server refuses a sub-request (#120).** Server schema errors
+  (HTTP 400/422, e.g. a score question with more than 26 levels) are now passed on as 422, with the Decision Index
+  kit's `at most 26 options per choice` marker when the limit is the alternatives count.
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only
