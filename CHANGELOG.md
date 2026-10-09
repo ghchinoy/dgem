@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`bench-intents` full CLINC150 no longer fails the bracket final (#119).** With 151 options, round 1 kept 8 × 5 = 40
+  intents, more than one question holds (26), so every final was rejected. Kept intents above 26 now go through
+  another bracket round.
+
 ## v0.3.3 (2026-10-07)
 
 Gateway and CLI fix release. **Serving images are unchanged**: still v0.3.1 (`dgem@sha256:dfee359f…`); the only
