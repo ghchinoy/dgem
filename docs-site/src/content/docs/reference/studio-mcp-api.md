@@ -214,7 +214,8 @@ Tools appear in opencode as `dgem-local_decide_custom_questions` and so on. Rest
 | Field | Meaning |
 | :--- | :--- |
 | `answers.<slot>` | The chosen value (`label`, plus `choice` or `score`), its `confidence`, the `probabilities` of every allowed answer, and `agreement` / `stderr` across samples. |
-| `diagnostics.questions.<slot>.entropy` | Shannon entropy of that slot in nats. Convert it to **Hesitation %** by dividing by $\ln K$ ($K$ = number of allowed answers); see [2.2](#22-answer-cards-probabilities--hesitation). |
+| `answers.<slot>.entropy` | Shannon entropy of that slot's `probabilities`, in nats. Convert it to **Hesitation %** by dividing by $\ln K$ ($K$ = number of allowed answers); see [2.2](#22-answer-cards-probabilities--hesitation). |
+| `diagnostics.questions.<slot>.entropy`, `.label_mass` | The engine's per-read values. With `diagnostics.constrained: true` (the default serving mode) `entropy` equals the answer's entropy and `label_mass` is always 1, so don't gate on `label_mass`. With `constrained: false` (`--no-constrained`) `entropy` is over the top tokens at the slot and `label_mass` is the share of probability on the allowed labels. |
 | `max_entropy` | The highest slot entropy in the request (nats). Use it as a single "is anything uncertain?" signal, for example to decide whether to ask a person or escalate with `cascade_mode: "entropy"`. |
 | `wall_time_ms` | Total time spent in the tool call. |
 | `gpu_forward_ms` | Time of the successful model call (the round trip to the engine). |

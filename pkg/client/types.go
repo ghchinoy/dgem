@@ -366,9 +366,9 @@ func normalizeQuestionAnswers(s *StructuredDecisionResponse) *StructuredDecision
 		if qa.Probabilities == nil {
 			qa.Probabilities = make(map[string]float64)
 		}
-		// The vLLM server reports label probabilities but no answer entropy; its diagnostics "entropy" is over the
-		// top-k tokens at the slot, a different quantity (#121). Fill the answer's entropy from its probabilities so
-		// the cascade gate, Hesitation % and summaries use the same basis as the benchmarks that fitted them.
+		// The vLLM server reports label probabilities but no answer entropy (#121). Fill it from the probabilities so
+		// the Studio, the cascade gate and summaries all read one value. With constrained reads the server's
+		// diagnostics "entropy" is the same number; with --no-constrained it is over top-k tokens and can differ.
 		if qa.Entropy == 0 && len(qa.Probabilities) > 1 {
 			qa.Entropy = ProbabilityEntropy(qa.Probabilities)
 		}

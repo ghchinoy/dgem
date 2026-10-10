@@ -9,16 +9,16 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
-- **One entropy basis for answers (#121).** `pkg/client` now fills each answer's `entropy` from its label
-  probabilities when the server doesn't send one (the vLLM server never did). Before, the Stage-2 cascade gate fell
-  back to `diagnostics.questions.<id>.entropy`, which the server computes over the top-20 tokens at the slot (it can
-  include other questions' labels and leave out labels outside the top 20), while the 0.35-nat threshold and the
-  Hesitation bands were fitted on probability entropy. The Studio result panel read `answer.entropy` and showed 0%
-  hesitation when it was missing. **Behaviour change:** cascade escalation and Hesitation % now use label entropy on
-  every backend.
-- **Serving (next image; needs a canary and T1 before promotion):** `structured_server.py` adds a per-read
-  `label_entropy` diagnostic next to `entropy` (#121; `entropy` and the `samples: "auto"` trigger are unchanged), and
-  refuses a read that needs more than 128 label tokens with a 422 instead of truncating `logprob_token_ids` (#122).
+- **Answers always carry an entropy (#121).** `pkg/client` fills each answer's `entropy` from its label
+  probabilities when the server doesn't send one (the vLLM server never did). The Studio result panel read
+  `answer.entropy` and could show 0% hesitation; the cascade gate and summaries fell back to the server's per-slot
+  `entropy`. In production (constrained reads) that value already equals label entropy (PROP-30: largest difference
+  2·10⁻⁷ over 683 questions), so **cascade escalation does not change**; on a `--no-constrained` server the fallback
+  could differ, and no longer matters.
+- **Serving (next image; needs a canary and T1 before promotion):** responses report `diagnostics.constrained`, which
+  says how to read the per-slot `entropy` and `label_mass` (with constrained reads, the default, `label_mass` is 1 by
+  construction and `entropy` equals label entropy). A read that needs more than 128 label tokens is refused with a
+  422 instead of silently truncating `logprob_token_ids` (#122).
 - **Opt-in normalized cascade gate (#123).** `cascade_threshold_mode: "nats" | "normalized"` on `POST /api/decide`
   (or `X-DGem-Cascade-Threshold-Mode`), MCP `decide_policy` / `decide_custom_questions`, and the Studio Batch Eval
   ("Escalation gate"). `normalized` compares H / ln K, the Hesitation scale, so wide slots no longer escalate more
