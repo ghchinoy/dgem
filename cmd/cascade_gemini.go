@@ -46,16 +46,20 @@ type CascadeSlotTelemetry struct {
 	Stage1Value      string  `json:"stage1_value"`
 	Stage1Confidence float64 `json:"stage1_confidence"`
 	Stage1Entropy    float64 `json:"stage1_entropy"`
-	Stage2Value      string  `json:"stage2_value,omitempty"`
-	Stage2Confidence float64 `json:"stage2_confidence,omitempty"`
-	Explanation      string  `json:"explanation,omitempty"`
+	// Stage1NormalizedEntropy is Stage1Entropy / ln K (K = number of options), the Studio's Hesitation scale.
+	Stage1NormalizedEntropy float64 `json:"stage1_normalized_entropy"`
+	Stage2Value             string  `json:"stage2_value,omitempty"`
+	Stage2Confidence        float64 `json:"stage2_confidence,omitempty"`
+	Explanation             string  `json:"explanation,omitempty"`
 }
 
 // CascadeExecutionSummary summarizes Stage 2 Gemini escalation for a decision call.
 type CascadeExecutionSummary struct {
-	Mode           string                          `json:"mode"`
-	Model          string                          `json:"model"`
-	Threshold      float64                         `json:"threshold"`
+	Mode      string  `json:"mode"`
+	Model     string  `json:"model"`
+	Threshold float64 `json:"threshold"`
+	// ThresholdMode says what Threshold is compared with: "nats" (raw entropy) or "normalized" (entropy / ln K).
+	ThresholdMode  string                          `json:"threshold_mode"`
 	Triggered      bool                            `json:"triggered"`
 	EscalatedCount int                             `json:"escalated_count"`
 	TotalSlots     int                             `json:"total_slots"`
@@ -75,6 +79,66 @@ type CascadeExecutionSummary struct {
 var Stage2PriorModes = []string{"full", "soft", "none"}
 
 type stage2PriorKey struct{}
+
+type cascadeThresholdModeKey struct{}
+
+// CascadeThresholdModes are the accepted cascade_threshold_mode values. "nats" (default) compares raw Shannon entropy,
+// which grows with the option count (max ln K), so wide slots escalate more readily; "normalized" compares H / ln K,
+// the Studio's Hesitation scale and EXP-05b's gate (#123).
+var CascadeThresholdModes = []string{"nats", "normalized"}
+
+// Default thresholds per mode: 0.35 nats (EXP-05) and 0.16 normalized (EXP-05b, the Studio's "Clear" band).
+const (
+	defaultCascadeThresholdNats       = 0.35
+	defaultCascadeThresholdNormalized = 0.16
+)
+
+// NormalizeCascadeThresholdMode validates a threshold mode; "" means "nats".
+func NormalizeCascadeThresholdMode(mode string) (string, error) {
+	m := strings.ToLower(strings.TrimSpace(mode))
+	switch m {
+	case "", "nats", "raw":
+		return "nats", nil
+	case "normalized", "normalised", "hesitation":
+		return "normalized", nil
+	}
+	return "", fmt.Errorf("cascade_threshold_mode must be nats or normalized (got %q)", mode)
+}
+
+// WithCascadeThresholdMode sets the threshold mode for cascades run with this context.
+func WithCascadeThresholdMode(ctx context.Context, mode string) context.Context {
+	return context.WithValue(ctx, cascadeThresholdModeKey{}, mode)
+}
+
+func cascadeThresholdModeFrom(ctx context.Context) string {
+	m, _ := ctx.Value(cascadeThresholdModeKey{}).(string)
+	if n, err := NormalizeCascadeThresholdMode(m); err == nil {
+		return n
+	}
+	return "nats"
+}
+
+// slotOptionCount is K for a slot: the answer's probabilities, else the schema's options/levels, else 2 for yes/no.
+func slotOptionCount(qa client.QuestionAnswer, qDef map[string]interface{}) int {
+	k := len(qa.Probabilities)
+	if k < 2 && qDef != nil {
+		for _, key := range []string{"options", "choices", "criteria", "levels", "items"} {
+			switch v := qDef[key].(type) {
+			case []interface{}:
+				k = len(v)
+			case map[string]interface{}:
+				k = len(v)
+			}
+			if k >= 2 {
+				break
+			}
+		}
+	}
+	if k < 2 {
+		k = 2
+	}
+	return k
+}
 
 // WithStage2Prior sets the Stage-2 prior mode for cascades run with this context.
 func WithStage2Prior(ctx context.Context, mode string) context.Context {
@@ -292,8 +356,12 @@ func ExecuteStage2GeminiCascadeWithImages(
 	if mode == "" || mode == "off" || mode == "none" || mode == "false" || resp == nil {
 		return nil
 	}
+	thresholdMode := cascadeThresholdModeFrom(ctx)
 	if cascadeThreshold <= 0 {
-		cascadeThreshold = 0.35
+		cascadeThreshold = defaultCascadeThresholdNats
+		if thresholdMode == "normalized" {
+			cascadeThreshold = defaultCascadeThresholdNormalized
+		}
 	}
 	model := SanitizeCascadeModel(requestedModel)
 
@@ -314,17 +382,23 @@ func ExecuteStage2GeminiCascadeWithImages(
 	}
 
 	summary := &CascadeExecutionSummary{
-		Mode:       mode,
-		Model:      model,
-		Threshold:  cascadeThreshold,
-		TotalSlots: len(resp.Answers),
-		Slots:      make(map[string]CascadeSlotTelemetry, len(resp.Answers)),
+		Mode:          mode,
+		Model:         model,
+		Threshold:     cascadeThreshold,
+		ThresholdMode: thresholdMode,
+		TotalSlots:    len(resp.Answers),
+		Slots:         make(map[string]CascadeSlotTelemetry, len(resp.Answers)),
 	}
 
 	var escalatedIDs []string
 	for qID, qa := range resp.Answers {
 		stage1Val := extractAnswerString(qa)
 		ent := computeSlotEntropyNats(qID, qa, resp)
+		normEnt := ent / math.Log(float64(slotOptionCount(qa, qDefs[qID])))
+		gate, gateName := ent, "H"
+		if thresholdMode == "normalized" {
+			gate, gateName = normEnt, "H/lnK"
+		}
 		conf := qa.Confidence
 		if conf <= 0 && (qa.Type == "noul" || qa.Type == "boolean") {
 			if qa.Noul >= 0.5 {
@@ -348,14 +422,14 @@ func ExecuteStage2GeminiCascadeWithImages(
 					shouldEscalate = true
 					reason = fmt.Sprintf("stage1_miss (dgemma=%q != expected=%q)", stage1Val, expVal)
 				}
-			} else if ent >= cascadeThreshold {
+			} else if gate >= cascadeThreshold {
 				shouldEscalate = true
-				reason = fmt.Sprintf("entropy (H=%.4f >= %.2f)", ent, cascadeThreshold)
+				reason = fmt.Sprintf("entropy (%s=%.4f >= %.2f)", gateName, gate, cascadeThreshold)
 			}
 		case "entropy", "auto", "true", "prior_guided":
-			if ent >= cascadeThreshold {
+			if gate >= cascadeThreshold {
 				shouldEscalate = true
-				reason = fmt.Sprintf("entropy (H=%.4f >= %.2f)", ent, cascadeThreshold)
+				reason = fmt.Sprintf("entropy (%s=%.4f >= %.2f)", gateName, gate, cascadeThreshold)
 			}
 		}
 
@@ -366,6 +440,8 @@ func ExecuteStage2GeminiCascadeWithImages(
 			Stage1Value:      stage1Val,
 			Stage1Confidence: conf,
 			Stage1Entropy:    ent,
+			// normalized by ln K, reported in both modes
+			Stage1NormalizedEntropy: normEnt,
 		}
 		summary.Slots[qID] = slotTel
 		if shouldEscalate {

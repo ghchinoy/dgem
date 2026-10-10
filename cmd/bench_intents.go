@@ -116,7 +116,8 @@ const maxChoiceOptions = 26
 
 // intentBracketSize and intentBracketKeep: with more than 26 candidate intents, round 1 asks one question per
 // group of at most intentBracketSize options and keeps each group's top intentBracketKeep, and a final round
-// picks among the kept ones (the same 2-stage bracket as `dgem systemone serve`).
+// picks among the kept ones. `dgem systemone serve` brackets differently (top 2 per group, at most 24 finalists,
+// fused probabilities over all options); see PROP-24 for unifying them.
 const (
 	intentBracketSize = 20
 	intentBracketKeep = 5
@@ -163,8 +164,9 @@ func topOptions(ans client.QuestionAnswer, group []string, k int) []string {
 	return out
 }
 
-// decideIntentBracketed runs one decision when the options fit in one question, otherwise a 2-stage bracket.
-// The returned response is the final round's; stats.WallTime sums all rounds.
+// decideIntentBracketed runs one decision when the options fit in one question, otherwise a 2-stage bracket (more
+// rounds when the kept intents still exceed one question). The returned response is the final round's;
+// stats.WallTime sums all rounds.
 func decideIntentBracketed(ctx context.Context, tmplPath string, vars map[string]interface{}, options []string, decide intentDecideFunc) (*client.StructuredDecisionResponse, *client.RequestStats, error) {
 	withOptions := func(opts []string) map[string]interface{} {
 		v := make(map[string]interface{}, len(vars))
@@ -189,7 +191,16 @@ func decideIntentBracketed(ctx context.Context, tmplPath string, vars map[string
 		}
 		finalists = append(finalists, topOptions(intentAnswer(resp), group, intentBracketKeep)...)
 	}
-	resp, stats, err := decide(withOptions(finalists))
+	// Kept intents can still exceed one question (151 CLINC150 options -> 8 groups x 5 = 40); bracket them again
+	// rather than sending a final the server rejects (#119). Each round keeps at most a quarter, so it terminates.
+	var resp *client.StructuredDecisionResponse
+	var stats *client.RequestStats
+	var err error
+	if len(finalists) > maxChoiceOptions {
+		resp, stats, err = decideIntentBracketed(ctx, tmplPath, vars, finalists, decide)
+	} else {
+		resp, stats, err = decide(withOptions(finalists))
+	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("bracket final: %w", err)
 	}

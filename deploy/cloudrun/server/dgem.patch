@@ -184,10 +184,26 @@
      return s
  
  
-@@ -432,7 +516,24 @@
-     return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
+@@ -427,12 +511,39 @@
+     return canvas
  
  
++LOGPROB_TOKEN_IDS_MAX = 128  # dgem: vLLM's cap on logprob_token_ids per request
++
++
+ def label_id_union(slots):
+     ids = sorted({i for s in slots for i in s["label_ids"]})
+-    return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
++    # dgem: refuse rather than truncate (#122). A label past the cap would get the floor logprob and could never win.
++    # Today's labels (A-Z, yes/no, 1-9) stay far below it; a wider label set would not.
++    if len(ids) > LOGPROB_TOKEN_IDS_MAX:
++        raise SchemaError(
++            f"one read needs {len(ids)} distinct label tokens; vLLM returns at most "
++            f"{LOGPROB_TOKEN_IDS_MAX} (logprob_token_ids)"
++        )
++    return ids
++
++
 +def _wait_for_upstream(max_wait=180):
 +    global _upstream_ready
 +    if _upstream_ready:
@@ -202,14 +218,14 @@
 +                    return
 +        except Exception:
 +            time.sleep(1.0)
-+
-+
+ 
+ 
  def upstream_chat(body, timeout=600):
 +    _wait_for_upstream()
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/chat/completions",
          data=json.dumps(body).encode(),
-@@ -441,7 +542,32 @@
+@@ -441,7 +552,32 @@
      return json.load(urllib.request.urlopen(req, timeout=timeout))
  
  
@@ -242,7 +258,7 @@
      req = urllib.request.Request(
          ARGS.upstream.rstrip("/") + "/v1/completions",
          data=json.dumps(body).encode(),
-@@ -454,10 +580,7 @@
+@@ -454,10 +590,7 @@
      """The prompt the chat endpoint would build, as token ids, ending after
      the model turn marker. Text states only. ``thinking`` turns the chat
      template's thinking marker on."""
@@ -254,7 +270,7 @@
      out = TOK.apply_chat_template(
          messages, tokenize=True, add_generation_prompt=True, enable_thinking=thinking
      )
-@@ -502,10 +625,7 @@
+@@ -502,10 +635,7 @@
      Returns the thought's token ids and a diagnostics dict."""
      body = {
          "model": ARGS.model,
@@ -266,7 +282,7 @@
          "max_tokens": budget,
          "logprobs": True,
          "top_logprobs": 0,
-@@ -538,10 +658,7 @@
+@@ -538,10 +668,7 @@
  ):
      if prefix is not None:
          return one_read_continuation(schema, template, slots, prefix, seed)
@@ -278,7 +294,19 @@
      body = {
          "model": ARGS.model,
          "messages": messages,
-@@ -738,8 +855,12 @@
+@@ -586,6 +713,11 @@
+     ex = [math.exp(x - mx) for x in lp_t]
+     probs = [e / sum(ex) for e in ex]
+     top_p = [math.exp(v) for v in top.values()]
++    # dgem: with constrained reads (the default, vLLM PR #58216) the returned logprobs are normalized over the
++    # request's label ids, so the top-k set is the labels: "entropy" equals the entropy of "probs" and "label_mass"
++    # is 1 by construction (PROP-30). Only with --no-constrained do they differ: "entropy" is then over the top-k
++    # vocabulary tokens (it can include other questions' labels) and "label_mass" is the share on the labels.
++    # Responses carry diagnostics.constrained so a reader knows which applies.
+     return {
+         "probs": probs,
+         "label_mass": sum(math.exp(x) for x in lp_t),
+@@ -738,8 +870,12 @@
          for q in schema["questions"]
          if not schema.get("ask") or q["id"] in schema["ask"]
      ]
@@ -292,7 +320,7 @@
      fmt = schema["format"]
      join = FORMATS[fmt][0]
      # More than one read in sequence needs the full question list in every
-@@ -871,6 +992,8 @@
+@@ -871,6 +1007,8 @@
      one = len(parts) == 1 and not skipped
      diagnostics = {
          "steps": schema["steps"],
@@ -301,7 +329,15 @@
          "stages": stages,
          "skipped": skipped,
          "chunks": chunks,
-@@ -1034,6 +1157,7 @@
+@@ -901,6 +1039,7 @@
+         or None,
+         "questions": diag_q,
+         "engine": "vllm",
++        "constrained": ARGS.constrained,  # dgem: what "entropy" and "label_mass" mean (see slot_distribution)
+     }
+     return {"answers": answers, "diagnostics": diagnostics}, sum(
+         rows for _, rows in parts
+@@ -1034,6 +1173,7 @@
          "answers": answers,
          "diagnostics": {
              "steps": schema["steps"],
@@ -309,7 +345,15 @@
              "samples": {
                  "n": n,
                  "tops": tops,
-@@ -1065,6 +1189,8 @@
+@@ -1046,6 +1186,7 @@
+             "prompt_tokens": prompt_tokens,
+             "questions": diag_q,
+             "engine": "vllm",
++            "constrained": ARGS.constrained,  # dgem: what "entropy" and "label_mass" mean (see slot_distribution)
+         },
+     }, len(template) + 1 + (thought["tokens"] if thought else 0)
+ 
+@@ -1065,6 +1206,8 @@
      "chunk_rows",
      "chunk_prompt",
      "sequential",
@@ -318,7 +362,7 @@
  )
  
  
-@@ -1160,7 +1286,8 @@
+@@ -1160,7 +1303,8 @@
      state = body.get("state")
      if state is None:
          raise SchemaError("state: required")
@@ -328,7 +372,7 @@
      if not image_parts:
          return text
      return list(image_parts) + [{"type": "text", "text": text}]
-@@ -1170,7 +1297,13 @@
+@@ -1170,7 +1314,13 @@
      if a is None:
          return None
      if q["type"] == "noul":
@@ -343,7 +387,7 @@
      if q["type"] == "choice":
          return {
              "type": "choice",
-@@ -1201,21 +1334,43 @@
+@@ -1201,21 +1351,43 @@
      return c if isinstance(c, str) else ""
  
  
@@ -390,7 +434,7 @@
          return self._json(404, {"error": {"message": "unknown route"}})
  
      def _read_request(self):
-@@ -1251,6 +1406,7 @@
+@@ -1251,6 +1423,7 @@
  
      def do_POST(self):
          if API_KEY and self.headers.get("authorization", "") != f"Bearer {API_KEY}":
@@ -398,7 +442,7 @@
              return self._json(
                  401,
                  {
-@@ -1276,7 +1432,8 @@
+@@ -1276,7 +1449,8 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -408,7 +452,7 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1460,8 @@
+@@ -1303,6 +1477,8 @@
  
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
@@ -417,7 +461,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1477,12 @@
+@@ -1318,6 +1494,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -430,7 +474,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1362,6 +1527,7 @@
+@@ -1362,6 +1544,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -438,7 +482,7 @@
          )
  
      def _chat(self, req):
-@@ -1451,9 +1617,18 @@
+@@ -1451,9 +1634,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -457,7 +501,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,12 +1662,21 @@
+@@ -1487,12 +1679,21 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -480,7 +524,7 @@
  def main():
      global ARGS, CANVAS_LEN, CANVAS_STEP
      p = argparse.ArgumentParser()
-@@ -1537,7 +1721,8 @@
+@@ -1537,7 +1738,8 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )

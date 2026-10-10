@@ -511,9 +511,19 @@ def build_canvas(template, slots, seed):
     return canvas
 
 
+LOGPROB_TOKEN_IDS_MAX = 128  # dgem: vLLM's cap on logprob_token_ids per request
+
+
 def label_id_union(slots):
     ids = sorted({i for s in slots for i in s["label_ids"]})
-    return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
+    # dgem: refuse rather than truncate (#122). A label past the cap would get the floor logprob and could never win.
+    # Today's labels (A-Z, yes/no, 1-9) stay far below it; a wider label set would not.
+    if len(ids) > LOGPROB_TOKEN_IDS_MAX:
+        raise SchemaError(
+            f"one read needs {len(ids)} distinct label tokens; vLLM returns at most "
+            f"{LOGPROB_TOKEN_IDS_MAX} (logprob_token_ids)"
+        )
+    return ids
 
 
 def _wait_for_upstream(max_wait=180):
@@ -703,6 +713,11 @@ def slot_distribution(top, label_ids):
     ex = [math.exp(x - mx) for x in lp_t]
     probs = [e / sum(ex) for e in ex]
     top_p = [math.exp(v) for v in top.values()]
+    # dgem: with constrained reads (the default, vLLM PR #58216) the returned logprobs are normalized over the
+    # request's label ids, so the top-k set is the labels: "entropy" equals the entropy of "probs" and "label_mass"
+    # is 1 by construction (PROP-30). Only with --no-constrained do they differ: "entropy" is then over the top-k
+    # vocabulary tokens (it can include other questions' labels) and "label_mass" is the share on the labels.
+    # Responses carry diagnostics.constrained so a reader knows which applies.
     return {
         "probs": probs,
         "label_mass": sum(math.exp(x) for x in lp_t),
@@ -1024,6 +1039,7 @@ def decide(schema, state_content, seed):
         or None,
         "questions": diag_q,
         "engine": "vllm",
+        "constrained": ARGS.constrained,  # dgem: what "entropy" and "label_mass" mean (see slot_distribution)
     }
     return {"answers": answers, "diagnostics": diagnostics}, sum(
         rows for _, rows in parts
@@ -1170,6 +1186,7 @@ def decide_group(schema, sys_text, state_content, seed, prefix=None, lead=""):
             "prompt_tokens": prompt_tokens,
             "questions": diag_q,
             "engine": "vllm",
+            "constrained": ARGS.constrained,  # dgem: what "entropy" and "label_mass" mean (see slot_distribution)
         },
     }, len(template) + 1 + (thought["tokens"] if thought else 0)
 

@@ -63,9 +63,9 @@ person) when it is high, passing along `dgem`'s probabilities as a hint.
 **Choosing a threshold.** Start at 16–35% and fit it on a labelled sample of your own decisions, choosing the
 threshold on one half and checking it on the other ([Calibrate your policy](/dgem/confidence/calibrate-your-policy/)). The gate is
 available on every surface (`cascade_mode`, `cascade_threshold`, `cascade_model`; see
-[authoring and Stage 2 cascades](/dgem/policies/authoring/)). Note that the gateway's `cascade_threshold` is raw entropy
+[authoring and Stage 2 cascades](/dgem/policies/authoring/)). Note that by default the gateway's `cascade_threshold` is raw entropy
 in nats (default 0.35), not hesitation %; multiply hesitation by ln K to convert (16% hesitation ≈ 0.18 nats for 3
-options).
+options), or set `cascade_threshold_mode: "normalized"` to give the threshold as hesitation (0.16 = 16%).
 
 ---
 
