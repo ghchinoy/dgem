@@ -111,5 +111,5 @@ Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
 ## 4. Container Lineage & Provenance
 
 * **Base Image**: Official `vllm/vllm-openai:nightly` pinned by commit and digest (`vllm-project/vllm:main` commit `a9eafde59cb`).
-* **PR Inclusions**: Upstream PR #57250 (*"[Core] structured generation mode for DiffusionGemma"*) and PR #58216 (*"[Perf] constrained reads"*) are natively included in the base image.
+* **PR Inclusions**: Upstream PR #57250 (*"[Core] structured generation mode for DiffusionGemma"*) and PR #58216 (*"[Perf] constrained reads"*) are natively included in the base image. Structured mode lets the server send its own seeded canvas and ask for a read-only denoise step with logprobs for chosen token ids (`logprob_token_ids`); constrained reads compute the output layer and sampler over those label ids only, which gives the same answer with about a quarter less GPU time per read. vLLM accepts at most 128 such ids per request.
 * **Patches**: Pinned in `deploy/cloudrun/server/dgem.patch` and tracked via `deploy/cloudrun/server/UPSTREAM`.

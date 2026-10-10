@@ -6,7 +6,7 @@ description: "Put one dgem gateway (dgem serve) in front of Vertex AI and Cloud 
 # Step 5: Gateway and Routing
 
 The gateway (`dgem serve`) is what users and agents talk to. It serves Decision Studio, the HTTP API
-(`/api/decide`, `/v1/systemone`, `/v1/chat/completions`), the MCP server (`/mcp`) and traces, and routes each
+(`/api/decide`, `/v1/systemone`; `/v1/chat/completions` is deprecated), the MCP server (`/mcp`) and traces, and routes each
 request to a GPU backend. Locally it runs on `http://localhost:8090`; in the cloud it runs as the Cloud Run service
 `dgemma-gateway` behind IAP (placeholder `https://<your-dgem-gateway>`).
 
