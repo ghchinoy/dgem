@@ -9,6 +9,16 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Answers always carry an entropy (#121).** `pkg/client` fills each answer's `entropy` from its label
+  probabilities when the server doesn't send one (the vLLM server never did). The Studio result panel read
+  `answer.entropy` and could show 0% hesitation; the cascade gate and summaries fell back to the server's per-slot
+  `entropy`. In production (constrained reads) that value already equals label entropy (PROP-30: largest difference
+  2·10⁻⁷ over 683 questions), so **cascade escalation does not change**; on a `--no-constrained` server the fallback
+  could differ, and no longer matters.
+- **Serving (next image; needs a canary and T1 before promotion):** responses report `diagnostics.constrained`, which
+  says how to read the per-slot `entropy` and `label_mass` (with constrained reads, the default, `label_mass` is 1 by
+  construction and `entropy` equals label entropy). A read that needs more than 128 label tokens is refused with a
+  422 instead of silently truncating `logprob_token_ids` (#122).
 - **Opt-in normalized cascade gate (#123).** `cascade_threshold_mode: "nats" | "normalized"` on `POST /api/decide`
   (or `X-DGem-Cascade-Threshold-Mode`), MCP `decide_policy` / `decide_custom_questions`, and the Studio Batch Eval
   ("Escalation gate"). `normalized` compares H / ln K, the Hesitation scale, so wide slots no longer escalate more
