@@ -20,6 +20,8 @@ import (
 	"net"
 	"net/url"
 	"strings"
+
+	"github.com/ghchinoy/dgem/pkg/decisionindex"
 )
 
 // allowLocalImagePaths lets image references name local files. It is true for the CLI and stdio MCP (the files are
@@ -47,6 +49,15 @@ func checkRequestImages(ctx context.Context, images []string) error {
 		}
 	}
 	return nil
+}
+
+// checkSystemOneImages validates the "images" of a /v1/systemone request before the adapter forwards them upstream:
+// the adapter's own rule (data: URIs or http(s) URLs only), then the gateway's public-host check.
+func checkSystemOneImages(ctx context.Context, images []string) error {
+	if err := decisionindex.ValidateImages(images); err != nil {
+		return err
+	}
+	return checkRequestImages(ctx, images)
 }
 
 func checkPublicImageURL(ctx context.Context, ref string) error {
