@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -56,5 +57,18 @@ func TestCheckSystemOneImages(t *testing.T) {
 	allowLocalImagePaths = true
 	if err := checkSystemOneImages(ctx, []string{"fixtures/x.png"}); err == nil {
 		t.Fatal("systemone images must not be local paths")
+	}
+}
+
+// SVG references are refused at the gateway with a 400-able error before any model call (#117).
+func TestCheckRequestImagesRejectsSVG(t *testing.T) {
+	ctx := context.Background()
+	for _, ref := range []string{"data:image/svg+xml;base64,PHN2Zy8+", "fixtures/ui_component.svg"} {
+		if err := checkRequestImages(ctx, []string{ref}); err == nil || !strings.Contains(err.Error(), "SVG") {
+			t.Errorf("%s: err = %v, want an SVG refusal", ref, err)
+		}
+	}
+	if err := checkSystemOneImages(ctx, []string{"data:image/svg+xml,<svg/>"}); err == nil {
+		t.Error("systemone: SVG data URI accepted")
 	}
 }

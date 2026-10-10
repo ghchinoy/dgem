@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ghchinoy/dgem/pkg/client"
 	"github.com/ghchinoy/dgem/pkg/decisionindex"
 )
 
@@ -35,6 +36,9 @@ var allowLocalImagePaths = true
 func checkRequestImages(ctx context.Context, images []string) error {
 	for _, ref := range images {
 		ref = strings.TrimSpace(ref)
+		if err := client.CheckImageFormat(ref, nil); err != nil {
+			return err
+		}
 		switch {
 		case ref == "", strings.HasPrefix(ref, "data:"):
 			continue

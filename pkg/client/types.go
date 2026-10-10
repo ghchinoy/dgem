@@ -17,6 +17,7 @@ package client
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -576,6 +577,43 @@ func (m ChatMessage) RawContent() string {
 	return string(b)
 }
 
+// ErrUnsupportedImageFormat marks an image the serving image can't decode. vLLM loads images with PIL, which reads
+// raster formats (PNG, JPEG, WebP, GIF) but not SVG: an SVG came back as HTTP 502 "cannot identify image file" (#117).
+var ErrUnsupportedImageFormat = errors.New("unsupported image format")
+
+// CheckImageFormat rejects image references the serving image can't decode: local .svg files (or files whose
+// content is SVG) and data:image/svg+xml URIs. http(s) URLs aren't fetched here, so they pass. data maybe nil; when
+// given (a local file's bytes) its content is sniffed too.
+func CheckImageFormat(ref string, data []byte) error {
+	ref = strings.TrimSpace(ref)
+	lower := strings.ToLower(ref)
+	isSVG := false
+	switch {
+	case strings.HasPrefix(lower, "data:"):
+		isSVG = strings.HasPrefix(lower, "data:image/svg")
+	case strings.HasPrefix(lower, "http://"), strings.HasPrefix(lower, "https://"):
+		return nil
+	default:
+		isSVG = strings.HasSuffix(lower, ".svg") || strings.HasSuffix(lower, ".svgz") || looksLikeSVG(data)
+	}
+	if isSVG {
+		name := ref
+		if strings.HasPrefix(lower, "data:") {
+			name = "a data:image/svg+xml image"
+		}
+		return fmt.Errorf("%w: %s is SVG, which the model server can't decode; convert it to PNG first (e.g. rsvg-convert -o image.png image.svg)", ErrUnsupportedImageFormat, name)
+	}
+	return nil
+}
+
+func looksLikeSVG(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	head := strings.ToLower(string(data[:min(len(data), 512)]))
+	return strings.Contains(head, "<svg")
+}
+
 // BuildMultimodalContent formats user message content with optional image parts.
 // If images are provided, it encodes local files to base64 data URIs and places
 // image parts BEFORE the text content, conforming to DiffusionGemma best practices.
@@ -594,12 +632,18 @@ func BuildMultimodalContent(textContent string, imageInputs []string) (interface
 
 		var imageURI string
 		if strings.HasPrefix(img, "http://") || strings.HasPrefix(img, "https://") || strings.HasPrefix(img, "data:") {
+			if err := CheckImageFormat(img, nil); err != nil {
+				return nil, err
+			}
 			imageURI = img
 		} else {
 			// Read local file
 			fileData, err := os.ReadFile(img)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read local image file %s: %w", img, err)
+			}
+			if err := CheckImageFormat(img, fileData); err != nil {
+				return nil, err
 			}
 
 			mimeType := detectImageMime(img, fileData)

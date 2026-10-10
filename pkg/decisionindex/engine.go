@@ -197,6 +197,9 @@ var ErrInvalidImage = errors.New("invalid image")
 func ValidateImages(images []string) error {
 	for i, img := range images {
 		img = strings.TrimSpace(img)
+		if err := client.CheckImageFormat(img, nil); err != nil {
+			return fmt.Errorf("%w: images[%d]: %v", ErrInvalidImage, i, err)
+		}
 		if img == "" || strings.HasPrefix(img, "data:") || strings.HasPrefix(img, "https://") || strings.HasPrefix(img, "http://") {
 			continue
 		}
