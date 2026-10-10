@@ -1944,7 +1944,7 @@ export class DgemBatchRunner extends LitElement {
                   <div class="control-group">
                     <span
                       class="control-label"
-                      title="When a slot goes to Gemini. Raw entropy grows with the number of options, so at 0.35 nats a 26-option question escalates far more often than a yes/no one. Hesitation divides by ln(number of options), the same scale as the Hesitation % shown on results (16% = the edge of 'Clear')."
+                      title="When a slot goes to Gemini. Raw entropy grows with the number of options, so at 0.35 nats a 26-option question escalates far more often than a yes/no one. Hesitation divides by ln(number of options), the same scale as the Hesitation % shown on results (16% = the edge of 'Clear'). The two presets are not equivalent: on a 341-decision test mix, 16% escalated about 31% of decisions vs 22% at 0.35 nats (mostly extra yes/no hand-offs). Fit the threshold on your own data."
                       >Escalation gate</span
                     >
                     <div class="seg-group">
