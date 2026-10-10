@@ -125,6 +125,24 @@ const (
 	OptionOrderSource = "source" // keep the order the request listed them
 )
 
+// Label sets for EngineOptions.Labels (the serving image's "labels" schema key).
+const (
+	LabelsAZ      = "az"       // A-Z, at most 26 options per read (default)
+	LabelsAZAA    = "az_aa"    // A-Z then AA-AZ, at most 52
+	LabelsAZLower = "az_lower" // A-Z then a-z, at most 52 (server: requests of up to 10 questions)
+)
+
+// optionLimit is how many options one read can label with the given label set.
+func optionLimit(labels string) int {
+	switch labels {
+	case LabelsAZAA, LabelsAZLower:
+		return 52
+	}
+	return MaxOptionsPerSlot
+}
+
+func wideLabels(labels string) bool { return optionLimit(labels) > MaxOptionsPerSlot }
+
 // optionKeys returns q's option keys in the order they are labelled A, B, C…: the request's order with
 // OptionOrderSource when it is known and complete, otherwise sorted.
 func optionKeys(q SystemOneQuestion, order string) []string {
@@ -249,6 +267,7 @@ type EngineOptions struct {
 	BracketSize       int     // Max options per Round-1 bracket for wide (>26) choices; <=1 means BracketSize
 	CatchAll          string  // Wide-option catch-all handling: "off" (default), "final", "both" or "verify"; see catchAllKeys
 	NoulMode          string  // How yes/no questions are read: "noul" (default) or "choice" (2-option choice; see noulAsChoice)
+	Labels            string  // Server label set for choice options: "az" (default, 26) or "az_aa"/"az_lower" (52; PROP-29). Wide sets read up to 52 options natively and bracket above that with 52-wide brackets
 	OptionOrder       string  // How options are labelled A, B, C…: "alpha" (default, sorted keys) or "source" (request order; PROP-33)
 	PromptLayout      string  // Server prompt layout: "document_first" (default: state first, then questions) or "schema_first"/"" (questions as the system prompt)
 }
@@ -329,6 +348,10 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	if opts.MaxOptionsPerSlot <= 0 {
 		opts.MaxOptionsPerSlot = MaxOptionsPerSlot
 	}
+	if wideLabels(opts.Labels) && opts.MaxOptionsPerSlot == MaxOptionsPerSlot {
+		// A wide label set reads up to its limit natively (PROP-29 phase 2); brackets start above it.
+		opts.MaxOptionsPerSlot = optionLimit(opts.Labels)
+	}
 	if opts.TemperatureScale <= 0 {
 		opts.TemperatureScale = 1.0
 	}
@@ -400,7 +423,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 	for _, k := range wideKeys {
 		wideQs++
 		q := req.Questions[k]
-		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, req.Images, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll, opts.PromptLayout, opts.OptionOrder)
+		ans, passes, err := evaluateWideQuestionTournament(ctx, cli, stateText, req.Images, k, q, opts.TemperatureScale, opts.BracketSize, opts.CatchAll, opts.PromptLayout, opts.OptionOrder, opts.Labels)
 		if err != nil {
 			return nil, err
 		}
@@ -478,6 +501,9 @@ func evaluateStandardBatch(
 	}
 	if opts.PromptLayout == "document_first" {
 		schemaEnvelope["layout"] = "document_first"
+	}
+	if wideLabels(opts.Labels) {
+		schemaEnvelope["labels"] = opts.Labels
 	}
 	schemaBytes, err := json.Marshal(schemaEnvelope)
 	if err != nil {
@@ -617,9 +643,11 @@ func evaluateWideQuestionTournament(
 	catchAllMode string,
 	layout string,
 	optionOrder string,
+	labels string,
 ) (SystemOneAnswer, int, error) {
 	optKeys := optionKeys(qSpec, optionOrder)
 	numOpts := len(optKeys)
+	limit := optionLimit(labels)
 	// Catch-all options ("none of the listed", "out of scope", ...) are the correct answer inside any Round-1 bracket
 	// that lacks the true option, so a flat tournament sends them to the final too often. Opt-in modes:
 	//   final  - catch-alls skip Round 1 and compete only in the final
@@ -628,7 +656,7 @@ func evaluateWideQuestionTournament(
 	// Measured on CLINC150 validation (dev): final raised macro-F1 0.734 -> 0.775 but lowered out-of-scope recall
 	// 0.96 -> 0.87, so the default stays "off".
 	var catchAll []string
-	if catchAllMode != "" && catchAllMode != "off" && numOpts > MaxOptionsPerSlot {
+	if catchAllMode != "" && catchAllMode != "off" && numOpts > limit {
 		catchAll = catchAllKeys(qSpec.Criteria)
 	}
 	isCatchAll := make(map[string]bool, len(catchAll))
@@ -644,15 +672,18 @@ func evaluateWideQuestionTournament(
 			}
 		}
 	}
-	if numOpts <= MaxOptionsPerSlot {
-		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale, PromptLayout: layout, OptionOrder: optionOrder})
+	if numOpts <= limit {
+		batchMap, passes, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey}, map[string]SystemOneQuestion{qKey: qSpec}, EngineOptions{TemperatureScale: tempScale, PromptLayout: layout, OptionOrder: optionOrder, Labels: labels})
 		if err != nil {
 			return SystemOneAnswer{}, passes, err
 		}
 		return batchMap[qKey], passes, nil
 	}
 
-	if bracketSize <= 1 || bracketSize > MaxOptionsPerSlot {
+	if wideLabels(labels) && (bracketSize <= 1 || bracketSize == BracketSize) {
+		bracketSize = limit // wide label sets bracket in 52-wide groups (PROP-29 phase 2 decision rule)
+	}
+	if bracketSize <= 1 || bracketSize > limit {
 		bracketSize = BracketSize
 	}
 	brackets := balancedBrackets(roundKeys, bracketSize)
@@ -678,7 +709,7 @@ func evaluateWideQuestionTournament(
 			end = len(round1Keys)
 		}
 		subKeys := round1Keys[i:end]
-		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, images, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout, OptionOrder: optionOrder})
+		subAns, p, err := evaluateStandardBatch(ctx, cli, stateText, images, subKeys, round1Questions, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout, OptionOrder: optionOrder, Labels: labels})
 		if err != nil {
 			return SystemOneAnswer{}, passesUsed + p, err
 		}
@@ -716,7 +747,7 @@ func evaluateWideQuestionTournament(
 		finalists = append(finalists, sortedLocal[:take]...)
 	}
 
-	maxFinal := 24
+	maxFinal := limit - 2
 	if catchAllMode != "verify" {
 		maxFinal -= len(catchAll)
 	}
@@ -738,7 +769,7 @@ func evaluateWideQuestionTournament(
 	}
 	finalQ := map[string]SystemOneQuestion{qKey: subQuestion(qSpec, finalKeys)}
 
-	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout, OptionOrder: optionOrder})
+	finalBatch, p, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey}, finalQ, EngineOptions{TemperatureScale: 1.0, PromptLayout: layout, OptionOrder: optionOrder, Labels: labels})
 	if err != nil {
 		return SystemOneAnswer{}, passesUsed + p, err
 	}
@@ -755,7 +786,7 @@ func evaluateWideQuestionTournament(
 		vQ := subQuestion(qSpec, append([]string{best}, catchAll...))
 		vBatch, p2, err := evaluateStandardBatch(ctx, cli, stateText, images, []string{qKey},
 			map[string]SystemOneQuestion{qKey: vQ},
-			EngineOptions{TemperatureScale: 1.0, PromptLayout: layout, OptionOrder: optionOrder})
+			EngineOptions{TemperatureScale: 1.0, PromptLayout: layout, OptionOrder: optionOrder, Labels: labels})
 		if err != nil {
 			return SystemOneAnswer{}, passesUsed + p2, err
 		}
