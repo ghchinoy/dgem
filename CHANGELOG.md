@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Gateway: `/v1/systemone` keeps images.** The adapter dropped the request's `images` and answered text-only with
+  HTTP 200; it now sends them with every sub-request (batches and bracket rounds). Images must be data: URIs or
+  public http(s) URLs (local paths are rejected with 400, in the gateway and in `dgem systemone serve`).
+  `multipart/form-data` uploads failed with `400 invalid body` because the proxy forced `Content-Type:
+  application/json`; it now forwards the caller's content type.
+- **Gateway: `/v1/raw/chat/completions` removed (410 Gone).** dgem serves decisions; free-form generation had no
+  callers. `/v1/chat/completions` on the gateway still makes decisions but is deprecated (`Deprecation` header); use
+  `/api/decide` or `/v1/systemone`.
 - **`dgem systemone serve` answers 422, not 500, when the server refuses a sub-request (#120).** Server schema errors
   (HTTP 400/422, e.g. a score question with more than 26 levels) are now passed on as 422, with the Decision Index
   kit's `at most 26 options per choice` marker when the limit is the alternatives count.
