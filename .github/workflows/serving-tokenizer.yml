@@ -14,7 +14,7 @@
 
 # Answer templates and label sets checked against the served DiffusionGemma tokenizer (public tokenizer.json from
 # Hugging Face, pinned revision). Runs only when the serving server changes.
-name: Serving tokenizer checks
+name: Serving server checks
 
 on:
   pull_request:
@@ -63,3 +63,5 @@ jobs:
           git show ${REF_COMMIT}:deploy/cloudrun/server/structured_server.py > /tmp/ss_ref.py
           DGEM_TOKENIZER_DIR=~/tok DGEM_REF_SERVER=/tmp/ss_ref.py \
             python -m unittest -v deploy/cloudrun/server/test_label_sets.py
+      - name: Server key (X-DGem-Key) tests
+        run: python -m unittest -v deploy/cloudrun/server/test_server_key.py

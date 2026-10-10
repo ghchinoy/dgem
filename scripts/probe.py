@@ -44,6 +44,12 @@ sys.path.insert(0, os.path.dirname(__file__))
 import contract_diff as cd  # noqa: E402
 import serving_speed as ss  # noqa: E402
 
+
+def server_key_header():
+    """X-DGem-Key for the serving image when DGEM_SERVER_KEY is set (first entry of a rotation list)."""
+    key = os.environ.get("DGEM_SERVER_KEY", "").split(",")[0].strip()
+    return {"X-DGem-Key": key} if key else {}
+
 # Expected HTTP status per contract case (anything else is a failure).
 EXPECTED = {
     "choice_27_error": 400, "unknown_type_error": 400, "empty_questions_error": 400, "invalid_json_error": 400,
@@ -127,7 +133,7 @@ def probe_serving(name, base, n):
     for i in range(n):
         payload = {"model": "dgemma", "messages": [{"role": "system", "content": json.dumps(schema)},
                                                    {"role": "user", "content": json.dumps({"ticket": ss.TICKETS[i % len(ss.TICKETS)]})}]}
-        req = urllib.request.Request(url, json.dumps(payload).encode(), {"Content-Type": "application/json", "Authorization": f"Bearer {bearer(base)}"})
+        req = urllib.request.Request(url, json.dumps(payload).encode(), {"Content-Type": "application/json", "Authorization": f"Bearer {bearer(base)}", **server_key_header()})
         t0 = time.perf_counter()
         try:
             with urllib.request.urlopen(req, timeout=120) as r:
