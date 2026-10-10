@@ -67,7 +67,7 @@ curl -sS "https://<your-dgem-gateway>/api/decide/calibration/chaos_nli" \
 ## 2. Designing `.json.tmpl` Policy Schemas & Prefix-Cache Optimization
 
 1. **Keep `"schema"` Static, Put Row Variables in `"state"`**:
-   - `structured_server.py` serializes `"schema"` before `"state"` so `vLLM`'s automatic prefix cache reuses **70–85% of the KV cache** across every row in a batch evaluation (`~60–195 ms` per pass).
+   - With the default `document_first` layout (serving v0.2.0+), the prompt is the state followed by the question list, so the shared prefix across rows is only the chat preamble. If prefix-cache reuse matters more than the accuracy gain from `document_first` (EXP-19), set `"layout": "schema_first"`: the questions then form the system prompt ahead of the state, and vLLM's automatic prefix cache reuses that part across every row in a batch. Either way, keep the schema identical across rows. See [Prompt layout](prompt-layout.md).
 2. **Single-Pass Readout (`reads=1`)**:
    - Omit `depends_on` and `ask_if` unless you explicitly want a 2-stage conditional policy DAG (`reads=2`). All `level 0` slots (`boolean`, `choice [A–Z]`, `score`) are resolved simultaneously in a single forward pass.
 3. **Registering New Experiments (`EXP-XX`)**:
