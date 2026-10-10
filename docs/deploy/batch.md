@@ -142,7 +142,9 @@ the batch configuration, so 10 million rows take about 3.5 hours on 10 GPUs.
 1. **Use the endpoint you already pay for.** One warm Vertex AI `g4-standard-48` replica handles about 80 short
    decisions per second, roughly 7 million a day. If it is idle at night, a nightly batch through it costs nothing
    extra. Keep the client's concurrency at the endpoint's `MAX_INFLIGHT` (8 per replica by default) and add a
-   little queue, or interactive users will wait behind your batch.
+   little queue, or interactive users will wait behind your batch. If the endpoint requires a service key
+   (`DGEM_SERVER_KEY`), run the fan-out as a service that holds the key
+   ([recipe](../../deploy/batch/README.md#4-fan-out-to-a-running-endpoint)).
 2. **Below ~10,000 rows, avoid jobs.** The work takes seconds to minutes and a job spends about 5 minutes (Cloud
    Run), 9 minutes (Dataflow) or 22 minutes (Vertex AI) before the first decision.
 3. **Above ~10,000 rows, use a job with the batch configuration.** Cloud Run Jobs was the cheapest per decision at
