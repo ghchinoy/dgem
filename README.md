@@ -192,7 +192,7 @@ Connect to any remote GCE or Cloud Run GPU service:
 Attach local image paths (automatically base64 encoded) or remote URLs:
 ```bash
 ./bin/dgem decide -t templates/multimodal/ui_design_review.json.tmpl \
-  -I fixtures/ui_component.svg \
+  -I fixtures/ui_component.png \
   -v 'component=CheckoutCard' \
   --stats
 ```

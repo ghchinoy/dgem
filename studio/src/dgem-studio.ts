@@ -2318,7 +2318,7 @@ export class DgemStudio extends LitElement {
                     ${this.imageName ? `Loaded: ${this.imageName}` : 'Attach Image (PNG/JPEG)'}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
                       style="display:none"
                       @change=${this.handleImageUpload}
                     />

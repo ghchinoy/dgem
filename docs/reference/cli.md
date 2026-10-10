@@ -193,7 +193,7 @@ dgem decide [flags]
 * `-v`, `--var stringArray`: Template variables in `key=value` format (can be specified multiple times).
 * `-d`, `--data string`: Path to a JSON file containing variables.
 * `-f`, `--format string`: Output format: `table` (default) or `json`.
-* `-I`, `--image stringArray`: Attach local image file path or remote image URL (can be specified multiple times for video frame sequences).
+* `-I`, `--image stringArray`: Attach local image file path or remote image URL (can be specified multiple times for video frame sequences). PNG, JPEG, WebP or GIF; SVG is refused with a clear error because the model server can't decode it (convert it first, e.g. `rsvg-convert -o image.png image.svg`).
 * `--temperature T`: Post-hoc temperature for every answer; 0 uses the template's `"temperature"`. See [calibrate your policy](../confidence/calibrate-your-policy.md#5-temperature-scaling-optional).
 * `--layout document_first|schema_first`: Prompt layout for this decision. Empty uses the template's `layout`, or else the server default (`document_first` from serving v0.2.0). See [Prompt layout](../policies/prompt-layout.md).
 * `--suggest-expansions`: Dynamically inject an `other_unclassified` catch-all option into `choice` slots (if absent) and propose new `{"name", "description"}` options when an item resolves to `other*` or exceeds `--expansion-entropy` (see [Unclassified Grouping & Taxonomy Discovery](../policies/taxonomy-discovery.md)).
@@ -232,7 +232,7 @@ Questions with dependencies run in stages; a question whose `ask_if` condition i
 #### Example 3: Multimodal Visual Inspection (`--image` / `-I`)
 ```bash
 ./bin/dgem decide -t templates/multimodal/ui_design_review.json.tmpl \
-  -I fixtures/ui_component.svg \
+  -I fixtures/ui_component.png \
   -v 'component=CheckoutCard' \
   --stats
 ```
