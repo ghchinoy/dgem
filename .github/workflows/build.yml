@@ -45,7 +45,7 @@ jobs:
           cache: true
 
       - name: Run unit tests
-        run: go test -v ./pkg/...
+        run: go test ./cmd/... ./pkg/...
 
       - name: Build dgem binary
         run: make build
