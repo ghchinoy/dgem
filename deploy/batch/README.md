@@ -85,6 +85,13 @@ python3 deploy/batch/batch_worker.py remote --url https://<CLOUD_RUN_URL> \
 `remote` mints an identity token from Application Default Credentials. Keep concurrency at or below what the
 endpoint is configured for (`MAX_INFLIGHT` × instances, plus a little queue).
 
+If the serving image runs with `DGEM_SERVER_KEY` set, it rejects any POST without the matching `X-DGem-Key` header.
+`remote` sends that header when `DGEM_SERVER_KEY` is set in its own environment (the first entry of a
+comma-separated rotation list). The key is for services only: run the fan-out as a service (a Cloud Run job or a
+VM with the key from Secret Manager), never from a personal machine with the key pasted in, and never write it to a
+file. People should go through your gateway instead. The `job` and `vertex-adapter` modes start their own server
+without a key and remove `DGEM_SERVER_KEY` from its environment.
+
 ## 5. Dataflow
 
 Use Dataflow when the batch is one step of a pipeline (BigQuery in, joins, BigQuery out). The launching

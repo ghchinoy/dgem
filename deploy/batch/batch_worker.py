@@ -172,7 +172,8 @@ class LocalServer:
         env.pop("AIP_HTTP_PORT", None)
         # Beam's venv must not leak into vLLM's interpreter.
         env["PATH"] = os.environ.get("DGEM_SYSTEM_PATH", "/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
-        for k in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME"):
+        # DGEM_SERVER_KEY would make the in-container server require X-DGem-Key, which local callers don't send.
+        for k in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME", "DGEM_SERVER_KEY"):
             env.pop(k, None)
         env.update({"PORT": str(self.port)})
         env.update(self.extra_env)
@@ -223,9 +224,19 @@ def compact(content):
             "pt": d.get("prompt_tokens")}
 
 
+SERVER_KEY_HEADER = "X-DGem-Key"
+
+
+def server_key_from_env():
+    """The serving image's service-to-service secret (DGEM_SERVER_KEY on the server): the first entry of a
+    comma-separated rotation list, or "" when unset. Services hold it; never put it in a file or give it to a person."""
+    return os.environ.get("DGEM_SERVER_KEY", "").split(",")[0].strip()
+
+
 class Decider:
-    def __init__(self, base_url, schema, state_key, auth=None, timeout=300, tries=8):
+    def __init__(self, base_url, schema, state_key, auth=None, timeout=300, tries=8, server_key=""):
         self.url = base_url.rstrip("/") + "/v1/chat/completions"
+        self.server_key = server_key
         self.schema_str = schema if isinstance(schema, str) else json.dumps(schema)
         self.state_key, self.auth, self.timeout, self.tries = state_key, auth, timeout, tries
         self.lock = threading.Lock()
@@ -241,6 +252,8 @@ class Decider:
             h = {"content-type": "application/json"}
             if self.auth:
                 h["Authorization"] = "Bearer " + self.auth.get()
+            if self.server_key:
+                h[SERVER_KEY_HEADER] = self.server_key
             try:
                 r = json.loads(urllib.request.urlopen(urllib.request.Request(self.url, body, h), timeout=self.timeout).read())
                 out = {"id": row.get("id")} | compact(r["choices"][0]["message"]["content"])
@@ -323,7 +336,7 @@ def mode_remote(a):
                "concurrency": a.concurrency, "files": []}
     files = [f for f in gcs_list(a.input) if f.endswith(".jsonl")]
     auth = IdToken(a.url) if a.auth == "id" else None
-    d = Decider(a.url, read_text(a.schema), a.state_key, auth=auth)
+    d = Decider(a.url, read_text(a.schema), a.state_key, auth=auth, server_key=server_key_from_env())
     murl = f"{a.output.rstrip('/')}/_metrics/remote.json"
     run_files(d, files, a.output, a.concurrency, metrics, murl)
     metrics.update(t_end=time.time(), ok=d.ok, errors=d.errors, retries=d.retries, t_first_decision=d.t_first)
