@@ -1,31 +1,43 @@
 ---
 // JevParityDashboard.astro
-// Interactive 4-Axis Preset Leaderboard, Pareto Frontier Trajectory SVG, and 10-Bin Reliability Diagram
+// "Beyond Shannon" in three measured steps, followed (unless `compact`) by the September 2026 EXP-11 record:
+// 4-axis preset leaderboard, Pareto trajectory and reliability diagram. The record's temperatures were fitted
+// in-sample; its headline claims are withdrawn (see the EXP-11 page).
+interface Props { compact?: boolean }
+const { compact = false } = Astro.props;
 ---
 
 <div class="jev-dashboard-wrapper not-content">
-  <!-- 1. Top Headline Metric Cards -->
+  <!-- 1. From Shannon to hesitation-gating: three measured steps -->
   <div class="jev-kpi-grid">
-    <div class="jev-kpi-card accent-green">
-      <div class="jev-kpi-label">Cloud Run Calibration (T* = 1.35)</div>
-      <div class="jev-kpi-value">-56.2% ECE</div>
-      <div class="jev-kpi-sub">10-Bin ECE: <code>0.0745 → 0.0326</code> · Calib: <strong>82.67 → 88.18</strong> (+0 ms)</div>
+    <div class="jev-kpi-card accent-blue">
+      <div class="jev-kpi-label">Step 1 · Start with Shannon</div>
+      <div class="jev-kpi-value">Hesitation % · AUROC ≈ 0.85</div>
+      <div class="jev-kpi-sub">A probability for every option; their normalized Shannon entropy flags likely errors (231 JevBench items, <a href="/dgem/experiments/exp-17-separate-pass-mirror/">EXP-17</a>)</div>
     </div>
     <div class="jev-kpi-card accent-mauve">
-      <div class="jev-kpi-label">JevBench Public Composite (231 Tasks)</div>
-      <div class="jev-kpi-value">75.70 <span class="jev-badge">Beats #1 Hopper (75.4)</span></div>
-      <div class="jev-kpi-sub">Intel: <strong>79.54</strong> · Calib: <strong>79.05</strong> · Speed: <strong>90.73</strong> (239 ms p50)</div>
+      <div class="jev-kpi-label">Step 2 · Beyond Shannon: calibrate per policy</div>
+      <div class="jev-kpi-value">ECE 0.081 → 0.054</div>
+      <div class="jev-kpi-sub">Raw probabilities are over-confident by domain; a temperature fitted on held-out folds fixes it (JevBench n=231, <a href="/dgem/experiments/exp-14-idc-rerun/">EXP-14</a>; XNLI 0.227 → 0.036, n=4,493)</div>
     </div>
-    <div class="jev-kpi-card accent-blue">
-      <div class="jev-kpi-label">Phase 2B Entropy Cascade (H̃ ≥ 0.50)</div>
-      <div class="jev-kpi-value">90.05 Intel / 90.66 Calib</div>
-      <div class="jev-kpi-sub"><strong>71.9% LLM Calls Saved</strong> · 244 ms p50 · Hard Tier: <strong>67.6% → 84.7%</strong></div>
+    <div class="jev-kpi-card accent-green">
+      <div class="jev-kpi-label">Step 3 · Gate on hesitation</div>
+      <div class="jev-kpi-value">221 / 231 with 39% handed off</div>
+      <div class="jev-kpi-sub">Answers at ≥ 16% hesitation go to <code>gemini-3.8-flash</code>; the rest stay at about 0.1 s (<a href="/dgem/experiments/exp-14-idc-rerun/">EXP-14</a>)</div>
     </div>
     <div class="jev-kpi-card accent-amber">
-      <div class="jev-kpi-label">EXP-05 Normalized Entropy Cascade</div>
-      <div class="jev-kpi-value">97.17 Intel / 85.94 Acc Preset</div>
-      <div class="jev-kpi-sub"><strong>98.0% Raw Acc</strong> · Beats standalone <code>gemini-3.8-flash</code> by <strong>+7.40 pts</strong> (56% cheaper)</div>
+      <div class="jev-kpi-label">Withdrawn (September 2026)</div>
+      <div class="jev-kpi-value"><s>-56.2% ECE</s> · <s>Beats #1 Hopper</s></div>
+      <div class="jev-kpi-sub">Temperature fitted and scored on the same items; cross-validated, no gain on 50 items. <a href="/dgem/confidence/overview/">Current view →</a></div>
     </div>
+  </div>
+
+  {!compact && (<>
+  <div class="jev-history-note">
+    <strong>September 2026 record, kept for reference.</strong> Everything below uses temperatures fitted in-sample
+    (<code>T* = 1.25</code>, <code>1.35</code>), JevBench v1.3.1 scoring and, for the 231-task rows, the upstream
+    <code>djev</code> receipt. It is not a measured leaderboard rank; see the corrections on the
+    <a href="/dgem/experiments/exp-11-jevbench-parity/">EXP-11 page</a>.
   </div>
 
   <!-- 2. Interactive 4-Axis Preset Switcher & Leaderboard -->
@@ -74,7 +86,7 @@
     <div class="jev-panel">
       <h3 class="jev-panel-title">Pareto Frontier Trajectory: Intelligence vs. p50 Latency</h3>
       <p class="jev-panel-desc">
-        Post-hoc Slot Temperature Scaling (<code>T*</code>) improves Calibration at <strong>0 ms latency cost</strong>, while Entropy-Gated Escalation (<code>H̃ ≥ τ</code>) lifts Intelligence vertically (+10.5 to +14.2 pts) while keeping <code>p50</code> anchored near Stage-1 speed (~240–750 ms).
+        Temperature scaling costs <strong>0 ms</strong> (the T* points here were fitted in-sample), while Entropy-Gated Escalation (<code>H̃ ≥ τ</code>) lifts Intelligence vertically (+10.5 to +14.2 pts) while keeping <code>p50</code> anchored near Stage-1 speed (~240–750 ms).
       </p>
       <div class="jev-svg-container">
         <svg viewBox="0 0 600 340" class="jev-svg" role="img" aria-label="Intelligence vs p50 Latency Pareto Frontier">
@@ -155,9 +167,9 @@
 
     <!-- Right Chart: 10-Bin Reliability Diagram (T=1.00 vs T*=1.35) -->
     <div class="jev-panel">
-      <h3 class="jev-panel-title">10-Bin Reliability Diagram: Raw (T=1.00) vs. Calibrated (T*=1.35)</h3>
+      <h3 class="jev-panel-title">10-Bin Reliability Diagram: Raw (T=1.00) vs. In-Sample T*=1.35 (50 items)</h3>
       <p class="jev-panel-desc">
-        Iterative mask denoising sharpens winning token logits (<code>p ≈ 0.96–0.99</code>), creating an overconfidence gap in the top confidence bins. Post-hoc Slot Temperature Scaling (<code>T* = 1.35</code>) aligns predicted confidence with empirical accuracy (<strong>-56.2% ECE</strong>).
+        Iterative mask denoising sharpens winning token logits (<code>p ≈ 0.96–0.99</code>), creating an overconfidence gap in the top confidence bins. Fitted and scored on the same 50 items, <code>T* = 1.35</code> looked like a 56% ECE cut; cross-validated it gives no gain. Fit a temperature per policy on held-out data instead.
       </p>
       <div class="jev-svg-container">
         <svg viewBox="0 0 600 340" class="jev-svg" role="img" aria-label="10-Bin Reliability Diagram T=1.00 vs T*=1.35">
@@ -195,17 +207,18 @@
           <circle cx="225" cy="152" r="5" fill="#a6e3a1" />
           <circle cx="355" cy="95" r="5.5" fill="#a6e3a1" />
           <circle cx="512" cy="34" r="6.5" fill="#a6e3a1" stroke="#fff" stroke-width="1.5" />
-          <text x="500" y="29" text-anchor="end" class="svg-pt-lbl highlight-green">Calibrated T*=1.35 (ECE = 0.0326, Calib = 88.18)</text>
+          <text x="500" y="29" text-anchor="end" class="svg-pt-lbl highlight-green">In-sample T*=1.35 (ECE = 0.0326)</text>
         </svg>
       </div>
     </div>
   </div>
+  </>)}
 </div>
 
 <script>
   const systems = [
     {
-      name: "dgem Cloud Run (T* = 1.35 Calibrated)",
+      name: "dgem Cloud Run (T* = 1.35, in-sample)",
       badge: "EXP-04 + T*",
       cls: "Zero-Shot Diffusion (1 Pass)",
       intel: 82.99,
@@ -217,7 +230,7 @@
       highlight: "mauve"
     },
     {
-      name: "dgem / djev JevBench Public (T* = 1.25)",
+      name: "dgem / djev JevBench Public (T* = 1.25, in-sample)",
       badge: "EXP-11 (231 Tasks)",
       cls: "Zero-Shot Diffusion (1 Pass)",
       intel: 79.54,
@@ -229,8 +242,8 @@
       highlight: "blue"
     },
     {
-      name: "Hopper (JevBench v1.3.1 #1 Reference)",
-      badge: "JevBench #1",
+      name: "Hopper (JevBench v1.3.1 reference)",
+      badge: "Upstream v1.3.1",
       cls: "Typed Decision Model",
       intel: 76.40,
       calib: 85.20,
@@ -429,6 +442,15 @@
     gap: 1.25rem;
     margin: 1.5rem 0 2rem 0;
   }
+  .jev-history-note {
+    border: 1px dashed #f9e2af;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: #cdd6f4;
+    background: #181825;
+  }
+  .jev-kpi-sub a { color: #89b4fa; }
   .jev-kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
