@@ -170,8 +170,12 @@ recipe's `ModelHandler` starts the dgem image's own server once per worker and s
 Run one SDK process per worker (`--experiments=no_use_multiple_sdk_containers`) so the 26B model loads once per GPU.
 Install Beam in a virtual environment *with pip* (the SDK harness checks for it). `g4-standard-48` workers failed with
 `ZONE_RESOURCE_POOL_EXHAUSTED` in every `us-central1` zone during our tests, and flex-start provisioning found no
-capacity in two one-hour windows; L4 workers started in about 5 minutes. If you need RTX PRO 6000 on Dataflow, use
-a Compute Engine reservation.
+capacity in two one-hour windows; L4 workers started in about 5 minutes. A Compute Engine reservation for the same
+machine (which Dataflow consumes automatically when the worker machine type and GPU match) also failed: 108 attempts
+over two hours in every zone where the project had RTX PRO 6000 quota, all out of capacity. If you need RTX PRO 6000
+on Dataflow, secure the capacity before you plan the job (a reservation made well ahead, or a future reservation),
+and check your `GPUS_PER_GPU_FAMILY` quota per region: it was 0 in most regions for our project. Cloud Run's GPU
+pool, which has its own quota, gave us RTX PRO 6000 GPUs within minutes the same day.
 
 **Vertex AI batch prediction.** It accepted `g2-standard-16` with an L4 and rejected RTX PRO 6000 on
 `g4-standard-48`. The container needs an adapter for the `{"instances": [...]}` request format
