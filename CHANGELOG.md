@@ -17,6 +17,16 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 - **Gateway: `/v1/raw/chat/completions` removed (410 Gone).** dgem serves decisions; free-form generation had no
   callers. `/v1/chat/completions` on the gateway still makes decisions but is deprecated (`Deprecation` header); use
   `/api/decide` or `/v1/systemone`.
+- **`dgem systemone serve` answers 422, not 500, when the server refuses a sub-request (#120).** Server schema errors
+  (HTTP 400/422, e.g. a score question with more than 26 levels) are now passed on as 422, with the Decision Index
+  kit's `at most 26 options per choice` marker when the limit is the alternatives count.
+- **`bench-intents` full CLINC150 no longer fails the bracket final (#119).** With 151 options, round 1 kept 8 × 5 = 40
+  intents, more than one question holds (26), so every final was rejected. Kept intents above 26 now go through
+  another bracket round.
+- **Templates keep dict-form order (#118).** Questions and options written as JSON objects (`"questions": {"id": …}`,
+  `"options": {"name": "description"}`, `criteria`) were turned into lists by ranging over a Go map, so their order
+  (and the letters A, B, C… the server assigns) changed between calls. They now keep the order they were written in.
+  Requests from list-form templates are unchanged.
 
 ## v0.3.3 (2026-10-07)
 

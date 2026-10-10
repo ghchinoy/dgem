@@ -25,7 +25,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ### Bidirectional Canvas Attention
 * **In Plain English**: Every input word directly inspects every policy rule and every decision blank—and the decision blanks inspect *each other* simultaneously (`slot_1 <-> slot_2`).
-* **Under the Hood**: Standard LLM decoders apply a lower-triangular causal mask ($t$ can only see $<t$). DiffusionGemma uses a hybrid attention mask (`TRITON_ATTN` in vLLM): causal over the prompt prefix (for KV-cache reuse) and **all-to-all bidirectional** over the 256-token diffusion canvas.
+* **Under the Hood**: Standard LLM decoders apply a lower-triangular causal mask ($t$ can only see $<t$). DiffusionGemma uses a hybrid attention mask (`TRITON_ATTN` in vLLM): causal over the prompt prefix (for KV-cache reuse) and **all-to-all bidirectional** over the answer canvas (served with 128 rows, 32 on Cloud Run L4; each request uses the smallest multiple of 16 rows that holds its answer template).
 * **Where You See It in `dgem`**: Enables joint 3-slot triage (`urgent` + `team` + `sentiment`) in **458.9 ms** (`EXP-01`).
 
 ### Policy-as-Template (`.json.tmpl`)
@@ -40,7 +40,7 @@ Use this page as a **Decoder Ring** to translate between disciplines.
 
 ### Conditional Policy DAG (`depends_on` & `ask_if`)
 * **In Plain English**: A multi-stage decision flowchart where follow-up questions are only evaluated if an upstream gate question resolves to `true` (or a specific option).
-* **Under the Hood**: Topological sorting in `pkg/schema` partitions questions into stages. If Stage 1 (`is_prompt_injection`) evaluates to `false`, downstream forensic slots are pruned in **1 pass** (`682 ms`), saving 50% of compute on benign traffic.
+* **Under the Hood**: `schedule()` in the serving image's `structured_server.py` sorts questions topologically into stages; each stage after the first is one more sequential read. If Stage 1 (`is_prompt_injection`) evaluates to `false`, downstream forensic slots are pruned in **1 pass** (`682 ms`), saving 50% of compute on benign traffic.
 * **Where You See It in `dgem`**: [Experiment `EXP-06`](experiments/exp-05-roadmap-cascades-and-dags.md#experiment-exp-06-conditional-policy-dags-depends_on--ask_if).
 
 ---
