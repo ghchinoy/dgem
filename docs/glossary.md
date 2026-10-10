@@ -82,7 +82,7 @@ These terms come from [Confidence beyond Shannon: hesitation-gated decisions](co
 ### Hesitation-Gating
 * **In Plain English**: Answer directly when the model is clearly sure; hand the decision to a larger model or a person when it hesitates. Like a triage nurse who treats clear cases and refers the rest.
 * **Under the Hood**: Escalate when hesitation (normalized entropy $H/\ln K$) is at or above a threshold, forwarding `dgem`'s probabilities as a hint. On JevBench, hesitation detects errors with AUROC ≈ 0.85 (`EXP-17`); a live 35% gate reached 81/86 on safety/faithfulness with 8–32% handed off (`EXP-18`).
-* **Where You See It in `dgem`**: `cascade_mode` / `cascade_threshold` (in nats) / `cascade_model` on the gateway, MCP and Studio; Hesitation % on every Studio answer.
+* **Where You See It in `dgem`**: `cascade_mode` / `cascade_threshold` (in nats, or hesitation with `cascade_threshold_mode: "normalized"`) / `cascade_model` on the gateway, MCP and Studio; Hesitation % on every Studio answer.
 
 ### Answer Template Effects (Letter Collision & Slot Names)
 * **In Plain English**: The model reads the whole answer form, labels and question names included. If two questions use the same letters for different options, it tends to copy the letter across; if a question's name hints the answer should differ, it does.

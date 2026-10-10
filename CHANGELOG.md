@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Opt-in normalized cascade gate (#123).** `cascade_threshold_mode: "nats" | "normalized"` on `POST /api/decide`
+  (or `X-DGem-Cascade-Threshold-Mode`), MCP `decide_policy` / `decide_custom_questions`, and the Studio Batch Eval
+  ("Escalation gate"). `normalized` compares H / ln K, the Hesitation scale, so wide slots no longer escalate more
+  readily than yes/no ones at the same setting; its default threshold is 0.16 (EXP-05b). The default stays `nats`
+  (0.35). Cascade telemetry adds `threshold_mode` and each slot's `stage1_normalized_entropy`; the
+  `dgem.cascade.gemini` span records the mode and threshold. (`dgem decide` has no cascade, so there is no CLI flag.)
 - **Gateway: `/v1/systemone` keeps images.** The adapter dropped the request's `images` and answered text-only with
   HTTP 200; it now sends them with every sub-request (batches and bracket rounds). Images must be data: URIs or
   public http(s) URLs (local paths are rejected with 400, in the gateway and in `dgem systemone serve`).
