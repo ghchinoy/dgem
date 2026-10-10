@@ -117,6 +117,17 @@ PYTHONPATH=deploy/batch python3 deploy/batch/dgem_beam.py \
   "GPU_UTIL": "0.92", "MAX_SEQS": "48", "MAX_INFLIGHT": "32"`.
 - If workers don't start (`ZONE_RESOURCE_POOL_EXHAUSTED`), add `;provisioning_model:FLEX_START` to the accelerator
   option: the job waits up to an hour for capacity, using preemptible GPU quota.
+- For guaranteed capacity, create a Compute Engine reservation for the exact worker shape and pin the zone:
+
+  ```bash
+  gcloud compute reservations create dgem-df --project <PROJECT> --zone <ZONE> --vm-count 4 \
+    --machine-type g4-standard-48 --accelerator count=1,type=nvidia-rtx-pro-6000
+  # then add to the pipeline:  --worker_zone <ZONE>
+  ```
+
+  Dataflow consumes it automatically when machine type and GPU match, and bills Dataflow prices while the job runs;
+  the reservation is billed at Compute Engine prices whenever it is idle, so delete it after the job. Creating it
+  needs capacity too.
 
 ## 6. Vertex AI batch prediction
 
