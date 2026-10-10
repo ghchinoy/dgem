@@ -9,6 +9,9 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`bench-intents` full CLINC150 no longer fails the bracket final (#119).** With 151 options, round 1 kept 8 × 5 = 40
+  intents, more than one question holds (26), so every final was rejected. Kept intents above 26 now go through
+  another bracket round.
 - **Templates keep dict-form order (#118).** Questions and options written as JSON objects (`"questions": {"id": …}`,
   `"options": {"name": "description"}`, `criteria`) were turned into lists by ranging over a Go map, so their order
   (and the letters A, B, C… the server assigns) changed between calls. They now keep the order they were written in.
