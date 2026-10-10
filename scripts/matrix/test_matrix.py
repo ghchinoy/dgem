@@ -71,6 +71,35 @@ def _run(tmp, cand_acc, cand_flip):
         return R.build(tmp, json.load(f))
 
 
+class TestServerKey(unittest.TestCase):
+    """X-DGem-Key goes to dgem serving targets only, never to a competitor's server."""
+
+    def test_header_routing(self):
+        from matrix import net
+        from matrix.targets import CompetitorTarget
+        sent = []
+        orig = net.request
+        net.request = lambda url, body=None, **kw: sent.append((url, kw.get("headers"))) or (200, {}, 1.0, {})
+        old = os.environ.get("DGEM_SERVER_KEY")
+        try:
+            os.environ["DGEM_SERVER_KEY"] = "svc-key,old-key"
+            Target("prod", "https://serving.example/v1").systemone({"questions": {}})
+            Target("prod", "https://serving.example").chat({"questions": []}, {})
+            CompetitorTarget("other", "https://competitor.example").systemone({"questions": {}})
+            os.environ["DGEM_SERVER_KEY"] = ""
+            Target("prod", "https://serving.example").systemone({"questions": {}})
+        finally:
+            net.request = orig
+            if old is None:
+                os.environ.pop("DGEM_SERVER_KEY", None)
+            else:
+                os.environ["DGEM_SERVER_KEY"] = old
+        self.assertEqual(sent[0][1], {"X-DGem-Key": "svc-key"})
+        self.assertEqual(sent[1][1], {"X-DGem-Key": "svc-key"})
+        self.assertFalse(sent[2][1])
+        self.assertEqual(sent[3][1], {})
+
+
 class TestMetrics(unittest.TestCase):
     def test_ece_perfect_and_off(self):
         self.assertAlmostEqual(M.ece([1.0, 1.0], [1, 1]), 0.0)

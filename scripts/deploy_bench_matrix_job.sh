@@ -103,12 +103,23 @@ PY
 cp "${REPO_ROOT}/deploy/bench-matrix/Dockerfile" "${CTX}/Dockerfile"
 gcloud builds submit "${CTX}" --project="${PROJECT}" --tag="${IMAGE}" --suppress-logs --quiet
 
+# Service-to-service key for the serving image (X-DGem-Key; see docs/deploy/public-images.md). Held only by services
+# (gateway, matrix jobs, probes), never given to people. Skipped when the secret doesn't exist.
+SERVER_KEY_SECRET="${SERVER_KEY_SECRET:-dgem-server-key}"
+JOB_SECRET_FLAGS=()
+if gcloud secrets describe "${SERVER_KEY_SECRET}" --project "${PROJECT}" >/dev/null 2>&1; then
+  gcloud secrets add-iam-policy-binding "${SERVER_KEY_SECRET}" --project "${PROJECT}" \
+    --member="serviceAccount:${SA}" --role=roles/secretmanager.secretAccessor --quiet >/dev/null
+  JOB_SECRET_FLAGS=(--set-secrets="DGEM_SERVER_KEY=${SERVER_KEY_SECRET}:latest")
+fi
+
 deploy_job() {  # job tier timeout
   local job="$1" tier="$2" timeout="$3"
   echo "==> Cloud Run job ${job} (${tier})"
   gcloud run jobs deploy "${job}" --project="${PROJECT}" --region="${REGION}" --image="${IMAGE}" \
     --service-account="${SA}" --tasks=1 --max-retries=0 --task-timeout="${timeout}" --cpu=2 --memory=2Gi \
     --set-env-vars="^|^MATRIX_TIER=${tier}|MATRIX_TARGETS=${NAME}=${MATRIX_TARGET}|MATRIX_UPLOAD=${MATRIX_BUCKET%/}/${tier}" \
+    ${JOB_SECRET_FLAGS[@]+"${JOB_SECRET_FLAGS[@]}"} \
     --quiet >/dev/null
   gcloud run jobs add-iam-policy-binding "${job}" --project="${PROJECT}" --region="${REGION}" \
     --member="serviceAccount:${SA}" --role="roles/run.invoker" --quiet >/dev/null
