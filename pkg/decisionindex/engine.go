@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -764,6 +765,17 @@ func NewSystemOneHTTPHandler(cli *client.Client, opts EngineOptions) http.Handle
 		resp, err := ExecuteSystemOne(r.Context(), cli, req, opts)
 		if err != nil {
 			errStr := err.Error()
+			// The server rejects a sub-request it can't represent with HTTP 400 (chat route) or 422 (systemone
+			// route), e.g. "question 'x': at most 26 alternatives" for a score question with more levels. That is
+			// a refusal of this request, not a server failure (#120). Name the Decision Index kit's marker.
+			var he *client.HTTPError
+			if errors.As(err, &he) && (he.StatusCode == http.StatusBadRequest || he.StatusCode == http.StatusUnprocessableEntity) {
+				if strings.Contains(he.Body, "alternatives") && !strings.Contains(errStr, "options per choice") {
+					errStr += " (at most 26 options per choice)"
+				}
+				http.Error(w, errStr, http.StatusUnprocessableEntity)
+				return
+			}
 			if strings.Contains(errStr, "HTTP 422") ||
 				strings.Contains(errStr, "options per choice") ||
 				strings.Contains(errStr, "the canvas holds at most") ||

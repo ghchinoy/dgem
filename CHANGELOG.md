@@ -9,6 +9,9 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`dgem systemone serve` answers 422, not 500, when the server refuses a sub-request (#120).** Server schema errors
+  (HTTP 400/422, e.g. a score question with more than 26 levels) are now passed on as 422, with the Decision Index
+  kit's `at most 26 options per choice` marker when the limit is the alternatives count.
 - **`bench-intents` full CLINC150 no longer fails the bracket final (#119).** With 151 options, round 1 kept 8 × 5 = 40
   intents, more than one question holds (26), so every final was rejected. Kept intents above 26 now go through
   another bracket round.
