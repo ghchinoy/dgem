@@ -9,6 +9,17 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+Merged after the v0.3.4 tag (not in v0.3.4; each needs its own validation before release):
+
+- Serving: `seed_token random|fixed` for answer-slot seeding (#136, PROP-32; default unchanged).
+- Adapter: `dgem systemone serve --option-order alpha|source` (#135, PROP-33; default unchanged).
+- SVG images refused with a clear error; docs use the PNG fixtures (#137, #117).
+- Docs: the normalized cascade gate at 0.16 is not equivalent to 0.35 nats (#134, PROP-31).
+
+## v0.3.4 (2026-10-10)
+
+Serving image and gateway. Tag at `c29f042` (the source validated in decision-lab `benchmarks/runs/20261010-v034-release`: canary T1 and T2 PASS vs v0.3.1, gateway cascade escalation unchanged within noise). Serving image `dgemma@sha256:2c769cc9…` built from the tag; Vertex `dgemma-dedicated-g4` and Cloud Run `dgemma` serve it; gateway `dgemma-gateway` tag `gwv034`.
+
 - **Serving image: no free-form generation.** `structured_server.py` answers `/v1/raw/chat/completions` (vLLM's
   plain-generation pass-through, unused by dgem) with `410 Gone`, on Vertex `/invoke/*` and Cloud Run. Decision routes
   (`/v1/systemone`, `/v1/chat/completions`, `/predict`, `/rawPredict`) and `/health` are unchanged. Needs a
