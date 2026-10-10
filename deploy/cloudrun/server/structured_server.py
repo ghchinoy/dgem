@@ -15,8 +15,8 @@ Answers take Jev's shapes, with this server's diagnostics alongside:
   score:  {"score", "legend", "probabilities", "confidence"}
 The request body may also carry the schema keys "instructions", "samples",
 "auto_max", "auto_threshold", "steps", "think", "ask", "chunk_rows",
-"chunk_prompt", "sequential", "layout" and "isolate" ("auto", "noul", "none" or "all") as
-extensions. Images go ahead of the
+"chunk_prompt", "sequential", "layout", "isolate" ("auto", "noul", "none" or "all") and
+"seed_token" ("random" or "fixed") as extensions. Images go ahead of the
 state, either as multipart/form-data with the JSON body in a part named
 "request" and each image as a file part, or as an "images" array of data
 URLs in the JSON body.
@@ -110,6 +110,14 @@ MAX_INFLIGHT = int(os.environ.get("MAX_INFLIGHT", "8"))
 # The prompt layout of a request that doesn't name one: "document_first" (the state, then the questions, both in
 # the user turn) or "schema_first" (the questions as the system prompt, the layout before v0.2.0).
 DEFAULT_LAYOUT = os.environ.get("DEFAULT_LAYOUT", "document_first")
+# What sits at each answer slot before the read (PROP-32): "random" (the default, upstream behaviour: a seeded random
+# vocabulary id per slot, so the noise draw depends on the seed) or "fixed" (the PAD id at every slot, the token the
+# canvas already uses for its tail; reads stop depending on the seed, so samples > 1 adds nothing but engine noise).
+# Set per deployment (DEFAULT_SEED_TOKEN or --seed-token) or per request ("seed_token").
+SEED_TOKENS = ("random", "fixed")
+DEFAULT_SEED_TOKEN = os.environ.get("DEFAULT_SEED_TOKEN", "random")
+if DEFAULT_SEED_TOKEN not in SEED_TOKENS:
+    raise SystemExit("DEFAULT_SEED_TOKEN must be random or fixed")
 # Which questions get a read of their own when the request does not say ("alone"): "auto" (the default), "none" (one
 # joint read), "noul" (yes/no questions) or "all". Read jointly, a yes/no question after another one tended to copy
 # its answer in agent/tool-call states (PROP-19), mostly in small requests: with 2 questions an action judgment scored
@@ -289,6 +297,9 @@ def parse_schema(value):
     layout = value.get("layout", DEFAULT_LAYOUT)
     if layout not in LAYOUTS:
         raise SchemaError('schema: layout must be "schema_first" or "document_first"')
+    seed_token = value.get("seed_token", DEFAULT_SEED_TOKEN)  # dgem (PROP-32)
+    if seed_token not in SEED_TOKENS:
+        raise SchemaError('schema: seed_token must be "random" or "fixed"')
     think = value.get("think", 0)
     if isinstance(think, bool) or not isinstance(think, int) or not 0 <= think <= 4096:
         raise SchemaError("schema: think must be a thought budget in tokens, 0 to 4096")
@@ -303,6 +314,7 @@ def parse_schema(value):
         "chunk_prompt": chunk_prompt,
         "sequential": sequential,
         "layout": layout,
+        "seed_token": seed_token,
         "format": "lines" if len(qs) <= 10 else "indexed",
     }
 
@@ -502,12 +514,13 @@ def pin_xargs(template, slots, steps):
     }
 
 
-def build_canvas(template, slots, seed):
+def build_canvas(template, slots, seed, seed_token="random"):
     rng = random.Random(seed)
     canvas = list(template) + [TURN_CLOSE]
     canvas += [PAD] * (canvas_width(template) - len(canvas))
     for s in slots:
-        canvas[s["pos"]] = rng.randrange(VOCAB)
+        # dgem (PROP-32): "fixed" seeds every slot with PAD instead of a seeded random id
+        canvas[s["pos"]] = PAD if seed_token == "fixed" else rng.randrange(VOCAB)
     return canvas
 
 
@@ -682,7 +695,9 @@ def one_read(
         "return_tokens_as_token_ids": True,
         "chat_template_kwargs": {"enable_thinking": thinking},
         "vllm_xargs": {
-            "diffusion_seed_canvas": build_canvas(template, slots, seed),
+            "diffusion_seed_canvas": build_canvas(
+                template, slots, seed, schema.get("seed_token", "random")
+            ),
             "diffusion_canvas_length": canvas_width(template),
             "diffusion_max_steps": schema["steps"],
             "diffusion_read_only": True,
@@ -737,7 +752,9 @@ def one_read_continuation(schema, template, slots, prompt_ids, seed):
         "logprob_token_ids": label_id_union(slots),
         "return_tokens_as_token_ids": True,
         "vllm_xargs": {
-            "diffusion_seed_canvas": build_canvas(template, slots, seed),
+            "diffusion_seed_canvas": build_canvas(
+                template, slots, seed, schema.get("seed_token", "random")
+            ),
             "diffusion_canvas_length": canvas_width(template),
             "diffusion_max_steps": schema["steps"],
             "diffusion_read_only": True,
@@ -1008,6 +1025,7 @@ def decide(schema, state_content, seed):
     diagnostics = {
         "steps": schema["steps"],
         "layout": schema["layout"],
+        "seed_token": schema["seed_token"],
         "isolated": [q["id"] for q in schema["questions"] if q.get("alone")],
         "stages": stages,
         "skipped": skipped,
@@ -1208,6 +1226,7 @@ JEV_EXTENSIONS = (
     "sequential",
     "layout",
     "isolate",
+    "seed_token",
 )
 
 
@@ -1686,7 +1705,7 @@ def _watchdog(period=60.0):
 
 
 def main():
-    global ARGS, CANVAS_LEN, CANVAS_STEP
+    global ARGS, CANVAS_LEN, CANVAS_STEP, DEFAULT_SEED_TOKEN
     p = argparse.ArgumentParser()
     p.add_argument("--upstream", default="http://127.0.0.1:8010")
     p.add_argument("--model", default="dgemma")
@@ -1697,6 +1716,12 @@ def main():
         type=int,
         default=16,
         help="request widths round up to a multiple of this",
+    )
+    p.add_argument(
+        "--seed-token",
+        choices=SEED_TOKENS,
+        default=DEFAULT_SEED_TOKEN,
+        help="answer-slot seed for requests without seed_token: random (seeded vocabulary id) or fixed (PAD)",
     )
     p.add_argument(
         "--no-constrained",
@@ -1715,6 +1740,7 @@ def main():
         help="directory for the self-signed certificate",
     )
     ARGS = p.parse_args()
+    DEFAULT_SEED_TOKEN = ARGS.seed_token
     CANVAS_LEN = ARGS.canvas
     CANVAS_STEP = ARGS.canvas_step
     init_tokenizer(AutoTokenizer.from_pretrained(ARGS.tokenizer))
