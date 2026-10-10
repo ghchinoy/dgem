@@ -5,7 +5,7 @@ description: "Architectural blueprints and experimental designs for Entropy-Gate
 
 # Next-Horizon Experiments (`EXP-05` – `EXP-08`)
 
-While `EXP-01` through `EXP-04` established **DiffusionGemma (`dgemma`)** as an $O(1)$-step Zero-Shot Decision Model with calibrated epistemic entropy ($H$), they also illuminated the exact architectural boundary of single-pass (`think: 0`) masked diffusion readout and opened four high-leverage research directions.
+While `EXP-01` through `EXP-04` established **DiffusionGemma (`dgemma`)** as an $O(1)$-step Zero-Shot Decision Model with an entropy-based uncertainty signal ($H$; raw probabilities need a per-policy temperature to be calibrated), they also illuminated the exact architectural boundary of single-pass (`think: 0`) masked diffusion readout and opened four high-leverage research directions.
 
 ---
 

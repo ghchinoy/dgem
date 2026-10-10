@@ -1,11 +1,11 @@
 ---
 title: "EXP-11: JevBench v1.3.1 4-Axis Parity, Slot Temperature Calibration & Entropy Cascades"
-description: "Headline empirical gains of DiffusionGemma (dgem) on JevBench v1.3.1: +13.8 Calibration points via Slot Temperature Scaling & Entropy-Gated Cascades, +10.5 Intelligence points on JevBench Hard, followed by our Manifest-Verified Upstream Sync architecture."
+description: "DiffusionGemma (dgem) on JevBench v1.3.1: slot temperature scaling and entropy-gated cascades (calibration headline withdrawn after cross-validation; see corrections), and the manifest-verified upstream sync."
 ---
 
 # `EXP-11`: `JevBench v1.3.1` Results, Slot Temperature Calibration & Cascade Gains
 
-> **Note (2026-10-04): two corrections to this page's figures; the text below is unchanged.**
+> **Note (2026-10-04): two corrections to this page's figures. TL;DR items 1 and 2 are marked withdrawn (2026-10-09); the rest of the text is unchanged.**
 >
 > - **Temperature fitted in-sample.** The `-56.2%` ECE (`0.0745 → 0.0326`, $T^* = 1.35$) was fitted and scored on the
 >   same 50 items. Replaying the same receipt with the fit cross-validated (`--auto-temperature`, now 5-fold by
@@ -28,9 +28,22 @@ description: "Headline empirical gains of DiffusionGemma (dgem) on JevBench v1.3
 >
 > Re-runs are tracked in [#84](https://github.com/ghchinoy/dgem/issues/84) (ordinal score items) and [#85](https://github.com/ghchinoy/dgem/issues/85) (k-fold temperature).
 
+> **Where this page fits (2026-10-10).** EXP-11 was the first attempt to go *beyond Shannon*: Shannon entropy
+> (shown as Hesitation %) already flagged likely errors, and a post-hoc temperature was meant to turn the raw
+> probabilities into calibrated ones. Two lessons from it shape the current view in
+> [Confidence beyond Shannon](../confidence/overview.md):
+>
+> 1. **Hesitation ranks errors well.** AUROC ≈ 0.85 on 231 JevBench items ([EXP-17](exp-17-separate-pass-mirror.md)).
+> 2. **Calibration is fitted per policy, on held-out data.** Raw probabilities are over-confident by an amount that
+>    depends on the domain. A temperature fitted on held-out folds lowers `dgem`'s JevBench ECE from 0.081 to 0.054
+>    (n=231, [EXP-14](exp-14-idc-rerun.md)); fitted and scored on the same 50 items, as below, it only looked better.
+>
+> The third step is the gate. On JevBench, handing off at 16% hesitation sends 39% of items to `gemini-3.8-flash` and
+> scores 221/231 (EXP-14). The tables below are kept as the September record.
+
 > **TL;DR — Headline Results First**:
-> 1. **Zero-Cost Calibration Breakthrough (`-56.2%` ECE in `0 ms`)**: Applying post-hoc Slot Temperature Scaling ($p_k(T^*) = p_k^{1/T^*} / \sum p_j^{1/T^*}$) to `DiffusionGemma`'s restricted-softmax logits cuts 10-bin Expected Calibration Error (`ECE`) on Cloud Run L4 by **56.2%** (`0.0745` $\rightarrow$ **`0.0326`** at $T^* = 1.35$), lifting the `JevBench` Calibration axis from `82.67` to **`88.18` (`+5.51 pts`)** and the 4-Axis Composite Score to **`76.79`** with **100% identical `argmax` accuracy**.
-> 2. **Surpassing `#1 Hopper` (`75.4`) on the 231-Task `JevBench` Public Split (`75.70`)**: On `JevBench`'s 231 public tasks, `djev` (`DiffusionGemma`) already beat `#1 Hopper` on **Intelligence (`82.7` vs. `76.4`)** and **Speed (`91.4` at `239 ms` p50 vs. `86.8`)**, losing `#1` solely due to unscaled `T=1.0` logit sharpness. Calibrating with $T^* = 1.25$ lifts the public split Composite Score from `75.17` to **`75.70`**.
+> 1. ~~**Zero-Cost Calibration Breakthrough (`-56.2%` ECE in `0 ms`)**~~ **Withdrawn:** the temperature was fitted and scored on the same 50 items; cross-validated, it gives no gain (see the note above). Original text: Applying post-hoc Slot Temperature Scaling ($p_k(T^*) = p_k^{1/T^*} / \sum p_j^{1/T^*}$) to `DiffusionGemma`'s restricted-softmax logits cuts 10-bin Expected Calibration Error (`ECE`) on Cloud Run L4 by **56.2%** (`0.0745` $\rightarrow$ **`0.0326`** at $T^* = 1.35$), lifting the `JevBench` Calibration axis from `82.67` to **`88.18` (`+5.51 pts`)** and the 4-Axis Composite Score to **`76.79`** with **100% identical `argmax` accuracy**.
+> 2. ~~**Surpassing `#1 Hopper` (`75.4`) on the 231-Task `JevBench` Public Split (`75.70`)**~~ **Withdrawn:** this used the upstream `djev` receipt, a temperature fitted in-sample, and v1.3.1 scoring; it is not a measured leaderboard rank. Original text: On `JevBench`'s 231 public tasks, `djev` (`DiffusionGemma`) already beat `#1 Hopper` on **Intelligence (`82.7` vs. `76.4`)** and **Speed (`91.4` at `239 ms` p50 vs. `86.8`)**, losing `#1` solely due to unscaled `T=1.0` logit sharpness. Calibrating with $T^* = 1.25$ lifts the public split Composite Score from `75.17` to **`75.70`**.
 > 3. **Solving `JevBench` `hard` via Entropy-Gated Cascades (`+10.51` Intelligence / `+13.78` Calibration)**: Routing only the `28.1%` highest-entropy tasks ($\tilde{H} \ge 0.50$) to Stage-2 `gemini-3.8-flash` with Pass-1 Prior Forwarding (**saving `71.9%` of LLM calls** and keeping `p50` latency at **`244 ms`**) lifts `JevBench` **Intelligence from `79.54` to `90.05` (`+10.51 pts`)**, **Calibration from `76.88` to `90.66` (`+13.78 pts`)**, and `hard`-tier accuracy from `67.6%` to **`84.7%`** (`100%` on `probability`, `100%` on `ambiguous`, `100%` on `adversarial`, `94.4%` on `multi_hop`).
 
 ---
