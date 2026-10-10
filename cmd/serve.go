@@ -72,7 +72,8 @@ in front of a DiffusionGemma (dgemma) GPU backend (Cloud Run GPU or Vertex AI En
 
 It enables colleagues to execute zero-shot multi-slot decisions via browser UI or simple
 REST JSON calls (POST /api/decide/{template}) without installing the dgem CLI or managing
-local .json.tmpl files, while also acting as an IAP/IAM-compatible /v1/chat/completions proxy
+local .json.tmpl files, while also acting as an IAP/IAM-compatible decision proxy (/v1/systemone; the deprecated
+/v1/chat/completions decision route)
 that gracefully holds and retries requests while a scale-to-zero Cloud Run GPU wakes up.`,
 	Example: `  # Run gateway locally pointing at a Cloud Run dgemma GPU backend
   dgem serve -u https://dgemma-<hash>-uc.a.run.app/v1 --gcp-auth --port 8090
@@ -121,23 +122,25 @@ type TemplateCatalogEntry struct {
 
 // GatewayDecideRequest is the JSON body accepted by POST /api/decide.
 type GatewayDecideRequest struct {
-	Template          string                 `json:"template,omitempty"`
-	CustomTemplate    string                 `json:"custom_template,omitempty"`
-	Variables         map[string]interface{} `json:"variables,omitempty"`
-	Image             string                 `json:"image,omitempty"`
-	ImageURL          string                 `json:"image_url,omitempty"`
-	Images            []string               `json:"images,omitempty"`
-	Backend           string                 `json:"backend,omitempty"`
-	VertexURL         string                 `json:"vertex_url,omitempty"`
-	CascadeMode       string                 `json:"cascade_mode,omitempty"`       // "off" (default), "entropy", or "on_miss"
-	CascadeThreshold  float64                `json:"cascade_threshold,omitempty"`  // default 0.35 nats
-	CascadeModel      string                 `json:"cascade_model,omitempty"`      // default "gemini-3.8-flash"
-	ExpectedAnswers   map[string]string      `json:"expected_answers,omitempty"`   // optional slot_id -> expected value for "on_miss" cascade
-	SuggestExpansions bool                   `json:"suggest_expansions,omitempty"` // dynamically inject 'other_unclassified' and propose new {"name", "description"} options
-	ExpansionEntropy  float64                `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
-	Layout            string                 `json:"layout,omitempty"`             // prompt layout: "document_first" | "schema_first"; empty = template or server default
-	Stage2Prior       string                 `json:"stage2_prior,omitempty"`       // how Stage 1's answer is shown to the Stage-2 cascade: "full" | "soft" | "none"; empty = DGEM_CASCADE_PRIOR or "soft"
-	Temperature       *client.Temperature    `json:"temperature,omitempty"`        // post-hoc temperature: a number, or {"noul":T,"choice":T,"score":T}; overrides the template's "temperature"
+	Template         string                 `json:"template,omitempty"`
+	CustomTemplate   string                 `json:"custom_template,omitempty"`
+	Variables        map[string]interface{} `json:"variables,omitempty"`
+	Image            string                 `json:"image,omitempty"`
+	ImageURL         string                 `json:"image_url,omitempty"`
+	Images           []string               `json:"images,omitempty"`
+	Backend          string                 `json:"backend,omitempty"`
+	VertexURL        string                 `json:"vertex_url,omitempty"`
+	CascadeMode      string                 `json:"cascade_mode,omitempty"`      // "off" (default), "entropy", or "on_miss"
+	CascadeThreshold float64                `json:"cascade_threshold,omitempty"` // default 0.35 nats, or 0.16 with cascade_threshold_mode "normalized"
+	// CascadeThresholdMode: "nats" (default, raw entropy) or "normalized" (entropy / ln K, the Hesitation scale).
+	CascadeThresholdMode string              `json:"cascade_threshold_mode,omitempty"`
+	CascadeModel         string              `json:"cascade_model,omitempty"`      // default "gemini-3.8-flash"
+	ExpectedAnswers      map[string]string   `json:"expected_answers,omitempty"`   // optional slot_id -> expected value for "on_miss" cascade
+	SuggestExpansions    bool                `json:"suggest_expansions,omitempty"` // dynamically inject 'other_unclassified' and propose new {"name", "description"} options
+	ExpansionEntropy     float64             `json:"expansion_entropy,omitempty"`  // Shannon entropy threshold (in nats) for expansion suggestions (default 0.35)
+	Layout               string              `json:"layout,omitempty"`             // prompt layout: "document_first" | "schema_first"; empty = template or server default
+	Stage2Prior          string              `json:"stage2_prior,omitempty"`       // how Stage 1's answer is shown to the Stage-2 cascade: "full" | "soft" | "none"; empty = DGEM_CASCADE_PRIOR or "soft"
+	Temperature          *client.Temperature `json:"temperature,omitempty"`        // post-hoc temperature: a number, or {"noul":T,"choice":T,"score":T}; overrides the template's "temperature"
 }
 
 // GatewayDecideResponse is returned by POST /api/decide.
@@ -1636,9 +1639,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 				writeErr(http.StatusBadRequest, perr.Error())
 				return
 			}
+			thresholdMode := payload.CascadeThresholdMode
+			if thresholdMode == "" {
+				thresholdMode = r.Header.Get("X-DGem-Cascade-Threshold-Mode")
+			}
+			thresholdMode, terr := NormalizeCascadeThresholdMode(thresholdMode)
+			if terr != nil {
+				rootSpan.SetStatus(codes.Error, terr.Error())
+				rootSpan.End()
+				writeErr(http.StatusBadRequest, terr.Error())
+				return
+			}
 			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
 			cascadeSummary = ExecuteStage2GeminiCascadeWithImages(
-				WithStage2Prior(ctx, prior),
+				WithCascadeThresholdMode(WithStage2Prior(ctx, prior), thresholdMode),
 				cascadeMode,
 				cascadeThreshold,
 				cascadeModel,
@@ -1653,6 +1667,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 					attribute.Int("dgem.cascade.image_count", cascadeSummary.ImageCount),
 					attribute.String("dgem.cascade.mode", cascadeSummary.Mode),
 					attribute.String("dgem.cascade.model", cascadeSummary.Model),
+					attribute.String("dgem.cascade.threshold_mode", cascadeSummary.ThresholdMode),
+					attribute.Float64("dgem.cascade.threshold", cascadeSummary.Threshold),
 					attribute.Bool("dgem.cascade.triggered", cascadeSummary.Triggered),
 					attribute.Int("dgem.cascade.escalated_count", cascadeSummary.EscalatedCount),
 					attribute.Int64("dgem.cascade.latency_ms", cascadeSummary.LatencyMs),
@@ -1764,7 +1780,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 	mux.HandleFunc("/api/decide", decideHandler)
 	mux.HandleFunc("/api/decide/", decideHandler)
 
-	// 7. Unified Pass-Through Proxy: POST /v1/systemone, /v1/chat/completions, /v1/raw/chat/completions
+	// 7. Unified Pass-Through Proxy: POST /v1/systemone and the deprecated /v1/chat/completions decision route.
+	// /v1/raw/chat/completions (free-form vLLM generation) is not served: dgem is a decision model.
 	v1ProxyHandler := func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -1804,12 +1821,25 @@ func runServe(cmd *cobra.Command, args []string) error {
 			return
 		}
 
-		reqPath := r.URL.Path // e.g. "/v1/systemone", "/v1/chat/completions", "/v1/raw/chat/completions"
+		reqPath := r.URL.Path // "/v1/systemone" or "/v1/chat/completions"
+		if reqPath == "/v1/chat/completions" {
+			setChatCompletionsDeprecation(w)
+		}
 
 		// If this is a JSON POST /v1/systemone request and adapter mode is enabled, evaluate via decisionindex.ExecuteSystemOne
 		if reqPath == "/v1/systemone" && serveSystemOneMode != "passthrough" && r.URL.Query().Get("raw") != "1" && !strings.Contains(r.Header.Get("Content-Type"), "multipart") {
 			var soReq decisionindex.SystemOneRequest
 			if err := json.Unmarshal(bodyBytes, &soReq); err == nil && len(soReq.Questions) > 0 {
+				if err := checkSystemOneImages(ctx, soReq.Images); err != nil {
+					proxySpan.SetStatus(codes.Error, "invalid_image")
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
+						"error": map[string]string{"message": err.Error(), "type": "invalid_request_error"},
+					})
+					return
+				}
+				proxySpan.SetAttributes(attribute.Int("dgem.image_count", len(soReq.Images)))
 				soOpts := decisionindex.DefaultEngineOptions()
 				soOpts.TemperatureScale = serveSystemOneTemp
 				cli := GetClientForURL(resolvedURL)
@@ -1884,7 +1914,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			req.Header.Set("Content-Type", "application/json")
+			// Forward the caller's Content-Type: multipart/form-data bodies (image uploads to /v1/systemone) carry
+			// their boundary in it, and forcing application/json made the server parse image bytes as JSON.
+			if ct := r.Header.Get("Content-Type"); ct != "" {
+				req.Header.Set("Content-Type", ct)
+			} else {
+				req.Header.Set("Content-Type", "application/json")
+			}
 			injectTraceContextToRequest(attemptCtx, req)
 			if backendTarget == "vertex" {
 				if tok := FetchGCPAccessToken(); tok != "" {
@@ -1937,7 +1973,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 	}
 	mux.HandleFunc("/v1/chat/completions", v1ProxyHandler)
-	mux.HandleFunc("/v1/raw/chat/completions", v1ProxyHandler)
+	mux.HandleFunc("/v1/raw/chat/completions", rawChatGoneHandler)
 	mux.HandleFunc("/v1/systemone", v1ProxyHandler)
 
 	// 8. Model Context Protocol (MCP) Streamable HTTP Server at /mcp
@@ -2001,4 +2037,29 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Printf("   • Templates Catalog:   %s\n", serveTemplatesDir)
 	fmt.Printf("   • Studio Assets:       %s\n", uiSource)
 	return http.ListenAndServe(addr, corsWrapped)
+}
+
+// chatCompletionsDeprecatedAt is when the gateway's /v1/chat/completions decision route was deprecated (2026-10-08),
+// as an RFC 9745 Deprecation header value.
+const chatCompletionsDeprecatedAt = "@1791417600"
+
+// setChatCompletionsDeprecation marks a /v1/chat/completions response as deprecated. The route still makes decisions
+// (a schema system message plus a JSON state); new callers should use /api/decide or /v1/systemone.
+func setChatCompletionsDeprecation(w http.ResponseWriter) {
+	w.Header().Set("Deprecation", chatCompletionsDeprecatedAt)
+	w.Header().Add("Link", `</v1/systemone>; rel="successor-version"`)
+	w.Header().Add("Link", `</api/decide>; rel="alternate"`)
+}
+
+// rawChatGoneHandler answers /v1/raw/chat/completions. The gateway used to pass free-form generation through to
+// vLLM; dgem serves decisions only, so the route is gone.
+func rawChatGoneHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusGone)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": map[string]string{
+			"message": "free-form generation (/v1/raw/chat/completions) is not served: dgem returns decisions. Use POST /api/decide or POST /v1/systemone.",
+			"type":    "route_removed",
+		},
+	})
 }

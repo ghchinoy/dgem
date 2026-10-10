@@ -322,6 +322,28 @@ type RequestStats struct {
 	Diagnostics  *Diagnostics
 }
 
+// ProbabilityEntropy returns the Shannon entropy H = -sum p ln p (nats) of a label distribution, renormalized so a
+// distribution that doesn't sum exactly to 1 still gives H in [0, ln K].
+func ProbabilityEntropy(probs map[string]float64) float64 {
+	sum := 0.0
+	for _, p := range probs {
+		if p > 0 && !math.IsNaN(p) && !math.IsInf(p, 0) {
+			sum += p
+		}
+	}
+	if sum <= 0 {
+		return 0
+	}
+	h := 0.0
+	for _, p := range probs {
+		if p > 0 && !math.IsNaN(p) && !math.IsInf(p, 0) {
+			q := p / sum
+			h -= q * math.Log(q)
+		}
+	}
+	return h
+}
+
 // ParseStructuredContent attempts to unmarshal the raw assistant text as a StructuredDecisionResponse.
 func ParseStructuredContent(content string) (*StructuredDecisionResponse, error) {
 	return ParseStructuredContentWithLogprobs(content, nil)
@@ -343,6 +365,12 @@ func normalizeQuestionAnswers(s *StructuredDecisionResponse) *StructuredDecision
 		}
 		if qa.Probabilities == nil {
 			qa.Probabilities = make(map[string]float64)
+		}
+		// The vLLM server reports label probabilities but no answer entropy (#121). Fill it from the probabilities so
+		// the Studio, the cascade gate and summaries all read one value. With constrained reads the server's
+		// diagnostics "entropy" is the same number; with --no-constrained it is over top-k tokens and can differ.
+		if qa.Entropy == 0 && len(qa.Probabilities) > 1 {
+			qa.Entropy = ProbabilityEntropy(qa.Probabilities)
 		}
 		s.Answers[k] = qa
 		if _, ok := s.Diagnostics.Questions[k]; !ok {
