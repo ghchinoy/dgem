@@ -106,6 +106,7 @@ and the container serves the adapter on its port, in front of its own structured
 | **`--naive-limits`** | — | `false` | Reproduce the naive 26-option / 10-question rejections (benchmark ablation only). |
 | **`--prompt-layout`** | — | `document_first` | How the upstream prompt is laid out: `document_first` (the state, then the questions, both in the user turn) or `schema_first` (the questions as the system prompt, the layout before v0.2.0). Serving images from v0.2.0 default to `document_first` themselves (`DEFAULT_LAYOUT`); older ones ignore the field. On dev suites `document_first` raised CLINC150-validation accuracy 0.79 → 0.87 and RAGTruth-train accuracy 0.705 → 0.77, with JevBench unchanged; out-of-scope recall fell 1.00 → 0.825. |
 | **`--catch-all`** | — | `off` | Wide-option catch-all handling (`off`, `final`, `both`, `verify`). `final` keeps "none of the listed"-style options out of round-1 brackets and adds them to the final. Opt-in: it trades out-of-scope recall for in-scope accuracy. |
+| **`--option-order`** | — | `alpha` | How each question's options are labelled A, B, C…: `alpha` sorts the option keys (the behaviour so far), `source` keeps the order the request lists them in, through every bracket round. Under test in PROP-33 (first-shown bias). |
 | **`--noul-mode`** | — | `noul` | How yes/no questions are read: `noul`, or `choice` (a 2-option yes/no choice with the true/false criteria as descriptions). Opt-in: it helps hallucination-style questions and costs a little on other yes/no families. |
 
 ---
