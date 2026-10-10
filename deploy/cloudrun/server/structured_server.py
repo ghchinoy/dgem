@@ -1388,8 +1388,6 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/health", "/invoke/health", "/"):
             return self._json(200, _health_info())
-        if self.path == "/health":
-            return self._json(200, {"status": "ok"})
         return self._json(404, {"error": {"message": "unknown route"}})
 
     def _read_request(self):

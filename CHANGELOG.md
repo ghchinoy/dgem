@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Serving image: vision on by default (#124).** `entrypoint.sh` defaulted `DISABLE_MM=1`, so `docker run` of the
+  public images without `-e DISABLE_MM=0` served text only, although the docs list `0` as the default. It now defaults
+  to `0`; L4 hosts with 32 GiB RAM still set `DISABLE_MM=1`. Deploy scripts already set it explicitly, so Vertex and
+  Cloud Run deployments are unchanged. Also removed the unreachable second `/health` branch in `structured_server.py`
+  and the `deploy_cloudrun_vllm.sh` boot-time rewrite that targeted it (the `dgem.patch` health handler already merges
+  `warmup_state.json`).
 - **Answers always carry an entropy (#121).** `pkg/client` fills each answer's `entropy` from its label
   probabilities when the server doesn't send one (the vLLM server never did). The Studio result panel read
   `answer.entropy` and could show 0% hesitation; the cascade gate and summaries fell back to the server's per-slot
