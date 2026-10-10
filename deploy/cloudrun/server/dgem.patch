@@ -606,7 +606,7 @@
          try:
              req, images = self._read_request()
          except Exception as e:
-@@ -1276,33 +1528,15 @@
+@@ -1276,48 +1528,34 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -644,8 +644,22 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1552,12 @@
-             }
+             return 422, {"error": {"message": str(e), "type": "validation_error"}}
+         except urllib.error.HTTPError as e:
+-            return 502, {
+-                "error": {
+-                    "message": (
+-                        f"upstream {e.code}: {e.read()[:300].decode(errors='replace')}"
+-                    ),
+-                    "type": "server_error",
+-                }
+-            }
++            detail = e.read()[:300].decode(errors="replace")
++            if 400 <= e.code < 500:
++                # dgem: the model server refused the request itself (an image URL it can't fetch or decode, a prompt
++                # over the context length): the caller's to fix, so 422, not a server error (dl-e84).
++                return 422, {"error": {"message": f"upstream {e.code}: {detail}", "type": "validation_error"}}
++            return 502, {"error": {"message": f"upstream {e.code}: {detail}", "type": "server_error"}}
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
 +        finally:
@@ -657,7 +671,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1362,6 +1602,7 @@
+@@ -1362,6 +1600,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -665,7 +679,7 @@
          )
  
      def _chat(self, req):
-@@ -1451,9 +1692,18 @@
+@@ -1451,9 +1690,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -684,7 +698,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,14 +1737,23 @@
+@@ -1487,14 +1735,23 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -710,7 +724,7 @@
      p = argparse.ArgumentParser()
      p.add_argument("--upstream", default="http://127.0.0.1:8010")
      p.add_argument("--model", default="dgemma")
-@@ -1507,6 +1766,18 @@
+@@ -1507,6 +1764,18 @@
          help="request widths round up to a multiple of this",
      )
      p.add_argument(
@@ -729,7 +743,7 @@
          "--no-constrained",
          dest="constrained",
          action="store_false",
-@@ -1523,6 +1794,8 @@
+@@ -1523,6 +1792,8 @@
          help="directory for the self-signed certificate",
      )
      ARGS = p.parse_args()
@@ -738,7 +752,7 @@
      CANVAS_LEN = ARGS.canvas
      CANVAS_STEP = ARGS.canvas_step
      init_tokenizer(AutoTokenizer.from_pretrained(ARGS.tokenizer))
-@@ -1537,7 +1810,8 @@
+@@ -1537,7 +1808,8 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
