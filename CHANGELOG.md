@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Serving image: no free-form generation.** `structured_server.py` answers `/v1/raw/chat/completions` (vLLM's
+  plain-generation pass-through, unused by dgem) with `410 Gone`, on Vertex `/invoke/*` and Cloud Run. Decision routes
+  (`/v1/systemone`, `/v1/chat/completions`, `/predict`, `/rawPredict`) and `/health` are unchanged. Needs a
+  serving-image release (T1 canary next to production).
 - **Serving image: vision on by default (#124).** `entrypoint.sh` defaulted `DISABLE_MM=1`, so `docker run` of the
   public images without `-e DISABLE_MM=0` served text only, although the docs list `0` as the default. It now defaults
   to `0`; L4 hosts with 32 GiB RAM still set `DISABLE_MM=1`. Deploy scripts already set it explicitly, so Vertex and

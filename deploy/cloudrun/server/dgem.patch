@@ -23,6 +23,17 @@
  state, either as multipart/form-data with the JSON body in a part named
  "request" and each image as a file part, or as an "images" array of data
  URLs in the JSON body.
+@@ -23,8 +25,8 @@
+ call. The system message is the schema JSON below and the user message is
+ the state. The reply's `content` is the JSON answer set.
+ 
+-POST /v1/raw/chat/completions passes the body to vLLM's chat completions
+-unchanged, for plain generation through this port.
++dgem: POST /v1/raw/chat/completions (plain generation passed to vLLM) is
++not served and answers 410: this server returns decisions.
+ 
+ With API_KEY set in the environment, every POST needs "Authorization:
+ Bearer <key>". --tls-port adds an HTTPS listener with a self-signed
 @@ -50,7 +52,9 @@
                               its prompt
    "ask_if": {id: [answers]}  asked only when that question's answer is
@@ -442,7 +453,29 @@
              return self._json(
                  401,
                  {
-@@ -1276,7 +1449,8 @@
+@@ -1260,8 +1433,20 @@
+                     }
+                 },
+             )
++        # dgem: no free-form generation through this port; decisions only.
+         if self.path == "/v1/raw/chat/completions":
+-            return self._raw_chat()
++            # read the body so a keep-alive connection stays in step
++            self.rfile.read(int(self.headers.get("content-length", "0")))
++            return self._json(
++                410,
++                {
++                    "error": {
++                        "message": "free-form generation is not served: use "
++                        "/v1/systemone or /v1/chat/completions (decisions)",
++                        "type": "route_removed",
++                    }
++                },
++            )
+         try:
+             req, images = self._read_request()
+         except Exception as e:
+@@ -1276,33 +1461,15 @@
              )
          if self.path == "/v1/systemone":
              return self._systemone(req, images)
@@ -452,8 +485,27 @@
              return self._chat(req)
          return self._json(404, {"error": {"message": "unknown route"}})
  
-@@ -1303,6 +1477,8 @@
- 
+-    def _raw_chat(self):
+-        """Pass the body and status through to vLLM's chat completions."""
+-        raw = self.rfile.read(int(self.headers.get("content-length", "0")))
+-        req = urllib.request.Request(
+-            ARGS.upstream.rstrip("/") + "/v1/chat/completions",
+-            data=raw,
+-            headers={
+-                "content-type": self.headers.get("content-type", "application/json")
+-            },
+-        )
+-        try:
+-            with urllib.request.urlopen(req, timeout=600) as r:
+-                code, body = r.status, r.read()
+-        except urllib.error.HTTPError as e:
+-            code, body = e.code, e.read()
+-        self.send_response(code)
+-        self.send_header("content-type", "application/json")
+-        self.send_header("content-length", str(len(body)))
+-        self.end_headers()
+-        self.wfile.write(body)
+-
      def _decide(self, schema, state, seed):
          """-> (status, body) with the error body already shaped."""
 +        if _INFLIGHT is not None and not _INFLIGHT.acquire(timeout=INFLIGHT_WAIT_S):
@@ -461,7 +513,7 @@
          try:
              return 200, decide(schema, state, seed)
          except SchemaError as e:
-@@ -1318,6 +1494,12 @@
+@@ -1318,6 +1485,12 @@
              }
          except Exception as e:
              return 500, {"error": {"message": repr(e), "type": "server_error"}}
@@ -474,7 +526,7 @@
  
      def _systemone(self, req, images):
          try:
-@@ -1362,6 +1544,7 @@
+@@ -1362,6 +1535,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -482,7 +534,7 @@
          )
  
      def _chat(self, req):
-@@ -1451,9 +1634,18 @@
+@@ -1451,9 +1625,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -501,7 +553,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,12 +1679,21 @@
+@@ -1487,12 +1670,21 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -524,7 +576,7 @@
  def main():
      global ARGS, CANVAS_LEN, CANVAS_STEP
      p = argparse.ArgumentParser()
-@@ -1537,7 +1738,8 @@
+@@ -1537,7 +1729,8 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
