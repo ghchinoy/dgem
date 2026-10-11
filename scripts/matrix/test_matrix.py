@@ -71,6 +71,30 @@ def _run(tmp, cand_acc, cand_flip):
         return R.build(tmp, json.load(f))
 
 
+class TestRawPredictRouting(unittest.TestCase):
+    """A Vertex :rawPredict base (private/PSC endpoint) sends every call to its one route; health becomes a POST."""
+
+    def test_routes(self):
+        from matrix import net
+        rp = "https://123.us-central1-456.prediction.vertexai.goog/v1/projects/456/locations/us-central1/endpoints/123:rawPredict"
+        self.assertEqual(net.route(rp, "/v1/systemone", {"q": 1}), (rp, {"q": 1}, None))
+        self.assertEqual(net.route(rp, "/health", None, "GET"), (rp, {"health": True}, "POST"))
+        self.assertEqual(net.route(rp, "/health"), (rp, {"health": True}, "POST"))
+        inv = "https://x.run.app"
+        self.assertEqual(net.route(inv, "/health"), (inv + "/health", None, None))
+        sent = []
+        orig = net.request
+        net.request = lambda url, body=None, **kw: sent.append((url, body, kw.get("method"))) or (200, {}, 1.0, {})
+        try:
+            t = Target("priv", rp)
+            t.systemone({"questions": {}})
+            t.health()
+        finally:
+            net.request = orig
+        self.assertEqual(sent[0][0], rp)
+        self.assertEqual(sent[1], (rp, {"health": True}, "POST"))
+
+
 class TestServerKey(unittest.TestCase):
     """X-DGem-Key goes to dgem serving targets only, never to a competitor's server."""
 

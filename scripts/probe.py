@@ -129,7 +129,7 @@ def probe_serving(name, base, n):
             failures.append(f"{case}: no answers")
     walls, denoise = [], []
     schema = {"instructions": "Triage the ticket.", "samples": 1, "think": 0, "questions": ss.Q}
-    url = base.rstrip("/") + "/v1/chat/completions"
+    url = cd.net.route(base, "/v1/chat/completions")[0]  # a Vertex :rawPredict base is its own single route
     for i in range(n):
         payload = {"model": "dgemma", "messages": [{"role": "system", "content": json.dumps(schema)},
                                                    {"role": "user", "content": json.dumps({"ticket": ss.TICKETS[i % len(ss.TICKETS)]})}]}
