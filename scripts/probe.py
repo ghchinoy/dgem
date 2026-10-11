@@ -87,7 +87,7 @@ def access_token():
 
 
 def bearer(url, audience=None):
-    if "prediction.vertexai.goog" in url:
+    if cd.net.is_vertex(url):  # public dedicated, private PSC (*.prediction.p.vertexai.goog) or aiplatform API
         return access_token()
     base = url.split("/", 3)
     return id_token(audience or (base[0] + "//" + base[2]))
@@ -107,7 +107,7 @@ class ProbeTarget(cd.Target):
 def probe_serving(name, base, n):
     t = ProbeTarget(name, base)
     failures = []
-    st, raw = t.request("/health", None, method="GET")
+    st, raw, _ = t.request("/health", None, method="GET")
     version = ""
     try:
         h = json.loads(raw)
