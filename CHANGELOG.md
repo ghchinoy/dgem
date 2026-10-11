@@ -9,12 +9,31 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
-Merged after the v0.3.4 tag (not in v0.3.4; each needs its own validation before release):
+Merged after the v0.3.5 tag (not in v0.3.5):
 
-- Serving: `seed_token random|fixed` for answer-slot seeding (#136, PROP-32; default unchanged).
-- Adapter: `dgem systemone serve --option-order alpha|source` (#135, PROP-33; default unchanged).
-- SVG images refused with a clear error; docs use the PNG fixtures (#137, #117).
-- Docs: the normalized cascade gate at 0.16 is not equivalent to 0.35 nats (#134, PROP-31).
+- Requests the model server refuses map to 4xx at the gateway and adapter, not 500/502 (#148, dl-e84).
+- `deploy/batch`: remote mode sends `X-DGem-Key` from `DGEM_SERVER_KEY` (#146).
+- `deploy_probe.sh` mounts `dgem-server-key` (#147; deployed with v0.3.5).
+- Docs: Dataflow RTX PRO 6000 reservation notes (#149).
+
+## v0.3.5 (2026-10-11)
+
+Serving image, gateway and probes. Tag at `533c0c6` (validated in decision-lab `benchmarks/runs/20261011-v035-release`:
+canary T1 PASS vs v0.3.4 including latency on recheck, T0 PASS on Vertex and Cloud Run after promotion). Vertex
+`dgemma-dedicated-g4` and Cloud Run `dgemma` serve it; gateway tag `gwv035`.
+
+- **Serving: `X-DGem-Key` required on every POST** when `DGEM_SERVER_KEY` is set (#144, dl-c9j). The production
+  dedicated endpoint answered `/invoke/*` without authentication; it now returns 401 to any POST without the key
+  (no token, ID token or access token alone), `/health` stays open. The key is service-only (gateway, matrix and probe
+  jobs, from Secret Manager `dgem-server-key`); people use the IAP gateway. Callers send it when configured:
+  `pkg/client`, the gateway proxy, `dgem systemone serve`, `scripts/matrix`, `probe.py`, `serving_speed.py`.
+- Opt-in, defaults unchanged: label sets `az_aa` / `az_lower` for up to 52 choice options (#139) and the adapter's
+  `--labels` (#140) (PROP-29: no accuracy gain over the bracket, half the passes, weaker out-of-scope entropy; stays
+  experimental); `seed_token random|fixed` (#136, PROP-32: no effect on run-to-run agreement); adapter
+  `--option-order alpha|source` (#135, PROP-33: no first-shown pull either way).
+- SVG images are refused with a clear error; docs use PNG fixtures (#137, #117).
+- Docs: normalized cascade gate caveat (#134), per-policy calibration framing (#141), batch explainer (#142), label-set
+  note next to the 26-option limit (#145).
 
 ## v0.3.4 (2026-10-10)
 
