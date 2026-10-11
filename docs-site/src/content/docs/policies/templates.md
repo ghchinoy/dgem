@@ -184,6 +184,22 @@ labelled examples of its own decisions. It rescales confidence and hesitation wi
     ```
   </TabItem>
 
+  <TabItem label="GitHub Issue & PR Spam">
+    **File**: `templates/github_spam_triage.json.tmpl`
+
+    Triages new GitHub issues and pull requests in one read: `spam` (yes/no) and `kind` (nine options: four good-faith kinds such as `genuine_bug` and `docs_or_code_change`, five spam kinds: `junk_or_test`, `low_effort_unfilled`, `off_topic`, `promotional_or_scam`, `malicious_or_abuse`). The submission is treated as data, so instructions inside it are classified, not followed. Variables: `repo`, `item_kind` (`issue` or `pull_request`), `author_association`, `title`, `body` (trim to a few thousand characters) and, for pull requests, `pr_files` (list) and `pr_diff` (e.g. `"+12/-3 in 2 files"`). Do not pass outcome signals such as closure reason or labels; they are not available when an item arrives.
+
+    On 347 held-out public issues and PRs from Google AI sample and SDK repositories (56 spam), it reached spam F1 0.84 (PR-AUC 0.92) at `samples=1`, with hesitation ranking its errors well (AUROC 0.93). Its misses are confident ones (untouched PR templates, fork dumps), and its false positives were good-faith test or sync PRs, so use `spam=yes` to label items, not to close maintainers' PRs. It is a junk filter, not an abuse detector: on a separate set of real items it flagged fewer than half of the prompt injections disguised as normal bug reports (10 of 22) and of the product pitches framed as integration proposals (7 of 30), mostly with low hesitation, so a hesitation gate does not catch those misses. Add dedicated yes/no questions if you need to catch them. The instructions mention the Google Cloud / Gemini / A2A ecosystem; replace that phrase for your project, then fit your own temperature and hesitation threshold on labelled items ([Calibrate your policy](/dgem/confidence/calibrate-your-policy/)).
+
+    ```bash
+    ./bin/dgem decide -t templates/github_spam_triage.json.tmpl \
+      -v repo=example/sdk -v item_kind=issue -v author_association=NONE \
+      -v 'title=Crash when streaming with tools enabled' \
+      -v 'body=generate_content_stream with tools raises KeyError on 1.2.0; repro attached.' \
+      --stats
+    ```
+  </TabItem>
+
   <TabItem label="SecOps Incident Containment">
     **File**: `templates/security_incident.json.tmpl`
 
