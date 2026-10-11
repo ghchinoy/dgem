@@ -370,6 +370,8 @@ class _KeepAlive:
         tok = net.token_for(self.base)
         if tok:
             hdr["Authorization"] = f"Bearer {tok}"
+        if self.competitor is None:  # X-DGem-Key to dgem serving only, never to a competitor (dl-c9j)
+            hdr.update(net.server_key_header())
         for attempt in range(2):
             t0 = time.perf_counter()
             try:
