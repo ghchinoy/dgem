@@ -252,7 +252,26 @@ type EvaluationTrace struct {
 	WideBracketedQs  int     `json:"wide_bracketed_questions"`
 	MultiSlotBatches int     `json:"multi_slot_batches"`
 	WallTimeMs       float64 `json:"wall_time_ms"`
+	// ServerMs is the serving image's own time for this request: the sum of diagnostics.timing.total_ms over every
+	// pass the adapter made (batches, bracket rounds). Omitted when the server reports no timing (dl-dv3).
+	ServerMs         float64 `json:"server_ms,omitempty"`
 	TemperatureScale float64 `json:"temperature_scale,omitempty"`
+}
+
+// serverTime accumulates the upstream server time of one ExecuteSystemOne call across its passes.
+type serverTime struct {
+	mu sync.Mutex
+	ms float64
+}
+
+type serverTimeKey struct{}
+
+func addServerTime(ctx context.Context, ms float64) {
+	if st, ok := ctx.Value(serverTimeKey{}).(*serverTime); ok && st != nil && ms > 0 {
+		st.mu.Lock()
+		st.ms += ms
+		st.mu.Unlock()
+	}
 }
 
 // EngineOptions configures the Decision Index execution adapter.
@@ -381,6 +400,8 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 		return nil, err
 	}
 	stateText := FormatState(req.State)
+	st := &serverTime{}
+	ctx = context.WithValue(ctx, serverTimeKey{}, st)
 	answers := make(map[string]SystemOneAnswer, len(qKeys))
 	var mu sync.Mutex
 	totalPasses := 0
@@ -443,6 +464,7 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 			WideBracketedQs:  wideQs,
 			MultiSlotBatches: multiBatches,
 			WallTimeMs:       float64(time.Since(start).Milliseconds()),
+			ServerMs:         math.Round(st.ms*10) / 10,
 			TemperatureScale: opts.TemperatureScale,
 		},
 	}, nil
@@ -527,6 +549,7 @@ func evaluateStandardBatch(
 	if err != nil {
 		return nil, 1, err
 	}
+	addServerTime(ctx, resp.Diagnostics.Timing.TotalMs)
 
 	if (opts.DualMirror && len(batchKeys) <= 4) || opts.NullPriorDebias {
 		permutation.PostProcessDecisionResponse(resp, slotOpts, opts.DualMirror && len(batchKeys) <= 4, opts.NullPriorDebias, opts.PriorAlpha)
