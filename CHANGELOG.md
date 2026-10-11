@@ -15,6 +15,13 @@ Merged after the v0.3.5 tag (not in v0.3.5):
 - `deploy/batch`: remote mode sends `X-DGem-Key` from `DGEM_SERVER_KEY` (#146).
 - `deploy_probe.sh` mounts `dgem-server-key` (#147; deployed with v0.3.5).
 - Docs: Dataflow RTX PRO 6000 reservation notes (#149).
+- **Serving: one route for private Vertex endpoints (#153, dl-c9j.5).** `/predict` and `/rawPredict` dispatch on the
+  body (chat, a `/v1/systemone` body or multipart upload, or `{"health": true}`), so a model uploaded with a single
+  `predictRoute` (`deploy_vertex_endpoint.sh ROUTE_MODE=predict`) serves everything through `:rawPredict`, as a
+  private (PSC) endpoint requires. Callers (`pkg/client`, gateway, `scripts/matrix`, probes) keep a `:rawPredict` URL as
+  given; the gateway reads endpoint state from the control plane there. Existing routes unchanged.
+- Docs: dgem takes text and images; video only as sampled frames; no audio (#152).
+- Templates: `github_spam_triage` policy (#154).
 
 ## v0.3.5 (2026-10-11)
 
