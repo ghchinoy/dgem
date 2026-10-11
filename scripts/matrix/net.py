@@ -140,6 +140,22 @@ def _open(req, timeout):
     return urllib.request.urlopen(req, timeout=timeout)
 
 
+def is_rawpredict(base):
+    """A Vertex :rawPredict base (private/PSC or regional endpoint): every call goes to that one URL and the serving
+    image dispatches on the body."""
+    return base.rstrip("/").lower().endswith(":rawpredict")
+
+
+def route(base, path, body=None, method=None):
+    """-> (url, body, method) for a serving-image path. On a :rawPredict base, POSTs go to the base itself and
+    GET /health becomes POST {"health": true} (the single route answers it)."""
+    if not is_rawpredict(base):
+        return base.rstrip("/") + path, body, method
+    if path in ("/health", "/") and (method or ("POST" if body is not None else "GET")) == "GET":
+        return base, {"health": True}, "POST"
+    return base, body, method
+
+
 def server_key_header():
     """{"X-DGem-Key": key} when DGEM_SERVER_KEY is set (first entry of a rotation list), else {}. Send it only to dgem
     serving targets, never to a competitor's server."""

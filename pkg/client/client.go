@@ -99,8 +99,15 @@ func IsVertexEndpointURL(rawURL string) bool {
 //   - For Dedicated Endpoints using arbitrary custom routes (invokeRoutePrefix="/*"),
 //     routes to .../invoke/v1/chat/completions (which Vertex forwards as /v1/chat/completions to structured_server.py).
 //   - For standard regional endpoints (aiplatform.googleapis.com without /invoke), routes to :rawPredict.
+//   - A URL that already ends in :rawPredict (regional, or a private/PSC dedicated endpoint) is kept unchanged.
 func NormalizeVertexEndpointURL(rawURL string) string {
 	u := strings.TrimRight(strings.TrimSpace(rawURL), "/")
+	// An explicit :rawPredict / :predict URL is kept as is, on any host: a private (PSC) dedicated endpoint shares the
+	// *.prediction.vertexai.goog name but has no invoke routes, so it must not be rewritten to /invoke/... The serving
+	// image's single route dispatches on the body (chat or systemone).
+	if lu := strings.ToLower(u); strings.HasSuffix(lu, ":rawpredict") || strings.HasSuffix(lu, ":streamrawpredict") || strings.HasSuffix(lu, ":predict") {
+		return u
+	}
 	if strings.Contains(strings.ToLower(u), "prediction.vertexai.goog") || strings.Contains(strings.ToLower(u), "/invoke") {
 		if strings.HasSuffix(u, "/invoke/v1/chat/completions") ||
 			strings.HasSuffix(u, "/invoke/v1/raw/chat/completions") ||

@@ -544,10 +544,13 @@ func inspectVertexEndpointState(ctx context.Context, rawVertexURL string) vertex
 		return st
 	}
 
-	// 1. Fast Data-Plane Check (/invoke/health on Dedicated Endpoint DNS takes ~15ms when deployed)
+	// 1. Fast Data-Plane Check (/invoke/health on Dedicated Endpoint DNS takes ~15ms when deployed). A :rawPredict
+	// endpoint (private/PSC, or regional) has no invoke routes, so its state comes from the control plane only.
 	healthURL := fmt.Sprintf("https://%s.%s-%s.prediction.vertexai.goog/v1/projects/%s/locations/%s/endpoints/%s/invoke/health", epID, region, projNum, proj, region, epID)
 	hCtx, hCancel := context.WithTimeout(context.Background(), 2500*time.Millisecond)
-	if hReq, err := http.NewRequestWithContext(hCtx, http.MethodGet, healthURL, nil); err == nil {
+	if strings.Contains(strings.ToLower(rawVertexURL), ":rawpredict") {
+		hCancel()
+	} else if hReq, err := http.NewRequestWithContext(hCtx, http.MethodGet, healthURL, nil); err == nil {
 		hReq.Header.Set("Authorization", "Bearer "+tok)
 		if hResp, err := http.DefaultClient.Do(hReq); err == nil {
 			hResp.Body.Close()
