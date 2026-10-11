@@ -217,6 +217,8 @@ DiffusionGemma natively incorporates a ~550M parameter **SigLIP vision tower**, 
 > **What dgem accepts:** text and images. DiffusionGemma is a text + image model (the Gemma 4 base has wider
 > multimodal support; this checkpoint has no audio encoder). **Video** works only as frames you sample yourself and
 > send as images. **Audio** is not supported: send a transcript as text (the call-quality template below does this).
+> Requests that carry `audio` or `video`/`videos` fields (or audio/video content parts) are refused with HTTP 400
+> rather than answered without them.
 
 When combined with discrete diffusion slot readout, multimodal queries bypass the slow process of describing pictures in text and instead perform **instantaneous visual judgment**:
 
