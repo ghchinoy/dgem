@@ -41,7 +41,8 @@ _META_OK = None
 
 def is_vertex(url):
     u = url.lower()
-    return "prediction.vertexai.goog" in u or "aiplatform.googleapis.com" in u
+    # .prediction.p.vertexai.goog = private (PSC) endpoint, reached over http on port 80 inside the VPC
+    return "prediction.vertexai.goog" in u or "prediction.p.vertexai.goog" in u or "aiplatform.googleapis.com" in u
 
 
 def _metadata_available():
@@ -94,7 +95,9 @@ def token_for(url):
     if os.environ.get("DGEM_MATRIX_TOKEN"):
         return os.environ["DGEM_MATRIX_TOKEN"]
     p = urllib.parse.urlparse(url)
-    if p.scheme != "https":
+    # plain http gets no token (local targets), except a private Vertex (PSC) endpoint, which is called over http on
+    # port 80 inside the VPC and still requires an access token
+    if p.scheme != "https" and not (p.hostname or "").endswith(".prediction.p.vertexai.goog"):
         return None
     kind = "access" if is_vertex(url) else "id"
     aud = f"{p.scheme}://{p.netloc}"

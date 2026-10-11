@@ -82,11 +82,26 @@ func (c *Client) WithAuthToken(token string) *Client {
 	return c
 }
 
+// PrivateVertexHostSuffix is the host suffix of a Vertex private (Private Service Connect) endpoint, e.g.
+// <ID>-<REGION>-<PROJECT_NUMBER>.prediction.p.vertexai.goog. It resolves only inside the VPC (private DNS); port 443
+// serves a self-signed certificate, so callers inside the VPC may use plain http on port 80.
+const PrivateVertexHostSuffix = ".prediction.p.vertexai.goog"
+
+// IsPrivateVertexHost reports whether host (no scheme or port) is a Vertex private (PSC) endpoint host.
+func IsPrivateVertexHost(host string) bool {
+	h := strings.ToLower(strings.TrimSpace(host))
+	if i := strings.LastIndex(h, ":"); i != -1 && !strings.Contains(h[i:], "]") {
+		h = h[:i]
+	}
+	return strings.HasSuffix(h, PrivateVertexHostSuffix)
+}
+
 // IsVertexEndpointURL returns true if rawURL targets a Google Cloud Vertex AI Online Prediction Endpoint
 // (either a Dedicated Endpoint *.prediction.vertexai.goog with /invoke/* custom routes or *.aiplatform.googleapis.com).
 func IsVertexEndpointURL(rawURL string) bool {
 	u := strings.ToLower(strings.TrimSpace(rawURL))
 	return strings.Contains(u, "prediction.vertexai.goog") ||
+		strings.Contains(u, "prediction.p.vertexai.goog") ||
 		strings.Contains(u, "aiplatform.googleapis.com") ||
 		strings.Contains(u, "/invoke/") ||
 		strings.HasSuffix(u, "/invoke") ||

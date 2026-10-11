@@ -373,8 +373,19 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 	if parsed != nil {
 		hostLower = strings.ToLower(parsed.Host)
 	}
+	// A private (PSC) endpoint, <ID>-<REGION>-<PROJECT_NUMBER>.prediction.p.vertexai.goog, is reachable only inside the
+	// VPC and serves a self-signed certificate on 443, so http (port 80) is accepted for it, and only for its single
+	// :rawPredict route. Every other host must use https.
+	if err == nil && client.IsPrivateVertexHost(parsed.Hostname()) {
+		lp := strings.ToLower(parsed.Path)
+		if (parsed.Scheme == "http" || parsed.Scheme == "https") &&
+			(strings.HasSuffix(lp, ":rawpredict") || strings.HasSuffix(lp, ":predict")) && strings.Contains(lp, "/endpoints/") {
+			return v, nil
+		}
+		return "", fmt.Errorf("invalid private Vertex endpoint URL (must be http(s)://<host>%s/v1/projects/.../locations/.../endpoints/<ID>:rawPredict): %s", client.PrivateVertexHostSuffix, raw)
+	}
 	if err != nil || parsed.Scheme != "https" || (!strings.HasSuffix(hostLower, ".prediction.vertexai.goog") && !strings.HasSuffix(hostLower, ".aiplatform.googleapis.com")) {
-		return "", fmt.Errorf("invalid Vertex AI Endpoint URL (must target https://<endpoint>.<region>-<project_num>.prediction.vertexai.goog/.../invoke/... or https://<region>-aiplatform.googleapis.com/... or be an Endpoint ID): %s", raw)
+		return "", fmt.Errorf("invalid Vertex AI Endpoint URL (must target https://<endpoint>.<region>-<project_num>.prediction.vertexai.goog/.../invoke/..., https://<region>-aiplatform.googleapis.com/..., a private endpoint http(s)://...%s/...:rawPredict, or be an Endpoint ID): %s", client.PrivateVertexHostSuffix, raw)
 	}
 	return client.NormalizeVertexEndpointURL(v), nil
 }

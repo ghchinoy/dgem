@@ -132,7 +132,7 @@ IMG = None
 def call(url, schema, image, ticket, timeout=300):
     global IMG
     at, it = TOK.get()
-    token = at if "prediction.vertexai.goog" in url or "aiplatform.googleapis.com" in url else it
+    token = at if any(h in url for h in ("prediction.vertexai.goog", "prediction.p.vertexai.goog", "aiplatform.googleapis.com")) else it
     if image:
         IMG = IMG or image_data_uri()
         user = [{"type": "text", "text": json.dumps({"note": ticket})}, {"type": "image_url", "image_url": {"url": IMG}}]
