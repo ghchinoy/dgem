@@ -94,7 +94,7 @@ EXPECT["ml_el_noul"] = {"billing": "yes"}
 class Target:
     def __init__(self, name, base):
         self.name, self.base = name, base.rstrip("/")
-        self.vertex = "prediction.vertexai.goog" in base
+        self.vertex = net.is_vertex(base)  # dedicated, private (PSC) or regional endpoint: access token
 
     def token(self):
         at, it = ss.TOK.get()

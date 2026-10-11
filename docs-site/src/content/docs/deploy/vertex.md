@@ -122,9 +122,14 @@ a single route instead and call it with `:rawPredict`:
 ROUTE_MODE=predict ./scripts/deploy_vertex_endpoint.sh   # predictRoute /predict, healthRoute /health
 ```
 
-- Callers use `https://<ENDPOINT_ID>.<REGION>-<PROJECT_NUMBER>.prediction.vertexai.goog/v1/projects/<PROJECT_NUMBER>/locations/<REGION>/endpoints/<ENDPOINT_ID>:rawPredict`
-  (resolved through your private DNS). `dgem` (`-u`, `--vertex-url`, `DGEM_VERTEX_URL`) keeps a `:rawPredict` URL as
-  given and the gateway sends both `/v1/chat/completions` and `/v1/systemone` traffic to it.
+- Callers inside the VPC use the private host:
+  `http://<ENDPOINT_ID>-<REGION>-<PROJECT_NUMBER>.prediction.p.vertexai.goog/v1/projects/<PROJECT_NUMBER>/locations/<REGION>/endpoints/<ENDPOINT_ID>:rawPredict`
+  (resolved through your private DNS zone). Use plain **http on port 80**: port 443 serves a self-signed certificate,
+  and the traffic stays inside the VPC. Vertex still enforces IAM there, so send an OAuth access token (dgem mints one
+  for these hosts, as for dedicated endpoints) plus `X-DGem-Key` if the server uses one.
+- `dgem` (`-u`, `--vertex-url`, `DGEM_VERTEX_URL`) keeps the `:rawPredict` URL as given and the gateway sends both
+  `/v1/chat/completions` and `/v1/systemone` traffic to it. http is accepted only for `*.prediction.p.vertexai.goog`
+  hosts with a `:rawPredict` path; every other Vertex URL must be https.
 - The serving image's single route dispatches on the body: chat `messages` → decisions, a `questions` map or a
   multipart upload → `/v1/systemone`, `{"health": true}` → the health report (send `X-DGem-Key` if the server uses one).
 - The gateway reads the endpoint's state from the Vertex control plane (no data-plane health route through PSC).

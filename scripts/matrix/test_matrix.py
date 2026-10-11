@@ -80,6 +80,19 @@ class TestRawPredictRouting(unittest.TestCase):
         self.assertEqual(net.route(rp, "/v1/systemone", {"q": 1}), (rp, {"q": 1}, None))
         self.assertEqual(net.route(rp, "/health", None, "GET"), (rp, {"health": True}, "POST"))
         self.assertEqual(net.route(rp, "/health"), (rp, {"health": True}, "POST"))
+        psc = "http://123-us-central1-456.prediction.p.vertexai.goog/v1/projects/456/locations/us-central1/endpoints/123:rawPredict"
+        self.assertTrue(net.is_vertex(psc))
+        orig_mint, minted = net._mint, []
+        net._mint = lambda kind, aud: minted.append(kind) or "tok"
+        net._CACHE.clear()
+        try:
+            self.assertEqual(net.token_for(psc), "tok")          # http, but PSC: access token
+            self.assertIsNone(net.token_for("http://127.0.0.1:8080/v1"))  # other http: none
+        finally:
+            net._mint = orig_mint
+            net._CACHE.clear()
+        self.assertEqual(minted, ["access"])
+        self.assertEqual(net.route(psc, "/health"), (psc, {"health": True}, "POST"))
         inv = "https://x.run.app"
         self.assertEqual(net.route(inv, "/health"), (inv + "/health", None, None))
         sent = []
