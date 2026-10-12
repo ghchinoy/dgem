@@ -9,19 +9,48 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
-Merged after the v0.3.5 tag (not in v0.3.5):
+Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
 
-- Requests the model server refuses map to 4xx at the gateway and adapter, not 500/502 (#148, dl-e84).
-- `deploy/batch`: remote mode sends `X-DGem-Key` from `DGEM_SERVER_KEY` (#146).
-- `deploy_probe.sh` mounts `dgem-server-key` (#147; deployed with v0.3.5).
-- Docs: Dataflow RTX PRO 6000 reservation notes (#149).
+- **Private (PSC) Vertex URLs accepted** by the gateway, client and scripts: `http://<ID>-<REGION>-<NUM>.prediction.p.vertexai.goog/…:rawPredict` (port 80 inside the VPC) (#157, dl-c9j.7). The production gateway runs this.
+- Serving: audio/video fields refused with 400 instead of answered without them (#158, dl-sq3).
+- Adapter reports server time (`evaluation_trace.server_ms`); matrix latency runner records server p90/p95/p99 (#159, dl-dv3).
+- **Gateway security fixes (#163–#166; not yet deployed).**
+  - Template names can't escape `--templates-dir` (`../` in `/api/decide/{template}`, the `template` field or MCP
+    `decide_policy` could read any `*.json.tmpl` on the host); invalid names get 400 (#163).
+  - No wildcard CORS; cross-site browser requests get 403 (`http.CrossOriginProtection`); requests on a loopback
+    address with a non-loopback `Host` get 403 (DNS rebinding); `/mcp` keeps the SDK's localhost protection (#164).
+    **Behaviour change:** a browser app on another origin needs `--cors-origins <origin>` (`DGEM_CORS_ORIGINS`); a
+    same-machine reverse proxy that rewrites `Host` needs `--allowed-hosts <name>` (`DGEM_ALLOWED_HOSTS`).
+  - Image URL fetches (Stage-2 cascade, `locate`) check the dialed address on every connection and redirect (at most
+    3 hops, http/https only, no proxy), closing DNS-rebinding and redirect paths to the metadata server and internal
+    hosts; more reserved ranges refused (#165).
+  - Vertex endpoint overrides (`vertex_url`, `X-DGem-Vertex-Url`) are compared by full identity (project, region,
+    endpoint ID, host) with strict URL parsing, so another project's endpoint with the same ID no longer matches and
+    receives the gateway's token. Also fixes the documented regional `https://<REGION>-aiplatform.googleapis.com/…:rawPredict`
+    form, which was always rejected (#166).
+
+## v0.3.6 (2026-10-12)
+
+Serving image, gateway and probes. Tag at `96abe32` (validated in decision-lab
+`benchmarks/runs/20261011-v036-private-vertex`: canary T1 PASS vs v0.3.5, key matrix on public and private canaries,
+T0 PASS on the private endpoint and on Cloud Run after promotion). **Production Vertex is now private:** it serves
+from a Private Service Connect endpoint reached only from the hosting VPC (port 80, `:rawPredict`), behind the
+gateway; the public dedicated endpoint is retired. Cloud Run `dgemma` serves v0.3.6. The gateway is built from a later
+commit (`2591564` plus the token-cache fix below), since it needs #157 to accept the private URL.
+
 - **Serving: one route for private Vertex endpoints (#153, dl-c9j.5).** `/predict` and `/rawPredict` dispatch on the
   body (chat, a `/v1/systemone` body or multipart upload, or `{"health": true}`), so a model uploaded with a single
   `predictRoute` (`deploy_vertex_endpoint.sh ROUTE_MODE=predict`) serves everything through `:rawPredict`, as a
   private (PSC) endpoint requires. Callers (`pkg/client`, gateway, `scripts/matrix`, probes) keep a `:rawPredict` URL as
   given; the gateway reads endpoint state from the control plane there. Existing routes unchanged.
-- Docs: dgem takes text and images; video only as sampled frames; no audio (#152).
+- Requests the model server refuses map to 4xx at the gateway and adapter, not 500/502 (#148, dl-e84).
+- Studio: renamed "Decision Gemma (dgem) Decision Studio" (#156).
+- `deploy/batch`: remote mode sends `X-DGem-Key` from `DGEM_SERVER_KEY` (#146); `deploy_probe.sh` mounts `dgem-server-key` (#147).
+- Docs: dgem takes text and images; video only as sampled frames; no audio (#152). Dataflow RTX PRO 6000 reservation notes (#149).
 - Templates: `github_spam_triage` policy (#154).
+- **Gateway and probes, merged after the tag and deployed with v0.3.6:** the token cache honors token expiry (#161; a
+  flat 45-minute cache served expired metadata tokens, so a warm Vertex endpoint read as "quiesced" for part of each
+  hour and `vertex_first` silently fell back to Cloud Run); probes work against a private endpoint (#160).
 
 ## v0.3.5 (2026-10-11)
 
