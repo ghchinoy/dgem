@@ -1494,7 +1494,8 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, code, obj, headers=None):
         body = json.dumps(obj).encode()
         self.send_response(code)
-        self.send_header("content-type", "application/json")
+        self.send_header("content-type", "application/json; charset=utf-8")
+        self.send_header("x-content-type-options", "nosniff")
         self.send_header("content-length", str(len(body)))
         for k, v in (headers or {}).items():
             self.send_header(k, v)

@@ -572,7 +572,7 @@
      if q["type"] == "choice":
          return {
              "type": "choice",
-@@ -1201,21 +1457,55 @@
+@@ -1201,21 +1457,56 @@
      return c if isinstance(c, str) else ""
  
  
@@ -614,7 +614,9 @@
 +    def _json(self, code, obj, headers=None):
          body = json.dumps(obj).encode()
          self.send_response(code)
-         self.send_header("content-type", "application/json")
+-        self.send_header("content-type", "application/json")
++        self.send_header("content-type", "application/json; charset=utf-8")
++        self.send_header("x-content-type-options", "nosniff")
          self.send_header("content-length", str(len(body)))
 +        for k, v in (headers or {}).items():
 +            self.send_header(k, v)
@@ -631,7 +633,7 @@
          return self._json(404, {"error": {"message": "unknown route"}})
  
      def _read_request(self):
-@@ -1250,7 +1540,15 @@
+@@ -1250,7 +1541,15 @@
          return body, images
  
      def do_POST(self):
@@ -647,7 +649,7 @@
              return self._json(
                  401,
                  {
-@@ -1260,8 +1558,20 @@
+@@ -1260,8 +1559,20 @@
                      }
                  },
              )
@@ -669,7 +671,7 @@
          try:
              req, images = self._read_request()
          except Exception as e:
-@@ -1278,51 +1588,49 @@
+@@ -1278,51 +1589,49 @@
              return self._systemone(req, images)
          if self.path == "/v1/chat/completions":
              return self._chat(req)
@@ -748,7 +750,7 @@
          except SchemaError as e:
              return self._json(
                  422, {"error": {"message": str(e), "type": "validation_error"}}
-@@ -1362,6 +1670,7 @@
+@@ -1362,6 +1671,7 @@
                  },
                  "diagnostics": body["diagnostics"],
              },
@@ -756,7 +758,7 @@
          )
  
      def _chat(self, req):
-@@ -1387,6 +1696,7 @@
+@@ -1387,6 +1697,7 @@
              schema_value = json.loads(message_text(msgs[0]))
              schema = parse_schema(schema_value)
              content = msgs[1].get("content", "")
@@ -764,7 +766,7 @@
              has_image = isinstance(content, list) and any(
                  isinstance(p, dict) and p.get("type") in ("image_url", "image")
                  for p in content
-@@ -1451,9 +1761,18 @@
+@@ -1451,9 +1762,18 @@
                      "total_tokens": completion_tokens,
                  },
              },
@@ -783,7 +785,7 @@
  def self_signed(cert_dir):
      """Paths of a self-signed certificate and key in cert_dir, made with
      openssl on first use."""
-@@ -1487,14 +1806,23 @@
+@@ -1487,14 +1807,23 @@
      cert, key = self_signed(cert_dir)
      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
      ctx.load_cert_chain(cert, key)
@@ -809,7 +811,7 @@
      p = argparse.ArgumentParser()
      p.add_argument("--upstream", default="http://127.0.0.1:8010")
      p.add_argument("--model", default="dgemma")
-@@ -1507,6 +1835,18 @@
+@@ -1507,6 +1836,18 @@
          help="request widths round up to a multiple of this",
      )
      p.add_argument(
@@ -828,7 +830,7 @@
          "--no-constrained",
          dest="constrained",
          action="store_false",
-@@ -1523,6 +1863,8 @@
+@@ -1523,6 +1864,8 @@
          help="directory for the self-signed certificate",
      )
      ARGS = p.parse_args()
@@ -837,7 +839,7 @@
      CANVAS_LEN = ARGS.canvas
      CANVAS_STEP = ARGS.canvas_step
      init_tokenizer(AutoTokenizer.from_pretrained(ARGS.tokenizer))
-@@ -1537,7 +1879,8 @@
+@@ -1537,7 +1880,8 @@
          f"(canvas {CANVAS_LEN})",
          flush=True,
      )
