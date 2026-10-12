@@ -34,9 +34,9 @@ commit (`2591564` plus the token-cache fix below), since it needs #157 to accept
 - `deploy/batch`: remote mode sends `X-DGem-Key` from `DGEM_SERVER_KEY` (#146); `deploy_probe.sh` mounts `dgem-server-key` (#147).
 - Docs: dgem takes text and images; video only as sampled frames; no audio (#152). Dataflow RTX PRO 6000 reservation notes (#149).
 - Templates: `github_spam_triage` policy (#154).
-- **Pending merge, deployed:** gateway token cache honors token expiry (#161; a flat 45-minute cache served expired
-  metadata tokens, so a warm Vertex endpoint read as "quiesced" for part of each hour and `vertex_first` silently fell
-  back to Cloud Run); probes work against a private endpoint (#160).
+- **Gateway and probes, merged after the tag and deployed with v0.3.6:** the token cache honors token expiry (#161; a
+  flat 45-minute cache served expired metadata tokens, so a warm Vertex endpoint read as "quiesced" for part of each
+  hour and `vertex_first` silently fell back to Cloud Run); probes work against a private endpoint (#160).
 
 ## v0.3.5 (2026-10-11)
 
