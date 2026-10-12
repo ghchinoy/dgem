@@ -1254,8 +1254,12 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 
 			engine := template.NewEngine()
 			vars := map[string]interface{}{"ticket": "GPU warmup readiness probe"}
-			targetPath, _ := resolveTemplateFile(serveTemplatesDir, "support_triage")
-			rendered, err := engine.RenderFile(targetPath, vars)
+			rendered, err := "", error(nil)
+			if targetPath, _, rErr := resolveTemplateFile(serveTemplatesDir, "support_triage"); rErr != nil {
+				err = rErr
+			} else {
+				rendered, err = engine.RenderFile(targetPath, vars)
+			}
 			if err != nil {
 				rendered = `{"questions":[{"id":"ready","type":"boolean","prompt":"Is the system ready?"}]}`
 			}
@@ -1556,7 +1560,10 @@ func buildMCPServer() *mcp.Server {
 		if tmplID == "" {
 			tmplID = "support_triage"
 		}
-		targetPath, cleanID := resolveTemplateFile(serveTemplatesDir, tmplID)
+		targetPath, cleanID, err := resolveTemplateFile(serveTemplatesDir, tmplID)
+		if err != nil {
+			return nil, GatewayDecideResponse{}, err
+		}
 
 		engine := template.NewEngine()
 		rendered, err := engine.RenderFile(targetPath, input.Variables)
@@ -1689,7 +1696,10 @@ func buildMCPServer() *mcp.Server {
 			target = "primary foreground object"
 		}
 		vars := map[string]interface{}{"target": target}
-		targetPath, _ := resolveTemplateFile(serveTemplatesDir, "bbox_localization")
+		targetPath, _, err := resolveTemplateFile(serveTemplatesDir, "bbox_localization")
+		if err != nil {
+			return nil, LocateBBoxToolOutput{}, err
+		}
 		engine := template.NewEngine()
 		rendered, err := engine.RenderFile(targetPath, vars)
 		if err != nil {

@@ -167,13 +167,35 @@ type GatewayDecideResponse struct {
 
 var varRegex = regexp.MustCompile(`\{\{\s*(?:default\s+"[^"]*"\s+)?\.([a-zA-Z0-9_]+)`)
 
+// errTemplateName reports a template name that is not a plain relative path inside the templates directory.
+var errTemplateName = errors.New("invalid template name: use a template ID such as \"support_triage\" or \"calibration/grounding_claim_check\"")
+
+// isWithinDir reports whether path is rootDir itself or below it (lexically, after cleaning).
+func isWithinDir(rootDir, path string) bool {
+	rel, err := filepath.Rel(rootDir, path)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
+}
+
 // resolveTemplateFile locates a .json.tmpl file whether addressed by short name ("grounding_claim_check"),
 // legacy preset alias ("factuality_grounding", "bbox_single"), or category-qualified ID ("calibration/grounding_claim_check").
-func resolveTemplateFile(rootDir, name string) (string, string) {
+// The name comes from requests (POST /api/decide/{template}, MCP decide_policy), so it must be a local relative path:
+// absolute paths, ".." segments, backslashes and NUL bytes are rejected, and every candidate must stay inside rootDir.
+func resolveTemplateFile(rootDir, name string) (string, string, error) {
 	cleanID := strings.TrimSuffix(strings.TrimSpace(name), ".json.tmpl")
 	cleanID = strings.TrimPrefix(cleanID, "/")
 	if cleanID == "" {
 		cleanID = "support_triage"
+	}
+	if strings.ContainsAny(cleanID, "\\\x00") || !filepath.IsLocal(filepath.FromSlash(cleanID)) {
+		return "", "", errTemplateName
+	}
+	for _, seg := range strings.Split(cleanID, "/") {
+		if seg == ".." {
+			return "", "", errTemplateName
+		}
 	}
 	aliases := map[string]string{
 		"factuality_grounding":     "calibration/grounding_claim_check",
@@ -195,12 +217,15 @@ func resolveTemplateFile(rootDir, name string) (string, string) {
 		filepath.Join(rootDir, "rerank", filepath.Base(cleanID)+".json.tmpl"),
 	}
 	for _, c := range candidates {
+		if !isWithinDir(rootDir, c) {
+			continue
+		}
 		if info, err := os.Stat(c); err == nil && !info.IsDir() {
 			rel, relErr := filepath.Rel(rootDir, c)
 			if relErr == nil {
-				return c, strings.TrimSuffix(filepath.ToSlash(rel), ".json.tmpl")
+				return c, strings.TrimSuffix(filepath.ToSlash(rel), ".json.tmpl"), nil
 			}
-			return c, cleanID
+			return c, cleanID, nil
 		}
 	}
 	targetBase := filepath.Base(cleanID) + ".json.tmpl"
@@ -218,9 +243,13 @@ func resolveTemplateFile(rootDir, name string) (string, string) {
 		return nil
 	})
 	if matchedPath != "" {
-		return matchedPath, matchedID
+		return matchedPath, matchedID, nil
 	}
-	return filepath.Join(rootDir, cleanID+".json.tmpl"), cleanID
+	fallback := filepath.Join(rootDir, cleanID+".json.tmpl")
+	if !isWithinDir(rootDir, fallback) {
+		return "", "", errTemplateName
+	}
+	return fallback, cleanID, nil
 }
 
 func discoverTemplates(rootDir string) ([]TemplateCatalogEntry, error) {
@@ -1503,13 +1532,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 			if payload.Template == "" {
 				payload.Template = "support_triage"
 			}
-			targetPath, resolvedID := resolveTemplateFile(serveTemplatesDir, payload.Template)
-			tmplLabel = resolvedID
-			renderSpan.SetAttributes(
-				attribute.String("dgem.template.id", resolvedID),
-				attribute.String("dgem.template.path", targetPath),
-			)
-			rendered, err = engine.RenderFile(targetPath, payload.Variables)
+			targetPath, resolvedID, resolveErr := resolveTemplateFile(serveTemplatesDir, payload.Template)
+			if resolveErr != nil {
+				err = resolveErr
+			} else {
+				tmplLabel = resolvedID
+				renderSpan.SetAttributes(
+					attribute.String("dgem.template.id", resolvedID),
+					attribute.String("dgem.template.path", targetPath),
+				)
+				rendered, err = engine.RenderFile(targetPath, payload.Variables)
+			}
 		}
 		if err != nil {
 			renderSpan.SetStatus(codes.Error, err.Error())
