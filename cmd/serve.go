@@ -98,6 +98,8 @@ func init() {
 	serveCmd.Flags().StringVar(&serveBackendsFlag, "backends", "", "Comma-separated backend allow-list (vertex_first, vertex, cloudrun, local); default: derived from the configured URLs (env: DGEM_BACKENDS)")
 	serveCmd.Flags().BoolVar(&serveAdminAPI, "enable-admin-api", false, "Allow POST /api/backend-config and /api/vertex/deploy|teardown (changes gateway-wide settings and Vertex deployments; env: DGEM_ADMIN_API=1)")
 	serveCmd.Flags().StringVar(&serveAllowedVertexFlag, "allowed-vertex-endpoints", "", "Extra Vertex endpoint IDs/URLs a request may select via vertex_url; the configured endpoint is always allowed (env: DGEM_ALLOWED_VERTEX_ENDPOINTS)")
+	serveCmd.Flags().StringVar(&serveCORSOriginsFlag, "cors-origins", "", "Comma-separated browser origins allowed to call the gateway cross-origin (e.g. https://studio.example.com); default none, the embedded Studio is same-origin (env: DGEM_CORS_ORIGINS)")
+	serveCmd.Flags().StringVar(&serveAllowedHostsFlag, "allowed-hosts", "", "Extra Host header values accepted on loopback connections, for a reverse proxy on the same machine; default only localhost/127.0.0.1/::1 (DNS rebinding protection; env: DGEM_ALLOWED_HOSTS)")
 	serveCmd.Flags().BoolVar(&serveLocalMode, "local", false, "Run gateway targeting local diffgemma (Apple Silicon Metal) without cloud failover (env: DGEM_SERVE_LOCAL)")
 	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'; env: DGEM_CASCADE_MODEL)")
 	serveCmd.Flags().StringVar(&serveCascadeModels, "cascade-models", DefaultCascadeGeminiModels, "Comma-separated list of selectable Stage-2 Vertex AI Gemini 3.x models exposed in the API & Web Studio (env: DGEM_CASCADE_MODELS)")
@@ -1033,6 +1035,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	serveExplicitBackends = explicitBackends
 	if serveAllowedVertexExtras, err = parseAllowedVertexEndpoints(serveAllowedVertexFlag); err != nil {
+		return err
+	}
+	if env := os.Getenv("DGEM_CORS_ORIGINS"); env != "" && !cmd.Flags().Changed("cors-origins") {
+		serveCORSOriginsFlag = env
+	}
+	if env := os.Getenv("DGEM_ALLOWED_HOSTS"); env != "" && !cmd.Flags().Changed("allowed-hosts") {
+		serveAllowedHostsFlag = env
+	}
+	corsOrigins, err := parseCORSOrigins(serveCORSOriginsFlag)
+	if err != nil {
+		return err
+	}
+	allowedHosts, err := parseAllowedHosts(serveAllowedHostsFlag)
+	if err != nil {
 		return err
 	}
 	if avail := configuredBackends(); !containsString(avail, serveDefaultBackend) && len(avail) > 0 {
@@ -2043,7 +2059,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	mux.HandleFunc("/v1/systemone", v1ProxyHandler)
 
 	// 8. Model Context Protocol (MCP) Streamable HTTP Server at /mcp
-	mcpHandler := newMCPHTTPHandler()
+	mcpHandler := newMCPHTTPHandler(len(allowedHosts) > 0)
 	mux.Handle("/mcp", mcpHandler)
 	mux.Handle("/mcp/", mcpHandler)
 
@@ -2080,17 +2096,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 		http.NotFound(w, r)
 	})
 
-	corsWrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Mcp-Session-Id")
-		w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		mux.ServeHTTP(w, r)
-	})
+	secured, err := gatewaySecurityHandler(mux, corsOrigins, allowedHosts)
+	if err != nil {
+		return err
+	}
 
 	startGPUKeepaliveLoop()
 
@@ -2102,7 +2111,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Printf("   • MCP Endpoint:        http://%s/mcp (Streamable HTTP) | 'dgem mcp' (stdio)\n", addr)
 	fmt.Printf("   • Templates Catalog:   %s\n", serveTemplatesDir)
 	fmt.Printf("   • Studio Assets:       %s\n", uiSource)
-	return http.ListenAndServe(addr, corsWrapped)
+	if len(corsOrigins) > 0 {
+		fmt.Printf("   • CORS Origins:        %s\n", strings.Join(corsOrigins, ", "))
+	}
+	return http.ListenAndServe(addr, secured)
 }
 
 // chatCompletionsDeprecatedAt is when the gateway's /v1/chat/completions decision route was deprecated (2026-10-08),

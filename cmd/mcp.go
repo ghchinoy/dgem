@@ -1956,13 +1956,17 @@ func buildMCPServer() *mcp.Server {
 	return srv
 }
 
-func newMCPHTTPHandler() http.Handler {
+// newMCPHTTPHandler builds the Streamable HTTP /mcp handler. The SDK's DNS rebinding protection (403 for a loopback
+// connection with a non-loopback Host header) stays on. gatewaySecurityHandler applies the same check to the whole
+// gateway; only when the operator lists extra hosts with --allowed-hosts is the SDK check turned off, so those hosts
+// (still enforced by gatewaySecurityHandler) reach /mcp too.
+func newMCPHTTPHandler(extraAllowedHosts bool) http.Handler {
 	mcpServer := buildMCPServer()
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return mcpServer
 	}, &mcp.StreamableHTTPOptions{
 		Stateless:                  true,
 		JSONResponse:               true,
-		DisableLocalhostProtection: true,
+		DisableLocalhostProtection: extraAllowedHosts,
 	})
 }

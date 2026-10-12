@@ -66,6 +66,8 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `systemone`, `mcp`, `bench`, `
 | **`--backends`** | `DGEM_BACKENDS` | derived | Backend allow-list (`vertex_first`, `vertex`, `cloudrun`, `local`); validated at startup. |
 | **`--enable-admin-api`** | `DGEM_ADMIN_API` | off | Allow `POST /api/backend-config` and `/api/vertex/deploy`, `/api/vertex/teardown`. |
 | **`--allowed-vertex-endpoints`** | `DGEM_ALLOWED_VERTEX_ENDPOINTS` | none | Extra Vertex endpoints selectable per request; others are rejected. |
+| **`--cors-origins`** | `DGEM_CORS_ORIGINS` | none | Browser origins allowed to call the gateway cross-origin. Others get no CORS headers, and their `POST`s get `403`. |
+| **`--allowed-hosts`** | `DGEM_ALLOWED_HOSTS` | none | Extra `Host` values accepted on loopback connections (reverse proxy on the same machine). Others get `403`. |
 | **`--wakeup-timeout`** | — | `10m` | How long `cloudrun` requests are held and retried while the service wakes from zero. |
 
 ---
