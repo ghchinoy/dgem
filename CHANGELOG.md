@@ -32,6 +32,12 @@ Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
   and Vertex (`AIP_HTTP_PORT`) the default stays `0.0.0.0`; the gateway image and the serving entrypoint pass
   `--host 0.0.0.0` explicitly. **Behaviour change:** to reach a laptop gateway from another machine, pass
   `--host 0.0.0.0`.
+- **Image URLs are fetched by dgem, never by the serving image.** The gateway (`/api/decide`, MCP, `/api/locate`,
+  `/v1/systemone` including `?raw=1`, and the `/v1/chat/completions` proxy) fetches http(s) image URLs with the
+  public-address-only client from #165 and forwards data: URIs (unfetchable or non-image URLs: 422); the CLI fetches
+  from the caller's network and does the same. The serving image refuses http(s) image URLs with 400 by default
+  (`DGEM_IMAGE_URLS=deny`; `allow` restores the old behaviour): vLLM runs with network egress, so a URL that passed the
+  gateway's check could rebind or redirect to the metadata server or internal hosts.
 
 ## v0.3.6 (2026-10-12)
 

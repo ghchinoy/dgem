@@ -42,8 +42,8 @@ func TestPrivatePSCVertexURL(t *testing.T) {
 	}
 	for _, bad := range []string{
 		"http://" + host + "/v1/projects/456/locations/us-central1/endpoints/123/invoke/v1/chat/completions", // PSC has no invoke routes
-		"http://" + host + "/",                                                                                  // no :rawPredict
-		"http://123.us-central1-456.prediction.vertexai.goog" + path,                                           // http on the public host
+		"http://" + host + "/", // no :rawPredict
+		"http://123.us-central1-456.prediction.vertexai.goog" + path, // http on the public host
 		"http://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/endpoints/123:rawPredict",
 		"http://evil.example/x.prediction.p.vertexai.goog" + path, // suffix in the path, not the host
 		"http://prediction.p.vertexai.goog.evil.example" + path,
