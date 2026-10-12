@@ -705,7 +705,9 @@ func generateContentWithRetry(ctx context.Context, c *genai.Client, model, promp
 	return nil, lastErr
 }
 
-// cascadeImageParts turns image references (local path, data: URI, http(s) URL) into inline Gemini parts.
+// cascadeImageParts turns image references (local path, data: URI, http(s) URL) into inline Gemini parts. Under
+// `dgem serve` local paths are refused and URLs are fetched with imageFetchClient (public addresses only, checked at
+// connect time and on every redirect).
 func cascadeImageParts(ctx context.Context, images []string) ([]*genai.Part, error) {
 	var parts []*genai.Part
 	for _, ref := range images {
@@ -738,9 +740,13 @@ func cascadeImageParts(ctx context.Context, images []string) ([]*genai.Part, err
 			if err != nil {
 				return nil, err
 			}
-			hr, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+			hr, err := imageFetchClient(30 * time.Second).Do(req)
 			if err != nil {
 				return nil, err
+			}
+			if hr.StatusCode < 200 || hr.StatusCode > 299 {
+				hr.Body.Close()
+				return nil, fmt.Errorf("image URL: HTTP %d", hr.StatusCode)
 			}
 			data, err = io.ReadAll(io.LimitReader(hr.Body, 20<<20))
 			hr.Body.Close()
@@ -749,6 +755,9 @@ func cascadeImageParts(ctx context.Context, images []string) ([]*genai.Part, err
 			}
 			mime = strings.SplitN(hr.Header.Get("Content-Type"), ";", 2)[0]
 		default:
+			if !allowLocalImagePaths {
+				return nil, fmt.Errorf("image must be a data: URI or an http(s) URL on this server")
+			}
 			b, err := os.ReadFile(ref)
 			if err != nil {
 				return nil, err
