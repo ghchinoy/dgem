@@ -28,6 +28,10 @@ Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
     endpoint ID, host) with strict URL parsing, so another project's endpoint with the same ID no longer matches and
     receives the gateway's token. Also fixes the documented regional `https://<REGION>-aiplatform.googleapis.com/…:rawPredict`
     form, which was always rejected (#166).
+- **`dgem serve` and `dgem systemone serve` bind `127.0.0.1` by default** (was `0.0.0.0`). On Cloud Run (`K_SERVICE`)
+  and Vertex (`AIP_HTTP_PORT`) the default stays `0.0.0.0`; the gateway image and the serving entrypoint pass
+  `--host 0.0.0.0` explicitly. **Behaviour change:** to reach a laptop gateway from another machine, pass
+  `--host 0.0.0.0`.
 
 ## v0.3.6 (2026-10-12)
 

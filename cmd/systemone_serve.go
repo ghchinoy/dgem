@@ -69,7 +69,7 @@ DiffusionGemma server via /v1/chat/completions.`,
 
 func init() {
 	systemoneServeCmd.Flags().IntVarP(&soPort, "port", "p", 8080, "Port to listen on (overrides PORT or SYSTEMONE_PORT env var)")
-	systemoneServeCmd.Flags().StringVar(&soHost, "host", "0.0.0.0", "Host interface to bind")
+	systemoneServeCmd.Flags().StringVar(&soHost, "host", defaultBindHost(), "Host interface to bind (default 127.0.0.1; 0.0.0.0 on Cloud Run or Vertex, where K_SERVICE or AIP_HTTP_PORT is set)")
 	systemoneServeCmd.Flags().StringVar(&soUpstreamURL, "upstream", "", "Upstream DiffusionGemma /v1 endpoint URL (defaults to -u / --url or http://127.0.0.1:8081/v1)")
 	systemoneServeCmd.Flags().Float64Var(&soTemperature, "temperature", 1.0, "Post-hoc slot logit temperature scaling factor T* (default 1.0 unscaled)")
 	systemoneServeCmd.Flags().IntVar(&soMaxSlots, "max-slots", decisionindex.MaxSlotsPerPass, "Maximum simultaneous questions per forward pass (default 8)")
