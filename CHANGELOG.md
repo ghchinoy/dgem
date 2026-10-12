@@ -14,6 +14,20 @@ Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
 - **Private (PSC) Vertex URLs accepted** by the gateway, client and scripts: `http://<ID>-<REGION>-<NUM>.prediction.p.vertexai.goog/…:rawPredict` (port 80 inside the VPC) (#157, dl-c9j.7). The production gateway runs this.
 - Serving: audio/video fields refused with 400 instead of answered without them (#158, dl-sq3).
 - Adapter reports server time (`evaluation_trace.server_ms`); matrix latency runner records server p90/p95/p99 (#159, dl-dv3).
+- **Gateway security fixes (#163–#166; not yet deployed).**
+  - Template names can't escape `--templates-dir` (`../` in `/api/decide/{template}`, the `template` field or MCP
+    `decide_policy` could read any `*.json.tmpl` on the host); invalid names get 400 (#163).
+  - No wildcard CORS; cross-site browser requests get 403 (`http.CrossOriginProtection`); requests on a loopback
+    address with a non-loopback `Host` get 403 (DNS rebinding); `/mcp` keeps the SDK's localhost protection (#164).
+    **Behaviour change:** a browser app on another origin needs `--cors-origins <origin>` (`DGEM_CORS_ORIGINS`); a
+    same-machine reverse proxy that rewrites `Host` needs `--allowed-hosts <name>` (`DGEM_ALLOWED_HOSTS`).
+  - Image URL fetches (Stage-2 cascade, `locate`) check the dialed address on every connection and redirect (at most
+    3 hops, http/https only, no proxy), closing DNS-rebinding and redirect paths to the metadata server and internal
+    hosts; more reserved ranges refused (#165).
+  - Vertex endpoint overrides (`vertex_url`, `X-DGem-Vertex-Url`) are compared by full identity (project, region,
+    endpoint ID, host) with strict URL parsing, so another project's endpoint with the same ID no longer matches and
+    receives the gateway's token. Also fixes the documented regional `https://<REGION>-aiplatform.googleapis.com/…:rawPredict`
+    form, which was always rejected (#166).
 
 ## v0.3.6 (2026-10-12)
 
