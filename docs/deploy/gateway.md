@@ -31,7 +31,7 @@ configured for (`available_backends`); the Studio hides the backend switcher whe
 | :--- | :--- | :--- |
 | `--backends vertex_first,cloudrun,local` (`DGEM_BACKENDS`) | derived from the configured URLs | Explicit allow-list. Startup fails if a listed backend lacks its URL or `--default-backend` is not in the list. |
 | `--enable-admin-api` (`DGEM_ADMIN_API=1`) | **off** | Allows `POST /api/backend-config` (gateway-wide default backend, Vertex URL, local URL) and `POST /api/vertex/deploy` / `teardown`. Off: these return `403`, and the Studio hides endpoint management. |
-| `--allowed-vertex-endpoints <id,...>` (`DGEM_ALLOWED_VERTEX_ENDPOINTS`) | none | Extra Vertex endpoints a request may select with `vertex_url` / `X-DGem-Vertex-Url`. The configured endpoint is always allowed; any other returns `400`. |
+| `--allowed-vertex-endpoints <id,...>` (`DGEM_ALLOWED_VERTEX_ENDPOINTS`) | none | Extra Vertex endpoints a request may select with `vertex_url` / `X-DGem-Vertex-Url`. The configured endpoint is always allowed; any other returns `400`. Endpoints are matched by project, region and endpoint ID (and host for dedicated endpoints), so the same endpoint ID in another project doesn't match. |
 
 Requests naming an unknown backend, or one that is not enabled, get `400` with the list of available backends
 (HTTP header, query, JSON body and MCP alike); a request without a backend uses the gateway default. The Studio's

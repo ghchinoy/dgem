@@ -344,8 +344,6 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 	if v == "" {
 		return "", nil
 	}
-	proj := detectGCPProjectID()
-	projNum := detectGCPProjectNumber()
 	region := strings.TrimSpace(os.Getenv("GCP_REGION"))
 	if region == "" {
 		region = "us-central1"
@@ -356,14 +354,18 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 		// The dedicated DNS name needs the project number; the resource path accepts the number too, so a
 		// bare ID never depends on the project ID (a stale GOOGLE_CLOUD_PROJECT used to produce a URL with a
 		// mismatched project and an opaque Vertex 400).
+		projNum := detectGCPProjectNumber() // only here: it may query the metadata server
 		if projNum == "" {
 			return "", fmt.Errorf("expanding bare Vertex Endpoint ID %q requires GCP_PROJECT_NUMBER (or running on GCP with the metadata server); alternatively pass the full /invoke URL", raw)
 		}
-		proj = projNum
+		proj := projNum
 		epID := v
 		if strings.HasPrefix(v, "projects/") {
 			parts := strings.Split(strings.TrimSuffix(v, "/"), "/")
 			epID = parts[len(parts)-1]
+			if len(parts) == 6 && parts[2] == "locations" {
+				region = parts[3] // the dedicated host must name the endpoint's own region
+			}
 			v = fmt.Sprintf("https://%s.%s-%s.prediction.vertexai.goog/v1/%s/invoke/v1/chat/completions", epID, region, projNum, strings.TrimPrefix(v, "/"))
 		} else {
 			v = fmt.Sprintf("https://%s.%s-%s.prediction.vertexai.goog/v1/projects/%s/locations/%s/endpoints/%s/invoke/v1/chat/completions", epID, region, projNum, proj, region, epID)
@@ -378,17 +380,21 @@ func expandAndValidateVertexURL(raw string) (string, error) {
 	// VPC and serves a self-signed certificate on 443, so http (port 80) is accepted for it, and only for its single
 	// :rawPredict route. Every other host must use https.
 	if err == nil && client.IsPrivateVertexHost(parsed.Hostname()) {
-		lp := strings.ToLower(parsed.Path)
-		if (parsed.Scheme == "http" || parsed.Scheme == "https") &&
-			(strings.HasSuffix(lp, ":rawpredict") || strings.HasSuffix(lp, ":predict")) && strings.Contains(lp, "/endpoints/") {
-			return v, nil
+		if _, perr := parseVertexEndpointIdentity(v); perr != nil {
+			return "", fmt.Errorf("invalid private Vertex endpoint URL (%v; must be http(s)://<ID>-<REGION>-<PROJECT_NUMBER>%s/v1/projects/.../locations/.../endpoints/<ID>:rawPredict): %s", perr, client.PrivateVertexHostSuffix, raw)
 		}
-		return "", fmt.Errorf("invalid private Vertex endpoint URL (must be http(s)://<host>%s/v1/projects/.../locations/.../endpoints/<ID>:rawPredict): %s", client.PrivateVertexHostSuffix, raw)
+		return v, nil
 	}
-	if err != nil || parsed.Scheme != "https" || (!strings.HasSuffix(hostLower, ".prediction.vertexai.goog") && !strings.HasSuffix(hostLower, ".aiplatform.googleapis.com")) {
+	if err != nil || parsed.Scheme != "https" || (!strings.HasSuffix(hostLower, dedicatedVertexSuffix) && !strings.HasSuffix(hostLower, regionalVertexSuffix) && hostLower != globalVertexHost) {
 		return "", fmt.Errorf("invalid Vertex AI Endpoint URL (must target https://<endpoint>.<region>-<project_num>.prediction.vertexai.goog/.../invoke/..., https://<region>-aiplatform.googleapis.com/..., a private endpoint http(s)://...%s/...:rawPredict, or be an Endpoint ID): %s", client.PrivateVertexHostSuffix, raw)
 	}
-	return client.NormalizeVertexEndpointURL(v), nil
+	norm := client.NormalizeVertexEndpointURL(v)
+	// The suffix check alone admits any project's dedicated endpoint and arbitrary paths; require a well-formed endpoint
+	// URL whose host, project, region and endpoint ID agree (see parseVertexEndpointIdentity).
+	if _, err := parseVertexEndpointIdentity(norm); err != nil {
+		return "", fmt.Errorf("invalid Vertex AI Endpoint URL (%v): %s", err, raw)
+	}
+	return norm, nil
 }
 
 // Configured Vertex AI Dedicated Endpoint and Model parameters.
@@ -426,24 +432,28 @@ type vertexEndpointLiveStatus struct {
 	Message       string `json:"message"`
 }
 
+// extractEndpointIDFromURL returns the endpoint ID of a Vertex endpoint URL, "projects/.../endpoints/<ID>" name or bare
+// ID (the configured default for ""), parsed strictly; "" when the value is not a recognisable endpoint.
 func extractEndpointIDFromURL(raw string) string {
 	v := strings.TrimSpace(raw)
 	if v == "" {
 		return defaultVertexEndpointID()
 	}
-	if idx := strings.Index(v, "/endpoints/"); idx != -1 {
-		rest := v[idx+len("/endpoints/"):]
-		for i, ch := range rest {
-			if ch == '/' || ch == ':' || ch == '?' {
-				return rest[:i]
-			}
+	if id, err := parseVertexEndpointIdentity(client.NormalizeVertexEndpointURL(v)); err == nil {
+		return id.EndpointID
+	}
+	if strings.HasPrefix(v, "projects/") {
+		parts := strings.Split(strings.TrimSuffix(v, "/"), "/")
+		if len(parts) == 6 && parts[4] == "endpoints" && vertexEndpointRe.MatchString(parts[5]) {
+			return parts[5]
 		}
-		return rest
+		return ""
 	}
-	if !strings.Contains(v, "/") && !strings.Contains(v, ".") {
-		return v
+	if vertexEndpointRe.MatchString(v) {
+		return v // bare endpoint ID
 	}
-	return defaultVertexEndpointID()
+	// Not a recognisable endpoint URL. Never substitute the configured endpoint here: callers compare the result.
+	return ""
 }
 
 var (
