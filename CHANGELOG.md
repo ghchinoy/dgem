@@ -38,6 +38,13 @@ Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
   from the caller's network and does the same. The serving image refuses http(s) image URLs with 400 by default
   (`DGEM_IMAGE_URLS=deny`; `allow` restores the old behaviour): vLLM runs with network egress, so a URL that passed the
   gateway's check could rebind or redirect to the metadata server or internal hosts.
+- **Gateway caller authentication.** `dgem serve --iap-audience` (`DGEM_IAP_AUDIENCE`) verifies the IAP JWT on every
+  request (signature, audience, expiry) and takes the caller's identity from it, discarding client-supplied identity
+  headers; `--api-keys` (`DGEM_GATEWAY_KEYS`, header `X-DGem-Api-Key`) serves self-hosted gateways without IAP. Either
+  set: requests without valid credentials get 401 (`GET /health` stays open). `deploy_cloudrun_gateway.sh` sets the
+  Cloud Run IAP audience by default (`VERIFY_IAP=0` to skip). The CLI and `dgem mcp --remote` send `DGEM_GATEWAY_KEY`;
+  the gateway never forwards it upstream. Without either option the gateway warns at startup when it listens on a
+  non-loopback address.
 
 ## v0.3.6 (2026-10-12)
 
