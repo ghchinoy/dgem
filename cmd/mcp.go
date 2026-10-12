@@ -1254,8 +1254,12 @@ func TriggerGPUWarmupWithSource(ctx context.Context, waitForReady bool, triggerS
 
 			engine := template.NewEngine()
 			vars := map[string]interface{}{"ticket": "GPU warmup readiness probe"}
-			targetPath, _ := resolveTemplateFile(serveTemplatesDir, "support_triage")
-			rendered, err := engine.RenderFile(targetPath, vars)
+			rendered, err := "", error(nil)
+			if targetPath, _, rErr := resolveTemplateFile(serveTemplatesDir, "support_triage"); rErr != nil {
+				err = rErr
+			} else {
+				rendered, err = engine.RenderFile(targetPath, vars)
+			}
 			if err != nil {
 				rendered = `{"questions":[{"id":"ready","type":"boolean","prompt":"Is the system ready?"}]}`
 			}
@@ -1556,7 +1560,10 @@ func buildMCPServer() *mcp.Server {
 		if tmplID == "" {
 			tmplID = "support_triage"
 		}
-		targetPath, cleanID := resolveTemplateFile(serveTemplatesDir, tmplID)
+		targetPath, cleanID, err := resolveTemplateFile(serveTemplatesDir, tmplID)
+		if err != nil {
+			return nil, GatewayDecideResponse{}, err
+		}
 
 		engine := template.NewEngine()
 		rendered, err := engine.RenderFile(targetPath, input.Variables)
@@ -1689,7 +1696,10 @@ func buildMCPServer() *mcp.Server {
 			target = "primary foreground object"
 		}
 		vars := map[string]interface{}{"target": target}
-		targetPath, _ := resolveTemplateFile(serveTemplatesDir, "bbox_localization")
+		targetPath, _, err := resolveTemplateFile(serveTemplatesDir, "bbox_localization")
+		if err != nil {
+			return nil, LocateBBoxToolOutput{}, err
+		}
 		engine := template.NewEngine()
 		rendered, err := engine.RenderFile(targetPath, vars)
 		if err != nil {
@@ -1946,13 +1956,17 @@ func buildMCPServer() *mcp.Server {
 	return srv
 }
 
-func newMCPHTTPHandler() http.Handler {
+// newMCPHTTPHandler builds the Streamable HTTP /mcp handler. The SDK's DNS rebinding protection (403 for a loopback
+// connection with a non-loopback Host header) stays on. gatewaySecurityHandler applies the same check to the whole
+// gateway; only when the operator lists extra hosts with --allowed-hosts is the SDK check turned off, so those hosts
+// (still enforced by gatewaySecurityHandler) reach /mcp too.
+func newMCPHTTPHandler(extraAllowedHosts bool) http.Handler {
 	mcpServer := buildMCPServer()
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return mcpServer
 	}, &mcp.StreamableHTTPOptions{
 		Stateless:                  true,
 		JSONResponse:               true,
-		DisableLocalhostProtection: true,
+		DisableLocalhostProtection: extraAllowedHosts,
 	})
 }
