@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -141,4 +142,14 @@ func gatewaySecurityHandler(next http.Handler, corsOrigins, allowedHosts []strin
 		}
 		protected.ServeHTTP(w, r)
 	}), nil
+}
+
+// defaultBindHost is the default --host for dgem serve and dgem systemone serve: loopback, so a laptop gateway isn't
+// reachable from the network by accident. On Cloud Run (K_SERVICE) and Vertex (AIP_HTTP_PORT) the container must
+// listen on every interface for the platform's front end, so the default there is 0.0.0.0.
+func defaultBindHost() string {
+	if os.Getenv("K_SERVICE") != "" || os.Getenv("AIP_HTTP_PORT") != "" {
+		return "0.0.0.0"
+	}
+	return "127.0.0.1"
 }

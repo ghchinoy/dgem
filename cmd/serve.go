@@ -88,7 +88,7 @@ that gracefully holds and retries requests while a scale-to-zero Cloud Run GPU w
 
 func init() {
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 8090, "HTTP port to listen on (overrides PORT env var if specified)")
-	serveCmd.Flags().StringVar(&serveHost, "host", "0.0.0.0", "Host interface to bind")
+	serveCmd.Flags().StringVar(&serveHost, "host", defaultBindHost(), "Host interface to bind (default 127.0.0.1; 0.0.0.0 on Cloud Run or Vertex, where K_SERVICE or AIP_HTTP_PORT is set). Use 0.0.0.0 to accept other machines (behind IAP/IAM)")
 	serveCmd.Flags().StringVar(&serveTemplatesDir, "templates-dir", "./templates", "Directory containing .json.tmpl policy definitions")
 	serveCmd.Flags().StringVar(&serveUIDir, "ui-dir", "./studio/dist", "Directory containing built studio/dist assets (falls back to embedded studio.DistFS)")
 	serveCmd.Flags().DurationVar(&serveWakeupTimeout, "wakeup-timeout", 10*time.Minute, "Max duration to hold and retry requests while upstream GPU wakes from 0 instances")

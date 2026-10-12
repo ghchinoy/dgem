@@ -328,6 +328,7 @@ python3 /opt/dgemma/structured_server.py \
 if [ "${ROLE:-default}" = "decision-index" ]; then
   echo "[init] Starting dgem systemone adapter on port $PORT -> http://127.0.0.1:8081/v1 (T*=${TEMPERATURE:-1.0})..."
   /usr/local/bin/dgem systemone serve \
+    --host 0.0.0.0 \
     --port "$PORT" \
     --upstream "http://127.0.0.1:8081/v1" \
     --temperature "${TEMPERATURE:-1.0}" \

@@ -62,6 +62,7 @@ All `dgem` subcommands (`decide`, `ask`, `serve`, `systemone`, `mcp`, `bench`, `
 | **`--systemone-temperature`** | `DGEM_SYSTEMONE_TEMP` | `1.0` | Post-hoc slot logit temperature scaling $T^*$ for `/v1/systemone` decisions. |
 | **`-u, --url`** | `DGEM_URL` | `http://127.0.0.1:8080/v1` | Upstream Serverless Cloud Run GPU `/v1` URL used by `cloudrun` routing and `vertex_first` failover. |
 | **`-p, --port`** | `PORT` | `8090` | HTTP listener port (the flag overrides `PORT`). |
+| **`--host`** | — | `127.0.0.1` (`0.0.0.0` on Cloud Run/Vertex) | Interface to bind. The default only accepts connections from this machine (Studio at `http://localhost:8090`); pass `--host 0.0.0.0` to accept other machines, and put the gateway behind IAP/IAM. Cloud Run (`K_SERVICE`) and Vertex (`AIP_HTTP_PORT`) default to `0.0.0.0`; the gateway image passes it explicitly. |
 | **`--local`, `--local-url`** | `DGEM_SERVE_LOCAL`, `DGEM_LOCAL_URL` | off | Serve against a local `diffgemma` engine only (backend `local`, no cloud failover). |
 | **`--backends`** | `DGEM_BACKENDS` | derived | Backend allow-list (`vertex_first`, `vertex`, `cloudrun`, `local`); validated at startup. |
 | **`--enable-admin-api`** | `DGEM_ADMIN_API` | off | Allow `POST /api/backend-config` and `/api/vertex/deploy`, `/api/vertex/teardown`. |
@@ -94,7 +95,7 @@ and the container serves the adapter on its port, in front of its own structured
 | Flag | Env Var | Default | Description |
 | :--- | :--- | :--- | :--- |
 | **`-p, --port`** | `PORT`, then `SYSTEMONE_PORT` | `8080` | Port to listen on. |
-| **`--host`** | — | `0.0.0.0` | Interface to bind. |
+| **`--host`** | — | `127.0.0.1` (`0.0.0.0` on Cloud Run/Vertex) | Interface to bind. The default only accepts connections from this machine; pass `--host 0.0.0.0` to accept others (set `--api-key` then). Cloud Run (`K_SERVICE`) and Vertex (`AIP_HTTP_PORT`) default to `0.0.0.0`, and the serving image's entrypoint passes it explicitly. |
 | **`--upstream`** | `SYSTEMONE_UPSTREAM_URL`, then `UPSTREAM_DGEMMA_URL` | `-u` / `--url` if set, else `http://127.0.0.1:8081/v1` | Upstream `/v1` base URL (local server, Cloud Run, or a Vertex `.../invoke/v1` URL). |
 | **`--temperature`** | — | `1.0` | Post-hoc slot temperature scaling $T^*$ (`1.0` = unscaled). |
 | **`--max-slots`** | — | `8` | Maximum questions per forward pass before batching. |
