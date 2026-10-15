@@ -9,7 +9,18 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
-Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
+## v0.3.7 (2026-10-15)
+
+Security release: serving image, gateway and CLI. Code at `762e545` (this tag adds only this CHANGELOG entry).
+Production has run this code since 2026-10-15 (validated in decision-lab `benchmarks/runs/20261015-c9j11-gateway-prestage`,
+`20261015-v037-serving-t1` and `20261015-v037-serving-promotion`): gateway checks 1–14 on a no-traffic tag, then on the
+hosted domain after promotion; serving canary T1 PASS vs v0.3.6; T0 PASS on Cloud Run and on the private Vertex
+endpoint. The production images were built from `762e545` and report `v0.3.6-36-g762e545`.
+
+**Behaviour changes** (details below): the gateway refuses cross-site browser requests and verifies caller identity
+when an IAP audience or API keys are set; `dgem serve` / `dgem systemone serve` bind `127.0.0.1` by default outside
+Cloud Run and Vertex; the serving image refuses http(s) image URLs (send data: URIs, or go through the gateway, which
+fetches them); `/v1/systemone` in adapter mode returns 400 for bodies it can't read instead of passing them through.
 
 - **Private (PSC) Vertex URLs accepted** by the gateway, client and scripts: `http://<ID>-<REGION>-<NUM>.prediction.p.vertexai.goog/…:rawPredict` (port 80 inside the VPC) (#157, dl-c9j.7). The production gateway runs this.
 - Serving: audio/video fields refused with 400 instead of answered without them (#158, dl-sq3).
