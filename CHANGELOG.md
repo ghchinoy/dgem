@@ -45,6 +45,20 @@ Merged after the v0.3.6 tag (not in the v0.3.6 serving image):
   Cloud Run IAP audience by default (`VERIFY_IAP=0` to skip). The CLI and `dgem mcp --remote` send `DGEM_GATEWAY_KEY`;
   the gateway never forwards it upstream. Without either option the gateway warns at startup when it listens on a
   non-loopback address.
+- **`/v1/systemone` adapter: score questions, one-option questions, `media` (dl-bfh, dl-md1, dl-0ch).**
+  - `score` questions (`criteria` an array of levels) are parsed and read with the rest in batches of at most 8.
+    Before, any score question made the request fail to parse and the gateway forwarded it to the serving image
+    unbatched: over 10 questions the server's compact answer format refused ids ending in letters ("label 'no' is not
+    a single token", "labels do not share one template slot") and over 64 it refused the request. Score answers follow
+    the serving image's Jev form (`score` = sum(i·p_i), probabilities keyed `"0"`..`"n-1"`, `legend`); all answers now
+    carry `confidence`.
+  - A choice with one option or a score with one level is answered locally (probability 1, no model call; none at all
+    when every question is like that). The server refused them ("needs at least two alternatives"), and the 422
+    message wrongly added "(at most 26 options per choice)"; that hint now appears only for the upper limit.
+  - `media: [{mime_type, data}]` with `image/*` (data: URI or raw base64) is an alias for `images`; other types 400.
+  - **Behaviour change:** in adapter mode a body the adapter can't read (bad JSON, `questions` not an object,
+    criteria of the wrong shape, unknown question type) gets 400 instead of silent pass-through; use `?raw=1` to send
+    a serving-image body unchanged. Score questions with more than 26 levels or repeated levels get 422.
 
 ## v0.3.6 (2026-10-12)
 
