@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.8 (2026-10-16)
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).
+
 - **Gateway logs why a request failed (dl-l9c).** Span log lines for failed requests carry `"error"` (the reason the
   caller got, up to 300 characters; it can include a question id from the serving image's message, never request
   content) and severity WARNING (4xx) or ERROR (5xx); they used to be INFO with only a status code. Every
