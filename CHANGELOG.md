@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Gateway logs why a request failed (dl-l9c).** Span log lines for failed requests carry `"error"` (the reason the
+  caller got, up to 300 characters; it can include a question id from the serving image's message, never request
+  content) and severity WARNING (4xx) or ERROR (5xx); they used to be INFO with only a status code. Every
+  `/v1/systemone` failure path records its reason, including pass-through upstream errors. Adapter requests also log
+  their shape without content: `dgem.systemone.questions`, `q_choice` / `q_noul` / `q_score` / `q_other`,
+  `max_options`, `media_entries`, `body_bytes`, `forward_passes`, plus `dgem.image_count` and `http.status_code`.
+  Filter failures with `severity>=WARNING`.
+
 ## v0.3.7 (2026-10-15)
 
 Security release: serving image, gateway and CLI. Code at `762e545` (this tag adds only this CHANGELOG entry).
