@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/api/decide` failures log like `/v1/systemone` (dl-vut).** Client errors (invalid template name, refused image URL,
+  disabled backend or refused `vertex_url`, bad JSON, invalid layout/prior/temperature) log at WARNING with
+  `http.status_code` and the reason on `dgem.gateway.decide` (and `dgem.template.render` for template errors); upstream
+  failures (502) stay ERROR. Successful decisions record `http.status_code: 200`. Before, every failure logged at ERROR
+  without a status, so `severity>=ERROR` could not isolate server faults.
+
 ## v0.3.8 (2026-10-16)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).

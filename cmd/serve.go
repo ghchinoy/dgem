@@ -1506,6 +1506,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 			w.WriteHeader(status)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 		}
+		// failDecide records the caller's status and the reason on the root span (WARNING for 4xx, ERROR for 5xx in
+		// the span log; dl-vut), ends it and writes the error response.
+		failDecide := func(status int, reason, msg string) {
+			failSpan(rootSpan, status, reason)
+			rootSpan.End()
+			writeErr(status, msg)
+		}
 
 		var payload GatewayDecideRequest
 		decideBody, rerr := io.ReadAll(r.Body)
@@ -1516,13 +1523,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 			rerr = json.Unmarshal(decideBody, &payload)
 		}
 		if rerr != nil {
-			rootSpan.SetStatus(codes.Error, rerr.Error())
-			rootSpan.End()
 			msg := rerr.Error()
 			if !errors.Is(rerr, decisionindex.ErrUnsupportedMedia) {
 				msg = "invalid JSON body: " + msg
 			}
-			writeErr(http.StatusBadRequest, msg)
+			failDecide(http.StatusBadRequest, rerr.Error(), msg)
 			return
 		}
 
@@ -1582,20 +1587,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if err != nil {
-			renderSpan.SetStatus(codes.Error, err.Error())
+			failSpan(renderSpan, http.StatusBadRequest, err.Error())
 			renderSpan.End()
-			rootSpan.SetStatus(codes.Error, err.Error())
-			rootSpan.End()
-			writeErr(http.StatusBadRequest, fmt.Sprintf("template render failed: %s", err.Error()))
+			failDecide(http.StatusBadRequest, err.Error(), fmt.Sprintf("template render failed: %s", err.Error()))
 			return
 		}
 
 		schemaContent, stateContent, err := template.ParseStructuredPayload(rendered, payload.Variables)
 		renderSpan.End()
 		if err != nil {
-			rootSpan.SetStatus(codes.Error, err.Error())
-			rootSpan.End()
-			writeErr(http.StatusBadRequest, fmt.Sprintf("failed to parse rendered template: %s", err.Error()))
+			failDecide(http.StatusBadRequest, err.Error(), fmt.Sprintf("failed to parse rendered template: %s", err.Error()))
 			return
 		}
 
@@ -1627,9 +1628,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			layout = r.URL.Query().Get("layout")
 		}
 		if schemaContent, err = ApplyPromptLayout(schemaContent, layout); err != nil {
-			rootSpan.SetStatus(codes.Error, err.Error())
-			rootSpan.End()
-			writeErr(http.StatusBadRequest, err.Error())
+			failDecide(http.StatusBadRequest, err.Error(), err.Error())
 			return
 		}
 
@@ -1651,17 +1650,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 		images = append(images, payload.Images...)
 		images, imgErr := prepareRequestImages(ctx, images) // URLs fetched here and sent as data: URIs
 		if imgErr != nil {
-			rootSpan.SetStatus(codes.Error, imgErr.Error())
-			rootSpan.End()
-			writeErr(imageErrorStatus(imgErr), imgErr.Error())
+			failDecide(imageErrorStatus(imgErr), imgErr.Error(), imgErr.Error())
 			return
 		}
 
 		backendTarget, targetUpstreamURL, backendErr := resolveBackendTarget(r, payload.Backend, payload.VertexURL)
 		if backendErr != nil {
-			rootSpan.SetStatus(codes.Error, backendErr.Error())
-			rootSpan.End()
-			writeErr(http.StatusBadRequest, backendErr.Error())
+			failDecide(http.StatusBadRequest, backendErr.Error(), backendErr.Error())
 			return
 		}
 
@@ -1697,9 +1692,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if err != nil {
-			rootSpan.SetStatus(codes.Error, err.Error())
-			rootSpan.End()
-			writeErr(http.StatusBadGateway, fmt.Sprintf("upstream (%s) decision failed after %d attempt(s): %s", backendTarget, attempts, err.Error()))
+			failDecide(http.StatusBadGateway, err.Error(), fmt.Sprintf("upstream (%s) decision failed after %d attempt(s): %s", backendTarget, attempts, err.Error()))
 			return
 		}
 
@@ -1731,9 +1724,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 			prior, perr := NormalizeStage2Prior(prior)
 			if perr != nil {
-				rootSpan.SetStatus(codes.Error, perr.Error())
-				rootSpan.End()
-				writeErr(http.StatusBadRequest, perr.Error())
+				failDecide(http.StatusBadRequest, perr.Error(), perr.Error())
 				return
 			}
 			thresholdMode := payload.CascadeThresholdMode
@@ -1742,9 +1733,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 			thresholdMode, terr := NormalizeCascadeThresholdMode(thresholdMode)
 			if terr != nil {
-				rootSpan.SetStatus(codes.Error, terr.Error())
-				rootSpan.End()
-				writeErr(http.StatusBadRequest, terr.Error())
+				failDecide(http.StatusBadRequest, terr.Error(), terr.Error())
 				return
 			}
 			_, cascadeSpan := gatewayTracer().Start(ctx, "dgem.cascade.gemini")
@@ -1779,9 +1768,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		appliedTemp, _, terr := applyPolicyTemperature(resp, schemaContent, payload.Temperature, cascadeSummary)
 		if terr != nil {
-			rootSpan.SetStatus(codes.Error, terr.Error())
-			rootSpan.End()
-			writeErr(http.StatusBadRequest, terr.Error())
+			failDecide(http.StatusBadRequest, terr.Error(), terr.Error())
 			return
 		}
 
@@ -1846,6 +1833,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			attribute.Int("dgem.warmup_attempts", attempts),
 			attribute.Float64("dgem.max_entropy", maxEntropy),
 		)
+		rootSpan.SetAttributes(attribute.Int("http.status_code", http.StatusOK))
 		rootSpan.SetStatus(codes.Ok, "ok")
 		rootSpan.End()
 
