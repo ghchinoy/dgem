@@ -80,7 +80,7 @@ disable with `CLOUDRUN_VPC_EGRESS=off`.
 
 ```bash
 GCP_PROJECT=<PROJECT> GCP_REGION=<REGION> ALLOW_GROUP=<GROUP> \
-CLOUDRUN_IMAGE=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26 \
+CLOUDRUN_IMAGE=us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.3.7@sha256:6153fe7079620d7ad608d8409ce55b295c362de808fce2fc28368cfb6b64c19f \
 ./scripts/deploy_cloudrun_vllm.sh
 ```
 

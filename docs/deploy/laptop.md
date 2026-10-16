@@ -33,11 +33,11 @@ an L4 works but is slower; see [GPU requirements](evaluate.md#0-hardware)).
 ```bash
 # Lean image: downloads the public weights from Hugging Face on first boot (needs internet)
 docker run --gpus all -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.3.7@sha256:6153fe7079620d7ad608d8409ce55b295c362de808fce2fc28368cfb6b64c19f
 
 # Weights baked into the image: no download at boot, larger pull (works offline once pulled)
 docker run --gpus all -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:v0.1.0@sha256:cbbb53c25d5c9bcf8a7159e2f953b364720fbe54e740e35f6e158e815644da73
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:v0.3.7@sha256:5593d908c85879c76bb942700cdac9ce83a87a290ebd8e301d8715b7bbc7acb6
 ```
 
 Current tags and digests: [Public container images](public-images.md). Wait until

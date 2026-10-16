@@ -13,8 +13,8 @@ description: "How to pull and run official dgem DiffusionGemma container images 
 
 | Image Tag | Digest | Compressed Size | Weights Delivery | Recommended Use Case |
 | :--- | :--- | :---: | :--- | :--- |
-| **`dgem:v0.1.0`** (also `:latest`) | `sha256:5fa4a8661631...` | `~10 GB` | Downloads the public weights from Hugging Face at boot, or mounts them (Cloud Storage / local path) | **Cloud Run GPU (recommended), Vertex AI, GCE VMs, local Docker** |
-| **`dgem-weights:v0.1.0`** (also `:latest`) | `sha256:cbbb53c25d5c...` | `~26 GB` | **NVFP4 weights baked in** at `/opt/dgemma/weights`; no download at boot, but a large pull (~8–12 minutes on a fresh Cloud Run instance) | **Offline or air-gapped hosts** |
+| **`dgem:v0.3.7`** (also `:latest`) | `sha256:6153fe707962...` | `~10 GB` | Downloads the public weights from Hugging Face at boot, or mounts them (Cloud Storage / local path) | **Cloud Run GPU (recommended), Vertex AI, GCE VMs, local Docker** |
+| **`dgem-weights:v0.3.7`** (also `:latest`) | `sha256:5593d908c858...` | `~26 GB` | **NVFP4 weights baked in** at `/opt/dgemma/weights`; no download at boot, but a large pull (~8–12 minutes on a fresh Cloud Run instance) | **Offline or air-gapped hosts** |
 
 Both images were validated side by side with the production serving image (API contract, latency, 0 errors at 32
 concurrent clients) before publishing; see the [image parity run](../../benchmarks/runs/20260927-image-parity/README.md)
@@ -27,10 +27,10 @@ For deploying to Google Cloud Run GPU or Vertex AI Dedicated Endpoints, see [Dep
 ### Pulling the Image
 ```bash
 # Pull lean image (pinned digest):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.3.7@sha256:6153fe7079620d7ad608d8409ce55b295c362de808fce2fc28368cfb6b64c19f
 
 # Or pull self-contained image with pre-baked NVFP4 weights (pinned digest):
-docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:v0.1.0@sha256:cbbb53c25d5c9bcf8a7159e2f953b364720fbe54e740e35f6e158e815644da73
+docker pull us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem-weights:v0.3.7@sha256:5593d908c85879c76bb942700cdac9ce83a87a290ebd8e301d8715b7bbc7acb6
 ```
 
 ---
@@ -56,7 +56,7 @@ docker run --gpus all \
   -p 8080:8080 \
   -e ROLE=decision-index \
   -e TEMPERATURE=1.0 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.3.7@sha256:6153fe7079620d7ad608d8409ce55b295c362de808fce2fc28368cfb6b64c19f
 ```
 
 Once running and healthy (`curl http://localhost:8080/health`), run the official upstream Decision Index pipeline:
@@ -74,7 +74,7 @@ Serves `/v1/chat/completions` (OpenAI format), `/v1/systemone` pass-through, and
 ```bash
 docker run --gpus all \
   -p 8080:8080 \
-  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.1.0@sha256:5fa4a866163169aaf91c3bdb727020ff3c86e26e84ffadad86bc859053d45b26
+  us-central1-docker.pkg.dev/dgem-diffusiongemma/dgem/dgem:v0.3.7@sha256:6153fe7079620d7ad608d8409ce55b295c362de808fce2fc28368cfb6b64c19f
 ```
 
 Then point `dgem` CLI, Decision Studio, or MCP at `http://127.0.0.1:8080/v1`:
