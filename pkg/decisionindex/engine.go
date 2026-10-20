@@ -1421,3 +1421,39 @@ func catchAllKeys(criteria map[string]string) []string {
 	}
 	return out
 }
+
+// FitsServingImage reports whether the serving image's own /v1/systemone can answer req in one read exactly as sent:
+// at most MaxSlotsPerPass questions (the server keeps its readable "lines" answer format up to 10), every choice with
+// 2..MaxOptionsPerSlot options and every score with 2..MaxOptionsPerSlot levels, and only known question types.
+// Requests that fit can be forwarded unchanged; the rest need the adapter (batching, brackets, one-option answers).
+// Call after MergeMedia.
+func FitsServingImage(req SystemOneRequest) bool {
+	if len(req.Questions) == 0 || len(req.Questions) > MaxSlotsPerPass || len(req.Media) > 0 {
+		return false
+	}
+	for k, q := range req.Questions {
+		kind, err := questionKind(k, q)
+		if err != nil {
+			return false
+		}
+		switch kind {
+		case kindChoice:
+			if len(q.Criteria) < 2 || len(q.Criteria) > MaxOptionsPerSlot {
+				return false
+			}
+		case kindScore:
+			if len(q.Levels) < 2 {
+				return false
+			}
+		case kindNoul:
+		default:
+			return false
+		}
+		// The serving image's Jev parser takes "type" literally (noul, choice, score): an empty type or a synonym
+		// (bool, boolean) is resolved only here.
+		if q.Type != kind {
+			return false
+		}
+	}
+	return true
+}

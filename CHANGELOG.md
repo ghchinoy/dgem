@@ -9,6 +9,15 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/v1/systemone`: per-caller pass-through for requests the serving image can answer as sent (dl-82d).**
+  `--systemone-raw-users` / `DGEM_SYSTEMONE_RAW_USERS` (comma-separated verified identities, `*` for all; default
+  none) forwards a listed caller's adapter-mode request unchanged when it has at most 8 questions, every choice and
+  score has 2-26 options or levels, and types are literally `choice`/`noul`/`score` (`media` is converted to `images`).
+  Other requests still use the adapter. Why: since v0.3.7 (#172) the adapter also handles score questions, and it
+  builds a different prompt (a text state wrapped as JSON, questions and options sorted, its own instructions) and
+  response shape (no yes/no probabilities, sorted keys, no `model`/`usage`) than the serving image, which changed a
+  client's small-turn answers. The span log records `dgem.systemone.mode` (`passthrough` or `adapter`).
+
 ## v0.3.10 (2026-10-20)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).
