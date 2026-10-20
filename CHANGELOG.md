@@ -17,6 +17,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
   builds a different prompt (a text state wrapped as JSON, questions and options sorted, its own instructions) and
   response shape (no yes/no probabilities, sorted keys, no `model`/`usage`) than the serving image, which changed a
   client's small-turn answers. The span log records `dgem.systemone.mode` (`passthrough` or `adapter`).
+- **Gateway: opt-in request/response body logging for debugging callers (dl-9i0).** Off by default.
+  `DGEM_LOG_BODIES=responses|both` with a required `DGEM_LOG_BODIES_UNTIL` (RFC3339, at most 7 days ahead) and
+  `DGEM_LOG_BODIES_USERS` (caller identities, or `*`), optional `DGEM_LOG_BODIES_SAMPLE`. Logs `/v1/systemone`,
+  `/api/decide` and MCP `tools/call` bodies as `log_type: "dgem.bodies"` lines (96 KB cap per body; `data:` URIs and
+  long base64 replaced by a digest; no headers or tokens). Invalid settings leave it off; startup and `/health`
+  (`body_logging`) report its state. Setup and routing to a separate log bucket: docs/operate/observability.md §4.
 
 ## v0.3.10 (2026-10-20)
 

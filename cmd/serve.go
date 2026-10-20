@@ -1124,6 +1124,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			"default_backend": defB,
 			"upstream_url":    viper.GetString("url"),
 			"vertex_url":      vxURL,
+			"body_logging":    bodyLogStatus(),
 		})
 	})
 
@@ -2199,7 +2200,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 	})
 
 	auth := parseCallerAuth(serveIAPAudience, serveAPIKeys)
-	secured, err := gatewaySecurityHandler(callerAuthHandler(mux, auth), corsOrigins, allowedHosts)
+	bodyLogMu.Lock()
+	bodyLog = parseBodyLogConfig(os.Getenv, time.Now())
+	blc := bodyLog
+	bodyLogMu.Unlock()
+	secured, err := gatewaySecurityHandler(callerAuthHandler(bodyLogHandler(mux, blc), auth), corsOrigins, allowedHosts)
 	if err != nil {
 		return err
 	}
@@ -2219,6 +2224,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	if len(systemOneRawUsers) > 0 {
 		fmt.Printf("   • SystemOne raw:       %s (forwarded unchanged when the serving image can answer as sent)\n", strings.Join(systemOneRawUsers, ", "))
+	}
+	switch {
+	case blc.on():
+		fmt.Printf("   ⚠ Body logging:        ON (%s) until %s for %s (sample %.2f): request/response content goes to the logs as log_type %q\n",
+			blc.mode, blc.until.UTC().Format(time.RFC3339), strings.Join(blc.users, ", "), blc.sample, bodyLogType)
+	case blc != nil:
+		fmt.Printf("   ⚠ Body logging:        OFF, refused: %s\n", blc.err)
 	}
 	if auth.enabled() {
 		fmt.Printf("   • Caller auth:         %s\n", auth.describe())
