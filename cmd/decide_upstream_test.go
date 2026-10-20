@@ -25,7 +25,7 @@ import (
 // /api/decide: a request the serving image refused is the caller's (4xx, WARNING) and is never cold-start retried;
 // unreachable or 5xx upstreams stay 502 (dl-3di).
 func TestDecideUpstreamStatus(t *testing.T) {
-	refused := &client.HTTPError{StatusCode: 400, Body: `{"error": {"message": "question 'primary_crop': at most 26 alternatives", "type": "invalid_request_error"}}`}
+	refused := &client.HTTPError{StatusCode: 400, Body: `{"error": {"message": "question 'wide_choice': at most 26 alternatives", "type": "invalid_request_error"}}`}
 	for _, tc := range []struct {
 		name  string
 		err   error
