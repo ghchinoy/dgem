@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **Gateway logs the caller on `/v1/systemone` and `/mcp`.** The verified caller identity (the IAP-asserted account, or
+  `apikey:<id>`) is recorded as `dgem.user` on `dgem.gateway.proxy`, as `/api/decide` already did, so client service
+  accounts can be told apart in the logs (`jsonPayload.attributes."dgem.user"`). `/mcp` gets a `dgem.gateway.mcp`
+  span per request with `dgem.user`, `dgem.mcp.method`, `dgem.mcp.tool` (for `tools/call`; arguments are never logged)
+  and `http.status_code`.
+
 - **`/api/decide` failures log like `/v1/systemone` (dl-vut).** Client errors (invalid template name, refused image URL,
   disabled backend or refused `vertex_url`, bad JSON, invalid layout/prior/temperature) log at WARNING with
   `http.status_code` and the reason on `dgem.gateway.decide` (and `dgem.template.render` for template errors); upstream
