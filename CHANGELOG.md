@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.11 (2026-10-20)
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).
+
 - **`/v1/systemone`: per-caller pass-through for requests the serving image can answer as sent (dl-82d).**
   `--systemone-raw-users` / `DGEM_SYSTEMONE_RAW_USERS` (comma-separated verified identities, `*` for all; default
   none) forwards a listed caller's adapter-mode request unchanged when it has at most 8 questions, every choice and
