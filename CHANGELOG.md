@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/api/decide`: requests the model server refuses get 422, not 502 (dl-3di).** E.g. a choice with more than 26
+  options (`question 'x': at most 26 alternatives`). **Behaviour change:** callers that treated 502 as "retry" now get
+  a 422 with the server's message (plus the capacity hint, as on `/v1/systemone`); unreachable or failing servers stay
+  502. These refusals log at WARNING on `dgem.gateway.decide`, `dgem.gpu.orchestrate` and `dgem.gpu.forward_pass`
+  (were ERROR) and are no longer cold-start retried. Status codes are now documented in the gateway API reference.
+- `/api/decide` records the caller (`dgem.user`) at the start of the request, so failures before template rendering
+  are attributable too (dl-qx6).
+
 ## v0.3.9 (2026-10-20)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).
