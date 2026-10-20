@@ -379,8 +379,8 @@ func TestFitsServingImage(t *testing.T) {
 	choice := q(`{"type": "choice", "criteria": {"a": "", "b": "", "c": ""}}`)
 	score := q(`{"type": "score", "criteria": ["low", "mid", "high", "max"]}`)
 	noul := q(`{"type": "noul"}`)
-	tetris := SystemOneRequest{State: "board", Questions: map[string]SystemOneQuestion{"rotation": choice, "column": choice, "hold": noul, "risk": score}}
-	if !FitsServingImage(tetris) {
+	smallTurn := SystemOneRequest{State: "board", Questions: map[string]SystemOneQuestion{"rotation": choice, "column": choice, "hold": noul, "risk": score}}
+	if !FitsServingImage(smallTurn) {
 		t.Error("4-question turn with a score should fit")
 	}
 	nine := SystemOneRequest{Questions: map[string]SystemOneQuestion{}}

@@ -2006,7 +2006,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 			}
 			// Listed callers get their request forwarded to the serving image unchanged when it can answer it as sent
 			// (dl-82d): the adapter builds a different prompt (state as JSON, sorted questions and options, its own
-			// instructions) and response shape, which changed Gev's Tetris answers when #172 started handling score
+			// instructions) and response shape, which changed a client's small-turn answers when #172 started handling score
 			// questions. Requests that don't fit still use the adapter.
 			passThrough := systemOneRawCaller(callerEmail(r)) && decisionindex.FitsServingImage(soReq)
 			if passThrough {
