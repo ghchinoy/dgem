@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.9 (2026-10-20)
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).
+
 - **Gateway logs the caller on `/v1/systemone` and `/mcp`.** The verified caller identity (the IAP-asserted account, or
   `apikey:<id>`) is recorded as `dgem.user` on `dgem.gateway.proxy`, as `/api/decide` already did, so client service
   accounts can be told apart in the logs (`jsonPayload.attributes."dgem.user"`). `/mcp` gets a `dgem.gateway.mcp`
