@@ -9,6 +9,10 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.10 (2026-10-20)
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`).
+
 - **`/api/decide`: requests the model server refuses get 422, not 502 (dl-3di).** E.g. a choice with more than 26
   options (`question 'x': at most 26 alternatives`). **Behaviour change:** callers that treated 502 as "retry" now get
   a 422 with the server's message (plus the capacity hint, as on `/v1/systemone`); unreachable or failing servers stay
