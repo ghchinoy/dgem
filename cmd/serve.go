@@ -106,6 +106,7 @@ func init() {
 	serveCmd.Flags().BoolVar(&serveLocalMode, "local", false, "Run gateway targeting local diffgemma (Apple Silicon Metal) without cloud failover (env: DGEM_SERVE_LOCAL)")
 	serveCmd.Flags().StringVar(&serveCascadeModel, "cascade-model", DefaultCascadeGeminiModel, "Default Stage-2 Vertex AI Gemini 3.x model for cascade escalation (e.g. 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite'; env: DGEM_CASCADE_MODEL)")
 	serveCmd.Flags().StringVar(&serveCascadeModels, "cascade-models", DefaultCascadeGeminiModels, "Comma-separated list of selectable Stage-2 Vertex AI Gemini 3.x models exposed in the API & Web Studio (env: DGEM_CASCADE_MODELS)")
+	serveCmd.Flags().StringSliceVar(&systemOneRawUsers, "systemone-raw-users", nil, "Callers (verified identity, e.g. a service account email; '*' for all) whose /v1/systemone requests are forwarded to the serving image unchanged when it can answer them as sent (<=8 questions, 2-26 options or levels); other requests use the adapter (env: DGEM_SYSTEMONE_RAW_USERS)")
 	serveCmd.Flags().StringVar(&serveSystemOneMode, "systemone-mode", "adapter", "Serving mode for POST /v1/systemone: 'adapter' (applies wide-option bracket tournaments & multi-slot canvas batching, default) or 'passthrough'")
 	serveCmd.Flags().Float64Var(&serveSystemOneTemp, "systemone-temperature", 1.0, "Post-hoc slot logit temperature scaling factor T* for /v1/systemone (default 1.0)")
 
@@ -1041,6 +1042,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	if envSOMode := os.Getenv("DGEM_SYSTEMONE_MODE"); envSOMode != "" && !cmd.Flags().Changed("systemone-mode") {
 		serveSystemOneMode = strings.ToLower(strings.TrimSpace(envSOMode))
+	}
+	if v := os.Getenv("DGEM_SYSTEMONE_RAW_USERS"); v != "" && !cmd.Flags().Changed("systemone-raw-users") {
+		systemOneRawUsers = nil
+		for _, u := range strings.Split(v, ",") {
+			if u = strings.TrimSpace(u); u != "" {
+				systemOneRawUsers = append(systemOneRawUsers, u)
+			}
+		}
 	}
 	if envSOTemp := os.Getenv("DGEM_SYSTEMONE_TEMP"); envSOTemp != "" && !cmd.Flags().Changed("systemone-temperature") {
 		if t, err := strconv.ParseFloat(envSOTemp, 64); err == nil && t > 0 {
@@ -1995,24 +2004,41 @@ func runServe(cmd *cobra.Command, args []string) error {
 				})
 				return
 			}
-			soOpts := decisionindex.DefaultEngineOptions()
-			soOpts.TemperatureScale = serveSystemOneTemp
-			cli := GetClientForURL(resolvedURL)
-			soResp, soErr := decisionindex.ExecuteSystemOne(ctx, cli, soReq, soOpts)
-			if soErr != nil {
-				status, msg := decisionindex.ErrorStatus(soErr)
-				failSpan(proxySpan, status, msg)
-				http.Error(w, msg, status)
+			// Listed callers get their request forwarded to the serving image unchanged when it can answer it as sent
+			// (dl-82d): the adapter builds a different prompt (state as JSON, sorted questions and options, its own
+			// instructions) and response shape, which changed a client's small-turn answers when #172 started handling score
+			// questions. Requests that don't fit still use the adapter.
+			passThrough := systemOneRawCaller(callerEmail(r)) && decisionindex.FitsServingImage(soReq)
+			if passThrough {
+				if nb, err := systemOneForwardBody(bodyBytes, soReq); err == nil {
+					bodyBytes = nb
+				} else {
+					passThrough = false
+				}
+			}
+			if passThrough {
+				proxySpan.SetAttributes(attribute.String("dgem.systemone.mode", "passthrough"))
+			} else {
+				proxySpan.SetAttributes(attribute.String("dgem.systemone.mode", "adapter"))
+				soOpts := decisionindex.DefaultEngineOptions()
+				soOpts.TemperatureScale = serveSystemOneTemp
+				cli := GetClientForURL(resolvedURL)
+				soResp, soErr := decisionindex.ExecuteSystemOne(ctx, cli, soReq, soOpts)
+				if soErr != nil {
+					status, msg := decisionindex.ErrorStatus(soErr)
+					failSpan(proxySpan, status, msg)
+					http.Error(w, msg, status)
+					return
+				}
+				if soResp.EvaluationTrace != nil {
+					proxySpan.SetAttributes(attribute.Int("dgem.systemone.forward_passes", soResp.EvaluationTrace.ForwardPasses))
+				}
+				proxySpan.SetAttributes(attribute.Int("http.status_code", http.StatusOK))
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-DGem-Backend-Used", backendTarget)
+				_ = json.NewEncoder(w).Encode(soResp)
 				return
 			}
-			if soResp.EvaluationTrace != nil {
-				proxySpan.SetAttributes(attribute.Int("dgem.systemone.forward_passes", soResp.EvaluationTrace.ForwardPasses))
-			}
-			proxySpan.SetAttributes(attribute.Int("http.status_code", http.StatusOK))
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("X-DGem-Backend-Used", backendTarget)
-			_ = json.NewEncoder(w).Encode(soResp)
-			return
 		}
 
 		if reqPath == "/v1/systemone" && backendTarget == "local" {
@@ -2190,6 +2216,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Printf("   • Studio Assets:       %s\n", uiSource)
 	if len(corsOrigins) > 0 {
 		fmt.Printf("   • CORS Origins:        %s\n", strings.Join(corsOrigins, ", "))
+	}
+	if len(systemOneRawUsers) > 0 {
+		fmt.Printf("   • SystemOne raw:       %s (forwarded unchanged when the serving image can answer as sent)\n", strings.Join(systemOneRawUsers, ", "))
 	}
 	if auth.enabled() {
 		fmt.Printf("   • Caller auth:         %s\n", auth.describe())
