@@ -17,11 +17,10 @@
 //
 //  1. Executing existing dgem .json.tmpl policies (support_triage.json.tmpl,
 //     calibration/agent_step_drift.json.tmpl) through Genkit's systemonex
-//     plugin (POST /v1/systemone).
+//     plugin (POST /v1/systemone) with wall-time latency telemetry.
 //  2. Handling Genkit v1.14.0 tool interrupts (middleware.ToolApprovalInterrupted
 //     and genkit.DefineResumableTool's Interrupted) where confirm(name, input)
 //     evaluates a dgem .json.tmpl policy with Hesitation % gating.
-//  3. Using dgem directly as the Judge model on middleware.ToolApproval.
 package main
 
 import (
@@ -30,19 +29,15 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/ai/tool"
 	"github.com/firebase/genkit/go/genkit"
 	"github.com/firebase/genkit/go/plugins/middleware"
 	systemonex "github.com/firebase/genkit/go/plugins/systemone/exp"
-	"github.com/ghchinoy/dgem/pkg/client"
-	"github.com/ghchinoy/dgem/pkg/decisionindex"
+	"github.com/ghchinoy/dgem/examples/dgemgenkit"
 )
 
 // TransferInput is the input to the resumable transferMoney tool.
@@ -90,6 +85,7 @@ type PolicyConfirmer struct {
 	Task          string
 	PriorSteps    string
 	LastAuditNote string
+	LastWallMs    int64
 }
 
 // Confirm implements confirm(part.ToolRequest.Name, call.Input) for
@@ -99,7 +95,7 @@ func (pc *PolicyConfirmer) Confirm(toolName string, input any) bool {
 	stepDesc := fmt.Sprintf("call %s(%s)", toolName, string(inBytes))
 
 	tmplPath := filepath.Join(pc.TemplatesDir, "calibration", "agent_step_drift.json.tmpl")
-	dec, err := DecideWithTemplate(context.Background(), pc.Genkit, pc.ModelName, tmplPath, map[string]any{
+	dec, err := dgemgenkit.DecideWithTemplate(context.Background(), pc.Genkit, pc.ModelName, tmplPath, map[string]any{
 		"task":        pc.Task,
 		"prior_steps": pc.PriorSteps,
 		"step":        stepDesc,
@@ -110,11 +106,12 @@ func (pc *PolicyConfirmer) Confirm(toolName string, input any) bool {
 		return false
 	}
 
+	pc.LastWallMs = dec.WallTimeMs
 	ans := dec.Answers["drift"]
 	hes := dec.Hesitation("drift")
 	pc.LastAuditNote = fmt.Sprintf(
-		"template=calibration/agent_step_drift slot=drift choice=%q confidence=%.1f%% hesitation=%.1f%%",
-		ans.Choice, ans.Confidence*100, hes*100,
+		"template=calibration/agent_step_drift slot=drift choice=%q confidence=%.1f%% hesitation=%.1f%% wall=%dms",
+		ans.Choice, ans.Confidence*100, hes*100, dec.WallTimeMs,
 	)
 
 	// Approve only when the step is classified as benign (or failed_injection)
@@ -148,28 +145,18 @@ func HandleInterrupts(
 	return parts
 }
 
-// startInProcessSystemOneAdapter starts an in-process HTTP server exposing
-// POST /v1/systemone backed by an upstream dgem / diffgemma /v1 endpoint
-// (e.g. local Apple Silicon Metal on http://127.0.0.1:8080/v1).
-func startInProcessSystemOneAdapter(upstreamV1URL, modelID string) *httptest.Server {
-	cli := client.NewClient(upstreamV1URL, modelID, 2*time.Minute)
-	opts := decisionindex.DefaultEngineOptions()
-	mux := http.NewServeMux()
-	mux.Handle("/v1/systemone", decisionindex.NewSystemOneHTTPHandler(cli, opts))
-	return httptest.NewServer(mux)
-}
-
 func main() {
 	upstreamURL := flag.String("url", envOr("DGEM_URL", "http://127.0.0.1:8080/v1"), "Upstream diffgemma or dgem /v1 URL")
 	modelID := flag.String("model", envOr("DGEM_MODEL", "diffgemma-26b-a4b-it-q4"), "Upstream model ID")
 	templatesDir := flag.String("templates", "../../templates", "Path to dgem templates directory")
 	flag.Parse()
+	*templatesDir = dgemgenkit.ResolveTemplatesDir(*templatesDir)
 
 	ctx := context.Background()
 
 	// Wrap the local diffgemma /v1 endpoint with dgem's POST /v1/systemone adapter
 	// so Genkit's systemonex plugin talks System One directly to local Metal or Cloud.
-	adapterSrv := startInProcessSystemOneAdapter(*upstreamURL, *modelID)
+	adapterSrv := dgemgenkit.StartInProcessSystemOneAdapter(*upstreamURL, *modelID)
 	defer adapterSrv.Close()
 
 	dgemPlugin := &systemonex.SystemOne{
@@ -182,13 +169,14 @@ func main() {
 	// 1. Run support_triage.json.tmpl through Genkit's systemonex plugin.
 	triagePath := filepath.Join(*templatesDir, "support_triage.json.tmpl")
 	fmt.Println("==> 1. Running templates/support_triage.json.tmpl via Genkit systemonex...")
-	triageDec, err := DecideWithTemplate(ctx, g, genkitModel, triagePath, map[string]any{
+	triageDec, err := dgemgenkit.DecideWithTemplate(ctx, g, genkitModel, triagePath, map[string]any{
 		"ticket":  "Double charged on invoice #9481 this morning — please refund ASAP!",
 		"samples": 1,
 	})
 	if err != nil {
 		log.Fatalf("support_triage failed: %v", err)
 	}
+	fmt.Printf("   • Latency: wall=%dms (max_hesitation=%.1f%%)\n", triageDec.WallTimeMs, triageDec.MaxHesitation()*100)
 	for slot, ans := range triageDec.Answers {
 		fmt.Printf("   • %-10s type=%-6s choice=%-11s score=%.2f noul=%.3f conf=%.1f%% hesitation=%.1f%%\n",
 			slot, ans.Type, ans.Choice, ans.Score, ans.Probability, ans.Confidence*100, triageDec.Hesitation(slot)*100)

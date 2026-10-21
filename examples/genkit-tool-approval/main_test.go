@@ -28,6 +28,7 @@ import (
 	"github.com/firebase/genkit/go/genkit"
 	"github.com/firebase/genkit/go/plugins/middleware"
 	systemonex "github.com/firebase/genkit/go/plugins/systemone/exp"
+	"github.com/ghchinoy/dgem/examples/dgemgenkit"
 )
 
 // newMockDiffGemmaServer simulates an upstream diffgemma /v1/chat/completions
@@ -103,7 +104,7 @@ func TestDecideWithTemplateAndToolApprovalInterrupts(t *testing.T) {
 	mockUpstream := newMockDiffGemmaServer(t)
 	defer mockUpstream.Close()
 
-	adapterSrv := startInProcessSystemOneAdapter(mockUpstream.URL+"/v1", "diffgemma-26b-a4b-it-q4")
+	adapterSrv := dgemgenkit.StartInProcessSystemOneAdapter(mockUpstream.URL+"/v1", "diffgemma-26b-a4b-it-q4")
 	defer adapterSrv.Close()
 
 	ctx := context.Background()
@@ -115,13 +116,16 @@ func TestDecideWithTemplateAndToolApprovalInterrupts(t *testing.T) {
 	modelName := "dgem/diffgemma-26b-a4b-it-q4"
 	templatesDir := filepath.Join("..", "..", "templates")
 
-	// Part 1: Verify support_triage.json.tmpl executes via Genkit systemonex.
-	triageDec, err := DecideWithTemplate(ctx, g, modelName, filepath.Join(templatesDir, "support_triage.json.tmpl"), map[string]any{
+	// Part 1: Verify support_triage.json.tmpl executes via Genkit systemonex with latency recorded.
+	triageDec, err := dgemgenkit.DecideWithTemplate(ctx, g, modelName, filepath.Join(templatesDir, "support_triage.json.tmpl"), map[string]any{
 		"ticket":  "Double charged on invoice #9481!",
 		"samples": 1,
 	})
 	if err != nil {
 		t.Fatalf("DecideWithTemplate(support_triage) failed: %v", err)
+	}
+	if triageDec.WallTime <= 0 {
+		t.Errorf("WallTime = %v, want > 0", triageDec.WallTime)
 	}
 	if got := triageDec.Answers["team"].Choice; got != "billing" {
 		t.Fatalf("team choice = %q, want billing", got)
@@ -176,6 +180,9 @@ func TestDecideWithTemplateAndToolApprovalInterrupts(t *testing.T) {
 	parts := HandleInterrupts(resp, transferMoney, confirmer.Confirm)
 	if len(parts) != 2 {
 		t.Fatalf("len(restart parts) = %d, want 2", len(parts))
+	}
+	if !strings.Contains(confirmer.LastAuditNote, "wall=") {
+		t.Errorf("expected LastAuditNote to contain wall= timing, got: %s", confirmer.LastAuditNote)
 	}
 
 	// Resume generation with the decisions:

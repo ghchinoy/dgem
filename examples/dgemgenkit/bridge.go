@@ -12,28 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+// Package dgemgenkit bridges dgem .json.tmpl decision policies to Genkit Go
+// v1.14.0's systemonex (System One) plugin, computing per-slot Shannon entropy
+// H, normalized Hesitation % (H / ln K), and request wall-time telemetry.
+package dgemgenkit
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"time"
 
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/genkit"
 	systemonex "github.com/firebase/genkit/go/plugins/systemone/exp"
+	"github.com/ghchinoy/dgem/pkg/client"
+	"github.com/ghchinoy/dgem/pkg/decisionindex"
 	"github.com/ghchinoy/dgem/pkg/template"
 )
 
 // TemplateDecision holds the Genkit systemonex answers for a rendered .json.tmpl
-// policy along with per-slot Shannon entropy H (in nats) and normalized
-// Hesitation (H / ln K in [0, 1]).
+// policy along with per-slot Shannon entropy H (in nats), normalized
+// Hesitation (H / ln K in [0, 1]), and wall-time latency.
 type TemplateDecision struct {
 	TemplatePath string
 	Model        string
 	Answers      map[string]systemonex.Answer
 	OptionCount  map[string]int
+	WallTime     time.Duration
+	WallTimeMs   int64
 }
 
 // EntropyNats returns the Shannon entropy H = -sum p_k ln(p_k) in nats for slot id.
@@ -84,8 +95,31 @@ func (d *TemplateDecision) MaxHesitation() float64 {
 	return maxH
 }
 
-// parsedTemplateSchema matches the normalized JSON schema produced by
-// pkg/template.ParseStructuredPayload.
+// ResolveTemplatesDir finds the dgem templates/ directory whether the example
+// is invoked from examples/<name>, examples/, or the repository root.
+func ResolveTemplatesDir(hint string) string {
+	for _, candidate := range []string{hint, "../../templates", "../templates", "./templates"} {
+		if candidate == "" {
+			continue
+		}
+		if st, err := os.Stat(candidate); err == nil && st.IsDir() {
+			return candidate
+		}
+	}
+	return hint
+}
+
+// StartInProcessSystemOneAdapter starts an in-process HTTP server exposing
+// POST /v1/systemone backed by an upstream dgem / diffgemma /v1 endpoint
+// (e.g. local Apple Silicon Metal on http://127.0.0.1:8080/v1).
+func StartInProcessSystemOneAdapter(upstreamV1URL, modelID string) *httptest.Server {
+	cli := client.NewClient(upstreamV1URL, modelID, 2*time.Minute)
+	opts := decisionindex.DefaultEngineOptions()
+	mux := http.NewServeMux()
+	mux.Handle("/v1/systemone", decisionindex.NewSystemOneHTTPHandler(cli, opts))
+	return httptest.NewServer(mux)
+}
+
 type parsedTemplateSchema struct {
 	Instructions string                   `json:"instructions"`
 	Questions    []parsedTemplateQuestion `json:"questions"`
@@ -106,7 +140,7 @@ type parsedChoiceOption struct {
 
 // DecideWithTemplate renders a dgem .json.tmpl file with vars, converts its
 // questions into a Genkit systemonex.Schema, and executes the decision in a
-// single pass via Genkit's systemonex plugin.
+// single pass via Genkit's systemonex plugin, recording wall-time latency.
 func DecideWithTemplate(
 	ctx context.Context,
 	g *genkit.Genkit,
@@ -114,6 +148,7 @@ func DecideWithTemplate(
 	tmplPath string,
 	vars map[string]any,
 ) (*TemplateDecision, error) {
+	start := time.Now()
 	eng := template.NewEngine()
 	rendered, err := eng.RenderFile(tmplPath, vars)
 	if err != nil {
@@ -181,12 +216,15 @@ func DecideWithTemplate(
 	if err != nil {
 		return nil, fmt.Errorf("genkit GenerateData (%s): %w", tmplPath, err)
 	}
+	elapsed := time.Since(start)
 
 	return &TemplateDecision{
 		TemplatePath: tmplPath,
 		Model:        systemonex.ResponseInfo(resp).Model,
 		Answers:      *answers,
 		OptionCount:  optionCount,
+		WallTime:     elapsed,
+		WallTimeMs:   elapsed.Milliseconds(),
 	}, nil
 }
 
