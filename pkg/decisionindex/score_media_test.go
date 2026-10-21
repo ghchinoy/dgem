@@ -395,6 +395,7 @@ func TestFitsServingImage(t *testing.T) {
 		"9 questions":     nine,
 		"27 options":      {Questions: map[string]SystemOneQuestion{"q": {Type: "choice", Criteria: wide}}},
 		"1 option":        {Questions: map[string]SystemOneQuestion{"q": q(`{"type": "choice", "criteria": {"only": ""}}`)}},
+		"27 levels":       {Questions: map[string]SystemOneQuestion{"q": {Type: "score", Levels: distinctLevels(27)}}},
 		"1 level":         {Questions: map[string]SystemOneQuestion{"q": q(`{"type": "score", "criteria": ["only"]}`)}},
 		"empty type":      {Questions: map[string]SystemOneQuestion{"q": q(`{"criteria": {"a": "", "b": ""}}`)}},
 		"boolean synonym": {Questions: map[string]SystemOneQuestion{"q": q(`{"type": "boolean"}`)}},
@@ -406,4 +407,12 @@ func TestFitsServingImage(t *testing.T) {
 			t.Errorf("%s: should not fit", name)
 		}
 	}
+}
+
+func distinctLevels(n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		out[i] = fmt.Sprintf("level %02d", i)
+	}
+	return out
 }
