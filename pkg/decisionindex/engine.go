@@ -1442,7 +1442,7 @@ func FitsServingImage(req SystemOneRequest) bool {
 				return false
 			}
 		case kindScore:
-			if len(q.Levels) < 2 {
+			if len(q.Levels) < 2 || len(q.Levels) > MaxOptionsPerSlot {
 				return false
 			}
 		case kindNoul:
