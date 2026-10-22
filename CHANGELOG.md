@@ -9,6 +9,11 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.12 (2026-10-22)
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Also
+includes the Genkit examples under `examples/` (#186; not part of the gateway).
+
 - Gateway fixes from the v0.3.11 validation (dl-ulp): body logging redacts `data:` URIs and long base64 runs in
   non-JSON bodies too (and in JSON cut before parsing); `/mcp` responses carry `X-Dgem-Trace-Id`, so `dgem.bodies`
   entries for MCP calls link to their span. (`/v1/systemone` pass-through already sent scores with more than 26 levels
