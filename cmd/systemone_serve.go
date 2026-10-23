@@ -40,13 +40,15 @@ var (
 	soLabels       string
 	soPromptLayout string
 	soAPIKey       string
-	soNullPrior    bool
-	soDualMirror   bool
-	soPriorAlpha   float64
-	soPriorWeight  float64
-	soHesitGate    float64
-	soPriorGateMod string
-	soNaiveLimits  bool
+	soNullPrior            bool
+	soDualMirror           bool
+	soPriorAlpha           float64
+	soPriorWeight          float64
+	soHesitGate            float64
+	soPriorGateMod         string
+	soShortlistK           int
+	soShortlistContrastive bool
+	soNaiveLimits          bool
 )
 
 var systemoneCmd = &cobra.Command{
@@ -90,6 +92,8 @@ func init() {
 	systemoneServeCmd.Flags().Float64Var(&soPriorWeight, "prior-weight", 0, "Log-linear fusion weight alpha for per-question prior_logits; 0 disables fusion (PROP-09 / EXP-40)")
 	systemoneServeCmd.Flags().Float64Var(&soHesitGate, "hesitation-gate", 0.16, "Raw normalized entropy threshold tau used by --prior-gate-mode (PROP-09 / EXP-40)")
 	systemoneServeCmd.Flags().StringVar(&soPriorGateMod, "prior-gate-mode", "confident", "Gate schedule for prior_logits fusion: confident (rawNormH < tau), hesitant (rawNormH >= tau), proportional (alpha * rawNormH), or always (PROP-09 / EXP-40)")
+	systemoneServeCmd.Flags().IntVar(&soShortlistK, "shortlist-topk", 0, "Maximum candidates retained from caller prior_logits on wide choices; falls back to brackets when prior_logits is absent (0 = off, default; PROP-24 / EXP-41)")
+	systemoneServeCmd.Flags().BoolVar(&soShortlistContrastive, "shortlist-contrastive", true, "Append [distinguishing: ...] sibling token tags to shortlisted option descriptions (default true; EXP-41)")
 	systemoneServeCmd.Flags().BoolVar(&soNaiveLimits, "naive-limits", false, "Enforce naive 26-option and 10-slot capacity rejections (for benchmark ablation)")
 
 	systemoneCmd.AddCommand(systemoneServeCmd)
@@ -164,12 +168,17 @@ func runSystemOneServe(cmd *cobra.Command, args []string) error {
 		BracketSize:       soBracketSize,
 		CatchAll:          soCatchAll,
 		NoulMode:          soNoulMode,
-		OptionOrder:       soOptionOrder,
-		Labels:            soLabels,
-		PromptLayout:      soPromptLayout,
-		PriorWeight:       soPriorWeight,
-		HesitationGate:    soHesitGate,
-		PriorGateMode:     soPriorGateMod,
+		OptionOrder:          soOptionOrder,
+		Labels:               soLabels,
+		PromptLayout:         soPromptLayout,
+		PriorWeight:          soPriorWeight,
+		HesitationGate:       soHesitGate,
+		PriorGateMode:        soPriorGateMod,
+		ShortlistTopK:        soShortlistK,
+		ShortlistContrastive: soShortlistContrastive,
+	}
+	if soShortlistK > 0 {
+		opts.ShortlistFunc = decisionindex.PriorLogitsShortlist(soShortlistK)
 	}
 
 	// A network server: image URLs in requests are fetched by pkg/client (and sent upstream as data: URIs) with a client

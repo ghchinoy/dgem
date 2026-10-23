@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): opt-in wide-option shortlist routing (`EXP-41`, `PROP-24`; #191).**
+  Adds `ShortlistFunc`, `PriorLogitsShortlist`, `LexicalOverlapShortlist`, and `BuildContrastiveCriteria` (default off:
+  `ShortlistTopK: 0`, `ShortlistFunc: nil`). `--shortlist-topk M` retains the top `M` options from caller-supplied
+  `prior_logits` (plus catch-all options) in a single diffusion pass and falls back automatically to 2-stage bracket
+  tournaments when `prior_logits` is absent; `--shortlist-contrastive` (default `true`) toggles `[distinguishing: ...]`
+  sibling-token tags on shortlisted option descriptions.
 - **`/v1/systemone` (`pkg/decisionindex`): opt-in prior fusion (`PROP-09`) and co-denoised evidence slot (`PROP-08`, `PROP-37`; #190).**
   Off by default (`--prior-weight 0`). When `--prior-weight > 0` is set on `dgem systemone serve` (or
   `EngineOptions.PriorWeight` in Go), per-question `prior_logits` fuse in log-space across standard choices, wide
