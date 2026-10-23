@@ -28,18 +28,18 @@ import (
 )
 
 var (
-	soPort         int
-	soHost         string
-	soUpstreamURL  string
-	soTemperature  float64
-	soMaxSlots     int
-	soBracketSize  int
-	soCatchAll     string
-	soNoulMode     string
-	soOptionOrder  string
-	soLabels       string
-	soPromptLayout string
-	soAPIKey       string
+	soPort                 int
+	soHost                 string
+	soUpstreamURL          string
+	soTemperature          float64
+	soMaxSlots             int
+	soBracketSize          int
+	soCatchAll             string
+	soNoulMode             string
+	soOptionOrder          string
+	soLabels               string
+	soPromptLayout         string
+	soAPIKey               string
 	soNullPrior            bool
 	soDualMirror           bool
 	soPriorAlpha           float64
@@ -157,17 +157,17 @@ func runSystemOneServe(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := decisionindex.EngineOptions{
-		MaxSlotsPerPass:   soMaxSlots,
-		MaxOptionsPerSlot: decisionindex.MaxOptionsPerSlot,
-		NaiveLimits:       soNaiveLimits,
-		TemperatureScale:  soTemperature,
-		MaxConcurrency:    4,
-		DualMirror:        soDualMirror,
-		NullPriorDebias:   soNullPrior,
-		PriorAlpha:        soPriorAlpha,
-		BracketSize:       soBracketSize,
-		CatchAll:          soCatchAll,
-		NoulMode:          soNoulMode,
+		MaxSlotsPerPass:      soMaxSlots,
+		MaxOptionsPerSlot:    decisionindex.MaxOptionsPerSlot,
+		NaiveLimits:          soNaiveLimits,
+		TemperatureScale:     soTemperature,
+		MaxConcurrency:       4,
+		DualMirror:           soDualMirror,
+		NullPriorDebias:      soNullPrior,
+		PriorAlpha:           soPriorAlpha,
+		BracketSize:          soBracketSize,
+		CatchAll:             soCatchAll,
+		NoulMode:             soNoulMode,
 		OptionOrder:          soOptionOrder,
 		Labels:               soLabels,
 		PromptLayout:         soPromptLayout,

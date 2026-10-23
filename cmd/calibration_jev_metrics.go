@@ -428,10 +428,11 @@ func computeJevSpeedScoreWithKind(p50Sec, p95Sec float64, endpointKind string) (
 
 // computeJevV14CompositeScore computes the official JevBench v1.4 equal-weight harmonic mean
 // with the three <50 threshold penalties (Intelligence, Speed, Cost) from composite_v14.py:
-//   score = 4 / (1/I + 1/C + 1/S + 1/Cost)
-//   if I < 50:    score *= (I / 50)^2
-//   if S < 50:    score *= (S / 50)^2
-//   if Cost < 50: score *= (Cost / 50)^2
+//
+//	score = 4 / (1/I + 1/C + 1/S + 1/Cost)
+//	if I < 50:    score *= (I / 50)^2
+//	if S < 50:    score *= (S / 50)^2
+//	if Cost < 50: score *= (Cost / 50)^2
 func computeJevV14CompositeScore(intel, cal, speed, cost float64) float64 {
 	axes := []float64{intel, cal, speed, cost}
 	for _, v := range axes {
@@ -458,8 +459,8 @@ func computeJevV14CompositeScore(intel, cal, speed, cost float64) float64 {
 }
 
 // computeJevV14Intelligence computes the official JevBench v1.4 Intelligence axis from composite_v14.py:
-// - If sealedAcc <= 0 (unknown/public-only), returns (publicIntel, 0.0, true).
-// - If sealedAcc > 0:
+//   - If sealedAcc <= 0 (unknown/public-only), returns (publicIntel, 0.0, true).
+//   - If sealedAcc > 0:
 //     I_sealed = clamp(100 * max(0, (sealedAcc - 0.293) / (1 - 0.293)))
 //     I_base   = 0.8 * publicIntel + 0.2 * I_sealed
 //     gap      = 100 * (publicAcc - sealedAcc)

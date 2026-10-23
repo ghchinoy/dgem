@@ -71,12 +71,12 @@ func SaveSuite(path string, cases []PermutationCase) error {
 }
 
 // DefaultPermutationSuite returns 16 stratified evaluation cases across 4 epistemic regimes:
-//   1. "consensus" (4 cases): Unambiguous factual/policy cases where semantic signal s(o_k|X) >> beta(letter).
-//   2. "ambiguous_chaosnli" (4 cases): Genuine 50/50 or 33/33/34 ChaosNLI & policy splits where letter-position bias
-//      can induce false low entropy in a single pass, but flips when options are cyclically shifted or mirrored.
-//   3. "adversarial_trap" (4 cases): JevBench Hard / ANLI-R3 multi-clause precedence & distractor traps where the
-//      surface distractor is placed in slot 'A' (index 0) to test whether positional prior pulls the model into a false-confident error.
-//   4. "binary_ablation" (4 cases): Borderline 2-option decisions where 'A' vs 'B' ordering tests first-option bias.
+//  1. "consensus" (4 cases): Unambiguous factual/policy cases where semantic signal s(o_k|X) >> beta(letter).
+//  2. "ambiguous_chaosnli" (4 cases): Genuine 50/50 or 33/33/34 ChaosNLI & policy splits where letter-position bias
+//     can induce false low entropy in a single pass, but flips when options are cyclically shifted or mirrored.
+//  3. "adversarial_trap" (4 cases): JevBench Hard / ANLI-R3 multi-clause precedence & distractor traps where the
+//     surface distractor is placed in slot 'A' (index 0) to test whether positional prior pulls the model into a false-confident error.
+//  4. "binary_ablation" (4 cases): Borderline 2-option decisions where 'A' vs 'B' ordering tests first-option bias.
 func DefaultPermutationSuite() []PermutationCase {
 	return []PermutationCase{
 		// =====================================================================

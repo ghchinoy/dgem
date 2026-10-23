@@ -39,8 +39,8 @@ func catchAllServer(t *testing.T, seen *[]string) *httptest.Server {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		var sys struct {
 			Questions []struct {
-				ID      string `json:"id"`
-				Type    string `json:"type"`
+				ID      string                               `json:"id"`
+				Type    string                               `json:"type"`
 				Options []struct{ Name, Description string } `json:"options"`
 			} `json:"questions"`
 		}

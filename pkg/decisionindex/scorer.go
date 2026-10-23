@@ -34,56 +34,56 @@ type SuiteRow struct {
 
 // CaseEvalResult stores the evaluation result for a single SuiteRow.
 type CaseEvalResult struct {
-	ID               string                     `json:"id"`
-	CatalogID        int                        `json:"catalog_id"`
-	Dataset          string                     `json:"dataset"`
-	Area             string                     `json:"area"`
-	TotalFields      int                        `json:"total_fields"`
-	CorrectFields    int                        `json:"correct_fields"`
-	MaxOptions       int                        `json:"max_options"`
-	WholeCaseExact   bool                       `json:"whole_case_exact"`
-	FieldAccuracy    float64                    `json:"field_accuracy"`
-	Supported        bool                       `json:"supported"`
-	ErrorMsg         string                     `json:"error_msg,omitempty"`
-	MeanConfidence   float64                    `json:"mean_confidence"`
-	MeanBrier        float64                    `json:"mean_brier"`
-	MeanEntropy      float64                    `json:"mean_entropy"`
-	MeanNormalizedH  float64                    `json:"mean_normalized_entropy"`
-	ForwardPasses    int                        `json:"forward_passes"`
-	WallTimeMs       float64                    `json:"wall_time_ms"`
-	Answers          map[string]SystemOneAnswer `json:"answers,omitempty"`
-	Expected         map[string]string          `json:"expected,omitempty"`
+	ID              string                     `json:"id"`
+	CatalogID       int                        `json:"catalog_id"`
+	Dataset         string                     `json:"dataset"`
+	Area            string                     `json:"area"`
+	TotalFields     int                        `json:"total_fields"`
+	CorrectFields   int                        `json:"correct_fields"`
+	MaxOptions      int                        `json:"max_options"`
+	WholeCaseExact  bool                       `json:"whole_case_exact"`
+	FieldAccuracy   float64                    `json:"field_accuracy"`
+	Supported       bool                       `json:"supported"`
+	ErrorMsg        string                     `json:"error_msg,omitempty"`
+	MeanConfidence  float64                    `json:"mean_confidence"`
+	MeanBrier       float64                    `json:"mean_brier"`
+	MeanEntropy     float64                    `json:"mean_entropy"`
+	MeanNormalizedH float64                    `json:"mean_normalized_entropy"`
+	ForwardPasses   int                        `json:"forward_passes"`
+	WallTimeMs      float64                    `json:"wall_time_ms"`
+	Answers         map[string]SystemOneAnswer `json:"answers,omitempty"`
+	Expected        map[string]string          `json:"expected,omitempty"`
 }
 
 // BenchmarkSummary aggregates metrics for one benchmark in the Decision Index panel.
 type BenchmarkSummary struct {
-	CatalogID          int     `json:"catalog_id"`
-	Dataset            string  `json:"dataset"`
-	Area               string  `json:"area"`
-	InPanel            bool    `json:"in_panel"`
-	TotalCases         int     `json:"total_cases"`
-	SupportedCases     int     `json:"supported_cases"`
-	CoveragePct        float64 `json:"coverage_pct"`
-	SupportedScore     float64 `json:"supported_score"`      // 0..100 on supported cases
-	CoverageAdjScore   float64 `json:"coverage_adj_score"`   // 0..100 (unsupported = 0.0, official headline metric)
-	ChanceBaseline     float64 `json:"chance_baseline"`      // 0..100
-	SkillScore         float64 `json:"skill_score"`          // Chance-normalized skill 0..100
-	MeanBrier          float64 `json:"mean_brier"`
-	MeanEntropy        float64 `json:"mean_entropy"`
-	MeanNormalizedH    float64 `json:"mean_normalized_entropy"`
-	MeanPassesPerReq   float64 `json:"mean_passes_per_req"`
+	CatalogID        int     `json:"catalog_id"`
+	Dataset          string  `json:"dataset"`
+	Area             string  `json:"area"`
+	InPanel          bool    `json:"in_panel"`
+	TotalCases       int     `json:"total_cases"`
+	SupportedCases   int     `json:"supported_cases"`
+	CoveragePct      float64 `json:"coverage_pct"`
+	SupportedScore   float64 `json:"supported_score"`    // 0..100 on supported cases
+	CoverageAdjScore float64 `json:"coverage_adj_score"` // 0..100 (unsupported = 0.0, official headline metric)
+	ChanceBaseline   float64 `json:"chance_baseline"`    // 0..100
+	SkillScore       float64 `json:"skill_score"`        // Chance-normalized skill 0..100
+	MeanBrier        float64 `json:"mean_brier"`
+	MeanEntropy      float64 `json:"mean_entropy"`
+	MeanNormalizedH  float64 `json:"mean_normalized_entropy"`
+	MeanPassesPerReq float64 `json:"mean_passes_per_req"`
 }
 
 // AreaSummary aggregates one of the 5 equal-weight areas of the Decision Index.
 type AreaSummary struct {
-	AreaID           string             `json:"area_id"`
-	Label            string             `json:"label"`
-	BenchmarkCount   int                `json:"benchmark_count"`
-	CoveragePct      float64            `json:"coverage_pct"`
-	PlainScore       float64            `json:"plain_score"`       // Coverage-adjusted 0..100
-	SupportedScore   float64            `json:"supported_score"`   // On supported subset 0..100
-	SkillScore       float64            `json:"skill_score"`       // Chance-normalized 0..100
-	Benchmarks       []BenchmarkSummary `json:"benchmarks"`
+	AreaID         string             `json:"area_id"`
+	Label          string             `json:"label"`
+	BenchmarkCount int                `json:"benchmark_count"`
+	CoveragePct    float64            `json:"coverage_pct"`
+	PlainScore     float64            `json:"plain_score"`     // Coverage-adjusted 0..100
+	SupportedScore float64            `json:"supported_score"` // On supported subset 0..100
+	SkillScore     float64            `json:"skill_score"`     // Chance-normalized 0..100
+	Benchmarks     []BenchmarkSummary `json:"benchmarks"`
 }
 
 // DecisionIndexReport is the complete official Decision Index scorecard (index.json + benchmark-summary.json).
@@ -96,10 +96,10 @@ type DecisionIndexReport struct {
 	CoveragePct            float64            `json:"coverage_pct"`
 	TotalFields            int                `json:"total_fields"`
 	TotalForwardPasses     int                `json:"total_forward_passes"`
-	HeadlineDecisionIndex  float64            `json:"headline_decision_index"`  // Mean of 5 equal-weight areas (coverage-adjusted, 0..100)
-	SupportedDecisionIndex float64            `json:"supported_decision_index"` // Mean of 5 areas on supported subset (0..100)
-	SkillDecisionIndex     float64            `json:"skill_decision_index"`     // Chance-normalized skill index (0..100)
-	WideOptionAccuracy     float64            `json:"wide_option_accuracy"`     // Accuracy on questions with K > 26 options
+	HeadlineDecisionIndex  float64            `json:"headline_decision_index"`    // Mean of 5 equal-weight areas (coverage-adjusted, 0..100)
+	SupportedDecisionIndex float64            `json:"supported_decision_index"`   // Mean of 5 areas on supported subset (0..100)
+	SkillDecisionIndex     float64            `json:"skill_decision_index"`       // Chance-normalized skill index (0..100)
+	WideOptionAccuracy     float64            `json:"wide_option_accuracy"`       // Accuracy on questions with K > 26 options
 	MultiSlotCanvasAcc     float64            `json:"multi_slot_canvas_accuracy"` // Accuracy on requests with M > 10 slots
 	ECE10Bin               float64            `json:"ece_10bin"`
 	MeanBrier              float64            `json:"mean_brier"`
@@ -252,24 +252,24 @@ func ScoreSingleCase(row SuiteRow, resp *SystemOneResponse, err error) CaseEvalR
 	}
 
 	return CaseEvalResult{
-		ID:             row.ID,
-		CatalogID:      row.CatalogID,
-		Dataset:        row.Dataset,
-		Area:           row.Area,
-		TotalFields:    totalFields,
-		CorrectFields:  correct,
-		MaxOptions:     maxOpts,
-		WholeCaseExact: correct == totalFields,
-		FieldAccuracy:  float64(correct) / denom,
-		Supported:      true,
-		MeanConfidence: sumConf / denom,
-		MeanBrier:      sumBrier / denom,
-		MeanEntropy:    sumH / denom,
+		ID:              row.ID,
+		CatalogID:       row.CatalogID,
+		Dataset:         row.Dataset,
+		Area:            row.Area,
+		TotalFields:     totalFields,
+		CorrectFields:   correct,
+		MaxOptions:      maxOpts,
+		WholeCaseExact:  correct == totalFields,
+		FieldAccuracy:   float64(correct) / denom,
+		Supported:       true,
+		MeanConfidence:  sumConf / denom,
+		MeanBrier:       sumBrier / denom,
+		MeanEntropy:     sumH / denom,
 		MeanNormalizedH: sumNormH / denom,
-		ForwardPasses:  passes,
-		WallTimeMs:     wallMs,
-		Answers:        resp.Answers,
-		Expected:       row.Expected,
+		ForwardPasses:   passes,
+		WallTimeMs:      wallMs,
+		Answers:         resp.Answers,
+		Expected:        row.Expected,
 	}
 }
 
