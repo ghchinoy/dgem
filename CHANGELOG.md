@@ -22,6 +22,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
   noisy entity-resolution graphs), `ParsePackMultiplier`, `ValidatePackQuantityConsistency`, and `ArbitrateSwarmLocks`
   alongside `templates/multimodal/entity_resolution_dedup.json.tmpl`, `templates/live_checklist_verify.json.tmpl`, and
   `templates/swarm_lock_arbiter.json.tmpl`.
+- **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): opt-in hierarchical taxonomy trie routing (`PROP-41`).**
+  Adds `TaxonomySpec`, `BuildPrefixTaxonomyTrie` (with cross-domain action-suffix alignment and automatic lexical coarse
+  bucketing for opaque `option_N` keys), and `DecodeTaxonomyTrie` (`mtp_trie`, `beam_2pass`, `hesitation_hybrid`,
+  `mtp_naive`). Off by default (`TaxonomyMode: ""`); enabled by the operator via `--taxonomy-mode` and
+  `--taxonomy-delimiter` (with per-question `taxonomy` supplying the caller's tree or mode when enabled), falling back to
+  2-stage bracket tournaments whenever a question exceeds 2-level `[A-Z]` capacity.
 
 ## v0.3.13 (2026-10-23)
 
