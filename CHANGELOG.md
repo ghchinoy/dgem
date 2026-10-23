@@ -9,6 +9,12 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`pkg/decisionindex`: triangle-consistency scorers, pack-multiplier verifier, and 8-slot arbiter templates (`PROP-39`, `PROP-40`).**
+  Adds `CheckTransitiveTriangles` and `ScoreProbabilisticTriangles` (continuous 3-cycle transitivity violation mass for
+  noisy entity-resolution graphs), `ParsePackMultiplier`, `ValidatePackQuantityConsistency`, and `ArbitrateSwarmLocks`
+  alongside `templates/multimodal/entity_resolution_dedup.json.tmpl`, `templates/live_checklist_verify.json.tmpl`, and
+  `templates/swarm_lock_arbiter.json.tmpl`.
+
 ## v0.3.13 (2026-10-23)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Both new
