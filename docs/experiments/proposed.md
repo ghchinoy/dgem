@@ -43,8 +43,8 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 | [`PROP-05`](#prop-05-mirror-merge-rule) | Mirror merge rule | Is the 70/30 forward-priority merge the right one? | `PROP-03` (optional) | Order | P1 | **Closed** → [EXP-14](exp-14-idc-rerun.md) (50/50 beats 70/30; neither beats single slot); mirror not used in production |
 | [`PROP-06`](#prop-06-null-prior-strength-and-label-aware-priors) | Null-prior strength & label-aware priors | Can de-biasing improve calibration *without* raising order flips? | — | Order | P1 | **Closed**: in-pass order corrections retired after EXP-13–EXP-17; order bias is monitored per release instead ([overview §4.3](../confidence/overview.md#43-order-bias-measured-and-monitored)) |
 | [`PROP-07`](#prop-07-wording-invariance) | Wording invariance | How often does rephrasing an option change the decision? | — | Order | P2 | Proposed |
-| [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed, or does an explicit evidence slot help? | — | Order, DI | P1 | Running → [EXP-27](README.md) |
-| [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate & retrieval prior adaptation | Can unlabeled target traffic or retrieval prior logits improve calibration without masking hesitation? | — | Order, DI, Clef | P1 | Running → [EXP-27](README.md) |
+| [`PROP-08`](#prop-08-missing-context-detection) | Missing-context detection | Does uncertainty rise when a decisive fact is removed, or does an explicit evidence slot help? | — | Order, DI | P1 | Running → [EXP-40](README.md) |
+| [`PROP-09`](#prop-09-base-rate-label-shift-adaptation) | Base-rate & retrieval prior adaptation | Can unlabeled target traffic or retrieval prior logits improve calibration without masking hesitation? | — | Order, DI, Clef | P1 | Running → [EXP-40](README.md) |
 | [`PROP-11`](#prop-11-letter-collision-in-the-mirror) | Letter collision in the mirror | Is the mirror's damage caused by shared letters rather than by a second slot? | — | Order | **P0** | Done → [EXP-15](exp-15-letter-collision.md) (supported) |
 | [`PROP-12`](#prop-12-separate-pass-mirror) | Separate-pass mirror (replaces `PROP-03`) | Does a mirror read in its own pass give a clean order signal? | `PROP-11` | Order | P1 | Done → [EXP-17](exp-17-separate-pass-mirror.md) (supported, small effect) |
 | [`PROP-13`](#prop-13-mirror-aware-cascade) | Mirror-aware cascade (unblocks `PROP-02`) | Does an uncoupled mirror improve the hand-off gate? | `PROP-12` | Order | P1 | Closed: not worth it after [EXP-17](exp-17-separate-pass-mirror.md) |
@@ -58,15 +58,15 @@ The [Experiment Ledger](README.md) records experiments we have **run**. This pag
 | [`PROP-21`](#prop-21-fine-tuning-diffusiongemma-lora-on-the-letter-readout) | Fine-tuning DiffusionGemma: LoRA on the letter readout | Does a LoRA trained with a masked-denoising loss on answer slots raise in-domain accuracy and fix coupling without losing zero-shot breadth? | `PROP-19`, `PROP-20` | Laya, Strands, Clef | P1 | Proposed |
 | [`PROP-22`](#prop-22-distil-dgem-into-a-small-student) | Distil dgem into a small student | Do dgem's soft labels train a better 2B decision model than hard labels? | `PROP-20` | Strands | P2 | Proposed |
 | [`PROP-23`](#prop-23-nondeterminism-at-samples1) | Nondeterminism at `samples=1` | Where do the 5–7% answer changes between identical requests come from, and can serving remove them? | — | Laya, Strands | P1 | Proposed ([#82](https://github.com/ghchinoy/dgem/issues/82)) |
-| [`PROP-24`](#prop-24-wide-option-accuracy-626-options-and-beyond) | Wide-option accuracy (6–26 options and beyond) | Why does accuracy fall with option count even in a single read, and which readout change recovers it? | — | DI, Clef, Strands | P1 | Running → [EXP-28](README.md) |
+| [`PROP-24`](#prop-24-wide-option-accuracy-626-options-and-beyond) | Wide-option accuracy (6–26 options and beyond) | Why does accuracy fall with option count even in a single read, and which readout change recovers it? | — | DI, Clef, Strands | P1 | Running → [EXP-41](README.md) |
 | [`PROP-25`](#prop-25-nli-neutral-pull) | NLI "neutral" pull | Why does dgem over-predict "neutral" on XNLI, and does wording or a per-label prior fix it on the validation split? | — | Laya, Strands | P2 | Proposed |
 | [`PROP-26`](#prop-26-first-shown-bias-on-small-option-sets) | First-shown bias on small option sets (extends `PROP-14`) | Does the first listed option win too often at K ≤ 6, and does an in-context prior remove it? | `PROP-14` | Laya, Strands | P2 | Parked (research only, with `PROP-14`): order bias is monitored per release, not corrected |
-| [`PROP-34`](#prop-34-contact-sheet-multi-crop-visual-verification-and-co-denoised-evidence-slot) | Contact-sheet multi-crop visual verification and co-denoised evidence slot | Does a 6-panel reference-vs-query contact sheet with a same-canvas evidence slot raise fine-grained visual accuracy over single-image reads? | `PROP-08`, `PROP-18` | DI, Clef | **P0** | Running → [EXP-27](README.md) |
-| [`PROP-35`](#prop-35-set-of-marks-discrete-next-hop-ui-navigation) | Set-of-Marks discrete next-hop UI navigation | Does discrete `[A..F]` candidate mark selection replace coordinate binning on ScreenSpot and web UI elements? | `PROP-18` | DI | P1 | Running → [EXP-29](README.md) |
-| [`PROP-36`](#prop-36-multimodal-entity-resolution-and-pack-size-equivalence) | Multimodal entity resolution and pack-size equivalence | Can one multi-slot read classify duplicate/variant/counterfeit pairs while extracting pack-size evidence and checking triangle consistency? | `PROP-08`, `PROP-24` | DI, Clef | P1 | Running → [EXP-30](README.md) |
-| [`PROP-37`](#prop-37-sliding-window-live-checklist-and-multi-agent-swarm-lock-arbitration) | Sliding-window live checklist and multi-agent swarm lock arbitration | Can an 8-slot single pass verify live transcript + frame checklist transitions and arbitrate concurrent agent lock collisions in under 150 ms? | — | DI | P1 | Running → [EXP-30](README.md) |
+| [`PROP-37`](#prop-37-contact-sheet-multi-crop-visual-verification-and-co-denoised-evidence-slot) | Contact-sheet multi-crop visual verification and co-denoised evidence slot | Does a 6-panel reference-vs-query contact sheet with a same-canvas evidence slot raise fine-grained visual accuracy over single-image reads? | `PROP-08`, `PROP-18` | DI, Clef | **P0** | Running → [EXP-40](README.md) |
+| [`PROP-38`](#prop-38-set-of-marks-discrete-next-hop-ui-navigation) | Set-of-Marks discrete next-hop UI navigation | Does discrete `[A..F]` candidate mark selection replace coordinate binning on ScreenSpot and web UI elements? | `PROP-18` | DI | P1 | Running → [EXP-42](README.md) |
+| [`PROP-39`](#prop-39-multimodal-entity-resolution-and-pack-size-equivalence) | Multimodal entity resolution and pack-size equivalence | Can one multi-slot read classify duplicate/variant/counterfeit pairs while extracting pack-size evidence and checking triangle consistency? | `PROP-08`, `PROP-24` | DI, Clef | P1 | Running → [EXP-43](README.md) |
+| [`PROP-40`](#prop-40-sliding-window-live-checklist-and-multi-agent-swarm-lock-arbitration) | Sliding-window live checklist and multi-agent swarm lock arbitration | Can an 8-slot single pass verify live transcript + frame checklist transitions and arbitrate concurrent agent lock collisions in under 150 ms? | — | DI | P1 | Running → [EXP-43](README.md) |
 
-> **Numbering note:** `PROP-27` through `PROP-33` are allocated to `decision-lab` serving and adapter checks (`PROP-29` wide label sets `az_aa`/`az_lower`, `PROP-30` constrained label-entropy equivalence, `PROP-32` `seed_token` determinism, and `PROP-33` `--option-order source`, shipped in `v0.3.10`–`v0.3.11`). New proposals below start at `PROP-34`.
+> **Numbering note:** experiment and proposal numbers are shared with the team's internal research log; gaps in the sequence are internal entries not published here.
 
 ### Queued re-runs
 
@@ -187,7 +187,7 @@ page (history is annotated, not rewritten).
   * Evaluate with and without IDC.
 * **Metrics:** Detection rate, false-certainty rate (> 90% confidence on items with the field removed), and change in uncertainty between each pair.
 * **Decision:** If detection is poor, recommend explicit "is required information present?" slots in templates instead of relying on uncertainty.
-* **Running (`EXP-27`, 2026-10-21):** Extended in `pkg/decisionindex` with an opt-in co-denoised evidence slot (`EvidencePrompt` / `<q>_evidence`) placed ahead of the choice slot on the same diffusion canvas (`think: 0`, 1 pass), so missing or occluded discriminative evidence is read explicitly alongside raw slot hesitation.
+* **Running (`EXP-40`, 2026-10-21):** Extended in `pkg/decisionindex` with an opt-in co-denoised evidence slot (`EvidencePrompt` / `<q>_evidence`) placed ahead of the choice slot on the same diffusion canvas (`think: 0`, 1 pass), so missing or occluded discriminative evidence is read explicitly alongside raw slot hesitation.
 
 ### `PROP-09`: Base-rate (label-shift) adaptation
 
@@ -198,7 +198,7 @@ page (history is annotated, not rewritten).
   * Run once, then re-weight probabilities offline.
   * If it works, add a `--class-prior` option (explicit base rates) alongside the EM estimate.
 * **Metrics:** Brier score, ECE, accuracy, and error in the estimated prior.
-* **Running (`EXP-27`, 2026-10-21):** Implemented in `pkg/decisionindex` via `PriorLogits` and `PriorWeight` ($\alpha \in [0, 1]$) with a **pre-fusion hesitation gate**: raw normalized slot entropy $\tilde{H}_{\text{raw}}$ is evaluated *before* log-linear Product-of-Experts prior fusion ($\log P_{\text{fused}}(k) \propto \log P_{\text{token}}(k) + \alpha \cdot s_{\text{prior}}(k)$), and prior fusion is suppressed whenever $\tilde{H}_{\text{raw}} \ge \tau_{\text{gate}}$ so a confident retrieval or base-rate prior cannot mask model hesitation on out-of-distribution inputs.
+* **Running (`EXP-40`, 2026-10-21):** Implemented in `pkg/decisionindex` via `PriorLogits` and `PriorWeight` ($\alpha \in [0, 1]$) with a **pre-fusion hesitation gate**: raw normalized slot entropy $\tilde{H}_{\text{raw}}$ is evaluated *before* log-linear Product-of-Experts prior fusion ($\log P_{\text{fused}}(k) \propto \log P_{\text{token}}(k) + \alpha \cdot s_{\text{prior}}(k)$), and prior fusion is suppressed whenever $\tilde{H}_{\text{raw}} \ge \tau_{\text{gate}}$ so a confident retrieval or base-rate prior cannot mask model hesitation on out-of-distribution inputs.
 
 ### `PROP-10`: Run-to-run and revision noise floor
 
@@ -418,7 +418,7 @@ page (history is annotated, not rewritten).
   dev set.
 * **Decision:** Ship in the adapter if T1 passes.
 * **Cost / Dependencies:** adapter changes; no training.
-* **Running (`EXP-28`, 2026-10-21):** Added two-stage `ShortlistFunc` routing in `pkg/decisionindex` (stage-1 prior/embedding shortlist down to $M \le 6$ candidates with pairwise contrastive option descriptions, reducing $K > 26$ routing from $\lceil K/20 \rceil + 1$ passes to 1 diffusion pass when retrieval priors are present).
+* **Running (`EXP-41`, 2026-10-21):** Added two-stage `ShortlistFunc` routing in `pkg/decisionindex` (stage-1 prior/embedding shortlist down to $M \le 6$ candidates with pairwise contrastive option descriptions, reducing $K > 26$ routing from $\lceil K/20 \rceil + 1$ passes to 1 diffusion pass when retrieval priors are present).
 
 ### `PROP-25`: NLI "neutral" pull
 
@@ -440,7 +440,7 @@ page (history is annotated, not rewritten).
   option-order suite) rather than corrected; reopen only if the monitored first-shown rate rises.
 * **Cost / Dependencies:** `PROP-14`.
 
-### `PROP-34`: Contact-sheet multi-crop visual verification and co-denoised evidence slot
+### `PROP-37`: Contact-sheet multi-crop visual verification and co-denoised evidence slot
 
 * **Source:** DI, Clef (`EXP-22` and `EXP-26`: single-image categorical reads trail on fine-grained sibling classes and dense small text because `896×896` global resizing blurs variant badges and numeric callouts).
 * **Motivation:** When distinguishing visually similar sibling classes (e.g., product variants, component revisions, or document versions), downsampling a single full scene into `SigLIP`'s `896×896` frame loses sub-centimeter text and badge differences, and text-only option labels lack visual reference anchors.
@@ -455,7 +455,7 @@ page (history is annotated, not rewritten).
 * **Decision:** Ship `templates/multimodal/contact_sheet_verify.json.tmpl`, `EvidencePrompt`, and pre-gated `PriorLogits` in `pkg/decisionindex` if `(d)` beats `(a)` by ≥ 10 accuracy points on the validation split and held-out Brier does not regress when the stage-1 retrieval top-1 candidate is wrong.
 * **Cost / Dependencies:** `PROP-08`, `PROP-09`, `PROP-18`; ~800 Vertex G4 requests; adapter and template changes only (no training).
 
-### `PROP-35`: Set-of-Marks discrete next-hop UI navigation
+### `PROP-38`: Set-of-Marks discrete next-hop UI navigation
 
 * **Source:** DI (`EXP-22` and `EXP-24`: raw `[0, 999]` coordinate binning on ScreenSpot scores `12%` vs Gemini `93%`, whereas categorical single-pass image readouts lift `+0.40` to `+0.52` over baseline with hesitation AUROC `0.61–0.85`).
 * **Motivation:** Visual UI agents and workflow pathfinders do not need continuous pixel regression when a lightweight DOM / accessibility tree or upstream detector already enumerates candidate interactive elements; they need a calibrated discrete choice over candidate marks `[A..F]` plus a loop/stuck detector.
@@ -467,7 +467,7 @@ page (history is annotated, not rewritten).
 * **Decision:** Ship `dgem bench-ui-pathfinder` and recommend Set-of-Marks discrete choice in `docs/policies/images.md` in place of raw coordinate binning for UI navigation policies.
 * **Cost / Dependencies:** `PROP-18`; ~600 Vertex G4 requests + ~150 `gemini-3.8-flash` cascade calls.
 
-### `PROP-36`: Multimodal entity resolution and pack-size equivalence
+### `PROP-39`: Multimodal entity resolution and pack-size equivalence
 
 * **Source:** DI, Clef (`PROP-24` wide-option taxonomy routing; `PROP-08` explicit missing/conflicting evidence readout).
 * **Motivation:** High-cardinality catalog deduplication and entity resolution fail when text embeddings conflate multipacks or size variants (`1×100ml` vs `6×100ml`) or miss counterfeit packaging changes, and pairwise LLM verification across $10,000+$ items is prohibitively slow.
@@ -479,7 +479,7 @@ page (history is annotated, not rewritten).
 * **Decision:** Ship `dgem bench-multimodal-dedup` and transitive triangle-consistency checking in `pkg/decisionindex` if false-merge rate drops by ≥ 50% over raw argmax pairing.
 * **Cost / Dependencies:** `PROP-08`, `PROP-24`; ~600 Vertex G4 requests.
 
-### `PROP-37`: Sliding-window live checklist and multi-agent swarm lock arbitration
+### `PROP-40`: Sliding-window live checklist and multi-agent swarm lock arbitration
 
 * **Source:** DI (`EXP-01` and `EXP-19` multi-slot joint reads up to 8 slots per pass; `EXP-10` listwise 12-slot canvas evaluation).
 * **Motivation:** Real-time meeting/inspection assistants and multi-agent coding orchestrators cannot block on multi-second autoregressive LLM turns to track checklist state transitions (`unaddressed → in_progress → verified`) or arbitrate concurrent file/tool lock collisions across parallel worker agents.
