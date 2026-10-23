@@ -114,6 +114,8 @@ and the container serves the adapter on its port, in front of its own structured
 | **`--option-order`** | — | `alpha` | How each question's options are labelled A, B, C…: `alpha` sorts the option keys (the behaviour so far), `source` keeps the order the request lists them in, through every bracket round. Under test in PROP-33 (first-shown bias). |
 | **`--labels`** | — | `az` | Server label set for choice options. `az` (A–Z) brackets above 26 options. `az_aa` / `az_lower` (52 labels) read up to 52 options in one pass and bracket in 52-wide groups above that; they need a serving image with label sets. Experimental (PROP-29). |
 | **`--noul-mode`** | — | `noul` | How yes/no questions are read: `noul`, or `choice` (a 2-option yes/no choice with the true/false criteria as descriptions). Opt-in: it helps hallucination-style questions and costs a little on other yes/no families. |
+| **`--taxonomy-mode`** | — | `""` (off) | Opt-in 2-level hierarchical taxonomy routing for wide choices ($K > 26$; `PROP-41`): `mtp_trie` (single-pass coarse + fine co-read decoded on valid trie leaves), `beam_2pass` (Pass 1 coarse domain read, Pass 2 leaf read over top-2 domains), `hesitation_hybrid` (1 pass when coarse hesitation is low and margin $\ge 0.25$, escalating to Pass 2 otherwise), or `mtp_naive` (unconstrained ablation). Falls back to 2-stage brackets when options exceed 2-level capacity. |
+| **`--taxonomy-delimiter`** | — | `"_"` | Delimiter used to split option keys into coarse prefixes when `--taxonomy-mode` is active (opaque numbered keys such as `option_0` fall back automatically to description-stem coarse buckets). |
 
 ---
 

@@ -48,6 +48,8 @@ var (
 	soPriorGateMod         string
 	soShortlistK           int
 	soShortlistContrastive bool
+	soTaxonomyMode         string
+	soTaxonomyDelim        string
 	soNaiveLimits          bool
 )
 
@@ -94,6 +96,8 @@ func init() {
 	systemoneServeCmd.Flags().StringVar(&soPriorGateMod, "prior-gate-mode", "confident", "Gate schedule for prior_logits fusion: confident (rawNormH < tau), hesitant (rawNormH >= tau), proportional (alpha * rawNormH), or always (PROP-09 / EXP-40)")
 	systemoneServeCmd.Flags().IntVar(&soShortlistK, "shortlist-topk", 0, "Maximum candidates retained from caller prior_logits on wide choices; falls back to brackets when prior_logits is absent (0 = off, default; PROP-24 / EXP-41)")
 	systemoneServeCmd.Flags().BoolVar(&soShortlistContrastive, "shortlist-contrastive", true, "Append [distinguishing: ...] sibling token tags to shortlisted option descriptions (default true; EXP-41)")
+	systemoneServeCmd.Flags().StringVar(&soTaxonomyMode, "taxonomy-mode", "", "Opt-in 2-level taxonomy routing for wide choices (>26 options): off when empty (default), mtp_naive, mtp_trie, beam_2pass, or hesitation_hybrid (PROP-41)")
+	systemoneServeCmd.Flags().StringVar(&soTaxonomyDelim, "taxonomy-delimiter", "_", "Prefix delimiter used to group option keys into coarse taxonomy domains when --taxonomy-mode is enabled")
 	systemoneServeCmd.Flags().BoolVar(&soNaiveLimits, "naive-limits", false, "Enforce naive 26-option and 10-slot capacity rejections (for benchmark ablation)")
 
 	systemoneCmd.AddCommand(systemoneServeCmd)
@@ -119,6 +123,11 @@ func runSystemOneServe(cmd *cobra.Command, args []string) error {
 	}
 	if soNoulMode != "noul" && soNoulMode != "choice" {
 		return fmt.Errorf("--noul-mode must be noul or choice (got %q)", soNoulMode)
+	}
+	switch soTaxonomyMode {
+	case "", decisionindex.TaxonomyModeMTPNaive, decisionindex.TaxonomyModeMTPTrie, decisionindex.TaxonomyModeBeam2Pass, decisionindex.TaxonomyModeHesitationHybrid:
+	default:
+		return fmt.Errorf("--taxonomy-mode must be empty, mtp_naive, mtp_trie, beam_2pass, or hesitation_hybrid (got %q)", soTaxonomyMode)
 	}
 	defaultRetriesForLongRunning()
 
@@ -176,6 +185,8 @@ func runSystemOneServe(cmd *cobra.Command, args []string) error {
 		PriorGateMode:        soPriorGateMod,
 		ShortlistTopK:        soShortlistK,
 		ShortlistContrastive: soShortlistContrastive,
+		TaxonomyMode:         soTaxonomyMode,
+		TaxonomyDelimiter:    soTaxonomyDelim,
 	}
 	if soShortlistK > 0 {
 		opts.ShortlistFunc = decisionindex.PriorLogitsShortlist(soShortlistK)

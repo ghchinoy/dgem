@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): opt-in hierarchical taxonomy trie routing (`PROP-41`).**
+  Adds `TaxonomySpec`, `BuildPrefixTaxonomyTrie` (with cross-domain action-suffix alignment and automatic lexical coarse
+  bucketing for opaque `option_N` keys), and `DecodeTaxonomyTrie` (`mtp_trie`, `beam_2pass`, `hesitation_hybrid`,
+  `mtp_naive`). Off by default (`TaxonomyMode: ""`); configurable per question via `taxonomy` or server-wide via
+  `--taxonomy-mode` and `--taxonomy-delimiter`, falling back to 2-stage bracket tournaments whenever a question exceeds
+  2-level `[A-Z]` capacity.
+
 ## v0.3.13 (2026-10-23)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Both new
