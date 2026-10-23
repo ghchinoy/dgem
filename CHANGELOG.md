@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/v1/systemone` (`pkg/decisionindex`): opt-in prior fusion (`PROP-09`) and co-denoised evidence slot (`PROP-08`, `PROP-37`; #190).**
+  Off by default (`--prior-weight 0`). When `--prior-weight > 0` is set on `dgem systemone serve` (or
+  `EngineOptions.PriorWeight` in Go), per-question `prior_logits` fuse in log-space across standard choices, wide
+  tournament choices ($K > 26$), and `noul` (`yes`/`no`) questions while preserving pre-fusion `raw_entropy` and
+  `raw_normalized_entropy` (`--hesitation-gate`, `--prior-gate-mode confident|hesitant|proportional|always`). Choice
+  questions ($K \le 26$) also accept `evidence_prompt` + `evidence_criteria` to co-denoise a companion `<id>_evidence`
+  slot ahead of `<id>` on the same canvas (`templates/multimodal/contact_sheet_verify.json.tmpl`).
+
 ## v0.3.12 (2026-10-22)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Also
