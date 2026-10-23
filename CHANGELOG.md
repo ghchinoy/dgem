@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+## v0.3.13 (2026-10-23)
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Both new
+features are off by default and the production gateway exposes no flags for them, so `/v1/systemone` answers are
+unchanged. One validation change: a question with `evidence_prompt` now needs `evidence_criteria` (at least two
+options) or the request is refused with 400; with both set, the adapter adds an `<id>_evidence` slot.
+
 - **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): opt-in wide-option shortlist routing (`EXP-41`, `PROP-24`; #191).**
   Adds `ShortlistFunc`, `PriorLogitsShortlist`, `LexicalOverlapShortlist`, and `BuildContrastiveCriteria` (default off:
   `ShortlistTopK: 0`, `ShortlistFunc: nil`). `--shortlist-topk M` retains the top `M` options from caller-supplied
