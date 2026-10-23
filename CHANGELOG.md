@@ -9,6 +9,13 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`pkg/decisionindex`: Set-of-Marks (`SoM`) spatial geometry helpers and UI pathfinder template (`PROP-38`).**
+  Adds `CandidateMark`, `AssignPointToGridCell`, `AssignBoxToGridCell`, `AssignPointToGrid4x4`, `Grid4x4CellBounds`,
+  `FilterMarksByGridCell`, `SelectContainingOrNearestMark` (smallest-area containment for nested icons inside parent
+  containers), `ExpectedMarkCenterFromProbabilities`, and `BuildSetOfMarksQuestions` alongside
+  `templates/multimodal/ui_pathfinder_som.json.tmpl` for 4-slot single-pass UI navigation (`next_target_mark`,
+  `element_state`, `loop_or_error_detected`, `goal_progress_score`).
+
 ## v0.3.13 (2026-10-23)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Both new
