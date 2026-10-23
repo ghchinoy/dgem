@@ -21,7 +21,7 @@ import (
 func TestRenderString(t *testing.T) {
 	e := NewEngine()
 	data := map[string]interface{}{
-		"Name": "DiffusionGemma",
+		"Name":   "DiffusionGemma",
 		"Active": true,
 	}
 

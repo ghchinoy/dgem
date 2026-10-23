@@ -184,4 +184,3 @@ func TestParseStructuredContentWithLogprobs(t *testing.T) {
 		t.Errorf("expected 2 top candidate probabilities, got %d", len(ans.Probabilities))
 	}
 }
-

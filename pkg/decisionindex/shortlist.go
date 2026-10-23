@@ -369,7 +369,7 @@ func LexicalOverlapShortlist(defaultTopK int) ShortlistFunc {
 	}
 }
 
-// evaluateWideQuestionShortlist resolves a wide choice question (K > MaxOptionsPerSlot, up to 10,000+ options)
+// evaluateWideQuestionShortlist resolves a wide choice question (K > MaxOptionsPerSlot; measured up to K = 151 in EXP-41)
 // in a single diffusion pass using ShortlistFunc (or PriorLogitsShortlist when q.PriorLogits is populated).
 // Non-shortlisted options receive a strictly positive residual tail mass so the returned distribution covers
 // all K options and sums to 1.0 (PROP-24 / EXP-41).

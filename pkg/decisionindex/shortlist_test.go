@@ -515,4 +515,3 @@ func TestExecuteSystemOne_ShortlistContrastiveToggle(t *testing.T) {
 		}
 	}
 }
-
