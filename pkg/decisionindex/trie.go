@@ -653,6 +653,7 @@ func evaluateHierarchicalQuestion(
 	opts EngineOptions,
 ) (SystemOneAnswer, int, error) {
 	spec := qSpec.Taxonomy
+	explicitSpec := spec != nil
 	if spec == nil && strings.TrimSpace(opts.TaxonomyMode) != "" {
 		spec = &TaxonomySpec{
 			Mode:            opts.TaxonomyMode,
@@ -679,10 +680,35 @@ func evaluateHierarchicalQuestion(
 		var err error
 		leaves, coarseDesc, fineDesc, err = BuildPrefixTaxonomyTrie(qSpec.Criteria, delim, limit)
 		if err != nil {
-			// Fall back cleanly to bracket tournament if options exceed 2-level capacity.
-			return evaluateWideQuestionTournament(ctx, cli, stateText, images, qKey, qSpec, opts)
+			if explicitSpec {
+				return SystemOneAnswer{}, 0, fmt.Errorf("%w: question %q: %v", ErrInvalidRequest, qKey, err)
+			}
+			// Server-wide --taxonomy-mode falls back to bracket tournament when options exceed 2-level capacity,
+			// recording the fallback explicitly on the answer metadata.
+			ans, p, tErr := evaluateWideQuestionTournament(ctx, cli, stateText, images, qKey, qSpec, opts)
+			if tErr == nil {
+				ans.TaxonomyModeExecuted = "tournament_fallback"
+				ans.TaxonomyFallbackReason = err.Error()
+			}
+			return ans, p, tErr
 		}
 	} else {
+		if len(leaves) < 2 {
+			return SystemOneAnswer{}, 0, fmt.Errorf("%w: question %q: taxonomy leaves must contain at least 2 entries", ErrInvalidRequest, qKey)
+		}
+		seenLeafKeys := make(map[string]bool, len(leaves))
+		for _, l := range leaves {
+			if _, ok := qSpec.Criteria[l.Key]; !ok {
+				return SystemOneAnswer{}, 0, fmt.Errorf("%w: question %q: taxonomy leaf %q is not present in criteria", ErrInvalidRequest, qKey, l.Key)
+			}
+			if strings.TrimSpace(l.CoarseCode) == "" || strings.TrimSpace(l.FineCode) == "" {
+				return SystemOneAnswer{}, 0, fmt.Errorf("%w: question %q: taxonomy leaf %q requires non-empty coarse_code and fine_code", ErrInvalidRequest, qKey, l.Key)
+			}
+			if seenLeafKeys[l.Key] {
+				return SystemOneAnswer{}, 0, fmt.Errorf("%w: question %q: duplicate taxonomy leaf %q", ErrInvalidRequest, qKey, l.Key)
+			}
+			seenLeafKeys[l.Key] = true
+		}
 		if len(coarseDesc) == 0 {
 			coarseDesc = make(map[string]string)
 			for _, l := range leaves {
@@ -700,6 +726,12 @@ func evaluateHierarchicalQuestion(
 			}
 		}
 		if len(coarseDesc) > limit || len(fineDesc) > limit {
+			if explicitSpec {
+				return SystemOneAnswer{}, 0, fmt.Errorf(
+					"%w: question %q: taxonomy coarse (%d) and fine (%d) option counts must not exceed %d",
+					ErrInvalidRequest, qKey, len(coarseDesc), len(fineDesc), limit,
+				)
+			}
 			return evaluateWideQuestionTournament(ctx, cli, stateText, images, qKey, qSpec, opts)
 		}
 	}
@@ -710,6 +742,15 @@ func evaluateHierarchicalQuestion(
 	}
 	if mode == "" {
 		mode = TaxonomyModeBeam2Pass
+	}
+	switch mode {
+	case TaxonomyModeMTPNaive, TaxonomyModeMTPTrie, TaxonomyModeBeam2Pass, TaxonomyModeHesitationHybrid:
+	default:
+		return SystemOneAnswer{}, 0, fmt.Errorf(
+			"%w: question %q: unknown taxonomy mode %q (want %s, %s, %s, or %s)",
+			ErrInvalidRequest, qKey, mode,
+			TaxonomyModeMTPNaive, TaxonomyModeMTPTrie, TaxonomyModeBeam2Pass, TaxonomyModeHesitationHybrid,
+		)
 	}
 	topB := spec.TopB
 	if topB <= 0 {
@@ -817,15 +858,16 @@ func evaluateHierarchicalQuestion(
 		}
 		conf := normProbs[winner]
 		return SystemOneAnswer{
-			Type:           "choice",
-			Choice:         winner,
-			Probabilities:  normProbs,
-			Confidence:     &conf,
-			Entropy:        h,
-			NormalizedH:    normH,
-			RawEntropy:     coarseAns.RawEntropy,
-			RawNormalizedH: coarseAns.RawNormalizedH,
-			PassesUsed:     totalPasses,
+			Type:                 "choice",
+			Choice:               winner,
+			Probabilities:        normProbs,
+			Confidence:           &conf,
+			Entropy:              h,
+			NormalizedH:          normH,
+			RawEntropy:           coarseAns.RawEntropy,
+			RawNormalizedH:       coarseAns.RawNormalizedH,
+			PassesUsed:           totalPasses,
+			TaxonomyModeExecuted: mode,
 		}, totalPasses, nil
 	}
 
@@ -840,64 +882,127 @@ func evaluateHierarchicalQuestion(
 			normProbs, winner, h, normH := NormalizeAndScaleProbabilities(trieProbs, allOptKeys, 1.0)
 			conf := normProbs[winner]
 			return SystemOneAnswer{
-				Type:           "choice",
-				Choice:         winner,
-				Probabilities:  normProbs,
-				Confidence:     &conf,
-				Entropy:        h,
-				NormalizedH:    normH,
-				RawEntropy:     coarseAns.RawEntropy,
-				RawNormalizedH: coarseAns.RawNormalizedH,
-				PassesUsed:     totalPasses,
+				Type:                 "choice",
+				Choice:               winner,
+				Probabilities:        normProbs,
+				Confidence:           &conf,
+				Entropy:              h,
+				NormalizedH:          normH,
+				RawEntropy:           coarseAns.RawEntropy,
+				RawNormalizedH:       coarseAns.RawNormalizedH,
+				PassesUsed:           totalPasses,
+				TaxonomyModeExecuted: mode,
 			}, totalPasses, nil
 		}
 	}
 
-	// Pass 2: shortlist leaves belonging to the top-b coarse domains (+ any catch-all leaves), capped at limit.
+	// Pass 2: shortlist leaves across top-b coarse domains (+ any catch-all leaves) with fair per-domain
+	// quota allocation so a full 25-leaf rank-1 domain never starves rank-2..b domains.
 	inTopDomain := make(map[string]bool, len(topDomains))
 	for _, d := range topDomains {
 		inTopDomain[d] = true
 	}
-	type candLeaf struct {
-		leaf  TaxonomyLeaf
-		score float64
-	}
-	var domainLeaves []candLeaf
+	byDomain := make(map[string][]TaxonomyLeaf, len(topDomains))
 	var catchLeaves []TaxonomyLeaf
+	totalTopLeaves := 0
 	for _, l := range leaves {
 		if l.IsCatchAll {
 			catchLeaves = append(catchLeaves, l)
 			continue
 		}
 		if inTopDomain[l.CoarseCode] {
-			sc := coarseAns.Probabilities[l.CoarseCode]
-			if hasFineRead {
-				sc = trieProbs[l.Key]
-			}
-			domainLeaves = append(domainLeaves, candLeaf{
-				leaf:  l,
-				score: sc,
-			})
+			byDomain[l.CoarseCode] = append(byDomain[l.CoarseCode], l)
+			totalTopLeaves++
 		}
 	}
-	sort.Slice(domainLeaves, func(i, j int) bool {
-		if domainLeaves[i].score != domainLeaves[j].score {
-			return domainLeaves[i].score > domainLeaves[j].score
+	var activeTopDomains []string
+	for _, d := range topDomains {
+		if len(byDomain[d]) > 0 {
+			activeTopDomains = append(activeTopDomains, d)
+			domList := byDomain[d]
+			sort.Slice(domList, func(i, j int) bool {
+				var si, sj float64
+				if hasFineRead {
+					si, sj = trieProbs[domList[i].Key], trieProbs[domList[j].Key]
+				} else if len(qSpec.PriorLogits) > 0 {
+					si, sj = qSpec.PriorLogits[domList[i].Key], qSpec.PriorLogits[domList[j].Key]
+				}
+				if si != sj {
+					return si > sj
+				}
+				return domList[i].Key < domList[j].Key
+			})
+			byDomain[d] = domList
 		}
-		return domainLeaves[i].leaf.Key < domainLeaves[j].leaf.Key
-	})
+	}
 
 	budget := limit - len(catchLeaves)
 	if budget < 1 {
 		budget = limit
 	}
-	if budget > len(domainLeaves) {
-		budget = len(domainLeaves)
+	if budget > totalTopLeaves {
+		budget = totalTopLeaves
 	}
-	shortKeys := make([]string, 0, budget+len(catchLeaves))
-	coarsePriorLogits := make(map[string]float64, budget+len(catchLeaves))
-	for i := 0; i < budget; i++ {
-		l := domainLeaves[i].leaf
+
+	selectedDomainLeaves := make([]TaxonomyLeaf, 0, budget)
+	if totalTopLeaves <= budget {
+		for _, d := range activeTopDomains {
+			selectedDomainLeaves = append(selectedDomainLeaves, byDomain[d]...)
+		}
+	} else if len(activeTopDomains) > 0 {
+		// Allocate probability-proportional quotas with a guaranteed floor per active domain in top-b.
+		probMass := 0.0
+		for _, d := range activeTopDomains {
+			probMass += math.Max(1e-6, coarseAns.Probabilities[d])
+		}
+		minFloor := budget / (2 * len(activeTopDomains))
+		if minFloor < 2 {
+			minFloor = 2
+		}
+		if minFloor*len(activeTopDomains) > budget {
+			minFloor = maxInt(1, budget/len(activeTopDomains))
+		}
+		taken := make(map[string]int, len(activeTopDomains))
+		remaining := budget
+		for _, d := range activeTopDomains {
+			share := int(math.Round(float64(budget) * (math.Max(1e-6, coarseAns.Probabilities[d]) / probMass)))
+			if share < minFloor {
+				share = minFloor
+			}
+			if share > len(byDomain[d]) {
+				share = len(byDomain[d])
+			}
+			if share > remaining {
+				share = remaining
+			}
+			taken[d] = share
+			remaining -= share
+		}
+		// Spill over any unused quota in rank order across activeTopDomains.
+		for remaining > 0 {
+			progressed := false
+			for _, d := range activeTopDomains {
+				if remaining == 0 {
+					break
+				}
+				if taken[d] < len(byDomain[d]) {
+					taken[d]++
+					remaining--
+					progressed = true
+				}
+			}
+			if !progressed {
+				break
+			}
+		}
+		for _, d := range activeTopDomains {
+			selectedDomainLeaves = append(selectedDomainLeaves, byDomain[d][:taken[d]]...)
+		}
+	}
+
+	shortKeys := make([]string, 0, len(selectedDomainLeaves)+len(catchLeaves))
+	coarsePriorLogits := make(map[string]float64, len(selectedDomainLeaves)+len(catchLeaves))
+	for _, l := range selectedDomainLeaves {
 		shortKeys = append(shortKeys, l.Key)
 		p := coarseAns.Probabilities[l.CoarseCode]
 		if hasFineRead {
@@ -964,14 +1069,15 @@ func evaluateHierarchicalQuestion(
 	normProbs, winner, h, normH := NormalizeAndScaleProbabilities(fullProbs, allOptKeys, 1.0)
 	conf := normProbs[winner]
 	return SystemOneAnswer{
-		Type:           "choice",
-		Choice:         winner,
-		Probabilities:  normProbs,
-		Confidence:     &conf,
-		Entropy:        h,
-		NormalizedH:    normH,
-		RawEntropy:     shortAns.RawEntropy,
-		RawNormalizedH: shortAns.RawNormalizedH,
-		PassesUsed:     totalPasses,
+		Type:                 "choice",
+		Choice:               winner,
+		Probabilities:        normProbs,
+		Confidence:           &conf,
+		Entropy:              h,
+		NormalizedH:          normH,
+		RawEntropy:           shortAns.RawEntropy,
+		RawNormalizedH:       shortAns.RawNormalizedH,
+		PassesUsed:           totalPasses,
+		TaxonomyModeExecuted: mode,
 	}, totalPasses, nil
 }

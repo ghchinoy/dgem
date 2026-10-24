@@ -532,3 +532,181 @@ func TestTaxonomyTrie_ProbabilisticCalibrationAndPassBudget(t *testing.T) {
 		t.Fatalf("expected hesitation_hybrid accuracy (%.3f) within 3 pts of beam_2pass (%.3f)", accHybrid, accBeam)
 	}
 }
+
+func TestExplicitTaxonomyValidationAndBeamNonStarvation(t *testing.T) {
+	// 1. Explicit q.Taxonomy with > 26 coarse codes or unknown leaf keys MUST fail closed (ErrInvalidRequest)
+	// rather than silently falling back to a 20-pass tournament.
+	crit := make(map[string]string, 40)
+	var badLeaves []TaxonomyLeaf
+	for i := 0; i < 30; i++ {
+		k := fmt.Sprintf("dom%02d_act", i)
+		crit[k] = fmt.Sprintf("Action in domain %d", i)
+		badLeaves = append(badLeaves, TaxonomyLeaf{
+			Key:        k,
+			CoarseCode: fmt.Sprintf("dom_%02d", i), // 30 coarse codes > 26
+			FineCode:   "act",
+		})
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var reqBody struct {
+			Messages []struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"messages"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&reqBody)
+		var sysPayload struct {
+			Questions []struct {
+				ID      string `json:"id"`
+				Options []struct {
+					Name string `json:"name"`
+				} `json:"options"`
+			} `json:"questions"`
+		}
+		for _, m := range reqBody.Messages {
+			if m.Role == "system" {
+				_ = json.Unmarshal([]byte(m.Content), &sysPayload)
+			}
+		}
+		ans := make(map[string]client.QuestionAnswer, len(sysPayload.Questions))
+		for _, q := range sysPayload.Questions {
+			probs := make(map[string]float64, len(q.Options))
+			for _, o := range q.Options {
+				if q.ID == "op__coarse" {
+					switch o.Name {
+					case "doma":
+						probs[o.Name] = 0.51
+					case "domb":
+						probs[o.Name] = 0.48
+					default:
+						probs[o.Name] = 0.01 / math.Max(1, float64(len(q.Options)-2))
+					}
+				} else {
+					if o.Name == "domb_03" {
+						probs[o.Name] = 0.94
+					} else {
+						probs[o.Name] = 0.06 / math.Max(1, float64(len(q.Options)-1))
+					}
+				}
+			}
+			optNames := make([]string, 0, len(q.Options))
+			for _, o := range q.Options {
+				optNames = append(optNames, o.Name)
+			}
+			normP, win, _, _ := NormalizeAndScaleProbabilities(probs, optNames, 1.0)
+			ans[q.ID] = client.QuestionAnswer{Choice: win, Probabilities: normP}
+		}
+		envBytes, _ := json.Marshal(client.StructuredDecisionResponse{Answers: ans})
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{{"message": map[string]any{"content": string(envBytes)}}},
+		})
+	}))
+	defer srv.Close()
+	cli := client.NewClient(srv.URL, "", 0)
+
+	_, err := ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
+		State: "test",
+		Questions: map[string]SystemOneQuestion{
+			"op": {
+				Type:         "choice",
+				Instructions: "Pick op",
+				Criteria:     crit,
+				Taxonomy: &TaxonomySpec{
+					Mode:   TaxonomyModeMTPTrie,
+					Leaves: badLeaves,
+				},
+			},
+		},
+	}, DefaultEngineOptions())
+	if err == nil {
+		t.Fatalf("expected explicit invalid TaxonomySpec (>26 coarse codes) to fail closed with ErrInvalidRequest")
+	}
+
+	// 1b. Explicit unknown Taxonomy.Mode fails closed with ErrInvalidRequest.
+	_, err = ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
+		State: "test",
+		Questions: map[string]SystemOneQuestion{
+			"op": {
+				Type:         "choice",
+				Instructions: "Pick op",
+				Criteria:     crit,
+				Taxonomy:     &TaxonomySpec{Mode: "not_a_valid_mode"},
+			},
+		},
+	}, DefaultEngineOptions())
+	if err == nil {
+		t.Fatalf("expected unknown Taxonomy.Mode to fail closed with ErrInvalidRequest")
+	}
+
+	// 2. Non-starvation test: doma has 25 leaves (P=0.51) and domb has 15 leaves (P=0.48) + oos.
+	// Previously doma consumed all 25 Pass-2 slots and starved domb completely; fair quota keeps domb_03 in Pass 2!
+	starveCrit := map[string]string{"oos": "Out of scope"}
+	for i := 0; i < 25; i++ {
+		k := fmt.Sprintf("doma_%02d", i)
+		starveCrit[k] = fmt.Sprintf("Domain A operation %d", i)
+	}
+	for i := 0; i < 15; i++ {
+		k := fmt.Sprintf("domb_%02d", i)
+		starveCrit[k] = fmt.Sprintf("Domain B operation %d", i)
+	}
+	opts := DefaultEngineOptions()
+	opts.TaxonomyMode = TaxonomyModeBeam2Pass
+	resp, err := ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
+		State: "user wants domb_03",
+		Questions: map[string]SystemOneQuestion{
+			"op": {
+				Type:         "choice",
+				Instructions: "Pick op",
+				Criteria:     starveCrit,
+			},
+		},
+	}, opts)
+	if err != nil {
+		t.Fatalf("unexpected error in beam_2pass non-starvation test: %v", err)
+	}
+	if resp.Answers["op"].Choice != "domb_03" {
+		t.Fatalf("expected domb_03 to survive Pass-2 beam allocation without rank-1 starvation, got %q", resp.Answers["op"].Choice)
+	}
+	if resp.Answers["op"].TaxonomyModeExecuted != TaxonomyModeBeam2Pass {
+		t.Fatalf("expected taxonomy_mode_executed=%q, got %q", TaxonomyModeBeam2Pass, resp.Answers["op"].TaxonomyModeExecuted)
+	}
+}
+
+func FuzzBuildPrefixTaxonomyTrie(f *testing.F) {
+	f.Add(uint8(40), uint8(5), "_")
+	f.Add(uint8(120), uint8(12), ".")
+	f.Add(uint8(202), uint8(18), "_")
+	f.Fuzz(func(t *testing.T, nOpts uint8, nDoms uint8, delim string) {
+		kCount := int(nOpts%220) + 27 // wide range [27, 246]
+		dCount := int(nDoms%24) + 1
+		if delim == "" || len(delim) > 3 {
+			delim = "_"
+		}
+		crit := make(map[string]string, kCount)
+		for i := 0; i < kCount-1; i++ {
+			dom := fmt.Sprintf("d%02d", i%dCount)
+			key := fmt.Sprintf("%s%ssub%03d", dom, delim, i)
+			crit[key] = fmt.Sprintf("Service %s operation number %d workflow", dom, i)
+		}
+		crit["oos"] = "None of the supported operations"
+		leaves, coarse, fine, err := BuildPrefixTaxonomyTrie(crit, delim, 26)
+		if err != nil {
+			return
+		}
+		if len(coarse) > 26 || len(fine) > 26 {
+			t.Fatalf("slot bound violated: coarse=%d fine=%d", len(coarse), len(fine))
+		}
+		if len(leaves) != len(crit) {
+			t.Fatalf("leaf count mismatch: got %d want %d", len(leaves), len(crit))
+		}
+		seenCoords := make(map[[2]string]bool, len(leaves))
+		for _, l := range leaves {
+			coord := [2]string{l.CoarseCode, l.FineCode}
+			if seenCoords[coord] {
+				t.Fatalf("duplicate (coarse, fine) coordinate %v for leaf %q", coord, l.Key)
+			}
+			seenCoords[coord] = true
+		}
+	})
+}

@@ -471,6 +471,9 @@ type SystemOneAnswer struct {
 	PriorFused     bool    `json:"prior_fused,omitempty"`
 	// Evidence records the co-denoised evidence slot choice when EvidencePrompt is set on the question (PROP-08).
 	Evidence string `json:"evidence,omitempty"`
+	// TaxonomyModeExecuted records the taxonomy routing mode used (or "tournament_fallback" when server-wide taxonomy routing exceeds 2-level capacity).
+	TaxonomyModeExecuted   string `json:"taxonomy_mode_executed,omitempty"`
+	TaxonomyFallbackReason string `json:"taxonomy_fallback_reason,omitempty"`
 }
 
 // SystemOneResponse matches the response envelope validated by decision_index.
