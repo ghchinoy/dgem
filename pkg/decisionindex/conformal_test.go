@@ -849,23 +849,69 @@ func TestConformalStrictValidationAndEdgeCases(t *testing.T) {
 		}
 	}
 
-	// Zero-config ConformalRAPS defaults to KReg=5, LambdaReg=0.02 (ranks 1..5 unpenalized, rank 6 penalized by +0.02).
+	// DefaultConformalConfig() and zero-value ConformalConfig{} use RAPS with Alpha=0.10, KReg=1, LambdaReg=0.01,
+	// while explicit ConformalConfig{Method: ConformalRAPS, KReg: ..., LambdaReg: ...} honors KReg=0 and LambdaReg=0.0 literally.
+	defCfg := DefaultConformalConfig()
+	if defCfg.Method != ConformalRAPS || defCfg.Alpha != 0.10 || defCfg.KReg != 1 || defCfg.LambdaReg != 0.01 {
+		t.Fatalf("unexpected DefaultConformalConfig(): %+v", defCfg)
+	}
 	sixOpts := map[string]float64{
 		"o1": 0.30, "o2": 0.25, "o3": 0.20, "o4": 0.12, "o5": 0.08, "o6": 0.05,
 	}
-	s5, err := ConformalScore(sixOpts, "o5", ConformalConfig{Method: ConformalRAPS})
-	if err != nil {
-		t.Fatalf("default RAPS rank 5 score failed: %v", err)
+	// DefaultConformalConfig / ConformalConfig{}: KReg=1, LambdaReg=0.01 -> rank 5 score = 0.87 + 0.04 = 0.91; rank 6 = 0.95 + 0.05 = 1.00.
+	for _, cfgUse := range []ConformalConfig{defCfg, {}} {
+		s5, err := ConformalScore(sixOpts, "o5", cfgUse)
+		if err != nil {
+			t.Fatalf("ConformalScore o5 error: %v", err)
+		}
+		s6, err := ConformalScore(sixOpts, "o6", cfgUse)
+		if err != nil {
+			t.Fatalf("ConformalScore o6 error: %v", err)
+		}
+		if math.Abs(s5-0.91) > 1e-12 || math.Abs(s6-1.00) > 1e-12 {
+			t.Fatalf("expected (s5=0.91, s6=1.00) for default RAPS config %+v, got (%.12f, %.12f)", cfgUse, s5, s6)
+		}
 	}
-	s6, err := ConformalScore(sixOpts, "o6", ConformalConfig{Method: ConformalRAPS})
-	if err != nil {
-		t.Fatalf("default RAPS rank 6 score failed: %v", err)
+	// Explicit LambdaReg=0.0 reduces RAPS identically to APS across all ranks (< 1e-12).
+	for _, kZeroTest := range []int{0, 1, 3} {
+		rapsZero := ConformalConfig{Method: ConformalRAPS, KReg: kZeroTest, LambdaReg: 0.0}
+		apsRef := ConformalConfig{Method: ConformalAPS}
+		for optKey := range sixOpts {
+			sr, err1 := ConformalScore(sixOpts, optKey, rapsZero)
+			sa, err2 := ConformalScore(sixOpts, optKey, apsRef)
+			if err1 != nil || err2 != nil || math.Abs(sr-sa) > 1e-12 {
+				t.Fatalf("RAPS(LambdaReg=0, KReg=%d) score mismatch on %s: raps=%v (%v) vs aps=%v (%v)", kZeroTest, optKey, sr, err1, sa, err2)
+			}
+		}
 	}
-	if math.Abs(s5-0.87) > 1e-12 {
-		t.Fatalf("expected rank 5 RAPS score 0.87 (unpenalized), got %.15f", s5)
+	// Explicit KReg=0 with LambdaReg>0 penalizes starting at rank 1 (LambdaReg=0.10 -> rank 1 = 0.10, rank 2 = 0.50; LambdaReg=0.20 -> rank 1 = 0.20, rank 2 = 0.70).
+	s1K0Ten, err := ConformalScore(sixOpts, "o1", ConformalConfig{Method: ConformalRAPS, KReg: 0, LambdaReg: 0.10})
+	if err != nil || math.Abs(s1K0Ten-0.10) > 1e-12 {
+		t.Fatalf("expected rank-1 KReg=0 LambdaReg=0.10 score 0.10, got %v (err=%v)", s1K0Ten, err)
 	}
-	if math.Abs(s6-0.97) > 1e-12 {
-		t.Fatalf("expected rank 6 RAPS score 0.95 + 0.02 = 0.97, got %.15f", s6)
+	s2K0Ten, err := ConformalScore(sixOpts, "o2", ConformalConfig{Method: ConformalRAPS, KReg: 0, LambdaReg: 0.10})
+	if err != nil || math.Abs(s2K0Ten-0.50) > 1e-12 {
+		t.Fatalf("expected rank-2 KReg=0 LambdaReg=0.10 score 0.50, got %v (err=%v)", s2K0Ten, err)
+	}
+	s1K0, err := ConformalScore(sixOpts, "o1", ConformalConfig{Method: ConformalRAPS, KReg: 0, LambdaReg: 0.20})
+	if err != nil || math.Abs(s1K0-0.20) > 1e-12 {
+		t.Fatalf("expected rank-1 KReg=0 score 0.20, got %v (err=%v)", s1K0, err)
+	}
+	s2K0, err := ConformalScore(sixOpts, "o2", ConformalConfig{Method: ConformalRAPS, KReg: 0, LambdaReg: 0.20})
+	if err != nil || math.Abs(s2K0-0.70) > 1e-12 {
+		t.Fatalf("expected rank-2 KReg=0 score 0.70, got %v (err=%v)", s2K0, err)
+	}
+	// All 9 default abstain labels (case-insensitive trimmed) trigger ContainsAbstain and ShouldEscalate when AbstainLabels is nil.
+	for _, absKey := range []string{"0", "abstain", "insufficient_evidence", "none", "none_of_the_above", "none_visible", "oos", "uncertain", "unknown", " OOS ", "UNCERTAIN"} {
+		absRes, absErr := ConformalPredictionSet(map[string]float64{absKey: 0.96, "valid_opt": 0.04}, 0.20, ConformalConfig{Method: ConformalLAC})
+		if absErr != nil || !absRes.ContainsAbstain || !absRes.ShouldEscalate {
+			t.Fatalf("expected default abstain escalation for %q, got res=%+v err=%v", absKey, absRes, absErr)
+		}
+	}
+	// Explicit empty AbstainLabels ([]string{}) opts out of default abstention.
+	optOutRes, optOutErr := ConformalPredictionSet(map[string]float64{"oos": 0.96, "valid_opt": 0.04}, 0.20, ConformalConfig{Method: ConformalLAC, AbstainLabels: []string{}})
+	if optOutErr != nil || optOutRes.ContainsAbstain || optOutRes.ShouldEscalate || !optOutRes.Singleton {
+		t.Fatalf("expected explicit empty AbstainLabels []string{} to disable abstain escalation, got res=%+v err=%v", optOutRes, optOutErr)
 	}
 
 	// 3. Exact floating-point order-statistic boundary: n=9, alpha=0.30 -> (9+1)*(1-0.30) = 7.0 -> OrderIndex == 7.
@@ -1163,5 +1209,127 @@ func TestContextPruningValidationAndTieBreakDeterminism(t *testing.T) {
 			t.Fatalf("step %d: expected monotone non-decreasing utility across budgets, got %.9f < %.9f", step, r.ExpectedUtility, prevUtil)
 		}
 		prevUtil = r.ExpectedUtility
+	}
+}
+
+func TestDefaultConformalConfigZeroBoundaryAndAbstainOptOut(t *testing.T) {
+	calibProbs := []map[string]float64{
+		{"opt_a": 0.60, "opt_b": 0.35, "opt_c": 0.05},
+		{"opt_a": 0.55, "opt_b": 0.30, "opt_c": 0.15},
+		{"opt_a": 0.50, "opt_b": 0.45, "opt_c": 0.05},
+		{"opt_a": 0.70, "opt_b": 0.20, "opt_c": 0.10},
+	}
+	calibLabels := []string{"opt_c", "opt_b", "opt_b", "opt_a"}
+	testProb := map[string]float64{"opt_a": 0.52, "opt_b": 0.33, "opt_c": 0.15}
+
+	// 1. DefaultConformalConfig(), zero-value ConformalConfig{}, and whitespace Method default to RAPS(KReg=1, LambdaReg=0.01).
+	defCfg := DefaultConformalConfig()
+	calDef, err := CalibrateConformalQuantile(calibProbs, calibLabels, defCfg.Alpha, defCfg)
+	if err != nil {
+		t.Fatalf("CalibrateConformalQuantile(DefaultConformalConfig) failed: %v", err)
+	}
+	if calDef.Method != ConformalRAPS || math.Abs(calDef.Alpha-0.10) > 1e-12 {
+		t.Fatalf("expected Method=raps Alpha=0.10, got %+v", calDef)
+	}
+	for _, blankCfg := range []ConformalConfig{{}, {Method: "   "}} {
+		calZero, err := CalibrateConformalQuantile(calibProbs, calibLabels, 0.10, blankCfg)
+		if err != nil {
+			t.Fatalf("CalibrateConformalQuantile(%+v) failed: %v", blankCfg, err)
+		}
+		if calZero.Method != ConformalRAPS || math.Abs(calZero.QHat-calDef.QHat) > 1e-12 {
+			t.Fatalf("expected blank config %+v to match DefaultConformalConfig QHat=%v, got %+v", blankCfg, calDef.QHat, calZero)
+		}
+		setDef, err1 := ConformalPredictionSet(testProb, calDef.QHat, defCfg)
+		setZero, err2 := ConformalPredictionSet(testProb, calZero.QHat, blankCfg)
+		if err1 != nil || err2 != nil || len(setDef.PredictionSet) != len(setZero.PredictionSet) {
+			t.Fatalf("prediction set mismatch between DefaultConformalConfig and %+v: %+v vs %+v", blankCfg, setDef, setZero)
+		}
+		for i := range setDef.PredictionSet {
+			if setDef.PredictionSet[i] != setZero.PredictionSet[i] {
+				t.Fatalf("prediction set element %d mismatch: %v vs %v", i, setDef.PredictionSet, setZero.PredictionSet)
+			}
+		}
+	}
+
+	// 2. Explicit Method=ConformalRAPS with LambdaReg=0.0 matches ConformalAPS on calibration and prediction sets (deterministic and randomized).
+	for _, randomized := range []bool{false, true} {
+		for _, kVal := range []int{0, 1, 2} {
+			apsCfg := ConformalConfig{Method: ConformalAPS, Randomized: randomized, Seed: 77}
+			rapsZeroCfg := ConformalConfig{Method: ConformalRAPS, KReg: kVal, LambdaReg: 0.0, Randomized: randomized, Seed: 77}
+			calAPS, err1 := CalibrateConformalQuantile(calibProbs, calibLabels, 0.25, apsCfg)
+			calRAPS0, err2 := CalibrateConformalQuantile(calibProbs, calibLabels, 0.25, rapsZeroCfg)
+			if err1 != nil || err2 != nil || math.Abs(calAPS.QHat-calRAPS0.QHat) > 1e-12 {
+				t.Fatalf("randomized=%v k=%d: RAPS(LambdaReg=0) QHat=%v (%v) != APS QHat=%v (%v)",
+					randomized, kVal, calRAPS0.QHat, err2, calAPS.QHat, err1)
+			}
+			setAPS, err1 := ConformalPredictionSet(testProb, calAPS.QHat, apsCfg)
+			setRAPS0, err2 := ConformalPredictionSet(testProb, calRAPS0.QHat, rapsZeroCfg)
+			if err1 != nil || err2 != nil || len(setAPS.PredictionSet) != len(setRAPS0.PredictionSet) {
+				t.Fatalf("randomized=%v k=%d: RAPS(LambdaReg=0) set %+v != APS set %+v", randomized, kVal, setRAPS0, setAPS)
+			}
+			for i := range setAPS.PredictionSet {
+				if setAPS.PredictionSet[i] != setRAPS0.PredictionSet[i] {
+					t.Fatalf("randomized=%v k=%d: set item %d mismatch %v vs %v", randomized, kVal, i, setRAPS0.PredictionSet, setAPS.PredictionSet)
+				}
+			}
+		}
+	}
+
+	// 3. Explicit Method=ConformalRAPS with KReg=0 and LambdaReg=0.10 penalizes starting at rank 1 (strictly +0.10 above KReg=1 across every rank >= 1).
+	cfgK0 := ConformalConfig{Method: ConformalRAPS, KReg: 0, LambdaReg: 0.10}
+	cfgK1 := ConformalConfig{Method: ConformalRAPS, KReg: 1, LambdaReg: 0.10}
+	calK0, err := CalibrateConformalQuantile(calibProbs, calibLabels, 0.25, cfgK0)
+	if err != nil {
+		t.Fatalf("CalibrateConformalQuantile(KReg=0) failed: %v", err)
+	}
+	calK1, err := CalibrateConformalQuantile(calibProbs, calibLabels, 0.25, cfgK1)
+	if err != nil {
+		t.Fatalf("CalibrateConformalQuantile(KReg=1) failed: %v", err)
+	}
+	if math.Abs((calK0.QHat-calK1.QHat)-0.10) > 1e-12 {
+		t.Fatalf("expected KReg=0 QHat (%v) to exceed KReg=1 QHat (%v) by exact rank-1 shift 0.10", calK0.QHat, calK1.QHat)
+	}
+
+	// 4. Exhaustively verify all 9 default abstain keys (case-insensitive trimmed), explicit []string{} opt-out, and custom override list.
+	allNineAbstain := []string{
+		"0",
+		"abstain",
+		"insufficient_evidence",
+		"none",
+		"none_of_the_above",
+		"none_visible",
+		"oos",
+		"uncertain",
+		"unknown",
+	}
+	variants := append([]string{}, allNineAbstain...)
+	variants = append(variants, " 0 ", "ABSTAIN", " None ", "None_Visible", " OOS\t", "UNCERTAIN", "Unknown")
+	for _, key := range variants {
+		dist := map[string]float64{key: 0.97, "concrete_option": 0.03}
+		resNil, err := ConformalPredictionSet(dist, 0.20, ConformalConfig{Method: ConformalLAC})
+		if err != nil {
+			t.Fatalf("abstain probe %q failed: %v", key, err)
+		}
+		if !resNil.Singleton || !resNil.ContainsAbstain || !resNil.ShouldEscalate {
+			t.Fatalf("abstain probe %q: expected Singleton && ContainsAbstain && ShouldEscalate, got %+v", key, resNil)
+		}
+
+		resOptOut, err := ConformalPredictionSet(dist, 0.20, ConformalConfig{Method: ConformalLAC, AbstainLabels: []string{}})
+		if err != nil {
+			t.Fatalf("opt-out probe %q failed: %v", key, err)
+		}
+		if !resOptOut.Singleton || resOptOut.ContainsAbstain || resOptOut.ShouldEscalate {
+			t.Fatalf("opt-out probe %q: expected ContainsAbstain=false and ShouldEscalate=false with AbstainLabels=[]string{}, got %+v", key, resOptOut)
+		}
+	}
+
+	customCfg := ConformalConfig{Method: ConformalLAC, AbstainLabels: []string{"needs_human"}}
+	resCustomHit, err := ConformalPredictionSet(map[string]float64{" NEEDS_HUMAN ": 0.95, "ok": 0.05}, 0.20, customCfg)
+	if err != nil || !resCustomHit.ContainsAbstain || !resCustomHit.ShouldEscalate {
+		t.Fatalf("expected custom abstain label match, got %+v (err=%v)", resCustomHit, err)
+	}
+	resCustomNonMember, err := ConformalPredictionSet(map[string]float64{"oos": 0.95, "ok": 0.05}, 0.20, customCfg)
+	if err != nil || resCustomNonMember.ContainsAbstain || resCustomNonMember.ShouldEscalate {
+		t.Fatalf("expected default key 'oos' not to trigger when custom AbstainLabels excludes it, got %+v (err=%v)", resCustomNonMember, err)
 	}
 }

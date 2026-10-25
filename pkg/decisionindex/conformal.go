@@ -49,6 +49,12 @@ const (
 const (
 	conformalScoreTolerance   = 1e-12
 	maxSeededConformalStreams = 256
+	// DefaultConformalAlpha is the standard split-conformal target miscoverage rate (10%).
+	DefaultConformalAlpha = 0.10
+	// DefaultConformalKReg is the standard RAPS unpenalized top-rank cutoff.
+	DefaultConformalKReg = 1
+	// DefaultConformalLambdaReg is the standard RAPS per-rank size penalty weight.
+	DefaultConformalLambdaReg = 0.01
 )
 
 var (
@@ -59,9 +65,14 @@ var (
 )
 
 var defaultAbstainLabels = []string{
+	"0",
 	"abstain",
-	"none_of_the_above",
 	"insufficient_evidence",
+	"none",
+	"none_of_the_above",
+	"none_visible",
+	"oos",
+	"uncertain",
 	"unknown",
 }
 
@@ -93,12 +104,17 @@ var (
 )
 
 // ConformalConfig configures split conformal score computation and prediction-set construction.
+// Use DefaultConformalConfig() (or zero-value ConformalConfig{}) for standard RAPS defaults
+// (Method: ConformalRAPS, Alpha: 0.10, KReg: 1, LambdaReg: 0.01). When Method is explicitly set
+// to ConformalRAPS, KReg == 0 and LambdaReg == 0.0 are honored literally without override.
 type ConformalConfig struct {
-	// Method selects "lac" (default when empty), "aps", or "raps".
+	// Method selects "lac", "aps", or "raps" (defaults to "raps" when empty).
 	Method ConformalMethod `json:"method,omitempty"`
-	// KReg is the unpenalized top-rank prefix size for RAPS (defaults to 5 when Method == ConformalRAPS and KReg == 0; must be >= 0).
+	// Alpha stores the target miscoverage rate in (0, 1) (populated as 0.10 by DefaultConformalConfig).
+	Alpha float64 `json:"alpha,omitempty"`
+	// KReg is the unpenalized top-rank cutoff k_reg >= 0 for RAPS (0 penalizes starting at rank 1).
 	KReg int `json:"k_reg,omitempty"`
-	// LambdaReg is the per-rank penalty weight above KReg for RAPS (defaults to 0.02 when Method == ConformalRAPS and LambdaReg == 0; must be finite and >= 0).
+	// LambdaReg is the per-rank penalty weight lambda_reg >= 0 for RAPS (0.0 reduces RAPS to APS).
 	LambdaReg float64 `json:"lambda_reg,omitempty"`
 	// Randomized enables Uniform(0, 1) boundary smoothing and tie-group Fisher-Yates shuffling for APS and RAPS.
 	Randomized bool `json:"randomized,omitempty"`
@@ -107,8 +123,20 @@ type ConformalConfig struct {
 	// RNG supplies an explicit caller-managed *rand.Rand stream when Randomized is true.
 	RNG *rand.Rand `json:"-"`
 	// AbstainLabels lists option names treated as abstention triggers when included in the prediction set.
-	// Defaults to {"abstain", "none_of_the_above", "insufficient_evidence", "unknown"} when nil.
+	// Defaults to {"0", "abstain", "insufficient_evidence", "none", "none_of_the_above",
+	// "none_visible", "oos", "uncertain", "unknown"} when nil.
 	AbstainLabels []string `json:"abstain_labels,omitempty"`
+}
+
+// DefaultConformalConfig returns the standard RAPS configuration
+// (Method: ConformalRAPS, Alpha: 0.10, KReg: 1, LambdaReg: 0.01).
+func DefaultConformalConfig() ConformalConfig {
+	return ConformalConfig{
+		Method:    ConformalRAPS,
+		Alpha:     DefaultConformalAlpha,
+		KReg:      DefaultConformalKReg,
+		LambdaReg: DefaultConformalLambdaReg,
+	}
 }
 
 // ConformalCalibrationResult records the calibrated split-conformal quantile and calibration summary.
@@ -153,18 +181,19 @@ type optionProb struct {
 func parseConformalMethod(m ConformalMethod) (ConformalMethod, error) {
 	norm := strings.ToLower(strings.TrimSpace(string(m)))
 	switch norm {
-	case "", string(ConformalLAC):
+	case "", string(ConformalRAPS):
+		return ConformalRAPS, nil
+	case string(ConformalLAC):
 		return ConformalLAC, nil
 	case string(ConformalAPS):
 		return ConformalAPS, nil
-	case string(ConformalRAPS):
-		return ConformalRAPS, nil
 	default:
 		return "", fmt.Errorf("%w: %q", ErrInvalidConformalMethod, m)
 	}
 }
 
 func validateConformalConfig(cfg ConformalConfig) (ConformalMethod, int, float64, error) {
+	rawTrimmed := strings.TrimSpace(string(cfg.Method))
 	method, err := parseConformalMethod(cfg.Method)
 	if err != nil {
 		return "", 0, 0, err
@@ -177,13 +206,9 @@ func validateConformalConfig(cfg ConformalConfig) (ConformalMethod, int, float64
 	}
 	kReg := cfg.KReg
 	lamReg := cfg.LambdaReg
-	if method == ConformalRAPS {
-		if kReg == 0 {
-			kReg = 5
-		}
-		if lamReg == 0 {
-			lamReg = 0.02
-		}
+	if rawTrimmed == "" && kReg == 0 && lamReg == 0 {
+		kReg = DefaultConformalKReg
+		lamReg = DefaultConformalLambdaReg
 	}
 	return method, kReg, lamReg, nil
 }
