@@ -1026,7 +1026,7 @@ func TestConformalStrictValidationAndEdgeCases(t *testing.T) {
 		t.Fatalf("expected tie-group shuffle to yield both [A] and [B] singletons, got A=%d B=%d", singletonA, singletonB)
 	}
 
-	for _, seedVal := range []int64{2, 0} {
+	for _, seedVal := range []int64{2, 42} {
 		sharpCalProbs := make([]map[string]float64, 200)
 		sharpCalLabels := make([]string, 200)
 		dataRNG := rand.New(rand.NewSource(9001 + seedVal))
@@ -1061,6 +1061,48 @@ func TestConformalStrictValidationAndEdgeCases(t *testing.T) {
 			t.Fatalf("seed=%d sharp randomized coverage %.3f < 0.86 at alpha=0.10 (qHat=%.4f)",
 				seedVal, float64(sharpHits)/1000.0, calSharp.QHat)
 		}
+	}
+
+	// For unseeded Seed=0 (shared wall-clock defaultConformalRNG), evaluate marginal coverage across
+	// 12 independent calibration/test splits (400 cal + 400 test each = 4,800 draws, SE ~ 0.0061)
+	// so single-split Beta(181, 20) tail variance cannot cause wall-clock flakiness.
+	unseededDataRNG := rand.New(rand.NewSource(9001))
+	unseededCfg := ConformalConfig{Method: ConformalAPS, Randomized: true, Seed: 0}
+	unseededTotalHits := 0
+	const unseededSplits = 12
+	for sp := 0; sp < unseededSplits; sp++ {
+		sharpCalProbs := make([]map[string]float64, 400)
+		sharpCalLabels := make([]string, 400)
+		for i := 0; i < 400; i++ {
+			sharpCalProbs[i] = map[string]float64{"A": 0.99, "B": 0.01}
+			if unseededDataRNG.Float64() < 0.99 {
+				sharpCalLabels[i] = "A"
+			} else {
+				sharpCalLabels[i] = "B"
+			}
+		}
+		calSharp, err := CalibrateConformalQuantile(sharpCalProbs, sharpCalLabels, 0.10, unseededCfg)
+		if err != nil {
+			t.Fatalf("seed=0 split=%d sharp calibration failed: %v", sp, err)
+		}
+		for j := 0; j < 400; j++ {
+			gold := "A"
+			if unseededDataRNG.Float64() >= 0.99 {
+				gold = "B"
+			}
+			res, err := ConformalPredictionSet(map[string]float64{"A": 0.99, "B": 0.01}, calSharp.QHat, unseededCfg)
+			if err != nil {
+				t.Fatalf("seed=0 split=%d prediction %d failed: %v", sp, j, err)
+			}
+			if setContainsLabel(res.PredictionSet, gold) {
+				unseededTotalHits++
+			}
+		}
+	}
+	unseededMeanCov := float64(unseededTotalHits) / float64(unseededSplits*400)
+	if unseededMeanCov < 0.865 {
+		t.Fatalf("seed=0 marginal sharp randomized coverage %.4f < 0.865 across %d splits at alpha=0.10",
+			unseededMeanCov, unseededSplits)
 	}
 
 	// Verify explicit caller RNG stream and concurrent goroutine safety on shared/default RNG streams.
