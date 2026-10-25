@@ -18,8 +18,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 )
 
 // ConformalMethod identifies the nonconformity score family used for split conformal prediction.
@@ -28,7 +31,7 @@ type ConformalMethod string
 const (
 	// ConformalLAC uses Least Ambiguous Set Classifiers nonconformity s(x, y) = 1 - p(y|x).
 	ConformalLAC ConformalMethod = "lac"
-	// ConformalAPS uses Adaptive Prediction Sets cumulative mass up to and including y.
+	// ConformalAPS uses Adaptive Prediction Sets cumulative mass of strictly higher-ranked tie groups.
 	ConformalAPS ConformalMethod = "aps"
 	// ConformalRAPS adds rank-thresholded size regularization above KReg to APS.
 	ConformalRAPS ConformalMethod = "raps"
@@ -43,7 +46,17 @@ const (
 	ContextActionDrop = "drop"
 )
 
-const conformalScoreTolerance = 1e-12
+const (
+	conformalScoreTolerance   = 1e-12
+	maxSeededConformalStreams = 256
+)
+
+var (
+	conformalRNGMu      sync.Mutex
+	defaultConformalRNG = rand.New(rand.NewSource(time.Now().UnixNano()))
+	seededConformalRNGs = make(map[int64]*rand.Rand)
+	seededConformalKeys []int64
+)
 
 var defaultAbstainLabels = []string{
 	"abstain",
@@ -67,20 +80,32 @@ var (
 	ErrTooManyContextBlocks = errors.New("decisionindex: context block count exceeds MaxSlotsPerPass (8)")
 	// ErrNegativeTokenBudget is returned when ContextPruneConfig.TokenBudget is negative.
 	ErrNegativeTokenBudget = errors.New("decisionindex: token budget must be non-negative")
+	// ErrInvalidProbabilities is returned when a probability map is empty, contains NaN/Inf/negative values, or sums to <= 0.
+	ErrInvalidProbabilities = errors.New("decisionindex: probability map must be non-empty with finite non-negative values summing to > 0")
+	// ErrInvalidConformalQHat is returned when qHat is negative, NaN, or -Inf.
+	ErrInvalidConformalQHat = errors.New("decisionindex: qHat must be non-negative and non-NaN")
+	// ErrInvalidConformalParam is returned when RAPS KReg or LambdaReg is invalid.
+	ErrInvalidConformalParam = errors.New("decisionindex: invalid conformal regularization parameter")
+	// ErrInvalidContextBlock is returned when a ContextBlockSpec has negative/inverted token counts or duplicate IDs.
+	ErrInvalidContextBlock = errors.New("decisionindex: invalid context block specification")
+	// ErrInfeasiblePinnedBudget is returned when TokenBudget is smaller than the minimum stub token sum of pinned blocks.
+	ErrInfeasiblePinnedBudget = errors.New("decisionindex: token budget below minimum pinned block cost")
 )
 
 // ConformalConfig configures split conformal score computation and prediction-set construction.
 type ConformalConfig struct {
 	// Method selects "lac" (default when empty), "aps", or "raps".
 	Method ConformalMethod `json:"method,omitempty"`
-	// KReg is the unpenalized top-rank prefix size for RAPS (defaults to 1 when Method == ConformalRAPS and KReg <= 0).
+	// KReg is the unpenalized top-rank prefix size for RAPS (defaults to 5 when Method == ConformalRAPS and KReg == 0; must be >= 0).
 	KReg int `json:"k_reg,omitempty"`
-	// LambdaReg is the per-rank penalty weight above KReg for RAPS (clamped to >= 0).
+	// LambdaReg is the per-rank penalty weight above KReg for RAPS (defaults to 0.02 when Method == ConformalRAPS and LambdaReg == 0; must be finite and >= 0).
 	LambdaReg float64 `json:"lambda_reg,omitempty"`
-	// Randomized enables deterministic seeded U[0,1) boundary smoothing for APS and RAPS.
+	// Randomized enables Uniform(0, 1) boundary smoothing and tie-group Fisher-Yates shuffling for APS and RAPS.
 	Randomized bool `json:"randomized,omitempty"`
-	// Seed makes Randomized boundary smoothing deterministic across calibration and inference.
+	// Seed selects a stateful seeded RNG stream across CalibrateConformalQuantile and ConformalPredictionSet when Randomized is true and Seed != 0.
 	Seed int64 `json:"seed,omitempty"`
+	// RNG supplies an explicit caller-managed *rand.Rand stream when Randomized is true.
+	RNG *rand.Rand `json:"-"`
 	// AbstainLabels lists option names treated as abstention triggers when included in the prediction set.
 	// Defaults to {"abstain", "none_of_the_above", "insufficient_evidence", "unknown"} when nil.
 	AbstainLabels []string `json:"abstain_labels,omitempty"`
@@ -139,9 +164,33 @@ func parseConformalMethod(m ConformalMethod) (ConformalMethod, error) {
 	}
 }
 
-func normalizeOrderedProbs(probs map[string]float64) []optionProb {
+func validateConformalConfig(cfg ConformalConfig) (ConformalMethod, int, float64, error) {
+	method, err := parseConformalMethod(cfg.Method)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	if cfg.KReg < 0 {
+		return "", 0, 0, fmt.Errorf("%w: KReg=%d must be >= 0", ErrInvalidConformalParam, cfg.KReg)
+	}
+	if math.IsNaN(cfg.LambdaReg) || math.IsInf(cfg.LambdaReg, 0) || cfg.LambdaReg < 0 {
+		return "", 0, 0, fmt.Errorf("%w: LambdaReg=%v must be finite and >= 0", ErrInvalidConformalParam, cfg.LambdaReg)
+	}
+	kReg := cfg.KReg
+	lamReg := cfg.LambdaReg
+	if method == ConformalRAPS {
+		if kReg == 0 {
+			kReg = 5
+		}
+		if lamReg == 0 {
+			lamReg = 0.02
+		}
+	}
+	return method, kReg, lamReg, nil
+}
+
+func normalizeOrderedProbs(probs map[string]float64) ([]optionProb, error) {
 	if len(probs) == 0 {
-		return nil
+		return nil, fmt.Errorf("%w: empty map", ErrInvalidProbabilities)
 	}
 	keys := make([]string, 0, len(probs))
 	for k := range probs {
@@ -154,21 +203,16 @@ func normalizeOrderedProbs(probs map[string]float64) []optionProb {
 	for i, k := range keys {
 		p := probs[k]
 		if math.IsNaN(p) || math.IsInf(p, 0) || p < 0 {
-			p = 0
+			return nil, fmt.Errorf("%w: key %q has value %v", ErrInvalidProbabilities, k, p)
 		}
 		cleaned[i] = optionProb{name: k, prob: p}
 		sum += p
 	}
-
-	if sum > 0 {
-		for i := range cleaned {
-			cleaned[i].prob /= sum
-		}
-	} else {
-		u := 1.0 / float64(len(cleaned))
-		for i := range cleaned {
-			cleaned[i].prob = u
-		}
+	if sum <= 0 || math.IsNaN(sum) || math.IsInf(sum, 0) {
+		return nil, fmt.Errorf("%w: total probability mass=%v", ErrInvalidProbabilities, sum)
+	}
+	for i := range cleaned {
+		cleaned[i].prob /= sum
 	}
 
 	sort.Slice(cleaned, func(i, j int) bool {
@@ -177,93 +221,179 @@ func normalizeOrderedProbs(probs map[string]float64) []optionProb {
 		}
 		return cleaned[i].name < cleaned[j].name
 	})
-	return cleaned
+	return cleaned, nil
 }
 
-func fnv1a64(s string) uint64 {
-	var h uint64 = 14695981039346656037
-	for i := 0; i < len(s); i++ {
-		h ^= uint64(s[i])
-		h *= 1099511628211
+func partitionOptionTieGroups(ordered []optionProb) [][]optionProb {
+	var groups [][]optionProb
+	for idx := 0; idx < len(ordered); {
+		groupProb := ordered[idx].prob
+		end := idx + 1
+		for end < len(ordered) && math.Abs(ordered[end].prob-groupProb) <= conformalScoreTolerance {
+			end++
+		}
+		groups = append(groups, ordered[idx:end])
+		idx = end
 	}
-	return h
+	return groups
 }
 
-func splitMix64(x uint64) uint64 {
-	x += 0x9e3779b97f4a7c15
-	x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9
-	x = (x ^ (x >> 27)) * 0x94d049bb133111eb
-	return x ^ (x >> 31)
-}
-
-func uniformForConformalOption(seed int64, ordered []optionProb, label string) float64 {
-	h := splitMix64(uint64(seed))
-	for _, opt := range ordered {
-		qProb := uint64(math.Round(opt.prob * 1e9))
-		h = splitMix64(h ^ fnv1a64(opt.name))
-		h = splitMix64(h ^ qProb)
+func touchSeededKeyLocked(seed int64) {
+	for i, k := range seededConformalKeys {
+		if k == seed {
+			seededConformalKeys = append(seededConformalKeys[:i], seededConformalKeys[i+1:]...)
+			break
+		}
 	}
-	h = splitMix64(h ^ fnv1a64(label))
-	const inv53 = 1.0 / float64(uint64(1)<<53)
-	return float64(h>>11) * inv53
+	seededConformalKeys = append(seededConformalKeys, seed)
+	for len(seededConformalKeys) > maxSeededConformalStreams {
+		evict := seededConformalKeys[0]
+		seededConformalKeys = seededConformalKeys[1:]
+		delete(seededConformalRNGs, evict)
+	}
 }
 
-func computeOrderedScores(ordered []optionProb, method ConformalMethod, cfg ConformalConfig) map[string]float64 {
+func storeSeededConformalRNG(seed int64, r *rand.Rand) {
+	conformalRNGMu.Lock()
+	defer conformalRNGMu.Unlock()
+	seededConformalRNGs[seed] = r
+	touchSeededKeyLocked(seed)
+}
+
+func drawWithConformalRNG(r *rand.Rand, groups [][]optionProb, total int) (float64, []optionProb) {
+	u := r.Float64()
+	flat := make([]optionProb, 0, total)
+	for _, grp := range groups {
+		if len(grp) > 1 {
+			cp := make([]optionProb, len(grp))
+			copy(cp, grp)
+			r.Shuffle(len(cp), func(i, j int) { cp[i], cp[j] = cp[j], cp[i] })
+			flat = append(flat, cp...)
+		} else {
+			flat = append(flat, grp[0])
+		}
+	}
+	return u, flat
+}
+
+func drawInferenceOrderAndU(groups [][]optionProb, total int, cfg ConformalConfig) (float64, []optionProb) {
+	if cfg.RNG != nil {
+		return drawWithConformalRNG(cfg.RNG, groups, total)
+	}
+	conformalRNGMu.Lock()
+	defer conformalRNGMu.Unlock()
+	if cfg.Seed == 0 {
+		return drawWithConformalRNG(defaultConformalRNG, groups, total)
+	}
+	r, ok := seededConformalRNGs[cfg.Seed]
+	if !ok {
+		r = rand.New(rand.NewSource(cfg.Seed))
+		seededConformalRNGs[cfg.Seed] = r
+	}
+	touchSeededKeyLocked(cfg.Seed)
+	return drawWithConformalRNG(r, groups, total)
+}
+
+func computeDeterministicScores(
+	ordered []optionProb,
+	method ConformalMethod,
+	kReg int,
+	lamReg float64,
+) map[string]float64 {
 	scores := make(map[string]float64, len(ordered))
 	if len(ordered) == 0 {
 		return scores
 	}
-
-	kReg := cfg.KReg
-	if kReg <= 0 {
-		kReg = 1
-	}
-	lamReg := cfg.LambdaReg
-	if math.IsNaN(lamReg) || math.IsInf(lamReg, 0) || lamReg < 0 {
-		lamReg = 0
+	if method == ConformalLAC {
+		for _, opt := range ordered {
+			scores[opt.name] = 1.0 - opt.prob
+		}
+		return scores
 	}
 
+	groups := partitionOptionTieGroups(ordered)
+	cumStrictlyGreater := 0.0
+	strictCount := 0
+	for _, grp := range groups {
+		groupStartRank1 := strictCount + 1
+		penalty := 0.0
+		if method == ConformalRAPS && groupStartRank1 > kReg {
+			penalty = lamReg * float64(groupStartRank1-kReg)
+		}
+		grpScore := cumStrictlyGreater + penalty
+		groupMass := 0.0
+		for _, opt := range grp {
+			scores[opt.name] = grpScore
+			groupMass += opt.prob
+		}
+		cumStrictlyGreater += groupMass
+		strictCount += len(grp)
+	}
+	return scores
+}
+
+func computeRandomizedScoresFromDraw(
+	flat []optionProb,
+	u float64,
+	method ConformalMethod,
+	kReg int,
+	lamReg float64,
+) map[string]float64 {
+	scores := make(map[string]float64, len(flat))
 	cumBefore := 0.0
-	for idx, opt := range ordered {
-		rank := idx + 1
-		var s float64
+	for idx, opt := range flat {
+		rank1 := idx + 1
 		switch method {
 		case ConformalLAC:
-			s = 1.0 - opt.prob
-		case ConformalAPS, ConformalRAPS:
-			u := 1.0
-			if cfg.Randomized {
-				u = uniformForConformalOption(cfg.Seed, ordered, opt.name)
-			}
-			s = cumBefore + u*opt.prob
-			if method == ConformalRAPS && rank > kReg {
-				s += lamReg * float64(rank-kReg)
-			}
+			scores[opt.name] = 1.0 - opt.prob
+		case ConformalAPS:
+			scores[opt.name] = cumBefore + u*opt.prob
 		default:
-			s = 1.0 - opt.prob
+			pen := 0.0
+			if rank1 > kReg {
+				pen = lamReg * float64(rank1-kReg)
+			}
+			scores[opt.name] = cumBefore + u*opt.prob + pen
 		}
-		scores[opt.name] = s
 		cumBefore += opt.prob
 	}
 	return scores
 }
 
+func computeInferenceScores(
+	ordered []optionProb,
+	method ConformalMethod,
+	kReg int,
+	lamReg float64,
+	cfg ConformalConfig,
+) map[string]float64 {
+	if !cfg.Randomized {
+		return computeDeterministicScores(ordered, method, kReg, lamReg)
+	}
+	groups := partitionOptionTieGroups(ordered)
+	u, flat := drawInferenceOrderAndU(groups, len(ordered), cfg)
+	return computeRandomizedScoresFromDraw(flat, u, method, kReg, lamReg)
+}
+
 // ConformalScore computes the nonconformity score s(x, label) for one probability map and candidate label.
 func ConformalScore(probs map[string]float64, label string, cfg ConformalConfig) (float64, error) {
-	method, err := parseConformalMethod(cfg.Method)
+	method, kReg, lamReg, err := validateConformalConfig(cfg)
+	if err != nil {
+		return 0, err
+	}
+	ordered, err := normalizeOrderedProbs(probs)
 	if err != nil {
 		return 0, err
 	}
 	if _, ok := probs[label]; !ok {
 		return 0, fmt.Errorf("%w: %q", ErrUnknownCalibrationKey, label)
 	}
-	ordered := normalizeOrderedProbs(probs)
-	scores := computeOrderedScores(ordered, method, cfg)
+	scores := computeInferenceScores(ordered, method, kReg, lamReg, cfg)
 	return scores[label], nil
 }
 
 // CalibrateConformalQuantile computes the finite-sample split conformal quantile
-// at order index k = ceil((n + 1) * (1 - alpha)) over held-out calibration examples.
+// at order index k = ceil((n + 1) * (1 - alpha) - 1e-12) over held-out calibration examples.
 func CalibrateConformalQuantile(
 	calibProbs []map[string]float64,
 	calibLabels []string,
@@ -282,27 +412,67 @@ func CalibrateConformalQuantile(
 	if math.IsNaN(alpha) || math.IsInf(alpha, 0) || alpha <= 0 || alpha >= 1 {
 		return ConformalCalibrationResult{}, fmt.Errorf("%w: got %v", ErrInvalidAlpha, alpha)
 	}
-	method, err := parseConformalMethod(cfg.Method)
+	method, kReg, lamReg, err := validateConformalConfig(cfg)
 	if err != nil {
 		return ConformalCalibrationResult{}, err
 	}
 
 	n := len(calibProbs)
-	rawScores := make([]float64, n)
+	orderedItems := make([][]optionProb, n)
 	for i := 0; i < n; i++ {
+		ordered, nErr := normalizeOrderedProbs(calibProbs[i])
+		if nErr != nil {
+			return ConformalCalibrationResult{}, fmt.Errorf("calibration item %d: %w", i, nErr)
+		}
 		lbl := calibLabels[i]
 		if _, ok := calibProbs[i][lbl]; !ok {
 			return ConformalCalibrationResult{}, fmt.Errorf("%w at index %d: %q", ErrUnknownCalibrationKey, i, lbl)
 		}
-		ordered := normalizeOrderedProbs(calibProbs[i])
-		sMap := computeOrderedScores(ordered, method, cfg)
-		rawScores[i] = sMap[lbl]
+		orderedItems[i] = ordered
+	}
+
+	var calRNG *rand.Rand
+	useGlobalDefaultRNG := false
+	if cfg.Randomized {
+		if cfg.RNG != nil {
+			calRNG = cfg.RNG
+		} else if cfg.Seed != 0 {
+			calRNG = rand.New(rand.NewSource(cfg.Seed))
+		} else {
+			useGlobalDefaultRNG = true
+		}
+	}
+
+	rawScores := make([]float64, n)
+	for i := 0; i < n; i++ {
+		ordered := orderedItems[i]
+		var sMap map[string]float64
+		if !cfg.Randomized {
+			sMap = computeDeterministicScores(ordered, method, kReg, lamReg)
+		} else {
+			groups := partitionOptionTieGroups(ordered)
+			var u float64
+			var flat []optionProb
+			if useGlobalDefaultRNG {
+				conformalRNGMu.Lock()
+				u, flat = drawWithConformalRNG(defaultConformalRNG, groups, len(ordered))
+				conformalRNGMu.Unlock()
+			} else {
+				u, flat = drawWithConformalRNG(calRNG, groups, len(ordered))
+			}
+			sMap = computeRandomizedScoresFromDraw(flat, u, method, kReg, lamReg)
+		}
+		rawScores[i] = sMap[calibLabels[i]]
+	}
+
+	if cfg.Randomized && cfg.RNG == nil && cfg.Seed != 0 && calRNG != nil {
+		storeSeededConformalRNG(cfg.Seed, calRNG)
 	}
 
 	sorted := append([]float64(nil), rawScores...)
 	sort.Float64s(sorted)
 
-	k := int(math.Ceil(float64(n+1) * (1.0 - alpha)))
+	k := int(math.Ceil(float64(n+1)*(1.0-alpha) - conformalScoreTolerance))
 	if k < 1 {
 		k = 1
 	}
@@ -318,7 +488,7 @@ func CalibrateConformalQuantile(
 
 	covered := 0
 	for _, s := range rawScores {
-		if s <= qHat+conformalScoreTolerance {
+		if math.IsInf(qHat, 1) || s <= qHat+conformalScoreTolerance {
 			covered++
 		}
 	}
@@ -336,14 +506,19 @@ func CalibrateConformalQuantile(
 
 // ConformalPredictionSet constructs the calibrated prediction set C_alpha(x) = {y : s(x, y) <= qHat}
 // ordered by descending probability, and sets ShouldEscalate when the set is not a non-abstain singleton.
-func ConformalPredictionSet(probs map[string]float64, qHat float64, cfg ConformalConfig) ConformalSetResult {
-	method, err := parseConformalMethod(cfg.Method)
+func ConformalPredictionSet(probs map[string]float64, qHat float64, cfg ConformalConfig) (ConformalSetResult, error) {
+	method, kReg, lamReg, err := validateConformalConfig(cfg)
 	if err != nil {
-		method = ConformalLAC
+		return ConformalSetResult{}, err
 	}
-
-	ordered := normalizeOrderedProbs(probs)
-	scores := computeOrderedScores(ordered, method, cfg)
+	if math.IsNaN(qHat) || math.IsInf(qHat, -1) || qHat < 0 {
+		return ConformalSetResult{}, fmt.Errorf("%w: got %v", ErrInvalidConformalQHat, qHat)
+	}
+	ordered, err := normalizeOrderedProbs(probs)
+	if err != nil {
+		return ConformalSetResult{}, err
+	}
+	scores := computeInferenceScores(ordered, method, kReg, lamReg, cfg)
 
 	abstainList := cfg.AbstainLabels
 	if abstainList == nil {
@@ -360,7 +535,7 @@ func ConformalPredictionSet(probs map[string]float64, qHat float64, cfg Conforma
 	predSet := make([]string, 0, len(ordered))
 	containsAbstain := false
 	for _, opt := range ordered {
-		if scores[opt.name] <= qHat+conformalScoreTolerance {
+		if math.IsInf(qHat, 1) || scores[opt.name] <= qHat+conformalScoreTolerance {
 			predSet = append(predSet, opt.name)
 			if abstainSet[strings.ToLower(strings.TrimSpace(opt.name))] {
 				containsAbstain = true
@@ -388,12 +563,12 @@ func ConformalPredictionSet(probs map[string]float64, qHat float64, cfg Conforma
 		Singleton:       singleton,
 		ContainsAbstain: containsAbstain,
 		ShouldEscalate:  shouldEscalate,
-	}
+	}, nil
 }
 
 // EvaluatePreFusionConformalGate evaluates ConformalPredictionSet on qr.RawProbabilities when populated,
 // falling back to qr.Probabilities when no prior fusion occurred, so caller priors cannot mask ambiguity.
-func EvaluatePreFusionConformalGate(qr QuestionResult, qHat float64, cfg ConformalConfig) ConformalSetResult {
+func EvaluatePreFusionConformalGate(qr QuestionResult, qHat float64, cfg ConformalConfig) (ConformalSetResult, error) {
 	target := qr.Probabilities
 	if len(qr.RawProbabilities) > 0 {
 		target = qr.RawProbabilities
@@ -410,6 +585,16 @@ func RecoverPreFusionProbabilities(ans SystemOneAnswer, priorLogits map[string]f
 			out[k] = v
 		}
 		return out
+	}
+
+	for _, v := range ans.Probabilities {
+		if math.IsNaN(v) || math.IsInf(v, 0) || v < 0 {
+			out := make(map[string]float64, len(ans.Probabilities))
+			for k, pv := range ans.Probabilities {
+				out[k] = pv
+			}
+			return out
+		}
 	}
 
 	keys := make([]string, 0, len(ans.Probabilities))
@@ -452,7 +637,7 @@ func EvaluateSystemOnePreFusionGate(
 	priorWeight float64,
 	qHat float64,
 	cfg ConformalConfig,
-) ConformalSetResult {
+) (ConformalSetResult, error) {
 	raw := RecoverPreFusionProbabilities(ans, priorLogits, priorWeight)
 	return ConformalPredictionSet(raw, qHat, cfg)
 }
@@ -501,13 +686,13 @@ type ContextBlockSpec struct {
 	FullText string `json:"full_text,omitempty"`
 	// StubText is the compact header, signature, or digest retained when Action == "stub".
 	StubText string `json:"stub_text,omitempty"`
-	// FullTokens is the token cost of keeping FullText (clamped to >= StubTokens >= 0).
+	// FullTokens is the token cost of keeping FullText (must satisfy FullTokens >= StubTokens >= 0).
 	FullTokens int `json:"full_tokens"`
-	// StubTokens is the token cost of keeping StubText.
+	// StubTokens is the token cost of keeping StubText (must satisfy StubTokens >= 0).
 	StubTokens int `json:"stub_tokens"`
-	// Pinned forces Action == "full" regardless of model probabilities.
+	// Pinned restricts allowed actions to {"full", "stub"} (forbidding "drop").
 	Pinned bool `json:"pinned,omitempty"`
-	// ImportanceWeight scales this block's expected utility in knapsack selection (defaults to 1.0 when <= 0).
+	// ImportanceWeight scales this block's expected utility in knapsack selection (defaults to 1.0 when == 0; must be finite and >= 0).
 	ImportanceWeight float64 `json:"importance_weight,omitempty"`
 }
 
@@ -515,11 +700,11 @@ type ContextBlockSpec struct {
 type ContextPruneConfig struct {
 	// TokenBudget is the maximum total tokens allowed across retained full and stub blocks.
 	TokenBudget int `json:"token_budget"`
-	// StubUtilityRatio is the utility credit for retaining a stub when the true best state is "full"
-	// (defaults to 0.65 when <= 0 or >= 1).
+	// StubUtilityRatio overrides the partial utility credit when > 0 (must lie in [0, 1]).
+	// When both StubUtilityRatio == 0 and UncertaintyStubBonus == 0, canonical weights
+	// u("full") = w*(1.0*pFull + 0.5*pStub), u("stub") = w*(0.6*pFull + 1.0*pStub), u("drop") = 0 are used.
 	StubUtilityRatio float64 `json:"stub_utility_ratio,omitempty"`
-	// UncertaintyStubBonus adds normalized-entropy weight toward "stub" so high-hesitation blocks
-	// compress to stubs instead of dropping irreversibly (defaults to 0.25 when == 0; set < 0 to disable).
+	// UncertaintyStubBonus adds normalized-entropy weight toward "stub" when > 0 (set <= 0 for none).
 	UncertaintyStubBonus float64 `json:"uncertainty_stub_bonus,omitempty"`
 }
 
@@ -546,6 +731,33 @@ type ContextPruneResult struct {
 	ExpectedUtility float64                `json:"expected_utility"`
 }
 
+func validateContextBlockSpec(b ContextBlockSpec, idx int, seenIDs map[string]bool) (slotID, blockID string, err error) {
+	slotID = fmt.Sprintf("b%d", idx)
+	trimmedID := strings.TrimSpace(b.ID)
+	if trimmedID == "" {
+		blockID = slotID
+	} else {
+		blockID = trimmedID
+	}
+	if seenIDs[blockID] {
+		return "", "", fmt.Errorf("%w: duplicate block ID %q", ErrInvalidContextBlock, blockID)
+	}
+	seenIDs[blockID] = true
+	if b.StubTokens < 0 || b.FullTokens < 0 || b.FullTokens < b.StubTokens {
+		return "", "", fmt.Errorf(
+			"%w: block %q requires FullTokens (%d) >= StubTokens (%d) >= 0",
+			ErrInvalidContextBlock, blockID, b.FullTokens, b.StubTokens,
+		)
+	}
+	if math.IsNaN(b.ImportanceWeight) || math.IsInf(b.ImportanceWeight, 0) || b.ImportanceWeight < 0 {
+		return "", "", fmt.Errorf(
+			"%w: block %q has invalid ImportanceWeight %v",
+			ErrInvalidContextBlock, blockID, b.ImportanceWeight,
+		)
+	}
+	return slotID, blockID, nil
+}
+
 // BuildContextPruningQuestions constructs up to MaxSlotsPerPass (8) independent choice questions
 // keyed by neutral slot IDs b0..b7 with options {"full", "stub", "drop"}.
 func BuildContextPruningQuestions(blocks []ContextBlockSpec) (map[string]SystemOneQuestion, []string, error) {
@@ -554,33 +766,22 @@ func BuildContextPruningQuestions(blocks []ContextBlockSpec) (map[string]SystemO
 	}
 	questions := make(map[string]SystemOneQuestion, len(blocks))
 	slotIDs := make([]string, 0, len(blocks))
+	seenIDs := make(map[string]bool, len(blocks))
 	for i, b := range blocks {
-		slotID := fmt.Sprintf("b%d", i)
+		slotID, blockID, err := validateContextBlockSpec(b, i, seenIDs)
+		if err != nil {
+			return nil, nil, err
+		}
 		slotIDs = append(slotIDs, slotID)
 
-		blockID := strings.TrimSpace(b.ID)
-		if blockID == "" {
-			blockID = slotID
-		}
 		kind := strings.TrimSpace(b.Kind)
 		if kind == "" {
 			kind = "context_block"
 		}
-		fullTok := b.FullTokens
-		if fullTok < 0 {
-			fullTok = 0
-		}
-		stubTok := b.StubTokens
-		if stubTok < 0 {
-			stubTok = 0
-		}
-		if stubTok > fullTok {
-			stubTok = fullTok
-		}
 
-		inst := fmt.Sprintf("Select retention level for block %s (%s, full=%d tok, stub=%d tok).", blockID, kind, fullTok, stubTok)
+		inst := fmt.Sprintf("Select retention level for block %s (%s, full=%d tok, stub=%d tok).", blockID, kind, b.FullTokens, b.StubTokens)
 		if summary := strings.TrimSpace(b.Summary); summary != "" {
-			inst = fmt.Sprintf("Select retention level for block %s (%s, full=%d tok, stub=%d tok): %s", blockID, kind, fullTok, stubTok, summary)
+			inst = fmt.Sprintf("Select retention level for block %s (%s, full=%d tok, stub=%d tok): %s", blockID, kind, b.FullTokens, b.StubTokens, summary)
 		}
 
 		questions[slotID] = SystemOneQuestion{
@@ -597,28 +798,29 @@ func BuildContextPruningQuestions(blocks []ContextBlockSpec) (map[string]SystemO
 	return questions, slotIDs, nil
 }
 
-func normalizeActionTriplet(raw map[string]float64) (pFull, pStub, pDrop float64) {
-	clean := func(v float64) float64 {
+func validateActionTriplet(blockID string, raw map[string]float64) (pFull, pStub, pDrop float64, err error) {
+	if len(raw) == 0 {
+		return 0, 0, 0, fmt.Errorf("%w: missing action probabilities for block %q", ErrInvalidProbabilities, blockID)
+	}
+	for k, v := range raw {
 		if math.IsNaN(v) || math.IsInf(v, 0) || v < 0 {
-			return 0
+			return 0, 0, 0, fmt.Errorf("%w: block %q action %q has invalid probability %v", ErrInvalidProbabilities, blockID, k, v)
 		}
-		return v
 	}
-	if len(raw) > 0 {
-		pFull = clean(raw[ContextActionFull])
-		pStub = clean(raw[ContextActionStub])
-		pDrop = clean(raw[ContextActionDrop])
+	vFull := raw[ContextActionFull]
+	vStub := raw[ContextActionStub]
+	vDrop := raw[ContextActionDrop]
+	sum := vFull + vStub + vDrop
+	if sum <= 0 || math.IsNaN(sum) || math.IsInf(sum, 0) {
+		return 0, 0, 0, fmt.Errorf("%w: block %q action probabilities sum to %v", ErrInvalidProbabilities, blockID, sum)
 	}
-	sum := pFull + pStub + pDrop
-	if sum <= 0 {
-		return 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0
-	}
-	return pFull / sum, pStub / sum, pDrop / sum
+	return vFull / sum, vStub / sum, vDrop / sum, nil
 }
 
 // SelectContextPruningActions solves the exact Multiple-Choice Knapsack Problem (MCKP)
 // across up to MaxSlotsPerPass (8) blocks (at most 3^8 = 6,561 joint states) under cfg.TokenBudget,
-// preserving Pinned blocks at "full" and favoring "stub" over irreversible "drop" on high-hesitation slots.
+// restricting Pinned blocks to {"full", "stub"} and returning ErrInfeasiblePinnedBudget if cfg.TokenBudget
+// cannot cover the minimum stub token sum of pinned blocks.
 func SelectContextPruningActions(
 	blocks []ContextBlockSpec,
 	slotProbs map[string]map[string]float64,
@@ -630,6 +832,12 @@ func SelectContextPruningActions(
 	if cfg.TokenBudget < 0 {
 		return ContextPruneResult{}, fmt.Errorf("%w: got %d", ErrNegativeTokenBudget, cfg.TokenBudget)
 	}
+	if math.IsNaN(cfg.StubUtilityRatio) || math.IsInf(cfg.StubUtilityRatio, 0) || cfg.StubUtilityRatio < 0 || cfg.StubUtilityRatio > 1 {
+		return ContextPruneResult{}, fmt.Errorf("%w: StubUtilityRatio=%v must lie in [0, 1]", ErrInvalidContextBlock, cfg.StubUtilityRatio)
+	}
+	if math.IsNaN(cfg.UncertaintyStubBonus) || math.IsInf(cfg.UncertaintyStubBonus, 0) {
+		return ContextPruneResult{}, fmt.Errorf("%w: UncertaintyStubBonus=%v must be finite", ErrInvalidContextBlock, cfg.UncertaintyStubBonus)
+	}
 	if len(blocks) == 0 {
 		return ContextPruneResult{
 			Decisions:       []ContextBlockDecision{},
@@ -638,72 +846,81 @@ func SelectContextPruningActions(
 		}, nil
 	}
 
-	rho := cfg.StubUtilityRatio
-	if math.IsNaN(rho) || math.IsInf(rho, 0) || rho <= 0 || rho >= 1 {
-		rho = 0.65
-	}
-	beta := cfg.UncertaintyStubBonus
-	if math.IsNaN(beta) || math.IsInf(beta, 0) {
-		beta = 0.25
-	} else if beta == 0 {
-		beta = 0.25
-	} else if beta < 0 {
-		beta = 0
-	}
-
 	m := len(blocks)
 	prep := make([]preparedBlock, m)
+	seenIDs := make(map[string]bool, m)
 	origTokens := 0
-	pinnedTokens := 0
+	minPinnedStubTokens := 0
 
 	for i, b := range blocks {
-		slotID := fmt.Sprintf("b%d", i)
-		blockID := b.ID
-		if blockID == "" {
-			blockID = slotID
+		slotID, blockID, err := validateContextBlockSpec(b, i, seenIDs)
+		if err != nil {
+			return ContextPruneResult{}, err
 		}
-		fullTok := b.FullTokens
-		if fullTok < 0 {
-			fullTok = 0
-		}
-		stubTok := b.StubTokens
-		if stubTok < 0 {
-			stubTok = 0
-		}
-		if stubTok > fullTok {
-			stubTok = fullTok
-		}
-		origTokens += fullTok
+		origTokens += b.FullTokens
 		if b.Pinned {
-			pinnedTokens += fullTok
+			minPinnedStubTokens += b.StubTokens
 		}
 
 		var rawMap map[string]float64
-		if b.ID != "" {
-			if pm, ok := slotProbs[b.ID]; ok {
+		hasMap := false
+		if trimmed := strings.TrimSpace(b.ID); trimmed != "" {
+			if pm, ok := slotProbs[trimmed]; ok {
 				rawMap = pm
+				hasMap = true
 			}
 		}
-		if rawMap == nil {
-			rawMap = slotProbs[slotID]
+		if !hasMap && b.ID != "" {
+			if pm, ok := slotProbs[b.ID]; ok {
+				rawMap = pm
+				hasMap = true
+			}
+		}
+		if !hasMap {
+			if pm, ok := slotProbs[slotID]; ok {
+				rawMap = pm
+				hasMap = true
+			}
+		}
+		if !hasMap {
+			return ContextPruneResult{}, fmt.Errorf("%w: missing slotProbs entry for block %q (%s)", ErrInvalidProbabilities, blockID, slotID)
 		}
 
-		pFull, pStub, pDrop := normalizeActionTriplet(rawMap)
+		pFull, pStub, pDrop, pErr := validateActionTriplet(blockID, rawMap)
+		if pErr != nil {
+			return ContextPruneResult{}, pErr
+		}
 		hNorm := NormalizedShannonEntropy([]float64{pFull, pStub, pDrop})
 
 		w := b.ImportanceWeight
-		if math.IsNaN(w) || math.IsInf(w, 0) || w <= 0 {
+		if w == 0 {
 			w = 1.0
 		}
 
-		uFull := w * (1.0*pFull + rho*pStub)
-		uStub := w * (rho*pFull + 1.0*pStub + beta*hNorm*(1.0-pDrop))
-		uDrop := w * (0.15 * pDrop)
+		var uFull, uStub, uDrop float64
+		if cfg.StubUtilityRatio == 0 && cfg.UncertaintyStubBonus == 0 {
+			// Default expected-utility matrix: u("full") = w*(1.0*pFull + 0.5*pStub), u("stub") = w*(0.6*pFull + 1.0*pStub), u("drop") = 0.
+			uFull = w * (1.0*pFull + 0.5*pStub)
+			uStub = w * (0.6*pFull + 1.0*pStub)
+			uDrop = 0.0
+		} else {
+			rho := cfg.StubUtilityRatio
+			if rho == 0 {
+				rho = 0.6
+			}
+			beta := cfg.UncertaintyStubBonus
+			if beta < 0 {
+				beta = 0
+			}
+			uFull = w * (1.0*pFull + rho*pStub)
+			uStub = w * (rho*pFull + 1.0*pStub + beta*hNorm*(1.0-pDrop))
+			uDrop = 0.0
+		}
 
 		prep[i] = preparedBlock{
 			slotID:  slotID,
 			blockID: blockID,
-			costs:   [3]int{fullTok, stubTok, 0},
+			costs:   [3]int{b.FullTokens, b.StubTokens, 0},
 			utils:   [3]float64{uFull, uStub, uDrop},
 			probs:   [3]float64{pFull, pStub, pDrop},
 			hNorm:   hNorm,
@@ -711,97 +928,126 @@ func SelectContextPruningActions(
 		}
 	}
 
-	var bestActions [MaxSlotsPerPass]int
-	var curActions [MaxSlotsPerPass]int
-	bestFound := false
-	bestUtil := math.Inf(-1)
-	bestTokens := 0
-
-	// If pinned blocks alone exceed TokenBudget, keep pinned blocks at "full" and drop unpinned non-zero-cost blocks.
-	if pinnedTokens > cfg.TokenBudget {
-		totalUtil := 0.0
-		for i := 0; i < m; i++ {
-			if prep[i].pinned {
-				bestActions[i] = 0
-			} else if prep[i].costs[1] == 0 && prep[i].utils[1] >= prep[i].utils[2] {
-				bestActions[i] = 1
-			} else {
-				bestActions[i] = 2
-			}
-			totalUtil += prep[i].utils[bestActions[i]]
-		}
-		return buildContextPruneResult(blocks, prep, bestActions[:m], origTokens, pinnedTokens, cfg.TokenBudget, false, totalUtil), nil
+	if minPinnedStubTokens > cfg.TokenBudget {
+		return ContextPruneResult{}, fmt.Errorf(
+			"%w: budget %d < minimum pinned stub tokens %d",
+			ErrInfeasiblePinnedBudget, cfg.TokenBudget, minPinnedStubTokens,
+		)
 	}
 
-	// Suffix upper bound on remaining achievable utility for fast exact branch-and-bound over <= 6,561 tuples.
-	var suffixMaxUtil [MaxSlotsPerPass + 1]float64
-	for i := m - 1; i >= 0; i-- {
-		maxU := prep[i].utils[0]
-		if !prep[i].pinned {
-			if prep[i].utils[1] > maxU {
-				maxU = prep[i].utils[1]
-			}
-			if prep[i].utils[2] > maxU {
-				maxU = prep[i].utils[2]
-			}
+	frontier := []mckpState{{tokens: 0, utility: 0}}
+	for i := 0; i < m; i++ {
+		maxAct := 3
+		if prep[i].pinned {
+			maxAct = 2
 		}
-		suffixMaxUtil[i] = suffixMaxUtil[i+1] + maxU
-	}
-
-	betterAssignment := func(candUtil float64, candTok int) bool {
-		if !bestFound {
-			return true
-		}
-		if candUtil > bestUtil+1e-12 {
-			return true
-		}
-		if math.Abs(candUtil-bestUtil) > 1e-12 {
-			return false
-		}
-		if candTok != bestTokens {
-			return candTok < bestTokens
-		}
-		// Prefer retaining more context (0="full" < 1="stub" < 2="drop") in source block order.
-		for i := 0; i < m; i++ {
-			if curActions[i] != bestActions[i] {
-				return curActions[i] < bestActions[i]
-			}
-		}
-		return false
-	}
-
-	var search func(idx int, usedTok int, accUtil float64)
-	search = func(idx int, usedTok int, accUtil float64) {
-		if usedTok > cfg.TokenBudget {
-			return
-		}
-		if bestFound && accUtil+suffixMaxUtil[idx] < bestUtil-1e-12 {
-			return
-		}
-		if idx == m {
-			if betterAssignment(accUtil, usedTok) {
-				bestFound = true
-				bestUtil = accUtil
-				bestTokens = usedTok
-				for i := 0; i < m; i++ {
-					bestActions[i] = curActions[i]
+		expanded := make([]mckpState, 0, len(frontier)*maxAct)
+		for _, st := range frontier {
+			for act := 0; act < maxAct; act++ {
+				nt := st.tokens + prep[i].costs[act]
+				if nt <= cfg.TokenBudget {
+					next := mckpState{
+						tokens:  nt,
+						utility: st.utility + prep[i].utils[act],
+						choices: st.choices,
+						depth:   i + 1,
+					}
+					next.choices[i] = act
+					expanded = append(expanded, next)
 				}
 			}
-			return
 		}
-		if prep[idx].pinned {
-			curActions[idx] = 0
-			search(idx+1, usedTok+prep[idx].costs[0], accUtil+prep[idx].utils[0])
-			return
+		if len(expanded) == 0 {
+			return ContextPruneResult{}, fmt.Errorf(
+				"%w: no feasible assignment within budget %d",
+				ErrInfeasiblePinnedBudget, cfg.TokenBudget,
+			)
 		}
-		for act := 0; act < 3; act++ {
-			curActions[idx] = act
-			search(idx+1, usedTok+prep[idx].costs[act], accUtil+prep[idx].utils[act])
-		}
+		frontier = paretoFilterMCKPStates(expanded, 4096)
 	}
 
-	search(0, 0, 0)
-	return buildContextPruneResult(blocks, prep, bestActions[:m], origTokens, bestTokens, cfg.TokenBudget, true, bestUtil), nil
+	best := frontier[0]
+	for _, st := range frontier[1:] {
+		uDiff := math.Round(st.utility*1e12) - math.Round(best.utility*1e12)
+		if uDiff > 0 ||
+			(uDiff == 0 && st.tokens < best.tokens) ||
+			(uDiff == 0 && st.tokens == best.tokens && compareMCKPChoices(st.choices, best.choices, m) > 0) {
+			best = st
+		}
+	}
+	return buildContextPruneResult(blocks, prep, best.choices[:m], origTokens, best.tokens, cfg.TokenBudget, true, best.utility), nil
+}
+
+type mckpState struct {
+	tokens  int
+	utility float64
+	choices [MaxSlotsPerPass]int
+	depth   int
+}
+
+func compareMCKPChoices(a, b [MaxSlotsPerPass]int, depth int) int {
+	// Lexicographical ASCII order on action names: "drop" (2) < "full" (0) < "stub" (1).
+	asciiOrder := [3]int{1, 2, 0}
+	for i := 0; i < depth; i++ {
+		ra, rb := asciiOrder[a[i]], asciiOrder[b[i]]
+		if ra < rb {
+			return -1
+		}
+		if ra > rb {
+			return 1
+		}
+	}
+	return 0
+}
+
+func paretoFilterMCKPStates(states []mckpState, maxStates int) []mckpState {
+	sort.Slice(states, func(i, j int) bool {
+		if states[i].tokens != states[j].tokens {
+			return states[i].tokens < states[j].tokens
+		}
+		if states[i].utility != states[j].utility {
+			return states[i].utility > states[j].utility
+		}
+		return compareMCKPChoices(states[i].choices, states[j].choices, states[i].depth) < 0
+	})
+
+	pareto := make([]mckpState, 0, len(states))
+	bestU := -1.0
+	for _, st := range states {
+		if st.utility > bestU+conformalScoreTolerance {
+			pareto = append(pareto, st)
+			bestU = st.utility
+		}
+	}
+	if len(pareto) <= maxStates {
+		return pareto
+	}
+
+	minT := pareto[0].tokens
+	maxT := pareto[len(pareto)-1].tokens
+	if maxT <= minT {
+		return pareto[:1]
+	}
+	span := float64(maxT - minT)
+	buckets := make([]mckpState, maxStates)
+	hasBucket := make([]bool, maxStates)
+	for _, st := range pareto {
+		bIdx := int((float64(st.tokens-minT) / span) * float64(maxStates-1))
+		if bIdx >= maxStates {
+			bIdx = maxStates - 1
+		}
+		if !hasBucket[bIdx] || st.utility > buckets[bIdx].utility || (st.utility == buckets[bIdx].utility && st.tokens < buckets[bIdx].tokens) {
+			buckets[bIdx] = st
+			hasBucket[bIdx] = true
+		}
+	}
+	compacted := make([]mckpState, 0, maxStates)
+	for i := 0; i < maxStates; i++ {
+		if hasBucket[i] {
+			compacted = append(compacted, buckets[i])
+		}
+	}
+	return compacted
 }
 
 // PruneAgentContextBlocks is an alias for SelectContextPruningActions for callers using the verb form.

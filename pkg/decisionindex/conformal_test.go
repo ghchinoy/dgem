@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,7 +63,7 @@ func TestCalibrateConformalQuantileValidation(t *testing.T) {
 		t.Fatalf("ConformalScore: expected ErrInvalidConformalMethod, got %v", err)
 	}
 
-	// When ceil((n+1)*(1-alpha)) > n (for example n=5, alpha=0.05 -> ceil(5.7)=6 > 5),
+	// When ceil((n+1)*(1-alpha) - 1e-12) > n (for example n=5, alpha=0.05 -> ceil(5.7)=6 > 5),
 	// QHat must be +Inf so finite-sample marginal coverage >= 1-alpha holds unconditionally.
 	smallProbs := make([]map[string]float64, 5)
 	smallLabels := make([]string, 5)
@@ -77,7 +78,10 @@ func TestCalibrateConformalQuantileValidation(t *testing.T) {
 	if !math.IsInf(calInf.QHat, 1) || calInf.OrderIndex != 6 || calInf.EmpiricalCover != 1.0 {
 		t.Fatalf("expected +Inf QHat and OrderIndex=6, got QHat=%v OrderIndex=%d Cover=%v", calInf.QHat, calInf.OrderIndex, calInf.EmpiricalCover)
 	}
-	setInf := ConformalPredictionSet(map[string]float64{"opt_0": 0.9, "opt_1": 0.1}, calInf.QHat, ConformalConfig{Method: ConformalLAC})
+	setInf, err := ConformalPredictionSet(map[string]float64{"opt_0": 0.9, "opt_1": 0.1}, calInf.QHat, ConformalConfig{Method: ConformalLAC})
+	if err != nil {
+		t.Fatalf("ConformalPredictionSet under +Inf QHat failed: %v", err)
+	}
 	if setInf.SetSize != 2 || !setInf.ShouldEscalate {
 		t.Fatalf("expected full 2-option set under +Inf QHat, got %+v", setInf)
 	}
@@ -181,7 +185,10 @@ func TestSplitConformalFiniteSampleCoverage(t *testing.T) {
 
 			hits := 0
 			for j := 0; j < len(testProbs); j++ {
-				res := ConformalPredictionSet(testProbs[j], cal.QHat, tc.cfg)
+				res, err := ConformalPredictionSet(testProbs[j], cal.QHat, tc.cfg)
+				if err != nil {
+					t.Fatalf("%s alpha=%.2f item %d: %v", tc.name, alpha, j, err)
+				}
 				if setContainsLabel(res.PredictionSet, testLabels[j]) {
 					hits++
 				}
@@ -205,7 +212,10 @@ func TestSplitConformalFiniteSampleCoverage(t *testing.T) {
 				}
 				splitHits := 0
 				for j := 0; j < len(tP); j++ {
-					pSet := ConformalPredictionSet(tP[j], cRes.QHat, tc.cfg)
+					pSet, err := ConformalPredictionSet(tP[j], cRes.QHat, tc.cfg)
+					if err != nil {
+						t.Fatalf("%s split %d item %d: %v", tc.name, s, j, err)
+					}
 					if setContainsLabel(pSet.PredictionSet, tL[j]) {
 						splitHits++
 					}
@@ -233,18 +243,19 @@ func TestRAPSReducesPredictionSetSizeOnWideVocabulary(t *testing.T) {
 			topA := fmt.Sprintf("opt_%02d", perm[0])
 			topB := fmt.Sprintf("opt_%02d", perm[1])
 
-			// Heterogeneous top-2 concentration across items (ranging from 0.72 to 0.94, mean ~0.83)
-			// with remaining mass spread thinly across 18 tail options (~0.003 to ~0.015 each).
-			topMass := 0.72 + rng.Float64()*0.22
-			if i%3 != 0 {
-				// Overconfident tail leakage: model spreads 12% mass across 18 irrelevant tail classes
-				// while true label is drawn from a sharper distribution concentrated on top-2.
-				topMass = 0.88
-			}
-
 			pMap := make(map[string]float64, K)
-			pA := topMass * (0.58 + rng.Float64()*0.12)
-			pB := topMass - pA
+			var pA, pB, topMass float64
+			if i%2 == 0 {
+				// Asymmetric top-2 concentration (pA ~ 0.66..0.70, pB ~ 0.20..0.24).
+				topMass = 0.90
+				pA = 0.66 + rng.Float64()*0.04
+				pB = topMass - pA
+			} else {
+				// Ambiguous top-2 with 44% noisy probability mass leaked thinly across 18 tail classes.
+				topMass = 0.56
+				pA = 0.29 + rng.Float64()*0.03
+				pB = topMass - pA
+			}
 			pMap[topA] = pA
 			pMap[topB] = pB
 
@@ -261,31 +272,19 @@ func TestRAPSReducesPredictionSetSizeOnWideVocabulary(t *testing.T) {
 				pMap[optName] = tailMass * (tailRaw[j] / tailSum)
 			}
 
-			// True data-generating distribution: on 2/3 of items the model's tail is noisy leakage
-			// (true tail probability 1.5%), and on 1/3 of items the label is drawn directly from pMap.
-			if i%3 != 0 {
-				r := rng.Float64()
-				switch {
-				case r < 0.64:
-					labels[i] = topA
-				case r < 0.985:
-					labels[i] = topB
-				default:
-					labels[i] = fmt.Sprintf("opt_%02d", perm[2+rng.Intn(K-2)])
-				}
-			} else {
-				u := rng.Float64()
-				acc := 0.0
-				chosen := topA
-				for c := 0; c < K; c++ {
-					optName := fmt.Sprintf("opt_%02d", perm[c])
-					acc += pMap[optName]
-					if u <= acc {
-						chosen = optName
-						break
-					}
-				}
-				labels[i] = chosen
+			// True label is concentrated on {topA, topB} (98% mass), with 2% true tail noise.
+			r := rng.Float64()
+			switch {
+			case i%2 == 0 && r < 0.68:
+				labels[i] = topA
+			case i%2 == 0 && r < 0.98:
+				labels[i] = topB
+			case i%2 == 1 && r < 0.52:
+				labels[i] = topA
+			case i%2 == 1 && r < 0.98:
+				labels[i] = topB
+			default:
+				labels[i] = fmt.Sprintf("opt_%02d", perm[2+rng.Intn(K-2)])
 			}
 			probs[i] = pMap
 		}
@@ -295,39 +294,47 @@ func TestRAPSReducesPredictionSetSizeOnWideVocabulary(t *testing.T) {
 	calProbs, calLabels := drawDiffuseWide(500)
 	testProbs, testLabels := drawDiffuseWide(1000)
 
-	apsCfg := ConformalConfig{Method: ConformalAPS}
-	rapsCfg := ConformalConfig{Method: ConformalRAPS, KReg: 2, LambdaReg: 0.08}
+	for _, randomized := range []bool{false, true} {
+		apsCfg := ConformalConfig{Method: ConformalAPS, Randomized: randomized, Seed: 42}
+		rapsCfg := ConformalConfig{Method: ConformalRAPS, KReg: 2, LambdaReg: 0.14, Randomized: randomized, Seed: 42}
 
-	apsCal, err := CalibrateConformalQuantile(calProbs, calLabels, 0.05, apsCfg)
-	if err != nil {
-		t.Fatalf("APS calibration failed: %v", err)
-	}
-	rapsCal, err := CalibrateConformalQuantile(calProbs, calLabels, 0.05, rapsCfg)
-	if err != nil {
-		t.Fatalf("RAPS calibration failed: %v", err)
-	}
-
-	apsSizeSum, rapsSizeSum := 0, 0
-	rapsHits := 0
-	for i := 0; i < len(testProbs); i++ {
-		apsRes := ConformalPredictionSet(testProbs[i], apsCal.QHat, apsCfg)
-		rapsRes := ConformalPredictionSet(testProbs[i], rapsCal.QHat, rapsCfg)
-		apsSizeSum += apsRes.SetSize
-		rapsSizeSum += rapsRes.SetSize
-		if setContainsLabel(rapsRes.PredictionSet, testLabels[i]) {
-			rapsHits++
+		apsCal, err := CalibrateConformalQuantile(calProbs, calLabels, 0.05, apsCfg)
+		if err != nil {
+			t.Fatalf("randomized=%v APS calibration failed: %v", randomized, err)
 		}
-	}
+		rapsCal, err := CalibrateConformalQuantile(calProbs, calLabels, 0.05, rapsCfg)
+		if err != nil {
+			t.Fatalf("randomized=%v RAPS calibration failed: %v", randomized, err)
+		}
 
-	meanAPS := float64(apsSizeSum) / float64(len(testProbs))
-	meanRAPS := float64(rapsSizeSum) / float64(len(testProbs))
-	rapsCover := float64(rapsHits) / float64(len(testProbs))
+		apsSizeSum, rapsSizeSum := 0, 0
+		rapsHits := 0
+		for i := 0; i < len(testProbs); i++ {
+			apsRes, err := ConformalPredictionSet(testProbs[i], apsCal.QHat, apsCfg)
+			if err != nil {
+				t.Fatalf("randomized=%v APS prediction set %d failed: %v", randomized, i, err)
+			}
+			rapsRes, err := ConformalPredictionSet(testProbs[i], rapsCal.QHat, rapsCfg)
+			if err != nil {
+				t.Fatalf("randomized=%v RAPS prediction set %d failed: %v", randomized, i, err)
+			}
+			apsSizeSum += apsRes.SetSize
+			rapsSizeSum += rapsRes.SetSize
+			if setContainsLabel(rapsRes.PredictionSet, testLabels[i]) {
+				rapsHits++
+			}
+		}
 
-	if meanRAPS >= meanAPS {
-		t.Fatalf("expected RAPS mean set size (%.3f) < APS mean set size (%.3f)", meanRAPS, meanAPS)
-	}
-	if rapsCover < 0.94 {
-		t.Fatalf("expected RAPS empirical coverage >= 0.94 at alpha=0.05, got %.4f", rapsCover)
+		meanAPS := float64(apsSizeSum) / float64(len(testProbs))
+		meanRAPS := float64(rapsSizeSum) / float64(len(testProbs))
+		rapsCover := float64(rapsHits) / float64(len(testProbs))
+
+		if meanRAPS >= meanAPS {
+			t.Fatalf("randomized=%v: expected RAPS mean set size (%.3f) < APS mean set size (%.3f)", randomized, meanRAPS, meanAPS)
+		}
+		if rapsCover < 0.94 {
+			t.Fatalf("randomized=%v: expected RAPS empirical coverage >= 0.94 at alpha=0.05, got %.4f", randomized, rapsCover)
+		}
 	}
 }
 
@@ -336,7 +343,10 @@ func TestConformalCascadeEscalationAndPreFusionGate(t *testing.T) {
 
 	// 1. Singleton non-abstain set -> fast-path (ShouldEscalate == false).
 	confident := map[string]float64{"approve": 0.95, "manual_review": 0.03, "abstain": 0.02}
-	resSingle := ConformalPredictionSet(confident, 0.20, cfg)
+	resSingle, err := ConformalPredictionSet(confident, 0.20, cfg)
+	if err != nil {
+		t.Fatalf("ConformalPredictionSet failed: %v", err)
+	}
 	if !resSingle.Singleton || resSingle.ContainsAbstain || resSingle.ShouldEscalate {
 		t.Fatalf("expected singleton non-abstain set without escalation, got %+v", resSingle)
 	}
@@ -347,7 +357,10 @@ func TestConformalCascadeEscalationAndPreFusionGate(t *testing.T) {
 	// 2. Singleton abstain set -> must escalate despite Singleton == true.
 	for _, absOpt := range []string{"abstain", "insufficient_evidence"} {
 		absProbs := map[string]float64{absOpt: 0.94, "approve": 0.06}
-		resAbs := ConformalPredictionSet(absProbs, 0.20, cfg)
+		resAbs, err := ConformalPredictionSet(absProbs, 0.20, cfg)
+		if err != nil {
+			t.Fatalf("abstain option %q failed: %v", absOpt, err)
+		}
 		if !resAbs.Singleton || !resAbs.ContainsAbstain || !resAbs.ShouldEscalate {
 			t.Fatalf("abstain option %q: expected Singleton && ContainsAbstain && ShouldEscalate, got %+v", absOpt, resAbs)
 		}
@@ -355,12 +368,18 @@ func TestConformalCascadeEscalationAndPreFusionGate(t *testing.T) {
 
 	// 3. Multi-option ambiguous set and empty set -> both must escalate.
 	ambig := map[string]float64{"approve": 0.52, "manual_review": 0.48}
-	resMulti := ConformalPredictionSet(ambig, 0.55, cfg)
+	resMulti, err := ConformalPredictionSet(ambig, 0.55, cfg)
+	if err != nil {
+		t.Fatalf("resMulti failed: %v", err)
+	}
 	if resMulti.SetSize != 2 || resMulti.Singleton || !resMulti.ShouldEscalate {
 		t.Fatalf("expected 2-option set to escalate, got %+v", resMulti)
 	}
 
-	resEmpty := ConformalPredictionSet(ambig, 0.10, cfg)
+	resEmpty, err := ConformalPredictionSet(ambig, 0.10, cfg)
+	if err != nil {
+		t.Fatalf("resEmpty failed: %v", err)
+	}
 	if resEmpty.SetSize != 0 || resEmpty.Singleton || !resEmpty.ShouldEscalate {
 		t.Fatalf("expected empty prediction set to escalate safely, got %+v", resEmpty)
 	}
@@ -372,11 +391,17 @@ func TestConformalCascadeEscalationAndPreFusionGate(t *testing.T) {
 		Probabilities:    map[string]float64{"opt_a": 0.96, "opt_b": 0.04},
 		PriorFused:       true,
 	}
-	postOnly := ConformalPredictionSet(qr.Probabilities, 0.52, cfg)
+	postOnly, err := ConformalPredictionSet(qr.Probabilities, 0.52, cfg)
+	if err != nil {
+		t.Fatalf("postOnly failed: %v", err)
+	}
 	if postOnly.ShouldEscalate {
 		t.Fatalf("sanity check: post-fusion distribution {0.96, 0.04} should be singleton at qHat=0.52")
 	}
-	preGate := EvaluatePreFusionConformalGate(qr, 0.52, cfg)
+	preGate, err := EvaluatePreFusionConformalGate(qr, 0.52, cfg)
+	if err != nil {
+		t.Fatalf("EvaluatePreFusionConformalGate failed: %v", err)
+	}
 	if preGate.SetSize != 2 || !preGate.ShouldEscalate {
 		t.Fatalf("expected EvaluatePreFusionConformalGate to use RawProbabilities and escalate, got %+v", preGate)
 	}
@@ -400,7 +425,10 @@ func TestConformalCascadeEscalationAndPreFusionGate(t *testing.T) {
 		RawNormalizedH: rawNormH,
 		PriorFused:     fused,
 	}
-	ansGate := EvaluateSystemOnePreFusionGate(ans, priors, 0.5, 0.52, cfg)
+	ansGate, err := EvaluateSystemOnePreFusionGate(ans, priors, 0.5, 0.52, cfg)
+	if err != nil {
+		t.Fatalf("EvaluateSystemOnePreFusionGate failed: %v", err)
+	}
 	if ansGate.SetSize != 2 || !ansGate.ShouldEscalate {
 		t.Fatalf("expected EvaluateSystemOnePreFusionGate to invert prior fusion and escalate, got %+v", ansGate)
 	}
@@ -418,7 +446,7 @@ func TestSelectContextPruningActionsExactKnapsackAndStubRescue(t *testing.T) {
 		t.Fatalf("expected ErrNegativeTokenBudget, got %v", err)
 	}
 
-	// Verify Pinned == true invariance and high-hesitation stub rescue over irreversible drop.
+	// Verify Pinned == true invariance (minimum action = "stub", "drop" forbidden) and stub rescue.
 	blocks := []ContextBlockSpec{
 		{
 			ID:         "sys_invariant",
@@ -447,9 +475,7 @@ func TestSelectContextPruningActionsExactKnapsackAndStubRescue(t *testing.T) {
 		},
 	}
 	probs := map[string]map[string]float64{
-		// Even if the model assigns high drop probability to a pinned block, Pinned forces "full".
-		"b0": {"full": 0.05, "stub": 0.05, "drop": 0.90},
-		// High-hesitation block under tight 420-token budget (300 used by pinned b0 -> 120 left, so full=600 cannot fit).
+		"b0": {"full": 0.65, "stub": 0.10, "drop": 0.25},
 		"b1": {"full": 0.42, "stub": 0.38, "drop": 0.20},
 		"b2": {"full": 0.05, "stub": 0.10, "drop": 0.85},
 	}
@@ -462,7 +488,7 @@ func TestSelectContextPruningActionsExactKnapsackAndStubRescue(t *testing.T) {
 		t.Fatalf("expected budget<=420 satisfied, got %+v", res)
 	}
 	if res.Decisions[0].Action != ContextActionFull || res.Decisions[0].RetainedText != "PINNED SYSTEM INVARIANTS" {
-		t.Fatalf("expected pinned block b0 to remain full, got %+v", res.Decisions[0])
+		t.Fatalf("expected pinned block b0 to remain full under 420 budget, got %+v", res.Decisions[0])
 	}
 	if res.Decisions[1].Action != ContextActionStub || res.Decisions[1].RetainedTokens != 80 {
 		t.Fatalf("expected high-hesitation block b1 to be rescued as stub (80 tok), got %+v", res.Decisions[1])
@@ -471,16 +497,28 @@ func TestSelectContextPruningActionsExactKnapsackAndStubRescue(t *testing.T) {
 		t.Fatalf("expected stale block b2 to be dropped, got %+v", res.Decisions[2])
 	}
 
-	// Verify unsatisfied budget behavior when Pinned blocks alone exceed TokenBudget.
-	resOver, err := SelectContextPruningActions(blocks, probs, ContextPruneConfig{TokenBudget: 200})
-	if err != nil {
-		t.Fatalf("unexpected error when pinned exceeds budget: %v", err)
+	// Under a tighter 200-token budget (< 300 full tokens for pinned b0, >= 60 stub tokens),
+	// pinned b0 compresses to "stub" rather than being dropped, even if drop probability is 0.90.
+	dropHeavyPinnedProbs := map[string]map[string]float64{
+		"b0": {"full": 0.04, "stub": 0.06, "drop": 0.90},
+		"b1": {"full": 0.42, "stub": 0.38, "drop": 0.20},
+		"b2": {"full": 0.05, "stub": 0.10, "drop": 0.85},
 	}
-	if resOver.BudgetSatisfied || resOver.Decisions[0].Action != ContextActionFull || resOver.RetainedTokens != 300 {
-		t.Fatalf("expected BudgetSatisfied=false with only 300-token pinned block retained, got %+v", resOver)
+	resStubPinned, err := SelectContextPruningActions(blocks, dropHeavyPinnedProbs, ContextPruneConfig{TokenBudget: 200})
+	if err != nil {
+		t.Fatalf("unexpected error when pinned stub fits within budget: %v", err)
+	}
+	if !resStubPinned.BudgetSatisfied || resStubPinned.Decisions[0].Action != ContextActionStub || resStubPinned.Decisions[0].RetainedText != "PINNED STUB" {
+		t.Fatalf("expected pinned block b0 to compress to stub under 200 budget, got %+v", resStubPinned)
 	}
 
-	// Verify exact MCKP optimality against exhaustive 3^8 enumeration across 50 random 8-block instances.
+	// When TokenBudget < sum(pinned StubTokens) (40 < 60), SelectContextPruningActions returns ErrInfeasiblePinnedBudget.
+	if _, err := SelectContextPruningActions(blocks, dropHeavyPinnedProbs, ContextPruneConfig{TokenBudget: 40}); !errors.Is(err, ErrInfeasiblePinnedBudget) {
+		t.Fatalf("expected ErrInfeasiblePinnedBudget when budget < pinned stub cost, got %v", err)
+	}
+
+	// Verify exact MCKP optimality against exhaustive 3^8 enumeration across 50 random 8-block instances
+	// for both default zero-config canonical utilities and custom StubUtilityRatio/UncertaintyStubBonus.
 	rng := rand.New(rand.NewSource(12345))
 	for trial := 0; trial < 50; trial++ {
 		rBlocks := make([]ContextBlockSpec, MaxSlotsPerPass)
@@ -500,35 +538,47 @@ func TestSelectContextPruningActionsExactKnapsackAndStubRescue(t *testing.T) {
 			a, b, c := rng.Float64()+0.05, rng.Float64()+0.05, rng.Float64()+0.05
 			rProbs[fmt.Sprintf("b%d", i)] = map[string]float64{"full": a, "stub": b, "drop": c}
 		}
-		budget := rBlocks[0].FullTokens + rng.Intn(totalFull)
-		got, err := SelectContextPruningActions(rBlocks, rProbs, ContextPruneConfig{
+		budget := rBlocks[0].StubTokens + rng.Intn(totalFull)
+
+		// 1. Default zero-config canonical utility matrix: uFull = w*(pF + 0.5*pS), uStub = w*(0.6*pF + pS), uDrop = 0.
+		gotDefault, err := SelectContextPruningActions(rBlocks, rProbs, ContextPruneConfig{TokenBudget: budget})
+		if err != nil {
+			t.Fatalf("trial %d default config: %v", trial, err)
+		}
+		if !gotDefault.BudgetSatisfied || gotDefault.RetainedTokens > budget {
+			t.Fatalf("trial %d default config: budget violated: retained=%d > budget=%d", trial, gotDefault.RetainedTokens, budget)
+		}
+
+		// 2. Custom StubUtilityRatio + UncertaintyStubBonus with uDrop = 0.
+		gotCustom, err := SelectContextPruningActions(rBlocks, rProbs, ContextPruneConfig{
 			TokenBudget:          budget,
 			StubUtilityRatio:     0.65,
 			UncertaintyStubBonus: 0.25,
 		})
 		if err != nil {
-			t.Fatalf("trial %d: %v", trial, err)
+			t.Fatalf("trial %d custom config: %v", trial, err)
 		}
-		if !got.BudgetSatisfied || got.RetainedTokens > budget {
-			t.Fatalf("trial %d: budget invariant violated: retained=%d > budget=%d", trial, got.RetainedTokens, budget)
+		if !gotCustom.BudgetSatisfied || gotCustom.RetainedTokens > budget {
+			t.Fatalf("trial %d custom config: budget violated: retained=%d > budget=%d", trial, gotCustom.RetainedTokens, budget)
 		}
 
-		// Independent brute-force check over all 3^8 = 6561 states.
-		bestBrute := math.Inf(-1)
+		bestDefault := math.Inf(-1)
+		bestCustom := math.Inf(-1)
 		const totalStates = 6561
 		for mask := 0; mask < totalStates; mask++ {
 			tmp := mask
 			tok := 0
-			util := 0.0
+			utilDefault := 0.0
+			utilCustom := 0.0
 			valid := true
 			for i := 0; i < MaxSlotsPerPass; i++ {
 				act := tmp % 3
 				tmp /= 3
-				if rBlocks[i].Pinned && act != 0 {
+				if rBlocks[i].Pinned && act == 2 {
 					valid = false
 					break
 				}
-				d := got.Decisions[i]
+				d := gotDefault.Decisions[i]
 				pF := d.Probabilities[ContextActionFull]
 				pS := d.Probabilities[ContextActionStub]
 				pD := d.Probabilities[ContextActionDrop]
@@ -536,20 +586,30 @@ func TestSelectContextPruningActionsExactKnapsackAndStubRescue(t *testing.T) {
 				switch act {
 				case 0:
 					tok += rBlocks[i].FullTokens
-					util += w * (pF + 0.65*pS)
+					utilDefault += w * (1.0*pF + 0.5*pS)
+					utilCustom += w * (pF + 0.65*pS)
 				case 1:
 					tok += rBlocks[i].StubTokens
-					util += w * (0.65*pF + pS + 0.25*d.NormalizedEntropy*(1.0-pD))
+					utilDefault += w * (0.6*pF + 1.0*pS)
+					utilCustom += w * (0.65*pF + pS + 0.25*d.NormalizedEntropy*(1.0-pD))
 				case 2:
-					util += w * (0.15 * pD)
+					// u("drop") == 0.0
 				}
 			}
-			if valid && tok <= budget && util > bestBrute {
-				bestBrute = util
+			if valid && tok <= budget {
+				if utilDefault > bestDefault {
+					bestDefault = utilDefault
+				}
+				if utilCustom > bestCustom {
+					bestCustom = utilCustom
+				}
 			}
 		}
-		if math.Abs(got.ExpectedUtility-bestBrute) > 1e-9 {
-			t.Fatalf("trial %d: solver utility %.9f != brute-force optimum %.9f", trial, got.ExpectedUtility, bestBrute)
+		if math.Abs(gotDefault.ExpectedUtility-bestDefault) > 1e-9 {
+			t.Fatalf("trial %d default: solver utility %.9f != brute-force optimum %.9f", trial, gotDefault.ExpectedUtility, bestDefault)
+		}
+		if math.Abs(gotCustom.ExpectedUtility-bestCustom) > 1e-9 {
+			t.Fatalf("trial %d custom: solver utility %.9f != brute-force optimum %.9f", trial, gotCustom.ExpectedUtility, bestCustom)
 		}
 	}
 }
@@ -732,5 +792,376 @@ func TestAgentContextPruningTemplateAndSinglePassExecution(t *testing.T) {
 	}
 	if !pruned.BudgetSatisfied || pruned.RetainedTokens > 1200 || pruned.SavedTokens <= 0 {
 		t.Fatalf("unexpected pruning summary: %+v", pruned)
+	}
+}
+
+func TestConformalStrictValidationAndEdgeCases(t *testing.T) {
+	// 1. Reject invalid probability maps across ConformalScore, CalibrateConformalQuantile,
+	// ConformalPredictionSet, EvaluatePreFusionConformalGate, and EvaluateSystemOnePreFusionGate.
+	badProbMaps := []map[string]float64{
+		nil,
+		{},
+		{"a": math.NaN(), "b": 0.5},
+		{"a": math.Inf(1), "b": 0.5},
+		{"a": math.Inf(-1), "b": 0.5},
+		{"a": -0.1, "b": 1.1},
+		{"a": 0.0, "b": 0.0},
+	}
+	for idx, badMap := range badProbMaps {
+		if _, err := ConformalScore(badMap, "a", ConformalConfig{}); !errors.Is(err, ErrInvalidProbabilities) {
+			t.Fatalf("case %d ConformalScore: expected ErrInvalidProbabilities, got %v", idx, err)
+		}
+		if _, err := CalibrateConformalQuantile([]map[string]float64{badMap}, []string{"a"}, 0.10, ConformalConfig{}); !errors.Is(err, ErrInvalidProbabilities) {
+			t.Fatalf("case %d CalibrateConformalQuantile: expected ErrInvalidProbabilities, got %v", idx, err)
+		}
+		if _, err := ConformalPredictionSet(badMap, 0.20, ConformalConfig{}); !errors.Is(err, ErrInvalidProbabilities) {
+			t.Fatalf("case %d ConformalPredictionSet: expected ErrInvalidProbabilities, got %v", idx, err)
+		}
+		if _, err := EvaluatePreFusionConformalGate(QuestionResult{Probabilities: badMap}, 0.20, ConformalConfig{}); !errors.Is(err, ErrInvalidProbabilities) {
+			t.Fatalf("case %d EvaluatePreFusionConformalGate: expected ErrInvalidProbabilities, got %v", idx, err)
+		}
+		if _, err := EvaluateSystemOnePreFusionGate(SystemOneAnswer{Probabilities: badMap}, nil, 0, 0.20, ConformalConfig{}); !errors.Is(err, ErrInvalidProbabilities) {
+			t.Fatalf("case %d EvaluateSystemOnePreFusionGate: expected ErrInvalidProbabilities, got %v", idx, err)
+		}
+	}
+
+	// 2. Reject invalid qHat, invalid Method, and invalid RAPS regularization parameters.
+	validProbs := map[string]float64{"a": 0.7, "b": 0.3}
+	for _, badQ := range []float64{-0.01, math.NaN(), math.Inf(-1)} {
+		if _, err := ConformalPredictionSet(validProbs, badQ, ConformalConfig{}); !errors.Is(err, ErrInvalidConformalQHat) {
+			t.Fatalf("qHat=%v: expected ErrInvalidConformalQHat, got %v", badQ, err)
+		}
+	}
+	if _, err := ConformalPredictionSet(validProbs, 0.20, ConformalConfig{Method: "bogus"}); !errors.Is(err, ErrInvalidConformalMethod) {
+		t.Fatalf("expected ErrInvalidConformalMethod on ConformalPredictionSet, got %v", err)
+	}
+	for _, badCfg := range []ConformalConfig{
+		{Method: ConformalRAPS, KReg: -1, LambdaReg: 0.02},
+		{Method: ConformalRAPS, KReg: 2, LambdaReg: -0.05},
+		{Method: ConformalRAPS, KReg: 2, LambdaReg: math.NaN()},
+		{Method: ConformalRAPS, KReg: 2, LambdaReg: math.Inf(1)},
+	} {
+		if _, err := ConformalScore(validProbs, "a", badCfg); !errors.Is(err, ErrInvalidConformalParam) {
+			t.Fatalf("cfg=%+v: expected ErrInvalidConformalParam from ConformalScore, got %v", badCfg, err)
+		}
+		if _, err := ConformalPredictionSet(validProbs, 0.20, badCfg); !errors.Is(err, ErrInvalidConformalParam) {
+			t.Fatalf("cfg=%+v: expected ErrInvalidConformalParam from ConformalPredictionSet, got %v", badCfg, err)
+		}
+	}
+
+	// Zero-config ConformalRAPS defaults to KReg=5, LambdaReg=0.02 (ranks 1..5 unpenalized, rank 6 penalized by +0.02).
+	sixOpts := map[string]float64{
+		"o1": 0.30, "o2": 0.25, "o3": 0.20, "o4": 0.12, "o5": 0.08, "o6": 0.05,
+	}
+	s5, err := ConformalScore(sixOpts, "o5", ConformalConfig{Method: ConformalRAPS})
+	if err != nil {
+		t.Fatalf("default RAPS rank 5 score failed: %v", err)
+	}
+	s6, err := ConformalScore(sixOpts, "o6", ConformalConfig{Method: ConformalRAPS})
+	if err != nil {
+		t.Fatalf("default RAPS rank 6 score failed: %v", err)
+	}
+	if math.Abs(s5-0.87) > 1e-12 {
+		t.Fatalf("expected rank 5 RAPS score 0.87 (unpenalized), got %.15f", s5)
+	}
+	if math.Abs(s6-0.97) > 1e-12 {
+		t.Fatalf("expected rank 6 RAPS score 0.95 + 0.02 = 0.97, got %.15f", s6)
+	}
+
+	// 3. Exact floating-point order-statistic boundary: n=9, alpha=0.30 -> (9+1)*(1-0.30) = 7.0 -> OrderIndex == 7.
+	nineProbs := make([]map[string]float64, 9)
+	nineLabels := make([]string, 9)
+	for i := 0; i < 9; i++ {
+		pTop := 0.95 - float64(i)*0.05
+		nineProbs[i] = map[string]float64{"y": pTop, "n": 1.0 - pTop}
+		nineLabels[i] = "y"
+	}
+	cal9, err := CalibrateConformalQuantile(nineProbs, nineLabels, 0.30, ConformalConfig{Method: ConformalLAC})
+	if err != nil {
+		t.Fatalf("n=9 alpha=0.30 calibration failed: %v", err)
+	}
+	if cal9.OrderIndex != 7 {
+		t.Fatalf("expected OrderIndex=7 at n=9, alpha=0.30, got %d (qHat=%v)", cal9.OrderIndex, cal9.QHat)
+	}
+
+	// 4. Deterministic APS and RAPS on sharp/degenerate distributions always include top-1 (score 0.0, never empty).
+	for _, m := range []ConformalMethod{ConformalAPS, ConformalRAPS} {
+		cfgDet := ConformalConfig{Method: m, Randomized: false}
+		for _, dist := range []map[string]float64{
+			{"A": 1.0, "B": 0.0, "C": 0.0},
+			{"A": 0.99, "B": 0.01},
+		} {
+			for _, qHat := range []float64{0.85, 0.0} {
+				got, err := ConformalPredictionSet(dist, qHat, cfgDet)
+				if err != nil {
+					t.Fatalf("method=%s qHat=%v failed: %v", m, qHat, err)
+				}
+				if got.SetSize != 1 || got.PredictionSet[0] != "A" || !got.Singleton || got.ShouldEscalate {
+					t.Fatalf("method=%s dist=%v qHat=%v: expected singleton [A] without escalation, got %+v", m, dist, qHat, got)
+				}
+			}
+		}
+	}
+
+	// 5. Deterministic APS and RAPS on exact and near-exact 4-way ties assign identical tie-group scores
+	// and never collapse to a lexical singleton.
+	for _, m := range []ConformalMethod{ConformalAPS, ConformalRAPS} {
+		cfgDet := ConformalConfig{Method: m, KReg: 2, LambdaReg: 0.05, Randomized: false}
+		tie4 := map[string]float64{"A": 0.25, "B": 0.25, "C": 0.25, "D": 0.25}
+		for _, qHat := range []float64{0.0, 0.10} {
+			got, err := ConformalPredictionSet(tie4, qHat, cfgDet)
+			if err != nil {
+				t.Fatalf("method=%s tie4 failed: %v", m, err)
+			}
+			if got.SetSize != 4 || got.Singleton || !got.ShouldEscalate {
+				t.Fatalf("method=%s qHat=%v: expected 4-element tie set escalating, got %+v", m, qHat, got)
+			}
+			for _, k := range []string{"A", "B", "C", "D"} {
+				if got.Scores[k] != 0.0 {
+					t.Fatalf("method=%s: expected score 0.0 for tied key %q, got %v", m, k, got.Scores[k])
+				}
+			}
+		}
+
+		renamed := map[string]float64{"Z_first": 0.25 + 1e-13, "B": 0.25, "C": 0.25, "D": 0.25 - 1e-13}
+		gotRenamed, err := ConformalPredictionSet(renamed, 0.0, cfgDet)
+		if err != nil {
+			t.Fatalf("method=%s renamed near-tie failed: %v", m, err)
+		}
+		if gotRenamed.SetSize != 4 || !gotRenamed.ShouldEscalate {
+			t.Fatalf("method=%s: expected near-tie within 1e-12 tolerance to include all 4 keys, got %+v", m, gotRenamed)
+		}
+	}
+
+	// 6. Randomized=true stateful RNG lockstep maintains marginal coverage on repeated identical distributions
+	// (both uniform 2-way ties and sharp {"A": 0.99, "B": 0.01} under adversarial seeds) and is goroutine-safe.
+	tieCalProbs := make([]map[string]float64, 200)
+	tieCalLabels := make([]string, 200)
+	for i := 0; i < 200; i++ {
+		tieCalProbs[i] = map[string]float64{"A": 0.5, "B": 0.5}
+		if i%2 == 0 {
+			tieCalLabels[i] = "A"
+		} else {
+			tieCalLabels[i] = "B"
+		}
+	}
+	randTieCfg := ConformalConfig{Method: ConformalAPS, Randomized: true, Seed: 7}
+	calTie, err := CalibrateConformalQuantile(tieCalProbs, tieCalLabels, 0.25, randTieCfg)
+	if err != nil {
+		t.Fatalf("randomized tie calibration failed: %v", err)
+	}
+	tieHits := 0
+	singletonA, singletonB := 0, 0
+	evalRNG := rand.New(rand.NewSource(101))
+	for j := 0; j < 1000; j++ {
+		gold := "A"
+		if evalRNG.Float64() < 0.5 {
+			gold = "B"
+		}
+		res, err := ConformalPredictionSet(map[string]float64{"A": 0.5, "B": 0.5}, calTie.QHat, randTieCfg)
+		if err != nil {
+			t.Fatalf("randomized tie prediction %d failed: %v", j, err)
+		}
+		if setContainsLabel(res.PredictionSet, gold) {
+			tieHits++
+		}
+		if res.SetSize == 1 {
+			if res.PredictionSet[0] == "A" {
+				singletonA++
+			} else if res.PredictionSet[0] == "B" {
+				singletonB++
+			}
+		}
+	}
+	if float64(tieHits)/1000.0 < 0.71 {
+		t.Fatalf("randomized tie coverage %.3f < 0.71 at alpha=0.25", float64(tieHits)/1000.0)
+	}
+	if singletonA == 0 || singletonB == 0 {
+		t.Fatalf("expected tie-group shuffle to yield both [A] and [B] singletons, got A=%d B=%d", singletonA, singletonB)
+	}
+
+	for _, seedVal := range []int64{2, 0} {
+		sharpCalProbs := make([]map[string]float64, 200)
+		sharpCalLabels := make([]string, 200)
+		dataRNG := rand.New(rand.NewSource(9001 + seedVal))
+		for i := 0; i < 200; i++ {
+			sharpCalProbs[i] = map[string]float64{"A": 0.99, "B": 0.01}
+			if dataRNG.Float64() < 0.99 {
+				sharpCalLabels[i] = "A"
+			} else {
+				sharpCalLabels[i] = "B"
+			}
+		}
+		sharpCfg := ConformalConfig{Method: ConformalAPS, Randomized: true, Seed: seedVal}
+		calSharp, err := CalibrateConformalQuantile(sharpCalProbs, sharpCalLabels, 0.10, sharpCfg)
+		if err != nil {
+			t.Fatalf("seed=%d sharp calibration failed: %v", seedVal, err)
+		}
+		sharpHits := 0
+		for j := 0; j < 1000; j++ {
+			gold := "A"
+			if dataRNG.Float64() >= 0.99 {
+				gold = "B"
+			}
+			res, err := ConformalPredictionSet(map[string]float64{"A": 0.99, "B": 0.01}, calSharp.QHat, sharpCfg)
+			if err != nil {
+				t.Fatalf("seed=%d sharp prediction %d failed: %v", seedVal, j, err)
+			}
+			if setContainsLabel(res.PredictionSet, gold) {
+				sharpHits++
+			}
+		}
+		if float64(sharpHits)/1000.0 < 0.86 {
+			t.Fatalf("seed=%d sharp randomized coverage %.3f < 0.86 at alpha=0.10 (qHat=%.4f)",
+				seedVal, float64(sharpHits)/1000.0, calSharp.QHat)
+		}
+	}
+
+	// Verify explicit caller RNG stream and concurrent goroutine safety on shared/default RNG streams.
+	explicitRNG := rand.New(rand.NewSource(55))
+	explicitCfg := ConformalConfig{Method: ConformalRAPS, Randomized: true, RNG: explicitRNG}
+	if _, err := CalibrateConformalQuantile(tieCalProbs[:20], tieCalLabels[:20], 0.20, explicitCfg); err != nil {
+		t.Fatalf("explicit RNG calibration failed: %v", err)
+	}
+	if _, err := ConformalPredictionSet(map[string]float64{"A": 0.5, "B": 0.5}, 0.5, explicitCfg); err != nil {
+		t.Fatalf("explicit RNG prediction failed: %v", err)
+	}
+
+	var wg sync.WaitGroup
+	for g := 0; g < 8; g++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			c := ConformalConfig{Method: ConformalAPS, Randomized: true, Seed: int64(id % 3)}
+			for k := 0; k < 40; k++ {
+				_, _ = ConformalPredictionSet(map[string]float64{"A": 0.5, "B": 0.5}, 0.4, c)
+			}
+		}(g)
+	}
+	wg.Wait()
+}
+
+func TestContextPruningValidationAndTieBreakDeterminism(t *testing.T) {
+	validProbs := map[string]map[string]float64{
+		"b0": {"full": 0.6, "stub": 0.3, "drop": 0.1},
+		"b1": {"full": 0.5, "stub": 0.3, "drop": 0.2},
+	}
+
+	// 1. Reject negative tokens, inverted FullTokens < StubTokens, invalid ImportanceWeight, and duplicate IDs.
+	invalidBlockSlices := [][]ContextBlockSpec{
+		{{ID: "neg_stub", FullTokens: 100, StubTokens: -1}},
+		{{ID: "inverted", FullTokens: 40, StubTokens: 80}},
+		{{ID: "neg_weight", FullTokens: 100, StubTokens: 40, ImportanceWeight: -0.5}},
+		{{ID: "nan_weight", FullTokens: 100, StubTokens: 40, ImportanceWeight: math.NaN()}},
+		{{ID: "dup", FullTokens: 100, StubTokens: 40}, {ID: "dup", FullTokens: 120, StubTokens: 30}},
+	}
+	for idx, badBlocks := range invalidBlockSlices {
+		if _, _, err := BuildContextPruningQuestions(badBlocks); !errors.Is(err, ErrInvalidContextBlock) {
+			t.Fatalf("case %d BuildContextPruningQuestions: expected ErrInvalidContextBlock, got %v", idx, err)
+		}
+		if _, err := SelectContextPruningActions(badBlocks, validProbs, ContextPruneConfig{TokenBudget: 500}); !errors.Is(err, ErrInvalidContextBlock) {
+			t.Fatalf("case %d SelectContextPruningActions: expected ErrInvalidContextBlock, got %v", idx, err)
+		}
+	}
+
+	// 2. Reject invalid ContextPruneConfig ratios and malformed/missing slotProbs entries.
+	oneBlock := []ContextBlockSpec{{ID: "blk_a", FullTokens: 100, StubTokens: 40}}
+	for _, badCfg := range []ContextPruneConfig{
+		{TokenBudget: 200, StubUtilityRatio: -0.1},
+		{TokenBudget: 200, StubUtilityRatio: 1.2},
+		{TokenBudget: 200, StubUtilityRatio: math.NaN()},
+		{TokenBudget: 200, UncertaintyStubBonus: math.Inf(1)},
+	} {
+		if _, err := SelectContextPruningActions(oneBlock, map[string]map[string]float64{"blk_a": {"full": 0.5, "stub": 0.3, "drop": 0.2}}, badCfg); !errors.Is(err, ErrInvalidContextBlock) {
+			t.Fatalf("cfg=%+v: expected ErrInvalidContextBlock, got %v", badCfg, err)
+		}
+	}
+
+	badSlotProbs := []map[string]map[string]float64{
+		nil,
+		{},
+		{"other": {"full": 0.5, "stub": 0.3, "drop": 0.2}},
+		{"blk_a": {}},
+		{"blk_a": {"full": -0.2, "stub": 0.7, "drop": 0.5}},
+		{"blk_a": {"full": math.NaN(), "stub": 0.5, "drop": 0.5}},
+		{"blk_a": {"full": 0.0, "stub": 0.0, "drop": 0.0}},
+	}
+	for idx, sp := range badSlotProbs {
+		if _, err := SelectContextPruningActions(oneBlock, sp, ContextPruneConfig{TokenBudget: 200}); !errors.Is(err, ErrInvalidProbabilities) {
+			t.Fatalf("slotProbs case %d: expected ErrInvalidProbabilities, got %v", idx, err)
+		}
+	}
+
+	// 3. Deterministic Pareto-frontier tie-breaking on symmetric and zero-cost blocks.
+	symBlocks := []ContextBlockSpec{
+		{ID: "b0", FullTokens: 100, StubTokens: 50},
+		{ID: "b1", FullTokens: 100, StubTokens: 50},
+	}
+	symProbs := map[string]map[string]float64{
+		"b0": {"full": 0.75, "stub": 0.25, "drop": 0.0},
+		"b1": {"full": 0.75, "stub": 0.25, "drop": 0.0},
+	}
+	symRes, err := SelectContextPruningActions(symBlocks, symProbs, ContextPruneConfig{TokenBudget: 150})
+	if err != nil {
+		t.Fatalf("symmetric tie test failed: %v", err)
+	}
+	if symRes.Decisions[0].Action != ContextActionFull || symRes.Decisions[1].Action != ContextActionStub {
+		t.Fatalf("expected deterministic tie-break [full, stub], got [%s, %s]", symRes.Decisions[0].Action, symRes.Decisions[1].Action)
+	}
+
+	zeroCost := []ContextBlockSpec{{ID: "z0", FullTokens: 0, StubTokens: 0}}
+	zeroRes, err := SelectContextPruningActions(
+		zeroCost,
+		map[string]map[string]float64{"z0": {"full": 0.0, "stub": 0.0, "drop": 1.0}},
+		ContextPruneConfig{TokenBudget: 100},
+	)
+	if err != nil {
+		t.Fatalf("zero-cost tie test failed: %v", err)
+	}
+	if zeroRes.Decisions[0].Action != ContextActionDrop {
+		t.Fatalf("expected zero-utility zero-cost tie to select drop, got %q", zeroRes.Decisions[0].Action)
+	}
+
+	// 4. Verify 8-block MCKP Pareto-frontier parity across 30 budgets (145 + i*105) with 2 pinned blocks.
+	eightBlocks := []ContextBlockSpec{
+		{ID: "b0", FullTokens: 320, StubTokens: 80, Pinned: true},
+		{ID: "b1", FullTokens: 260, StubTokens: 65, Pinned: true},
+		{ID: "b2", FullTokens: 480, StubTokens: 110},
+		{ID: "b3", FullTokens: 390, StubTokens: 95},
+		{ID: "b4", FullTokens: 510, StubTokens: 120},
+		{ID: "b5", FullTokens: 290, StubTokens: 70},
+		{ID: "b6", FullTokens: 610, StubTokens: 140},
+		{ID: "b7", FullTokens: 350, StubTokens: 85},
+	}
+	eightProbs := map[string]map[string]float64{
+		"b0": {"full": 0.72, "stub": 0.20, "drop": 0.08},
+		"b1": {"full": 0.35, "stub": 0.50, "drop": 0.15},
+		"b2": {"full": 0.64, "stub": 0.26, "drop": 0.10},
+		"b3": {"full": 0.28, "stub": 0.52, "drop": 0.20},
+		"b4": {"full": 0.81, "stub": 0.14, "drop": 0.05},
+		"b5": {"full": 0.18, "stub": 0.32, "drop": 0.50},
+		"b6": {"full": 0.55, "stub": 0.30, "drop": 0.15},
+		"b7": {"full": 0.12, "stub": 0.22, "drop": 0.66},
+	}
+	if _, err := SelectContextPruningActions(eightBlocks, eightProbs, ContextPruneConfig{TokenBudget: 144}); !errors.Is(err, ErrInfeasiblePinnedBudget) {
+		t.Fatalf("expected ErrInfeasiblePinnedBudget at budget=144 (< 80+65=145), got %v", err)
+	}
+	prevUtil := -1.0
+	for step := 0; step < 30; step++ {
+		bgt := 145 + step*105
+		r, err := SelectContextPruningActions(eightBlocks, eightProbs, ContextPruneConfig{TokenBudget: bgt})
+		if err != nil {
+			t.Fatalf("step %d (budget=%d) failed: %v", step, bgt, err)
+		}
+		if !r.BudgetSatisfied || r.RetainedTokens > bgt {
+			t.Fatalf("step %d: retained %d > budget %d", step, r.RetainedTokens, bgt)
+		}
+		if r.Decisions[0].Action == ContextActionDrop || r.Decisions[1].Action == ContextActionDrop {
+			t.Fatalf("step %d: pinned block was dropped: b0=%s b1=%s", step, r.Decisions[0].Action, r.Decisions[1].Action)
+		}
+		if r.ExpectedUtility+1e-12 < prevUtil {
+			t.Fatalf("step %d: expected monotone non-decreasing utility across budgets, got %.9f < %.9f", step, r.ExpectedUtility, prevUtil)
+		}
+		prevUtil = r.ExpectedUtility
 	}
 }
