@@ -522,11 +522,11 @@ type EngineOptions struct {
 	Labels               string  // Server label set for choice options: "az" (default, 26) or "az_aa"/"az_lower" (52; PROP-29). Wide sets read up to 52 options natively and bracket above that with 52-wide brackets
 	OptionOrder          string  // How options are labelled A, B, C…: "alpha" (default, sorted keys) or "source" (request order; PROP-33)
 	PromptLayout         string  // Server prompt layout: "document_first" (default: state first, then questions) or "schema_first"/"" (questions as the system prompt)
-	PriorWeight          float64 // Log-linear fusion weight alpha >= 0 for PriorLogits; 0 disables fusion (PROP-09 / EXP-40)
+	PriorWeight          float64 // Log-linear fusion weight alpha >= 0 for PriorLogits; 0 disables fusion (PROP-09; cascades should gate on RawNormalizedH)
 	HesitationGate       float64 // Raw normalized entropy threshold tau in [0, 1] used by PriorGateMode (PROP-09; default 0.16)
-	PriorGateMode        string  // Gate schedule for PriorLogits: "confident" (default: fuse when rawNormH < tau), "hesitant" (rawNormH >= tau), "proportional" (weight * rawNormH), or "always"
-	ShortlistTopK        int     // Candidate count M <= MaxOptionsPerSlot retained by ShortlistFunc for wide choices (PROP-24 / EXP-41; default 0 = off)
-	ShortlistContrastive bool    // Append [distinguishing: ...] sibling token tags on shortlisted wide choices (default true; EXP-41)
+	PriorGateMode        string  // Gate schedule for PriorLogits: "confident" (default: fuse when rawNormH < tau), "hesitant" (rawNormH >= tau; recommended for tie-break priors), "proportional" (weight * rawNormH), or "always"
+	ShortlistTopK        int     // Candidate count M <= MaxOptionsPerSlot retained by ShortlistFunc for wide choices (PROP-24; default 0 = off)
+	ShortlistContrastive bool    // Append [distinguishing: ...] sibling token tags on shortlisted wide choices (default false; schema-dependent, PROP-24)
 	ShortlistFunc        ShortlistFunc
 }
 
@@ -543,11 +543,11 @@ func DefaultEngineOptions() EngineOptions {
 		// document_first: on the wave-2 canary (dev suites, paired) it raised di_catchall 0.790 -> 0.870 and rag_dev
 		// 0.705 -> 0.770 with JevBench and di_wide unchanged; out-of-scope recall on di_catchall fell 1.00 -> 0.825.
 		PromptLayout:         "document_first",
-		PriorWeight:          0, // opt-in: prior_logits are ignored unless the operator sets --prior-weight (EXP-40)
+		PriorWeight:          0, // opt-in: prior_logits are ignored unless the operator sets --prior-weight
 		HesitationGate:       0.16,
 		PriorGateMode:        "confident",
 		ShortlistTopK:        0,
-		ShortlistContrastive: true,
+		ShortlistContrastive: false,
 	}
 }
 
