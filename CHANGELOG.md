@@ -9,6 +9,14 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): default `--shortlist-contrastive` to `false`, add `NormalizeCosinePriorLogits`, and document shortlist and prior-gate flags (`PROP-09`, `PROP-24`).**
+  Sets `DefaultEngineOptions().ShortlistContrastive` and `--shortlist-contrastive` to `false` (contrastive `[distinguishing: ...]` tags remain opt-in for verbose overlapping descriptions). Adds `NormalizeCosinePriorLogits(cosines, temperature)` (default $\tau = 0.07$) to map bi-encoder cosine scores onto a normalized log-probability simplex for `prior_logits`. Documents `--shortlist-topk` (`M = 15` 1-pass latency option), `--shortlist-contrastive`, `--prior-weight`, `--hesitation-gate`, and `--prior-gate-mode` (recommending `hesitant` or `proportional` over `confident`, with cascades reading `raw_normalized_entropy`) in the CLI reference.
+- **`pkg/decisionindex`: Set-of-Marks (`SoM`) spatial geometry helpers and UI pathfinder template (`PROP-38`).**
+  Adds `CandidateMark`, `AssignPointToGridCell`, `AssignBoxToGridCell`, `AssignPointToGrid4x4`, `Grid4x4CellBounds`,
+  `FilterMarksByGridCell`, `SelectContainingOrNearestMark` (smallest-area containment for nested icons inside parent
+  containers), `ExpectedMarkCenterFromProbabilities`, and `BuildSetOfMarksQuestions` alongside
+  `templates/multimodal/ui_pathfinder_som.json.tmpl` for 4-slot single-pass UI navigation (`next_target_mark`,
+  `element_state`, `loop_or_error_detected`, `goal_progress_score`).
 - **`pkg/decisionindex`: triangle-consistency scorers, pack-multiplier verifier, and 8-slot arbiter templates (`PROP-39`, `PROP-40`).**
   Adds `CheckTransitiveTriangles` and `ScoreProbabilisticTriangles` (continuous 3-cycle transitivity violation mass for
   noisy entity-resolution graphs), `ParsePackMultiplier`, `ValidatePackQuantityConsistency`, and `ArbitrateSwarmLocks`
