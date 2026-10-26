@@ -9,6 +9,9 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): default `--shortlist-contrastive` to `false`, add `NormalizeCosinePriorLogits`, and document shortlist and prior-gate flags (`PROP-09`, `PROP-24`).**
+  Sets `DefaultEngineOptions().ShortlistContrastive` and `--shortlist-contrastive` to `false` (contrastive `[distinguishing: ...]` tags remain opt-in for verbose overlapping descriptions). Adds `NormalizeCosinePriorLogits(cosines, temperature)` (default $\tau = 0.07$) to map bi-encoder cosine scores onto a normalized log-probability simplex for `prior_logits`. Documents `--shortlist-topk` (`M = 15` 1-pass latency option), `--shortlist-contrastive`, `--prior-weight`, `--hesitation-gate`, and `--prior-gate-mode` (recommending `hesitant` or `proportional` over `confident`, with cascades reading `raw_normalized_entropy`) in the CLI reference.
+
 ## v0.3.13 (2026-10-23)
 
 Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`). Both new
