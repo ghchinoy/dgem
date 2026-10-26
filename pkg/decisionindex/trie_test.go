@@ -236,6 +236,19 @@ func TestExecuteSystemOne_TaxonomyBeamHybridAndAdapterFlag(t *testing.T) {
 						"oos":                0.03,
 					},
 				}
+			default:
+				// Bracket tournament sub-questions (intent__b0, intent__b1, intent__final)
+				probs := make(map[string]float64, len(q.Options))
+				win := q.Options[0].Name
+				for _, o := range q.Options {
+					if o.Name == "alarm_action_03" || (win == q.Options[0].Name && strings.HasSuffix(o.Name, "03")) {
+						probs[o.Name] = 0.85
+						win = o.Name
+					} else {
+						probs[o.Name] = 0.15 / float64(maxInt(1, len(q.Options)-1))
+					}
+				}
+				ans[q.ID] = client.QuestionAnswer{Choice: win, Probabilities: probs}
 			}
 		}
 		envBytes, _ := json.Marshal(client.StructuredDecisionResponse{Answers: ans})
@@ -268,9 +281,44 @@ func TestExecuteSystemOne_TaxonomyBeamHybridAndAdapterFlag(t *testing.T) {
 		t.Fatalf("expected ErrInvalidRequest for unknown TaxonomyMode, got %v", err)
 	}
 
-	// 1. Confident hesitation_hybrid resolves 61-option taxonomy in 1 forward pass.
+	// 0b. When operator TaxonomyMode == "" (DefaultEngineOptions), a wide question carrying a taxonomy block
+	// ignores taxonomy routing and executes the default 2-pass bracket tournament.
 	atomic.StoreInt32(&calls, 0)
 	hesitantCoarse = false
+	respDefault, err := ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
+		State: "Set an alarm for 6:30am tomorrow",
+		Questions: map[string]SystemOneQuestion{
+			"intent": {
+				Type:         "choice",
+				Instructions: "Classify user utterance intent",
+				Criteria:     criteria,
+				Taxonomy: &TaxonomySpec{
+					Mode:                TaxonomyModeMTPTrie,
+					HesitationThreshold: 0.35,
+					MarginThreshold:     0.25,
+				},
+			},
+		},
+	}, DefaultEngineOptions())
+	if err != nil {
+		t.Fatalf("ExecuteSystemOne default bracket with taxonomy block failed: %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 || respDefault.EvaluationTrace.ForwardPasses != 2 {
+		t.Fatalf("expected 2 forward passes from default bracket tournament when TaxonomyMode==\"\", got calls=%d trace=%d",
+			got, respDefault.EvaluationTrace.ForwardPasses)
+	}
+	if respDefault.Answers["intent"].TaxonomyModeExecuted != "" {
+		t.Fatalf("expected empty taxonomy_mode_executed when operator TaxonomyMode==\"\", got %q", respDefault.Answers["intent"].TaxonomyModeExecuted)
+	}
+	if respDefault.Answers["intent"].Choice != "alarm_action_03" {
+		t.Fatalf("expected default bracket tournament to select alarm_action_03, got %q", respDefault.Answers["intent"].Choice)
+	}
+
+	// 1. Confident hesitation_hybrid resolves 61-option taxonomy in 1 forward pass when operator enables TaxonomyMode.
+	atomic.StoreInt32(&calls, 0)
+	hesitantCoarse = false
+	hybridOpts := DefaultEngineOptions()
+	hybridOpts.TaxonomyMode = TaxonomyModeHesitationHybrid
 	resp1, err := ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
 		State: "Set an alarm for 6:30am tomorrow",
 		Questions: map[string]SystemOneQuestion{
@@ -285,7 +333,7 @@ func TestExecuteSystemOne_TaxonomyBeamHybridAndAdapterFlag(t *testing.T) {
 				},
 			},
 		},
-	}, DefaultEngineOptions())
+	}, hybridOpts)
 	if err != nil {
 		t.Fatalf("ExecuteSystemOne confident hybrid failed: %v", err)
 	}
@@ -314,7 +362,7 @@ func TestExecuteSystemOne_TaxonomyBeamHybridAndAdapterFlag(t *testing.T) {
 				},
 			},
 		},
-	}, DefaultEngineOptions())
+	}, hybridOpts)
 	if err != nil {
 		t.Fatalf("ExecuteSystemOne hesitant hybrid failed: %v", err)
 	}
@@ -605,6 +653,8 @@ func TestExplicitTaxonomyValidationAndBeamNonStarvation(t *testing.T) {
 	defer srv.Close()
 	cli := client.NewClient(srv.URL, "", 0)
 
+	trieOpts := DefaultEngineOptions()
+	trieOpts.TaxonomyMode = TaxonomyModeMTPTrie
 	_, err := ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
 		State: "test",
 		Questions: map[string]SystemOneQuestion{
@@ -618,7 +668,7 @@ func TestExplicitTaxonomyValidationAndBeamNonStarvation(t *testing.T) {
 				},
 			},
 		},
-	}, DefaultEngineOptions())
+	}, trieOpts)
 	if err == nil {
 		t.Fatalf("expected explicit invalid TaxonomySpec (>26 coarse codes) to fail closed with ErrInvalidRequest")
 	}

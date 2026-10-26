@@ -751,7 +751,8 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 			err    error
 		)
 		switch {
-		case q.Taxonomy != nil || strings.TrimSpace(opts.TaxonomyMode) != "":
+		case strings.TrimSpace(opts.TaxonomyMode) != "":
+			// q.Taxonomy (if present) supplies the caller's tree / per-question mode; ignored when the operator hasn't enabled taxonomy routing
 			ans, passes, err = evaluateHierarchicalQuestion(ctx, cli, stateText, req.Images, k, q, opts)
 		case opts.ShortlistFunc != nil:
 			ans, passes, err = evaluateWideQuestionShortlist(ctx, cli, stateText, req.Images, k, q, opts)
