@@ -660,7 +660,9 @@ func ExecuteSystemOne(ctx context.Context, cli *client.Client, req SystemOneRequ
 				return nil, fmt.Errorf("%w: question %q: evidence_prompt is not supported on wide questions (%d options > %d)", ErrInvalidRequest, k, len(q.Criteria), opts.MaxOptionsPerSlot)
 			}
 		}
-		if q.Taxonomy != nil && !validTaxonomyMode(q.Taxonomy.Mode) {
+		// A caller's taxonomy block is configuration for operator-enabled taxonomy routing; with routing off it is
+		// ignored, so it is only validated when the operator has enabled it.
+		if strings.TrimSpace(opts.TaxonomyMode) != "" && q.Taxonomy != nil && !validTaxonomyMode(q.Taxonomy.Mode) {
 			return nil, fmt.Errorf("%w: question %q: unsupported taxonomy mode %q (expected mtp_naive, mtp_trie, beam_2pass, or hesitation_hybrid)", ErrInvalidRequest, k, q.Taxonomy.Mode)
 		}
 		kinds[k] = kind

@@ -9,6 +9,8 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- `/v1/systemone`: a question's `taxonomy` block is only validated when the operator has enabled taxonomy routing
+  (`--taxonomy-mode`); with routing off it is ignored, so an unknown `taxonomy.mode` no longer returns 400 (follow-up to #199).
 - **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): default `--shortlist-contrastive` to `false`, add `NormalizeCosinePriorLogits`, and document shortlist and prior-gate flags (`PROP-09`, `PROP-24`).**
   Sets `DefaultEngineOptions().ShortlistContrastive` and `--shortlist-contrastive` to `false` (contrastive `[distinguishing: ...]` tags remain opt-in for verbose overlapping descriptions). Adds `NormalizeCosinePriorLogits(cosines, temperature)` (default $\tau = 0.07$) to map bi-encoder cosine scores onto a normalized log-probability simplex for `prior_logits`. Documents `--shortlist-topk` (`M = 15` 1-pass latency option), `--shortlist-contrastive`, `--prior-weight`, `--hesitation-gate`, and `--prior-gate-mode` (recommending `hesitant` or `proportional` over `confident`, with cascades reading `raw_normalized_entropy`) in the CLI reference.
 - **`pkg/decisionindex`: Set-of-Marks (`SoM`) spatial geometry helpers and UI pathfinder template (`PROP-38`).**
