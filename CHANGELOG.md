@@ -9,6 +9,8 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
+- Docs and `--taxonomy-mode` help: mark taxonomy routing as experimental and not recommended; in evaluation on wide
+  label sets every mode was less accurate than the default bracket tournament (#199).
 - `/v1/systemone`: a question's `taxonomy` block is only validated when the operator has enabled taxonomy routing
   (`--taxonomy-mode`); with routing off it is ignored, so an unknown `taxonomy.mode` no longer returns 400 (follow-up to #199).
 - **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): default `--shortlist-contrastive` to `false`, add `NormalizeCosinePriorLogits`, and document shortlist and prior-gate flags (`PROP-09`, `PROP-24`).**
