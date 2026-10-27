@@ -314,6 +314,29 @@ func TestExecuteSystemOne_TaxonomyBeamHybridAndAdapterFlag(t *testing.T) {
 		t.Fatalf("expected default bracket tournament to select alarm_action_03, got %q", respDefault.Answers["intent"].Choice)
 	}
 
+	// 0c. With taxonomy routing off, a caller's taxonomy block isn't validated either: an unknown mode is ignored
+	// (default brackets) instead of refusing the request. With routing on, the same block is refused.
+	atomic.StoreInt32(&calls, 0)
+	badModeReq := SystemOneRequest{
+		State: "Set an alarm for 6:30am tomorrow",
+		Questions: map[string]SystemOneQuestion{
+			"intent": {Type: "choice", Instructions: "Classify user utterance intent", Criteria: criteria,
+				Taxonomy: &TaxonomySpec{Mode: "not_a_mode"}},
+		},
+	}
+	respBad, err := ExecuteSystemOne(context.Background(), cli, badModeReq, DefaultEngineOptions())
+	if err != nil {
+		t.Fatalf("taxonomy block with unknown mode must be ignored when TaxonomyMode is off, got %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 || respBad.EvaluationTrace.ForwardPasses != 2 || respBad.Answers["intent"].TaxonomyModeExecuted != "" {
+		t.Fatalf("expected default 2-pass brackets, got calls=%d trace=%d mode=%q", got, respBad.EvaluationTrace.ForwardPasses, respBad.Answers["intent"].TaxonomyModeExecuted)
+	}
+	onOpts := DefaultEngineOptions()
+	onOpts.TaxonomyMode = TaxonomyModeMTPTrie
+	if _, err := ExecuteSystemOne(context.Background(), cli, badModeReq, onOpts); !errors.Is(err, ErrInvalidRequest) {
+		t.Fatalf("expected ErrInvalidRequest for unknown per-question taxonomy mode when TaxonomyMode is on, got %v", err)
+	}
+
 	// 1. Confident hesitation_hybrid resolves 61-option taxonomy in 1 forward pass when operator enables TaxonomyMode.
 	atomic.StoreInt32(&calls, 0)
 	hesitantCoarse = false
@@ -673,7 +696,10 @@ func TestExplicitTaxonomyValidationAndBeamNonStarvation(t *testing.T) {
 		t.Fatalf("expected explicit invalid TaxonomySpec (>26 coarse codes) to fail closed with ErrInvalidRequest")
 	}
 
-	// 1b. Explicit unknown Taxonomy.Mode fails closed with ErrInvalidRequest.
+	// 1b. Explicit unknown Taxonomy.Mode fails closed with ErrInvalidRequest when the operator has enabled taxonomy
+	// routing (with routing off the block is ignored; see TestExecuteSystemOne_TaxonomyBeamHybridAndAdapterFlag 0c).
+	routingOn := DefaultEngineOptions()
+	routingOn.TaxonomyMode = TaxonomyModeMTPTrie
 	_, err = ExecuteSystemOne(context.Background(), cli, SystemOneRequest{
 		State: "test",
 		Questions: map[string]SystemOneQuestion{
@@ -684,7 +710,7 @@ func TestExplicitTaxonomyValidationAndBeamNonStarvation(t *testing.T) {
 				Taxonomy:     &TaxonomySpec{Mode: "not_a_valid_mode"},
 			},
 		},
-	}, DefaultEngineOptions())
+	}, routingOn)
 	if err == nil {
 		t.Fatalf("expected unknown Taxonomy.Mode to fail closed with ErrInvalidRequest")
 	}
