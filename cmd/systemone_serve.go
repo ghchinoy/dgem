@@ -96,7 +96,7 @@ func init() {
 	systemoneServeCmd.Flags().StringVar(&soPriorGateMod, "prior-gate-mode", "confident", "Gate schedule for prior_logits fusion: confident (rawNormH < tau), hesitant (rawNormH >= tau, recommended over confident), proportional (alpha * rawNormH), or always (PROP-09)")
 	systemoneServeCmd.Flags().IntVar(&soShortlistK, "shortlist-topk", 0, "Single-pass latency option for wide choices: retain top M options from caller prior_logits (e.g. M=15), falling back to brackets when prior_logits is absent (0 = off, default; PROP-24)")
 	systemoneServeCmd.Flags().BoolVar(&soShortlistContrastive, "shortlist-contrastive", false, "Append [distinguishing: ...] sibling token tags to shortlisted option descriptions (default false, schema-dependent; PROP-24)")
-	systemoneServeCmd.Flags().StringVar(&soTaxonomyMode, "taxonomy-mode", "", "Opt-in 2-level taxonomy routing for wide choices (>26 options): off when empty (default), mtp_naive, mtp_trie, beam_2pass, or hesitation_hybrid (PROP-41)")
+	systemoneServeCmd.Flags().StringVar(&soTaxonomyMode, "taxonomy-mode", "", "Experimental, opt-in 2-level taxonomy routing for wide choices (>26 options): off when empty (default, recommended), mtp_naive, mtp_trie, beam_2pass, or hesitation_hybrid; less accurate than brackets in evaluation so far (PROP-41)")
 	systemoneServeCmd.Flags().StringVar(&soTaxonomyDelim, "taxonomy-delimiter", "_", "Prefix delimiter used to group option keys into coarse taxonomy domains when --taxonomy-mode is enabled")
 	systemoneServeCmd.Flags().BoolVar(&soNaiveLimits, "naive-limits", false, "Enforce naive 26-option and 10-slot capacity rejections (for benchmark ablation)")
 
