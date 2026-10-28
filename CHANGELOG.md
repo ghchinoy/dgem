@@ -9,29 +9,8 @@ a release is validated. Release process: [runbook](docs/operate/runbook.md#relea
 
 ## Unreleased
 
-- Docs and `--taxonomy-mode` help: mark taxonomy routing as experimental and not recommended; in evaluation on wide
-  label sets every mode was less accurate than the default bracket tournament (#199).
-- `/v1/systemone`: a question's `taxonomy` block is only validated when the operator has enabled taxonomy routing
-  (`--taxonomy-mode`); with routing off it is ignored, so an unknown `taxonomy.mode` no longer returns 400 (follow-up to #199).
 - **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): default `--shortlist-contrastive` to `false`, add `NormalizeCosinePriorLogits`, and document shortlist and prior-gate flags (`PROP-09`, `PROP-24`).**
   Sets `DefaultEngineOptions().ShortlistContrastive` and `--shortlist-contrastive` to `false` (contrastive `[distinguishing: ...]` tags remain opt-in for verbose overlapping descriptions). Adds `NormalizeCosinePriorLogits(cosines, temperature)` (default $\tau = 0.07$) to map bi-encoder cosine scores onto a normalized log-probability simplex for `prior_logits`. Documents `--shortlist-topk` (`M = 15` 1-pass latency option), `--shortlist-contrastive`, `--prior-weight`, `--hesitation-gate`, and `--prior-gate-mode` (recommending `hesitant` or `proportional` over `confident`, with cascades reading `raw_normalized_entropy`) in the CLI reference.
-- **`pkg/decisionindex`: Set-of-Marks (`SoM`) spatial geometry helpers and UI pathfinder template (`PROP-38`).**
-  Adds `CandidateMark`, `AssignPointToGridCell`, `AssignBoxToGridCell`, `AssignPointToGrid4x4`, `Grid4x4CellBounds`,
-  `FilterMarksByGridCell`, `SelectContainingOrNearestMark` (smallest-area containment for nested icons inside parent
-  containers), `ExpectedMarkCenterFromProbabilities`, and `BuildSetOfMarksQuestions` alongside
-  `templates/multimodal/ui_pathfinder_som.json.tmpl` for 4-slot single-pass UI navigation (`next_target_mark`,
-  `element_state`, `loop_or_error_detected`, `goal_progress_score`).
-- **`pkg/decisionindex`: triangle-consistency scorers, pack-multiplier verifier, and 8-slot arbiter templates (`PROP-39`, `PROP-40`).**
-  Adds `CheckTransitiveTriangles` and `ScoreProbabilisticTriangles` (continuous 3-cycle transitivity violation mass for
-  noisy entity-resolution graphs), `ParsePackMultiplier`, `ValidatePackQuantityConsistency`, and `ArbitrateSwarmLocks`
-  alongside `templates/multimodal/entity_resolution_dedup.json.tmpl`, `templates/live_checklist_verify.json.tmpl`, and
-  `templates/swarm_lock_arbiter.json.tmpl`.
-- **`/v1/systemone` adapter (`pkg/decisionindex`, `dgem systemone serve`): opt-in hierarchical taxonomy trie routing (`PROP-41`).**
-  Adds `TaxonomySpec`, `BuildPrefixTaxonomyTrie` (with cross-domain action-suffix alignment and automatic lexical coarse
-  bucketing for opaque `option_N` keys), and `DecodeTaxonomyTrie` (`mtp_trie`, `beam_2pass`, `hesitation_hybrid`,
-  `mtp_naive`). Off by default (`TaxonomyMode: ""`); enabled by the operator via `--taxonomy-mode` and
-  `--taxonomy-delimiter` (with per-question `taxonomy` supplying the caller's tree or mode when enabled), falling back to
-  2-stage bracket tournaments whenever a question exceeds 2-level `[A-Z]` capacity.
 
 ## v0.3.13 (2026-10-23)
 
