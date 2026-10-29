@@ -1,0 +1,47 @@
+---
+/**
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Site-wide override of Starlight's Banner: a repository-move notice on every page,
+// followed by any page-specific `banner` front matter.
+const { banner } = Astro.locals.starlightRoute.entry.data;
+---
+
+<div class="sl-banner dgem-moved" data-pagefind-ignore role="note">
+  <strong>dgem has moved</strong> to{' '}
+  <a href="https://github.com/GoogleCloudPlatform/dgem">github.com/GoogleCloudPlatform/dgem</a>. Docs are moving
+  to{' '}<a href="https://googlecloudplatform.github.io/dgem/">googlecloudplatform.github.io/dgem</a>; this site
+  stays up during the move.
+</div>
+{banner && <div class="sl-banner" data-pagefind-ignore set:html={banner.content} />}
+
+<style>
+  .sl-banner {
+    --__sl-banner-text: var(--sl-color-banner-text, var(--sl-color-text-invert));
+    padding: var(--sl-nav-pad-y) var(--sl-nav-pad-x);
+    background-color: var(--sl-color-banner-bg, var(--sl-color-bg-accent));
+    color: var(--__sl-banner-text);
+    line-height: var(--sl-line-height-headings);
+    text-align: center;
+    text-wrap: balance;
+    box-shadow: var(--sl-shadow-sm);
+  }
+  .sl-banner :global(a) {
+    color: var(--__sl-banner-text);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+</style>

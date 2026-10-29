@@ -1,3 +1,4 @@
+// Deprecated: dgem has moved; use github.com/GoogleCloudPlatform/dgem instead.
 module github.com/ghchinoy/dgem
 
 go 1.26.0

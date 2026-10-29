@@ -5,6 +5,10 @@ description: "DiffusionGemma (dgem) documentation, organized by audience: build 
 
 # DiffusionGemma (`dgem`) Documentation
 
+> [!IMPORTANT]
+> **dgem has moved to [github.com/GoogleCloudPlatform/dgem](https://github.com/GoogleCloudPlatform/dgem).**
+> Docs are moving to [googlecloudplatform.github.io/dgem](https://googlecloudplatform.github.io/dgem/).
+
 **`dgem`** turns DiffusionGemma into a zero-shot **decision model**: you describe the decisions you need in a
 policy file, and the model answers all of its questions in one forward pass (~55 ms of GPU time on an RTX PRO 6000),
 with a probability for every allowed answer.
