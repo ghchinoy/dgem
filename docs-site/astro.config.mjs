@@ -77,8 +77,12 @@ export default defineConfig({
       title: 'DiffusionGemma',
       description: 'DiffusionGemma as a Zero-Shot Decision Model & Declarative Policy-as-Template Engine across Apple Silicon, GCE, and Cloud Run',
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/ghchinoy/dgem' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/GoogleCloudPlatform/dgem' },
       ],
+      // Repository-move notice on every page (ghchinoy/dgem -> GoogleCloudPlatform/dgem).
+      components: {
+        Banner: './src/components/Banner.astro',
+      },
       head: [
         {
           tag: 'script',

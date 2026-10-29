@@ -1,5 +1,17 @@
 # dgem — DiffusionGemma as a Zero-Shot Decision Model
 
+> [!IMPORTANT]
+> **dgem has moved to [github.com/GoogleCloudPlatform/dgem](https://github.com/GoogleCloudPlatform/dgem).**
+> New releases, issues and pull requests go there. Docs are moving to
+> [googlecloudplatform.github.io/dgem](https://googlecloudplatform.github.io/dgem/). This repository stays readable
+> during the move but will not get new features. To repoint an existing clone:
+>
+> ```bash
+> git remote set-url origin https://github.com/GoogleCloudPlatform/dgem.git
+> ```
+>
+> Go users: the module path is now `github.com/GoogleCloudPlatform/dgem`.
+
 **`dgem`** turns Google DeepMind's **DiffusionGemma** (`26B-A4B-it`, a discrete-diffusion Gemma 4) into a **decision engine**. You describe a decision as a small template of typed questions (`boolean`, `choice`, `score`). `dgem` places every question on the model's bidirectional canvas and reads **a probability for every allowed answer, for every question, in one forward pass**. There is no free-text generation to parse, and every answer comes with a per-question uncertainty score you can use to decide when to act automatically and when to escalate.
 
 📖 **Docs site:** [ghchinoy.github.io/dgem](https://ghchinoy.github.io/dgem/)
@@ -139,7 +151,7 @@ A gateway (`dgem serve`) in front routes to Vertex first and fails over to Cloud
 
 ```bash
 # Clone the repository
-git clone https://github.com/ghchinoy/dgem.git
+git clone https://github.com/GoogleCloudPlatform/dgem.git
 cd dgem
 
 # Compile dgem binary into bin/
