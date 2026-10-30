@@ -7,8 +7,20 @@ changes, new features. **Patch:** fixes. Images are published to
 a release is validated. Release process: [runbook](docs/operate/runbook.md#release-a-new-version). Gateway/CLI-only releases
 (`make release-gateway`) reuse the previous serving images.
 
-## Unreleased
+## v0.3.14 (2026-10-30)
 
+**Final release from this repository.** dgem has moved to
+[GoogleCloudPlatform/dgem](https://github.com/GoogleCloudPlatform/dgem) (module `github.com/GoogleCloudPlatform/dgem`,
+docs at [googlecloudplatform.github.io/dgem](https://googlecloudplatform.github.io/dgem/)). This tag carries the
+`go.mod` `Deprecated` notice, so `go get github.com/ghchinoy/dgem` now warns and points there (#204). New issues and
+pull requests go to the new repository.
+
+Gateway and CLI only (`make release-gateway`); the serving images are unchanged from v0.3.7 (`762e545`) and the
+production gateway is not redeployed from this tag. One default changes for `dgem systemone serve` operators:
+`--shortlist-contrastive` is now `false` (#198).
+
+- Move notice: README, docs home and a site-wide docs banner point to GoogleCloudPlatform/dgem; the issue template
+  redirects there (#204). CI: the docs site also deploys from manual workflow runs on `main` (#205).
 - Docs and `--taxonomy-mode` help: mark taxonomy routing as experimental and not recommended; in evaluation on wide
   label sets every mode was less accurate than the default bracket tournament (#199).
 - `/v1/systemone`: a question's `taxonomy` block is only validated when the operator has enabled taxonomy routing
